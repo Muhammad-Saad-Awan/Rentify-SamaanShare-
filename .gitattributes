@@ -1,0 +1,102 @@
+# ========================================
+# SamaanShare - Git Attributes
+# ========================================
+
+# ----------------
+# Default: Auto-detect (recommended)
+# ----------------
+* text=auto
+
+# ----------------
+# Source Code (Force LF line endings)
+# ----------------
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.prisma text eol=lf
+*.sql text eol=lf
+*.graphql text eol=lf
+*.env* text eol=lf
+
+# ----------------
+# Shell Scripts (Force LF)
+# ----------------
+*.sh text eol=lf
+*.bash text eol=lf
+
+# ----------------
+# Windows Scripts (Force CRLF)
+# ----------------
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# ----------------
+# Config Files
+# ----------------
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.editorconfig text eol=lf
+.prettierrc text eol=lf
+.eslintrc* text eol=lf
+Dockerfile text eol=lf
+
+# ----------------
+# Lock Files (Treat as generated)
+# ----------------
+package-lock.json text eol=lf -diff
+yarn.lock text eol=lf -diff
+pnpm-lock.yaml text eol=lf -diff
+
+# ----------------
+# Binary Files (No text conversion)
+# ----------------
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.avif binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.mp4 binary
+*.webm binary
+*.mp3 binary
+
+# ----------------
+# Linguist Overrides (GitHub language stats)
+# ----------------
+# Exclude docs from language statistics
+docs/* linguist-documentation
+*.md linguist-documentation
+
+# Mark generated files
+*.min.js linguist-generated
+*.min.css linguist-generated
+
+# ----------------
+# Diff Settings
+# ----------------
+# Better diffs for certain file types
+*.css diff=css
+*.html diff=html
+*.md diff=markdown
+*.rs diff=rust

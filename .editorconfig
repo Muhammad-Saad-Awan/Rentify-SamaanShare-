@@ -1,0 +1,94 @@
+# ========================================
+# SamaanShare - EditorConfig
+# https://editorconfig.org
+# ========================================
+
+# Top-most EditorConfig file
+root = true
+
+# ----------------
+# Default Settings (All Files)
+# ----------------
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# ----------------
+# JavaScript / TypeScript / JSX / TSX
+# ----------------
+[*.{js,jsx,ts,tsx}]
+indent_size = 2
+
+# ----------------
+# JSON Files
+# ----------------
+[*.json]
+indent_size = 2
+
+# ----------------
+# YAML Files
+# ----------------
+[*.{yml,yaml}]
+indent_size = 2
+
+# ----------------
+# Markdown
+# ----------------
+[*.md]
+# Trailing whitespace is significant in Markdown (line breaks)
+trim_trailing_whitespace = false
+indent_size = 2
+
+# ----------------
+# Prisma Schema
+# ----------------
+[*.prisma]
+indent_size = 2
+
+# ----------------
+# CSS / SCSS / Tailwind
+# ----------------
+[*.{css,scss,sass}]
+indent_size = 2
+
+# ----------------
+# HTML
+# ----------------
+[*.html]
+indent_size = 2
+
+# ----------------
+# Shell Scripts
+# ----------------
+[*.sh]
+end_of_line = lf
+indent_size = 2
+
+# ----------------
+# Batch Scripts (Windows)
+# ----------------
+[*.{bat,cmd}]
+end_of_line = crlf
+
+# ----------------
+# Makefiles
+# ----------------
+[Makefile]
+# Makefiles require tabs
+indent_style = tab
+
+# ----------------
+# Git Config Files
+# ----------------
+[.git*]
+indent_size = 2
+
+# ----------------
+# Lock Files (Don't modify)
+# ----------------
+[{package-lock.json,yarn.lock,pnpm-lock.yaml}]
+indent_size = 2

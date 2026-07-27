@@ -1,0 +1,142 @@
+# ========================================
+# SamaanShare - Git Ignore Configuration
+# Next.js + TypeScript + Prisma + Vercel
+# ========================================
+
+# ----------------
+# Dependencies
+# ----------------
+node_modules/
+.pnp/
+.pnp.js
+.yarn/install-state.gz
+
+# ----------------
+# Next.js
+# ----------------
+.next/
+out/
+build/
+
+# ----------------
+# TypeScript
+# ----------------
+*.tsbuildinfo
+next-env.d.ts
+
+# ----------------
+# Testing
+# ----------------
+coverage/
+.nyc_output/
+
+# ----------------
+# Prisma
+# ----------------
+# Generated Prisma Client (auto-generated, don't commit)
+# Note: schema.prisma and migrations/ SHOULD be committed
+
+# ----------------
+# Environment Variables
+# ----------------
+# Local env files (contain secrets - NEVER commit these)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Only .env.example should be committed (no real secrets)
+!.env.example
+
+# ----------------
+# Vercel
+# ----------------
+.vercel/
+
+# ----------------
+# Debug & Logs
+# ----------------
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# ----------------
+# IDEs & Editors
+# ----------------
+# VS Code (keep settings, ignore history/local)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# JetBrains (WebStorm, etc.)
+.idea/
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ----------------
+# Operating System
+# ----------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ----------------
+# Package Managers
+# ----------------
+# Lockfiles (commit ONE of these based on your package manager)
+# Uncomment the ones you DON'T use:
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ----------------
+# Misc
+# ----------------
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Sentry (if used)
+.sentryclirc
+
+# Storybook (if used)
+storybook-static/
+
+# PWA files (if generated)
+public/sw.js
+public/workbox-*.js
+
+# Playwright (if used)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Turbo (if used)
+.turbo/
+
+# ----------------
+# Temporary Files
+# ----------------
+tmp/
+temp/
+*.tmp
+*.temp
