@@ -21,19 +21,10 @@ export const LOCALE_CONFIG = {
   phoneCountryCode: "+92",
 
   // Initial launch cities (MVP)
-  cities: [
-    "Karachi",
-    "Lahore",
-    "Islamabad",
-  ] as const,
+  cities: ["Karachi", "Lahore", "Islamabad"] as const,
 
   // Future expansion cities
-  futureCities: [
-    "Rawalpindi",
-    "Faisalabad",
-    "Peshawar",
-    "Multan",
-  ] as const,
+  futureCities: ["Rawalpindi", "Faisalabad", "Peshawar", "Multan"] as const,
 } as const;
 
 export type City = (typeof LOCALE_CONFIG.cities)[number];
