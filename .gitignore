@@ -34,6 +34,8 @@ coverage/
 # Prisma
 # ----------------
 # Generated Prisma Client (auto-generated, don't commit)
+# Rebuilt by the postinstall hook / `npm run db:generate`
+src/generated/
 # Note: schema.prisma and migrations/ SHOULD be committed
 
 # ----------------

@@ -19,6 +19,8 @@ const eslintConfig = [
       "node_modules/**",
       "next-env.d.ts",
       "*.config.mjs",
+      // Generated Prisma Client - not ours to lint
+      "src/generated/**",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript", "prettier"),

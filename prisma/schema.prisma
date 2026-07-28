@@ -1,0 +1,27 @@
+// SamaanShare - Prisma Schema
+// Docs: https://pris.ly/d/prisma-schema
+//
+// Phase 0.3A scope: database foundation only.
+// Business models (User, Listing, Booking, Review, Payment, Notification, ...)
+// are designed in Phase 0.3B per docs/DATABASE.md.
+
+generator client {
+  // Prisma 7 replaced `prisma-client-js` with the Rust-free `prisma-client`
+  // generator: smaller bundles, no native query engine binary to ship.
+  provider = "prisma-client"
+
+  // `output` is mandatory in Prisma 7 - the client is no longer written into
+  // node_modules. This path is gitignored and rebuilt by `npm run db:generate`.
+  output = "../src/generated/prisma"
+
+  // Matches tsconfig's "module": "esnext" / "moduleResolution": "bundler".
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+
+  // Connection URLs are NOT declared here in Prisma 7. The CLI reads its URL
+  // from prisma.config.ts; the app runtime passes one to the driver adapter in
+  // src/lib/prisma.ts. See docs at https://pris.ly/prisma-config
+}

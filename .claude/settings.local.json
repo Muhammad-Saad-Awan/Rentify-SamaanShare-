@@ -5,7 +5,8 @@
       "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --yes)",
       "Bash(npx create-next-app:*)",
       "Bash(dir /b D:Rentifytemp-setup)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "WebFetch(domain:www.prisma.io)"
     ]
   }
 }
