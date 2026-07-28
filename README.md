@@ -240,7 +240,7 @@ samaanshare/
 
 ### Prerequisites
 
-- Node.js 22+ (LTS) — see `.nvmrc`
+- Node.js 24+ (LTS) — see `.nvmrc`
 - PostgreSQL 15+
 - npm, yarn, or pnpm
 
