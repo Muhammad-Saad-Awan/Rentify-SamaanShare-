@@ -27,10 +27,10 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 ### Styling
 
 - [x] Install and configure Tailwind CSS
-- [ ] Set up Tailwind configuration with custom theme
-- [ ] Configure CSS variables for theming
-- [ ] Install and initialize shadcn/ui
-- [ ] Add base shadcn/ui components (Button, Input, Card, etc.)
+- [x] Set up Tailwind configuration with custom theme
+- [x] Configure CSS variables for theming
+- [x] Install and initialize shadcn/ui
+- [x] Add base shadcn/ui components (Button, Input, Card, etc.)
 
 ### Code Quality
 
@@ -81,13 +81,13 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 
 ### Base Layout
 
-- [ ] Create root layout (`app/layout.tsx`)
-- [ ] Create metadata configuration
-- [ ] Set up fonts (Inter or similar)
+- [x] Create root layout (`app/layout.tsx`)
+- [x] Create metadata configuration
+- [x] Set up fonts (Inter or similar)
 - [ ] Create header component
 - [ ] Create footer component
 - [ ] Create mobile navigation
-- [ ] Add theme provider (light/dark mode ready)
+- [x] Add theme provider (light/dark mode ready)
 
 ### Utilities
 
