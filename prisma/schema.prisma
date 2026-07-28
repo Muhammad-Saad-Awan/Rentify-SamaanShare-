@@ -1,27 +1,623 @@
-// SamaanShare - Prisma Schema
-// Docs: https://pris.ly/d/prisma-schema
+// ============================================================================
+// SamaanShare - Database Schema
+// ============================================================================
+// Peer-to-Peer Rental Marketplace for Pakistan (PKR, Asia/Karachi)
 //
-// Phase 0.3A scope: database foundation only.
-// Business models (User, Listing, Booking, Review, Payment, Notification, ...)
-// are designed in Phase 0.3B per docs/DATABASE.md.
+// Source of truth: docs/DATABASE.md section 2 (Architecture Locked v1.0),
+// as amended by the Phase 0.3B design review.
+//
+// Conventions (docs/ENGINEERING_GUIDELINES.md section 2):
+//   - Models are PascalCase singular; tables are lowercase plural via @@map
+//   - Enum values are SCREAMING_SNAKE_CASE
+//   - All PKR amounts are Int - PKR has no fractional unit
+//   - Cities are stored as lowercase slugs ("karachi"); render labels with
+//     getCityLabel() from src/config/cities.ts
+//   - Users and listings are soft-deleted via deletedAt; nothing financial
+//     cascades. Queries must filter deletedAt: null
+//
+// Deferred to Phase 2: Conversation and Message (real-time messaging).
+// Their definitions remain in docs/DATABASE.md section 2.
+// ============================================================================
 
 generator client {
-  // Prisma 7 replaced `prisma-client-js` with the Rust-free `prisma-client`
-  // generator: smaller bundles, no native query engine binary to ship.
-  provider = "prisma-client"
-
-  // `output` is mandatory in Prisma 7 - the client is no longer written into
-  // node_modules. This path is gitignored and rebuilt by `npm run db:generate`.
-  output = "../src/generated/prisma"
-
-  // Matches tsconfig's "module": "esnext" / "moduleResolution": "bundler".
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
   moduleFormat = "esm"
 }
 
 datasource db {
   provider = "postgresql"
-
-  // Connection URLs are NOT declared here in Prisma 7. The CLI reads its URL
-  // from prisma.config.ts; the app runtime passes one to the driver adapter in
-  // src/lib/prisma.ts. See docs at https://pris.ly/prisma-config
 }
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+// D8: REJECTED added - admins can approve/reject listings (ARCHITECTURE.md:488).
+// DELETED remains the queryable state; deletedAt records when it happened.
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  REJECTED
+  DELETED
+}
+
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+}
+
+// Lifecycle per PRD 4.4 / ARCHITECTURE.md section 6:
+// PENDING -> APPROVED -> PAYMENT_PENDING -> ACTIVE -> COMPLETED -> REVIEWED
+enum BookingStatus {
+  PENDING // Awaiting owner approval
+  APPROVED // Owner accepted, awaiting payment
+  PAYMENT_PENDING // Waiting for offline payment confirmation
+  ACTIVE // Currently rented (item picked up)
+  COMPLETED // Successfully returned
+  REVIEWED // Both parties have left reviews
+  DECLINED // Owner declined the request
+  CANCELLED // Cancelled by either party
+  EXPIRED // Request expired without response
+}
+
+enum PaymentProvider {
+  OFFLINE // Cash, Bank Transfer (MVP)
+  JAZZCASH // Future
+  EASYPAISA // Future
+  SAFEPAY // Future
+  PAYFAST // Future
+  STRIPE // Future (International)
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  JAZZCASH_WALLET
+  EASYPAISA_WALLET
+  CREDIT_CARD
+  DEBIT_CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  AWAITING_CONFIRMATION // Waiting for owner to confirm receipt
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum ReviewType {
+  OWNER_TO_RENTER
+  RENTER_TO_OWNER
+}
+
+enum ReportType {
+  USER
+  LISTING
+  REVIEW
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+// D5: replaces the former free-text `reason String`. Satisfies PRD.md:241
+// "predefined reason categories". Approved value set, MVP scope.
+// PAYMENT_DISPUTE intentionally excluded: payments are offline in Phase 1, so
+// the platform has no payment record to dispute. Revisit when JazzCash /
+// Easypaisa land in Phase 2.
+enum ReportReason {
+  SPAM
+  SCAM_OR_FRAUD
+  INAPPROPRIATE_CONTENT
+  MISLEADING_DESCRIPTION
+  INCORRECT_PRICING
+  PROHIBITED_ITEM
+  COUNTERFEIT_ITEM
+  UNSAFE_ITEM
+  ITEM_DAMAGED
+  ITEM_NOT_RETURNED
+  HARASSMENT
+  NO_SHOW
+  FAKE_REVIEW
+  OFFENSIVE_LANGUAGE
+  OTHER
+}
+
+// P4: resolveReport() in API.md:425 accepts an `action` that was being discarded.
+enum ReportAction {
+  NONE
+  SUSPEND_USER
+  REMOVE_LISTING
+  REMOVE_REVIEW
+}
+
+// P1: In-app booking notifications are ROADMAP.md:155 "Must" for Phase 1 and
+// PRD.md:199/201 Must Have. Values derived from the booking lifecycle plus
+// PRD 4.7 (reviews) and 4.10 (reports).
+enum NotificationType {
+  BOOKING_REQUESTED
+  BOOKING_APPROVED
+  BOOKING_DECLINED
+  BOOKING_CANCELLED
+  BOOKING_EXPIRED
+  PAYMENT_PENDING
+  PAYMENT_CONFIRMED
+  BOOKING_ACTIVE
+  BOOKING_COMPLETED
+  DEPOSIT_RETURNED
+  REVIEW_RECEIVED
+  REVIEW_REMINDER
+  REPORT_RESOLVED
+}
+
+// ==================== AUTH.JS MODELS ====================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String? // For credentials provider (hashed, bcrypt)
+
+  // Extended profile fields
+  phone         String?
+  phoneVerified Boolean @default(false)
+  bio           String? @db.Text
+  city          String? // D1: lowercase slug - "karachi", not "Karachi"
+  avatarUrl     String?
+
+  // Platform fields
+  role       UserRole   @default(USER)
+  status     UserStatus @default(ACTIVE)
+  isVerified Boolean    @default(false) // Trust verification
+
+  // P8: denormalized review aggregate. PRD.md:169 makes "Sort by Rating" a
+  // Must Have and API.md:613 exposes sortBy:'rating'. Ordering paginated
+  // listings by their owner's rating is not expressible in SQL without a
+  // stored aggregate. Recalculated in the transaction that writes a Review.
+  // Float rather than Decimal: this is not currency, and an average of
+  // integers 1-5 needs no exact decimal representation.
+  ratingAverage Float? // 1.00 - 5.00
+  ratingCount   Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // D3: soft deletion. Users are never physically deleted - anonymise the
+  // profile and stamp this instead, so bookings, reviews and payment history
+  // survive. Every user-facing query must filter `deletedAt: null`.
+  deletedAt DateTime?
+
+  // Auth.js relations
+  accounts Account[]
+  sessions Session[]
+
+  // App relations
+  listings          Listing[]      @relation("OwnerListings")
+  bookingsAsRenter  Booking[]      @relation("RenterBookings")
+  bookingsAsOwner   Booking[]      @relation("OwnerBookings")
+  reviewsGiven      Review[]       @relation("ReviewsGiven")
+  reviewsReceived   Review[]       @relation("ReviewsReceived")
+  savedListings     SavedListing[]
+  reportsSubmitted  Report[]       @relation("ReportsSubmitted")
+  reportsResolved   Report[]       @relation("ReportsResolved")
+  paymentsConfirmed Payment[]      @relation("PaymentsConfirmed") // P7
+  notifications     Notification[] // P1
+
+  @@index([status]) // P5: admin user filtering - API.md:432
+  @@index([city]) // P5: usersByCity stat - API.md:390
+  @@index([deletedAt]) // D3: exclude soft-deleted users
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId]) // P5: PostgreSQL does not auto-index foreign keys
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId]) // P5
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ==================== CATEGORY MODELS ====================
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  icon        String? // Lucide icon name
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subcategories Subcategory[]
+  listings      Listing[]
+
+  @@map("categories")
+}
+
+model Subcategory {
+  id         String @id @default(cuid())
+  categoryId String
+  name       String
+  slug       String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  listings Listing[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId]) // P5
+  @@map("subcategories")
+}
+
+// ==================== LISTING MODELS ====================
+
+model Listing {
+  id      String @id @default(cuid())
+  ownerId String
+
+  // Basic info
+  title       String
+  description String @db.Text
+
+  // Categorization
+  categoryId    String
+  subcategoryId String?
+  condition     ItemCondition
+
+  // D2: PKR amounts are Int. PKR has no fractional unit, so Int matches the
+  // Zod schemas (z.number().int()) and formatPKR(amount: number) exactly, with
+  // no Decimal conversion at any boundary. Postgres Int caps at 2,147,483,647
+  // PKR - far above the 10,000,000 ceiling in API.md:762.
+  pricePerDay     Int
+  pricePerWeek    Int?
+  pricePerMonth   Int?
+  securityDeposit Int
+
+  // Location
+  city      String // D1: lowercase slug - "karachi", not "Karachi"
+  area      String? // DHA, Gulshan, Johar, etc.
+  latitude  Float?
+  longitude Float?
+
+  // Status & metrics
+  status    ListingStatus @default(DRAFT)
+  viewCount Int           @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // D3: soft deletion, mirroring User. `status = DELETED` is what queries
+  // filter on; this records when it happened.
+  deletedAt DateTime?
+
+  // Relations
+  owner            User              @relation("OwnerListings", fields: [ownerId], references: [id], onDelete: Restrict)
+  category         Category          @relation(fields: [categoryId], references: [id])
+  subcategory      Subcategory?      @relation(fields: [subcategoryId], references: [id])
+  images           ListingImage[]
+  unavailableDates UnavailableDate[]
+  bookings         Booking[]
+  savedBy          SavedListing[]
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@index([city])
+  @@index([status])
+  @@index([pricePerDay])
+  @@index([subcategoryId]) // P5
+  // P6: the browse/search page filters on status + city + category + price
+  // simultaneously (PRD 4.3, all Must Have) under a <500ms budget (PRD 7).
+  // Single-column indexes cannot serve a multi-column filter.
+  @@index([status, city, categoryId])
+  @@index([status, city, pricePerDay])
+  @@index([status, createdAt]) // "Sort by Newest" - PRD.md:167
+  @@map("listings")
+}
+
+model ListingImage {
+  id        String @id @default(cuid())
+  listingId String
+  url       String // Cloudinary URL
+  publicId  String // Cloudinary public ID for deletion
+  order     Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_images")
+}
+
+// D7: THE single source of truth for blocked dates. A row here means the date
+// cannot be booked, whether the owner blocked it or a booking consumed it.
+// The @@unique([listingId, date]) constraint is what physically prevents
+// double-booking: two concurrent bookings for the same day cannot both insert.
+model UnavailableDate {
+  id        String   @id @default(cuid())
+  listingId String
+  date      DateTime @db.Date
+  reason    String? // "owner_blocked" | "booked"
+
+  // [NEW-2] Consequence of removing BookingDate. Without this, a row with
+  // reason="booked" cannot say WHICH booking holds it, so cancelling a booking
+  // would have to re-derive its dates by range arithmetic and delete by date
+  // range - which silently destroys owner-blocked dates that overlap.
+  // Null for owner-blocked dates; set for booking-held dates.
+  // onDelete: Cascade means cancelling or deleting a booking releases exactly
+  // its own dates and nothing else.
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, date])
+  @@index([listingId])
+  @@index([bookingId]) // P5
+  @@index([listingId, date]) // availability calendar range scans
+  @@map("unavailable_dates")
+}
+
+// ==================== PAYMENT MODELS ====================
+
+model Payment {
+  id String @id @default(cuid())
+
+  // Provider-agnostic fields
+  provider PaymentProvider @default(OFFLINE)
+  method   PaymentMethod
+  status   PaymentStatus   @default(PENDING)
+
+  // Amounts (all in PKR) - D2: Int, see note on Listing pricing
+  amount          Int
+  securityDeposit Int
+  currency        String @default("PKR")
+
+  // Provider-specific reference
+  transactionRef String? // External transaction ID
+  metadata       Json? // Provider-specific data
+
+  // Confirmation (for offline payments)
+  confirmedAt DateTime?
+
+  // P7: DATABASE.md declared `confirmedBy String?` as a bare userId with no
+  // relation, so nothing stopped an invalid id and admin views could not join
+  // to the confirming user. Promoted to a real foreign key.
+  confirmedById String?
+  confirmedBy   User?   @relation("PaymentsConfirmed", fields: [confirmedById], references: [id])
+
+  // P2: markDepositReturned() is a defined Server Action (API.md:250) and
+  // "Deposit Return Tracking" is PRD.md:193, but no field recorded it.
+  depositReturnedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  booking Booking?
+
+  @@index([status])
+  @@index([provider])
+  @@index([confirmedById]) // P5
+  @@map("payments")
+}
+
+// ==================== BOOKING MODELS ====================
+
+model Booking {
+  id        String  @id @default(cuid())
+  listingId String
+  renterId  String
+  ownerId   String
+  paymentId String? @unique
+
+  // Dates
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+
+  // Pricing captured at booking time - D2: Int, in PKR
+  totalPrice      Int
+  securityDeposit Int
+
+  // Status
+  status BookingStatus @default(PENDING)
+
+  // Details
+  pickupInstructions String? @db.Text
+  notes              String? @db.Text // Renter notes to owner
+
+  // P3: declineBooking() and cancelBooking() both accept a `reason`
+  // (API.md:196, API.md:205) that previously had nowhere to go. A booking takes
+  // only one terminal path, so a single field covers both.
+  statusReason String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  listing Listing  @relation(fields: [listingId], references: [id])
+  renter  User     @relation("RenterBookings", fields: [renterId], references: [id])
+  owner   User     @relation("OwnerBookings", fields: [ownerId], references: [id])
+  payment Payment? @relation(fields: [paymentId], references: [id])
+  reviews Review[]
+
+  // D7: replaces the removed BookingDate join. These are the UnavailableDate
+  // rows this booking holds.
+  heldDates UnavailableDate[]
+
+  @@index([listingId])
+  @@index([renterId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([listingId, status]) // P6: availability + listing booking history
+  @@map("bookings")
+}
+
+// ==================== REVIEW MODELS ====================
+
+model Review {
+  id         String @id @default(cuid())
+  bookingId  String
+  reviewerId String // Who wrote the review
+  revieweeId String // Who is being reviewed
+
+  type    ReviewType
+  rating  Int // 1-5
+  comment String?    @db.Text
+
+  createdAt DateTime @default(now())
+
+  booking  Booking @relation(fields: [bookingId], references: [id])
+  reviewer User    @relation("ReviewsGiven", fields: [reviewerId], references: [id])
+  reviewee User    @relation("ReviewsReceived", fields: [revieweeId], references: [id])
+
+  @@unique([bookingId, reviewerId]) // One review per booking per person
+  @@index([revieweeId])
+  @@index([bookingId]) // P5
+  @@index([reviewerId]) // P5
+  @@index([revieweeId, type]) // P6: asOwner/asRenter split - API.md:696
+  @@map("reviews")
+}
+
+// ==================== NOTIFICATIONS ====================
+// P1: entire model. In-app booking notifications, ROADMAP.md:155 (Phase 1 Must).
+
+model Notification {
+  id     String           @id @default(cuid())
+  userId String
+  type   NotificationType
+
+  title String
+  body  String? @db.Text
+
+  // Deep-link target, e.g. entityType "booking" + entityId -> /bookings/:id.
+  // Deliberately not a foreign key: notifications outlive the rows they
+  // reference and must survive their deletion.
+  entityType String?
+  entityId   String?
+
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt]) // unread badge count
+  @@index([userId, createdAt]) // notification feed, newest first
+  @@map("notifications")
+}
+
+// ==================== SAVED/WISHLIST ====================
+
+model SavedListing {
+  id        String @id @default(cuid())
+  userId    String
+  listingId String
+
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([listingId]) // P5
+  @@map("saved_listings")
+}
+
+// ==================== REPORTING/MODERATION ====================
+
+model Report {
+  id         String     @id @default(cuid())
+  reporterId String
+  type       ReportType // USER, LISTING, REVIEW
+
+  // D4: kept as documented - polymorphic id with no foreign key. Referential
+  // integrity of the target is enforced in application code, not the database.
+  targetId String
+
+  reason      ReportReason // D5: was free text
+  description String?      @db.Text
+
+  status     ReportStatus  @default(PENDING)
+  resolvedBy String? // Admin who resolved
+  resolvedAt DateTime?
+  resolution String? // Notes on resolution
+  action     ReportAction? // P4: action taken - API.md:425
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reporter User  @relation("ReportsSubmitted", fields: [reporterId], references: [id])
+  resolver User? @relation("ReportsResolved", fields: [resolvedBy], references: [id])
+
+  @@index([status])
+  @@index([type])
+  @@index([reason]) // P5: report triage by category
+  @@index([reporterId]) // P5
+  @@index([resolvedBy]) // P5
+  @@index([type, targetId]) // P5: "show all reports against this listing"
+  @@map("reports")
+}
+
+// ============================================================================
+// DEFERRED TO PHASE 2 (D6): Conversation and Message.
+// Removed from the MVP schema entirely per your decision. Their definitions
+// remain in docs/DATABASE.md section 2 and will be reintroduced by a later
+// migration when real-time messaging is built (ROADMAP 2.5).
+// ============================================================================
