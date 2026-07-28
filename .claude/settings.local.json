@@ -6,7 +6,8 @@
       "Bash(npx create-next-app:*)",
       "Bash(dir /b D:Rentifytemp-setup)",
       "Bash(npm install:*)",
-      "WebFetch(domain:www.prisma.io)"
+      "WebFetch(domain:www.prisma.io)",
+      "PowerShell(npx prettier --write prisma/seed.ts)"
     ]
   }
 }

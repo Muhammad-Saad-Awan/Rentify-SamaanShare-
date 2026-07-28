@@ -27,6 +27,11 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    // Prisma 7 reads the seed command from here; the old package.json
+    // `prisma.seed` key is no longer supported. Run by `prisma db seed` and
+    // automatically after `prisma migrate reset` / a fresh `prisma migrate dev`.
+    // tsx executes the TypeScript directly - no build step.
+    seed: "tsx prisma/seed.ts",
   },
   datasource: {
     url: cliDatabaseUrl,

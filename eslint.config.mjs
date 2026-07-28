@@ -30,6 +30,14 @@ const eslintConfig = [
       "no-console": ["warn", { allow: ["warn", "error"] }],
     },
   },
+  {
+    // CLI scripts report progress on stdout - console.log is their output, not
+    // a stray debug statement.
+    files: ["prisma/seed.ts"],
+    rules: {
+      "no-console": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

@@ -14,8 +14,7 @@
  * Common API response type
  */
 export type ActionResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+  { success: true; data: T } | { success: false; error: string };
 
 /**
  * Pagination type
