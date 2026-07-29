@@ -56,14 +56,15 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 
 - [x] Install Auth.js v5
 - [x] Configure Auth.js with JWT strategy
-- [ ] Set up Credentials provider (email/password) — Phase 1.2
-- [ ] Set up Google OAuth provider — Phase 1.2
+- [x] Set up Credentials provider (email/password)
+- [x] Set up Google OAuth provider (registered only when keys are present)
 - [x] Create auth configuration (`auth.ts` + edge-safe `auth.config.ts`)
 - [x] Configure the Prisma Adapter
 - [x] Mount the Auth.js route handler (`api/auth/[...nextauth]`)
 - [x] Augment Auth.js types (`src/types/next-auth.d.ts`)
 - [x] Set up middleware for protected routes
-- [ ] Create session utilities (`requireUser`, `requireAdmin`) — Phase 1.2
+- [x] Create session utilities (`requireUser`, `requireActiveUser`, `requireAdmin`)
+- [x] Gate suspended / banned / soft-deleted accounts at sign-in
 
 ### Environment Variables
 
@@ -115,25 +116,27 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 
 ### Registration
 
-- [ ] Create registration page (`/register`)
-- [ ] Create registration form component
-- [ ] Add form validation (Zod + React Hook Form)
-- [ ] Create `registerUser` server action
-- [ ] Hash passwords with bcrypt
+- [x] Create registration page (`/register`)
+- [x] Create registration form component
+- [x] Add form validation (Zod + React Hook Form)
+- [x] Create `registerUser` server action
+- [x] Hash passwords with bcrypt (bcryptjs, cost 12)
 - [ ] Send verification email (placeholder for MVP)
-- [ ] Handle registration errors
-- [ ] Add success redirect
+- [x] Handle registration errors
+- [x] Add success redirect
 
 ### Login
 
-- [ ] Create login page (`/login`)
-- [ ] Create login form component
-- [ ] Add form validation
-- [ ] Create credentials login flow
-- [ ] Add Google OAuth button
-- [ ] Handle login errors
-- [ ] Add "Remember me" option
-- [ ] Add redirect after login
+- [x] Create login page (`/login`)
+- [x] Create login form component
+- [x] Add form validation
+- [x] Create credentials login flow
+- [x] Add Google OAuth button (rendered only when Google is configured)
+- [x] Handle login errors
+- [ ] Add "Remember me" option — needs a per-session `maxAge`, which under the
+      JWT strategy means overriding `jwt.encode`. Deferred deliberately rather
+      than shipped as a checkbox that does nothing.
+- [x] Add redirect after login (`callbackUrl`, sanitised against open redirect)
 
 ### Password Reset
 
@@ -174,18 +177,19 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 
 ### Session Management
 
-- [ ] Create session provider
-- [ ] Add session to client context
-- [ ] Create `useSession` hook
+- [x] Create session provider
+- [x] Add session to client context
+- [ ] Create `useSession` hook — `next-auth/react` already exports one; only
+      needed if we want a project-specific wrapper
 - [ ] Handle session expiration
-- [ ] Add logout functionality
+- [ ] Add logout functionality (needs a header/nav to hang it off)
 
 ### Protected Routes
 
-- [ ] Configure middleware for auth routes
-- [ ] Create auth guard wrapper
-- [ ] Handle unauthorized access
-- [ ] Add redirect to login
+- [x] Configure middleware for auth routes
+- [x] Create auth guard wrapper (`requireUser` / `requireActiveUser` / `requireAdmin`)
+- [x] Handle unauthorized access
+- [x] Add redirect to login
 
 ---
 

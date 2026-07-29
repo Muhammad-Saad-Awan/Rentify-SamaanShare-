@@ -57,3 +57,23 @@ export function matchesPrefix(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
 }
+
+/**
+ * Reduces an untrusted `?callbackUrl=` to a safe same-origin path.
+ *
+ * The value arrives in a query string, so anyone can craft it. Redirecting to
+ * it unchecked is an open redirect: `/login?callbackUrl=https://evil.example`
+ * would bounce a freshly authenticated user off-site, onto a convincing
+ * phishing page.
+ *
+ * Only a path beginning with a single `/` is accepted. `//evil.example` is
+ * rejected too - browsers read a protocol-relative URL as another origin.
+ * Anything else falls back to {@link DEFAULT_LOGIN_REDIRECT}.
+ */
+export function sanitizeCallbackUrl(value: string | null | undefined): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return DEFAULT_LOGIN_REDIRECT;
+  }
+
+  return value;
+}

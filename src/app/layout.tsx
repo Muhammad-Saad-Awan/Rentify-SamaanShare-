@@ -1,3 +1,4 @@
+import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { fontVariables } from "@/config/fonts";
@@ -42,8 +43,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider>
-          {children}
-          <Toaster />
+          <AuthSessionProvider>
+            {children}
+            <Toaster />
+          </AuthSessionProvider>
         </ThemeProvider>
       </body>
     </html>
