@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** July 2026
+**Last Updated:** 29 July 2026 (Phase 2.1 — Dashboard & Application Shell)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -44,13 +44,13 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 
 ### Database
 
-- [ ] Install Prisma
-- [ ] Configure Prisma for PostgreSQL
-- [ ] Create initial `schema.prisma` (from DATABASE.md)
-- [ ] Set up Prisma client singleton
-- [ ] Create seed script (`prisma/seed.ts`)
-- [ ] Run initial migration
-- [ ] Seed categories and initial data
+- [x] Install Prisma
+- [x] Configure Prisma for PostgreSQL
+- [x] Create initial `schema.prisma` (from DATABASE.md)
+- [x] Set up Prisma client singleton
+- [x] Create seed script (`prisma/seed.ts`)
+- [x] Run initial migration (`20260728105436_20260728_init`)
+- [x] Seed categories and initial data (verified: 7 categories, 30 subcategories)
 
 ### Authentication
 
@@ -88,9 +88,12 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Create root layout (`app/layout.tsx`)
 - [x] Create metadata configuration
 - [x] Set up fonts (Inter or similar)
-- [ ] Create header component
+- [ ] Create header component — the *dashboard* header exists
+      (`DashboardHeader`, Phase 2.1). This item is the **public/marketing**
+      header, still outstanding.
 - [ ] Create footer component
-- [ ] Create mobile navigation
+- [ ] Create mobile navigation — the *dashboard* drawer exists
+      (`DashboardMobileNav`, Phase 2.1). Public mobile nav still outstanding.
 - [x] Add theme provider (light/dark mode ready)
 
 ### Utilities
@@ -104,7 +107,7 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 ### Verification
 
 - [x] Verify development server runs
-- [ ] Verify database connection
+- [x] Verify database connection
 - [ ] Verify Prisma Studio works
 - [x] Verify TypeScript compilation
 - [x] Verify ESLint passes
@@ -182,7 +185,7 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [ ] Create `useSession` hook — `next-auth/react` already exports one; only
       needed if we want a project-specific wrapper
 - [ ] Handle session expiration
-- [ ] Add logout functionality (needs a header/nav to hang it off)
+- [x] Add logout functionality (`UserMenu` in the dashboard header, Phase 2.1)
 
 ### Protected Routes
 
@@ -190,6 +193,55 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Create auth guard wrapper (`requireUser` / `requireActiveUser` / `requireAdmin`)
 - [x] Handle unauthorized access
 - [x] Add redirect to login
+
+---
+
+## Phase 2.1 – Dashboard & Application Shell
+
+Shell, routing and navigation only. Every section below is a placeholder page —
+no listing, booking, search, review or admin functionality was implemented.
+
+### Shell
+
+- [x] Create authenticated dashboard layout (`(dashboard)` route group)
+- [x] Create navigation config (`src/config/navigation.ts`)
+- [x] Create responsive sidebar (`DashboardSidebar`, desktop `lg+`)
+- [x] Create mobile drawer navigation (`DashboardMobileNav`, Sheet-based)
+- [x] Create top header (`DashboardHeader`, sticky)
+- [x] Create user menu with sign-out (`UserMenu`)
+- [x] Create notification placeholder (`NotificationBell`)
+- [x] Create breadcrumb support (`DashboardBreadcrumbs` + `buildBreadcrumbs`)
+- [x] Create reusable layout components (`PageHeader`, `PlaceholderCard`,
+      `StatCard`, `DashboardPageSkeleton`)
+- [x] Add `loading.tsx` to every dashboard route
+- [x] Add `sheet` and `breadcrumb` shadcn/ui primitives
+
+### Placeholder pages
+
+- [x] Dashboard Home (`/dashboard`)
+- [x] My Listings (`/dashboard/listings`)
+- [x] My Bookings (`/dashboard/bookings`)
+- [x] Saved Listings (`/dashboard/saved`) — **note:** this file previously
+      specified `/saved`. Moved under `/dashboard` so it inherits the existing
+      `PROTECTED_PREFIXES` guard and matches the other dashboard sections.
+- [x] Notifications (`/dashboard/notifications`)
+- [x] Profile (`/profile`) — read-only session summary; editing still open
+- [x] Settings (`/settings`)
+- [x] Admin (`/admin`) — gated by `requireAdmin()` in `admin/layout.tsx`
+
+### Protected routing
+
+- [x] All dashboard routes protected via existing session utilities
+- [x] Unauthenticated users redirected to login with `callbackUrl`
+- [x] Authenticated users bounced away from `/login` and `/register`
+- [x] Non-admins bounced from `/admin` (middleware) and rejected by the
+      database re-read in `requireAdmin()`
+
+### Sign-out
+
+- [x] Add logout functionality (`UserMenu`, `signOut({ redirectTo: "/" })`) —
+      closes the Phase 1 "Session Management" item that was blocked on having a
+      header to hang it off
 
 ---
 
