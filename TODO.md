@@ -54,13 +54,16 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 
 ### Authentication
 
-- [ ] Install Auth.js v5
-- [ ] Configure Auth.js with JWT strategy
-- [ ] Set up Credentials provider (email/password)
-- [ ] Set up Google OAuth provider
-- [ ] Create auth configuration (`auth.ts`)
-- [ ] Set up middleware for protected routes
-- [ ] Create session utilities
+- [x] Install Auth.js v5
+- [x] Configure Auth.js with JWT strategy
+- [ ] Set up Credentials provider (email/password) — Phase 1.2
+- [ ] Set up Google OAuth provider — Phase 1.2
+- [x] Create auth configuration (`auth.ts` + edge-safe `auth.config.ts`)
+- [x] Configure the Prisma Adapter
+- [x] Mount the Auth.js route handler (`api/auth/[...nextauth]`)
+- [x] Augment Auth.js types (`src/types/next-auth.d.ts`)
+- [x] Set up middleware for protected routes
+- [ ] Create session utilities (`requireUser`, `requireAdmin`) — Phase 1.2
 
 ### Environment Variables
 
