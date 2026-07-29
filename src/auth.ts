@@ -116,7 +116,61 @@ const providers: Provider[] = [
  * an `OAuthAccountNotLinked` error, which the login page explains.
  */
 if (isGoogleEnabled()) {
-  providers.push(Google);
+  providers.push(
+    Google({
+      /**
+       * Supplying `profile` REPLACES Auth.js's claim mapping rather than
+       * extending it, so the default has to be reproduced here or its fields are
+       * silently lost. Google ships no provider-specific mapping - it is
+       * `type: "oidc"`, so `defaultProfile` in
+       * `@auth/core/lib/utils/providers.js` handles it:
+       *
+       *   id:    sub
+       *   name:  name ?? nickname ?? preferred_username
+       *   email: email
+       *   image: picture
+       *
+       * The `nickname` / `preferred_username` fallbacks are dropped: neither is
+       * a Google OIDC claim, so they could never match.
+       *
+       * `id` is mapped but discarded - the adapter destructures it away
+       * (`createUser: ({ id, ...data })`) so Prisma generates the cuid, and the
+       * value survives only as `Account.providerAccountId`.
+       */
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+
+          /**
+           * Typed as a required `string` by `GoogleProfile`, but the claim is
+           * genuinely absent for accounts with no profile photo - so this can be
+           * undefined at runtime despite what the type says. Normalised to null
+           * rather than left undefined.
+           */
+          image: profile.picture ?? null,
+
+          /**
+           * The reason this override exists.
+           *
+           * Google asserts `email_verified` in the id_token, but neither the
+           * default mapping nor the Prisma adapter carries it across, so a
+           * Google user was landing with `emailVerified: null`. Once the
+           * verification flow exists, that would demand they prove an address
+           * Google has already proven - and being OAuth-only, they have no
+           * password with which to complete it.
+           *
+           * Trusting the claim is safe here specifically because the issuer is
+           * Google and the id_token signature has already been verified. It
+           * would not be safe for a provider that lets users self-assert an
+           * address.
+           */
+          emailVerified: profile.email_verified ? new Date() : null,
+        };
+      },
+    })
+  );
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({

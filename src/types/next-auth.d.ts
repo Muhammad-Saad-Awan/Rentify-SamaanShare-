@@ -42,6 +42,14 @@ declare module "next-auth" {
   interface User {
     role?: UserRole;
     status?: UserStatus;
+
+    /**
+     * Present so a provider's `profile()` may return it - see the Google
+     * provider in `src/auth.ts`, which maps Google's `email_verified` claim onto
+     * it. `AdapterUser` already declares this as required; widening it to
+     * optional here keeps that assignable while letting `profile()` omit it.
+     */
+    emailVerified?: Date | null;
   }
 }
 
