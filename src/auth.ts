@@ -152,19 +152,15 @@ if (isGoogleEnabled()) {
           image: profile.picture ?? null,
 
           /**
-           * The reason this override exists.
+           * Carries Google's `email_verified` claim forward. Note this value
+           * does NOT reach the database by itself - Auth.js discards it (see
+           * the `linkAccount` event below, which is what actually persists it).
+           * Mapping it here keeps the claim-to-field translation in one typed
+           * place rather than re-deriving it from raw claims later.
            *
-           * Google asserts `email_verified` in the id_token, but neither the
-           * default mapping nor the Prisma adapter carries it across, so a
-           * Google user was landing with `emailVerified: null`. Once the
-           * verification flow exists, that would demand they prove an address
-           * Google has already proven - and being OAuth-only, they have no
-           * password with which to complete it.
-           *
-           * Trusting the claim is safe here specifically because the issuer is
-           * Google and the id_token signature has already been verified. It
-           * would not be safe for a provider that lets users self-assert an
-           * address.
+           * Trusting the claim is safe because the issuer is Google and the
+           * id_token signature was verified before this runs. It would not be
+           * safe for a provider that lets users self-assert an address.
            */
           emailVerified: profile.email_verified ? new Date() : null,
         };
@@ -244,6 +240,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       return true;
+    },
+  },
+
+  events: {
+    /**
+     * Persists the provider's email verification, because nothing else will.
+     *
+     * Auth.js creates an OAuth user with `createUser({ ...profile,
+     * emailVerified: null })` - the hardcoded null overwrites whatever the
+     * provider's `profile()` returned for that field
+     * (`@auth/core/lib/actions/callback/handle-login.js`). So `profile()` cannot
+     * set it, no matter what it returns; this event is the first point at which
+     * the row exists AND the mapped profile is still in hand.
+     *
+     * Fires only when a NEW Account row is linked, not on every sign-in: a
+     * returning user is resolved by `getUserByAccount` and returns well before
+     * this line.
+     *
+     * Keyed off `profile.emailVerified` rather than assuming any OAuth link
+     * implies a verified address - that happens to hold for Google, but would be
+     * wrong for a provider that does not verify.
+     */
+    async linkAccount({ user, profile }) {
+      const verifiedAt = profile.emailVerified;
+
+      if (!user.id || !verifiedAt) {
+        return;
+      }
+
+      /**
+       * `updateMany`, not `update`: it is a no-op rather than a throw when
+       * nothing matches, which makes the `emailVerified: null` guard safe. That
+       * guard also keeps this idempotent - linking a second provider later must
+       * not overwrite the original verification timestamp.
+       */
+      await prisma.user.updateMany({
+        where: { id: user.id, emailVerified: null },
+        data: { emailVerified: verifiedAt },
+      });
     },
   },
 
