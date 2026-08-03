@@ -34,21 +34,45 @@ import type {
 } from "@/lib/marketplace/filters";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Browse Listings",
-  description:
-    "Rent tools, electronics, cameras and more from people near you in Karachi, Lahore and Islamabad.",
-};
-
 /**
  * `searchParams` is a Promise in Next 15 and must be awaited.
  *
- * That is the breaking change from 14: it was a plain object. Reading a property
- * off it without awaiting yields `undefined` rather than throwing, so the mistake
- * shows up as a filter that silently never applies.
+ * That is the breaking change from 14: it was a plain object. Reading a property off it
+ * without awaiting yields `undefined` rather than throwing, so the mistake shows up as a
+ * filter that silently never applies.
  */
 interface BrowseListingsPageProps {
   searchParams: Promise<RawSearchParams>;
+}
+
+/**
+ * Metadata for browse, including whether this particular view should be indexed.
+ *
+ * `generateMetadata` rather than a static `metadata` export - a page may export one or the
+ * other, not both - because the indexing decision depends on the query string.
+ *
+ * Bare `/listings` is indexable. Anything narrowed by a filter, a search term or a page
+ * number is not: every combination renders at this same path, so the set is combinatorially
+ * large (q x category x city x price x condition x dates x sort x page) and indexing it is
+ * duplicate-content sprawl rather than coverage.
+ *
+ * `follow` stays on, so the crawler still traverses into the listing detail pages a filtered
+ * view links to. These URLs are also NOT blocked in robots.txt, for a related reason: a
+ * `Disallow` would stop the fetch, and with it the canonical tag that consolidates them.
+ */
+export async function generateMetadata({
+  searchParams,
+}: BrowseListingsPageProps): Promise<Metadata> {
+  const filters = parseListingFilters(await searchParams);
+  const isNarrowed = hasActiveFilters(filters) || filters.page > 1;
+
+  return {
+    title: "Browse Listings",
+    description:
+      "Rent tools, electronics, cameras and more from people near you in Karachi, Lahore and Islamabad.",
+    alternates: { canonical: "/listings" },
+    ...(isNarrowed ? { robots: { index: false, follow: true } } : {}),
+  };
 }
 
 /**

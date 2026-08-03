@@ -15,6 +15,26 @@ import { LOCALE_CONFIG } from "@/config/locale";
  * calendar lands, not these display helpers.
  */
 
+/**
+ * Today's calendar date in Asia/Karachi, as `YYYY-MM-DD`.
+ *
+ * The market's "today", not the server's. A deployed server runs in UTC, so between
+ * midnight and 05:00 Karachi time `new Date().toISOString()` still reports yesterday -
+ * which would let an owner block a day that has already started for them, and would show
+ * a past day as selectable in the calendar.
+ *
+ * `en-CA` because its short date format is exactly ISO `YYYY-MM-DD`, which makes the
+ * result directly comparable to the date strings used throughout the app.
+ */
+export function todayInKarachi(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: LOCALE_CONFIG.timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
 /** e.g. `03 Aug 2026`. */
 export function formatDate(date: Date): string {
   return new Intl.DateTimeFormat("en-PK", {

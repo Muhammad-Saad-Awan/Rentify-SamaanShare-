@@ -23,9 +23,12 @@ import { UserRole, UserStatus } from "@/generated/prisma/enums";
  */
 export const authConfig = {
   /**
-   * Deliberately empty for Phase 1.1. This file establishes the plumbing only;
-   * Credentials and Google land in Phase 1.2. With no providers, Auth.js still
-   * mounts its endpoints and issues no sessions - which is the intended state.
+   * Deliberately empty, and it stays that way.
+   *
+   * The real providers - Credentials and Google - live in `auth.ts`, because both need
+   * Prisma or bcrypt and this file has to stay importable from Edge middleware. Middleware
+   * only ever *decrypts* a token; it never authenticates, so it needs no provider list.
+   * Adding one here would drag the adapter into the Edge bundle and break the build.
    */
   providers: [],
 
@@ -36,7 +39,7 @@ export const authConfig = {
      * 1. The adapter's presence would otherwise default this to "database",
      *    which requires a Prisma query on every request to read the session -
      *    impossible in Edge middleware.
-     * 2. The Credentials provider (Phase 1.2) only works with JWT sessions.
+     * 2. The Credentials provider only works with JWT sessions.
      * 3. Session reads become a local cookie decrypt: no DB round trip.
      *
      * The trade-off: a JWT cannot be revoked server-side before it expires.
@@ -57,11 +60,7 @@ export const authConfig = {
   },
 
   pages: {
-    /**
-     * Unauthenticated visitors are sent here instead of Auth.js's built-in
-     * page. The route is created in Phase 1.2; until then this is just a
-     * declaration.
-     */
+    /** Unauthenticated visitors go to our own login page, not Auth.js's built-in one. */
     signIn: LOGIN_ROUTE,
 
     /** OAuth/callback failures land on the login page as `?error=...`. */

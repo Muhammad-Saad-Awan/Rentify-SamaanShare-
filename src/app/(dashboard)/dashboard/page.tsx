@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import {
   CalendarCheckIcon,
   HeartIcon,
@@ -6,6 +8,7 @@ import {
   SlidersHorizontalIcon,
 } from "lucide-react";
 
+import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { PlaceholderCard } from "@/components/dashboard/placeholder-card";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -33,6 +36,22 @@ export const metadata: Metadata = {
  * to load.
  */
 export default async function DashboardPage() {
+  return (
+    // The skeleton is wired up here rather than as a route-level `loading.tsx`.
+    //
+    // A `loading.tsx` in this segment creates a Suspense boundary covering `/dashboard`
+    // AND every route nested under it, including `/dashboard/listings/[id]/edit`. Next
+    // then flushes the shell with a 200 as soon as the fallback is ready, so those routes'
+    // `notFound()` could no longer set a 404 - an owner opening someone else's listing got
+    // 200 with the 404 page, which tells a crawler a dead URL is live. Measured both ways.
+    <Suspense fallback={<DashboardPageSkeleton withStats cards={2} />}>
+      <DashboardOverview />
+    </Suspense>
+  );
+}
+
+/** Everything on the overview that needs the session. */
+async function DashboardOverview() {
   const user = await requireUser();
 
   return (

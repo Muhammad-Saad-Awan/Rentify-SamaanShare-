@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
 import { prisma } from "@/lib/prisma";
@@ -37,25 +38,41 @@ export interface CategoryDetail {
 }
 
 /**
- * The category tree for the filter sidebar.
+ * The category tree for the filter sidebar and the listing forms.
  *
- * Ordered by name so the sidebar's option order is stable across requests -
- * without an `orderBy` Postgres may return rows in any order, and a select whose
- * options reshuffle between page loads is unusable.
+ * CACHED ACROSS REQUESTS, which is the one query here where that is unambiguously safe.
+ * The taxonomy is reference data seeded from docs/DATABASE.md - names, slugs and the
+ * parent/child structure - and it changes when someone edits the seed, not when inventory
+ * moves. Before this it was re-read from Neon on every browse render, every category page
+ * and every load of the create and edit forms, for a result that had not changed.
+ *
+ * Note what is deliberately NOT cached: anything with a count. `getFeaturedCategories`
+ * below reads live listing counts, and serving those a few minutes stale would have a
+ * category tile advertise items its page does not show.
+ *
+ * `unstable_cache` rather than React's `cache()`: that one memoises within a single
+ * request, which does nothing for a value identical across all of them. Tagged so a future
+ * taxonomy change can invalidate it explicitly, with an hour as the fallback ceiling.
+ *
+ * Ordered by name so option order is stable - without an `orderBy` Postgres may return rows
+ * in any order, and a select whose options reshuffle between page loads is unusable.
  */
-export async function getCategoryOptions(): Promise<CategoryOption[]> {
-  return prisma.category.findMany({
-    orderBy: { name: "asc" },
-    select: {
-      name: true,
-      slug: true,
-      subcategories: {
-        orderBy: { name: "asc" },
-        select: { name: true, slug: true },
+export const getCategoryOptions = unstable_cache(
+  async (): Promise<CategoryOption[]> =>
+    prisma.category.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        name: true,
+        slug: true,
+        subcategories: {
+          orderBy: { name: "asc" },
+          select: { name: true, slug: true },
+        },
       },
-    },
-  });
-}
+    }),
+  ["category-options"],
+  { tags: ["taxonomy"], revalidate: 3600 }
+);
 
 /**
  * Categories for the homepage grid, each with its live listing count.

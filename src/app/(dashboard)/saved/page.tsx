@@ -11,6 +11,7 @@ import { Pagination } from "@/components/shared/pagination";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/session";
 import { getSavedListings } from "@/lib/queries/saved-listings";
+import { parsePageParam } from "@/lib/utils/pagination";
 
 import type { Metadata } from "next";
 
@@ -111,22 +112,4 @@ export default async function SavedListingsPage({
       />
     </>
   );
-}
-
-/**
- * Reads `?page=` into a positive integer, defaulting to 1.
- *
- * Anything unusable falls back to the first page rather than erroring: the value
- * comes from a URL the user can edit, and `?page=abc` should show page 1, not a 500.
- */
-function parsePageParam(value: string | string[] | undefined): number {
-  const raw = Array.isArray(value) ? value[0] : value;
-
-  if (!raw) {
-    return 1;
-  }
-
-  const parsed = Number.parseInt(raw, 10);
-
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : 1;
 }

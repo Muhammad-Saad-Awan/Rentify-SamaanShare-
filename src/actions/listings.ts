@@ -1,18 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { Prisma } from "@/generated/prisma/client";
 import { ListingStatus } from "@/generated/prisma/enums";
 import { getActiveUser } from "@/lib/auth/session";
-import { getUploadedImages, pendingUploadFolder } from "@/lib/cloudinary";
+import { pendingUploadFolder } from "@/lib/cloudinary";
+import { verifyListingImages } from "@/lib/listings/images";
+import { revalidateListingPaths } from "@/lib/listings/revalidate";
+import { resolveListingTaxonomy } from "@/lib/listings/taxonomy";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
-import {
-  ACCEPTED_IMAGE_FORMATS,
-  createListingSchema,
-  MAX_IMAGE_BYTES,
-} from "@/lib/validations/listing";
+import { createListingSchema } from "@/lib/validations/listing";
 import { UNAUTHENTICATED_ERROR } from "@/types";
 
 import type { CreateListingInput } from "@/lib/validations/listing";
@@ -168,58 +165,23 @@ export async function createListing(
    * Each image must actually exist in Cloudinary, be an image, and be a sane size.
    *
    * Third check, and the one that closes the remaining gap: a public id matching the
-   * folder pattern proves nothing about whether the asset is there. This also produces
-   * the URL that gets stored - Cloudinary's own `secure_url` - so the database never
-   * records a location the client asserted.
-   *
-   * It is also the only server-side enforcement of format and size. Signed uploads
-   * cannot carry those limits, and the browser's checks are bypassable by calling the
-   * signature action directly, so they are applied here where it counts.
+   * folder pattern proves nothing about whether the asset is there. It also produces the
+   * URL that gets stored - Cloudinary's own - so the database never records a location
+   * the client asserted. Shared with `updateListing` so the two cannot diverge.
    */
   let verified: { publicId: string; url: string }[];
 
   try {
-    const found = await getUploadedImages(data.images);
+    const result = await verifyListingImages(data.images);
 
-    // Mapped over `data.images` rather than over the response, so the owner's chosen
-    // order survives - the Admin API does not promise to echo the request order.
-    const resolved = data.images.map((publicId) => found.get(publicId));
-
-    if (resolved.some((image) => image === undefined)) {
-      return {
-        success: false,
-        error: "Some photos could not be found. Please re-upload them.",
-      };
+    if (!result.ok) {
+      return { success: false, error: result.error };
     }
 
-    const images = resolved.filter(
-      (image): image is NonNullable<typeof image> => image !== undefined
-    );
-
-    const badFormat = images.find(
-      (image) => !ACCEPTED_IMAGE_FORMATS.includes(image.format as never)
-    );
-
-    if (badFormat) {
-      return {
-        success: false,
-        error: "Photos must be JPEG, PNG or WebP.",
-      };
-    }
-
-    const tooLarge = images.find((image) => image.bytes > MAX_IMAGE_BYTES);
-
-    if (tooLarge) {
-      return { success: false, error: "One of those photos is too large." };
-    }
-
-    verified = images.map((image) => ({
-      publicId: image.publicId,
-      url: image.secureUrl,
-    }));
+    verified = result.images;
   } catch (error) {
-    // Cloudinary unreachable. Publishing fails rather than storing unverified images -
-    // a listing with a broken or borrowed photo is worse than a retry.
+    // Cloudinary unreachable. Publishing fails rather than storing unverified images - a
+    // listing with a broken or borrowed photo is worse than a retry.
     console.error("createListing image verification failed", error);
 
     return {
@@ -229,7 +191,7 @@ export async function createListing(
   }
 
   try {
-    const taxonomy = await resolveTaxonomy(data);
+    const taxonomy = await resolveListingTaxonomy(data);
 
     if (!taxonomy.ok) {
       return { success: false, error: taxonomy.error };
@@ -273,7 +235,7 @@ export async function createListing(
       select: { id: true },
     });
 
-    revalidateAffectedPaths();
+    revalidateListingPaths();
 
     return { success: true, data: { id: listing.id } };
   } catch (error) {
@@ -295,74 +257,5 @@ export async function createListing(
     console.error("createListing failed", error);
 
     return { success: false, error: UNEXPECTED_ERROR };
-  }
-}
-
-type TaxonomyResult =
-  | { ok: true; categoryId: string; subcategoryId: string | null }
-  | { ok: false; error: string };
-
-/**
- * Turns the submitted slugs into ids, verifying the pair actually exists.
- *
- * The form submits slugs, so this is where they become foreign keys - and the reason
- * it is a single query on the *subcategory's parent* rather than two independent
- * lookups: a subcategory slug is unique only within its category, so checking each in
- * isolation would happily accept `category=vehicles` with `subcategory=bicycles` from
- * sports. That pair would then write a listing whose subcategory belongs to a
- * different branch of the taxonomy.
- */
-async function resolveTaxonomy(
-  data: CreateListingInput
-): Promise<TaxonomyResult> {
-  const category = await prisma.category.findUnique({
-    where: { slug: data.categorySlug },
-    select: {
-      id: true,
-      subcategories: data.subcategorySlug
-        ? { where: { slug: data.subcategorySlug }, select: { id: true } }
-        : false,
-    },
-  });
-
-  if (!category) {
-    return { ok: false, error: "That category no longer exists." };
-  }
-
-  if (!data.subcategorySlug) {
-    return { ok: true, categoryId: category.id, subcategoryId: null };
-  }
-
-  const subcategory = category.subcategories?.[0];
-
-  if (!subcategory) {
-    return {
-      ok: false,
-      error: "That subcategory does not belong to the chosen category.",
-    };
-  }
-
-  return {
-    ok: true,
-    categoryId: category.id,
-    subcategoryId: subcategory.id,
-  };
-}
-
-/**
- * Refreshes every surface a new listing appears on.
- *
- * The owner's own listing management page is included because it is the screen they
- * are most likely to visit next. `/categories/[slug]` is the route pattern rather
- * than one slug, so all category pages are covered.
- */
-function revalidateAffectedPaths(): void {
-  for (const path of [
-    "/",
-    "/listings",
-    "/categories/[slug]",
-    "/dashboard/listings",
-  ]) {
-    revalidatePath(path, "page");
   }
 }

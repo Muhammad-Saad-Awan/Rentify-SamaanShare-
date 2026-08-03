@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { PAKISTANI_CITIES } from "@/config/cities";
-import { ItemCondition } from "@/generated/prisma/enums";
+import { ItemCondition, ListingStatus } from "@/generated/prisma/enums";
 
 /**
  * Listing creation rules.
@@ -348,3 +348,90 @@ export function toCreateListingInput(
     images: values.images.map((image) => image.publicId),
   };
 }
+
+/** A listing id: a cuid in production, a readable id in the demo seed. */
+export const listingIdSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .regex(/^[A-Za-z0-9_-]+$/, { error: "That listing reference is not valid." });
+
+/**
+ * Editing takes the same fields as creating.
+ *
+ * Deliberately NOT `createListingSchema.partial()`, which is what docs/API.md
+ * sketches. A partial update means the action cannot tell "field omitted" from
+ * "field cleared", so clearing an optional weekly price would be indistinguishable
+ * from not touching it. The edit form always submits the whole listing, so the
+ * server can take the whole listing and the ambiguity never arises.
+ */
+export const updateListingSchema = z.object({
+  id: listingIdSchema,
+  data: createListingSchema,
+});
+
+export type UpdateListingInput = z.infer<typeof updateListingSchema>;
+
+/**
+ * Status changes an owner may make.
+ *
+ * A closed set rather than the full `ListingStatus` enum, because most of that enum is
+ * not the owner's to assign: `REJECTED` belongs to moderation, and `DELETED` goes
+ * through `deleteListing` so the soft-delete timestamp is written with it. Accepting
+ * the whole enum here would let an owner un-reject their own listing.
+ */
+export const OWNER_ASSIGNABLE_STATUSES = [
+  ListingStatus.ACTIVE,
+  ListingStatus.PAUSED,
+] as const;
+
+export const updateListingStatusSchema = z.object({
+  id: listingIdSchema,
+  status: z.enum(OWNER_ASSIGNABLE_STATUSES, {
+    error: "That is not a status you can set.",
+  }),
+});
+
+/**
+ * Which transitions are permitted, keyed by the status the listing is in now.
+ *
+ * Expressed as a table rather than an `if` chain so the rules are readable in one
+ * place. `REJECTED` and `DELETED` map to nothing: a rejected listing is moderation's
+ * to release, and a deleted one has to be restored before anything else applies.
+ */
+export const ALLOWED_STATUS_TRANSITIONS: Readonly<
+  Record<ListingStatus, readonly ListingStatus[]>
+> = {
+  [ListingStatus.DRAFT]: [ListingStatus.ACTIVE],
+  [ListingStatus.ACTIVE]: [ListingStatus.PAUSED],
+  [ListingStatus.PAUSED]: [ListingStatus.ACTIVE],
+  [ListingStatus.REJECTED]: [],
+  [ListingStatus.DELETED]: [],
+};
+
+/** A calendar day, `YYYY-MM-DD`, validated as a real date. */
+export const calendarDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, { error: "That is not a valid date." })
+  .refine(
+    (value) => {
+      const parsed = new Date(`${value}T00:00:00.000Z`);
+
+      // Round-tripped, because the pattern alone accepts 2026-02-31, which parses
+      // to 3 March and would silently block the wrong day.
+      return (
+        !Number.isNaN(parsed.getTime()) &&
+        parsed.toISOString().slice(0, 10) === value
+      );
+    },
+    { error: "That is not a valid date." }
+  );
+
+/** One day being blocked or released by its owner. */
+export const availabilityToggleSchema = z.object({
+  listingId: listingIdSchema,
+  date: calendarDateSchema,
+  blocked: z.boolean(),
+});
+
+export type AvailabilityToggleInput = z.infer<typeof availabilityToggleSchema>;

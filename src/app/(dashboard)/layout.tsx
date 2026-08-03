@@ -1,5 +1,9 @@
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import {
+  MAIN_CONTENT_ID,
+  SkipToContent,
+} from "@/components/shared/skip-to-content";
 import { requireUser } from "@/lib/auth/session";
 
 import type { ReactNode } from "react";
@@ -30,6 +34,14 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex flex-1">
+      {/*
+        The dashboard needed this more than the public shell did, and had it longer: the
+        sidebar is eight or nine links plus a brand, so without a skip link a keyboard or
+        screen reader user walks all of them before reaching content - on every navigation.
+        First tab stop, so it precedes the sidebar in the DOM.
+      */}
+      <SkipToContent />
+
       <DashboardSidebar role={user.role} />
 
       {/*
@@ -41,7 +53,16 @@ export default async function DashboardLayout({
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader user={user} />
 
-        <main className="flex-1">
+        {/*
+          `tabIndex={-1}` makes the skip link's target focusable: following a fragment link
+          moves scroll but not keyboard focus unless the target can hold it, which would
+          leave the next Tab press continuing from the sidebar the user just skipped.
+        */}
+        <main
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
+          className="flex-1 outline-none"
+        >
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 lg:px-6">
             {children}
           </div>

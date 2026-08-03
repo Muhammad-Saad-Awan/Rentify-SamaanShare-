@@ -11,30 +11,21 @@ import { createListing } from "@/actions/listings";
 import { ImageUploader } from "@/components/listings/image-uploader";
 import { Button } from "@/components/ui/button";
 import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { PAKISTANI_CITIES } from "@/config/cities";
+  ListingBasicsFields,
+  ListingLocationFields,
+  ListingPricingFields,
+} from "@/components/listings/listing-fields";
 import { ItemCondition } from "@/generated/prisma/enums";
 import { cn } from "@/lib/utils/cn";
 import { formatPKR } from "@/lib/utils/currency";
 import { CONDITION_LABELS, formatCity } from "@/lib/utils/listing";
 import {
-  DESCRIPTION_MAX,
   listingFormSchema,
   toCreateListingInput,
 } from "@/lib/validations/listing";
 
 import type { CategoryOption } from "@/lib/queries/categories";
 import type { ListingFormValues } from "@/lib/validations/listing";
-
-/** Matches `Input`'s tokens so native selects sit flush beside one. */
-const SELECT_CLASS =
-  "border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 h-8 w-full rounded-lg border bg-transparent px-2 py-1 text-sm transition-colors outline-none focus-visible:ring-3";
 
 /**
  * The steps, and which fields each one owns.
@@ -142,18 +133,6 @@ function CreateListingForm({ categories }: CreateListingFormProps) {
     return () => window.removeEventListener("beforeunload", warn);
   }, [hasUnsavedWork, form.formState.isSubmitSuccessful]);
 
-  /**
-   * Subcategories for the chosen category, recomputed as it changes.
-   *
-   * Worth contrasting with the browse filter sidebar, which cannot do this: that form
-   * is deliberately JavaScript-free, so its subcategory list only updates on a
-   * round trip. Here there is already a client bundle, so the dependent select can be
-   * live.
-   */
-  const activeCategory = categories.find(
-    (category) => category.slug === values.categorySlug
-  );
-
   async function goNext() {
     setFormError(null);
 
@@ -225,189 +204,19 @@ function CreateListingForm({ categories }: CreateListingFormProps) {
       )}
 
       {stepIndex === 0 && (
-        <FieldGroup>
-          <Field data-invalid={Boolean(errors.title)}>
-            <FieldLabel htmlFor="title">Title</FieldLabel>
-            <Input
-              id="title"
-              placeholder="Canon EOS R6 with 24-105mm lens"
-              aria-invalid={Boolean(errors.title)}
-              disabled={isSubmitting}
-              {...form.register("title")}
-            />
-            <FieldDescription>
-              What the item is, as a renter would search for it.
-            </FieldDescription>
-            <FieldError errors={[errors.title]} />
-          </Field>
-
-          <Field data-invalid={Boolean(errors.description)}>
-            <FieldLabel htmlFor="description">Description</FieldLabel>
-            <textarea
-              id="description"
-              rows={6}
-              placeholder="Condition, what is included, and anything a renter should know."
-              aria-invalid={Boolean(errors.description)}
-              disabled={isSubmitting}
-              className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 w-full rounded-lg border bg-transparent px-2.5 py-2 text-sm transition-colors outline-none focus-visible:ring-3"
-              {...form.register("description")}
-            />
-            <FieldDescription>
-              {/* Live count, so the limit is discovered before submitting. */}
-              {values.description.length} / {DESCRIPTION_MAX} characters.
-            </FieldDescription>
-            <FieldError errors={[errors.description]} />
-          </Field>
-
-          <Field data-invalid={Boolean(errors.categorySlug)}>
-            <FieldLabel htmlFor="categorySlug">Category</FieldLabel>
-            <select
-              id="categorySlug"
-              className={SELECT_CLASS}
-              aria-invalid={Boolean(errors.categorySlug)}
-              disabled={isSubmitting}
-              {...form.register("categorySlug", {
-                // Clearing the subcategory is required, not cosmetic: keeping a
-                // subcategory from the previous category would submit a pair the
-                // server rejects, and the error would point at a field the user
-                // never touched.
-                onChange: () => form.setValue("subcategorySlug", ""),
-              })}
-            >
-              <option value="">Choose a category</option>
-              {categories.map((category) => (
-                <option key={category.slug} value={category.slug}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <FieldError errors={[errors.categorySlug]} />
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="subcategorySlug">
-              Subcategory (optional)
-            </FieldLabel>
-            <select
-              id="subcategorySlug"
-              className={cn(SELECT_CLASS, "disabled:opacity-50")}
-              disabled={isSubmitting || !activeCategory}
-              {...form.register("subcategorySlug")}
-            >
-              <option value="">
-                {activeCategory
-                  ? `Any ${activeCategory.name}`
-                  : "Choose a category first"}
-              </option>
-              {activeCategory?.subcategories.map((subcategory) => (
-                <option key={subcategory.slug} value={subcategory.slug}>
-                  {subcategory.name}
-                </option>
-              ))}
-            </select>
-            <FieldError errors={[errors.subcategorySlug]} />
-          </Field>
-
-          <Field data-invalid={Boolean(errors.condition)}>
-            <FieldLabel htmlFor="condition">Condition</FieldLabel>
-            <select
-              id="condition"
-              className={SELECT_CLASS}
-              aria-invalid={Boolean(errors.condition)}
-              disabled={isSubmitting}
-              {...form.register("condition")}
-            >
-              {Object.values(ItemCondition).map((condition) => (
-                <option key={condition} value={condition}>
-                  {CONDITION_LABELS[condition]}
-                </option>
-              ))}
-            </select>
-            <FieldError errors={[errors.condition]} />
-          </Field>
-        </FieldGroup>
+        <ListingBasicsFields
+          form={form}
+          disabled={isSubmitting}
+          categories={categories}
+        />
       )}
 
       {stepIndex === 1 && (
-        <FieldGroup>
-          <PriceField
-            name="pricePerDay"
-            label="Price per day (PKR)"
-            description="What one day costs. Required."
-            error={errors.pricePerDay?.message}
-            disabled={isSubmitting}
-            register={form.register}
-          />
-
-          <PriceField
-            name="pricePerWeek"
-            label="Price per week (optional)"
-            description="Leave blank if you only rent by the day."
-            error={errors.pricePerWeek?.message}
-            disabled={isSubmitting}
-            register={form.register}
-          />
-
-          <PriceField
-            name="pricePerMonth"
-            label="Price per month (optional)"
-            description="Leave blank if you do not offer monthly rentals."
-            error={errors.pricePerMonth?.message}
-            disabled={isSubmitting}
-            register={form.register}
-          />
-
-          <PriceField
-            name="securityDeposit"
-            label="Security deposit (PKR)"
-            description="Refunded when the item comes back. Enter 0 for none."
-            error={errors.securityDeposit?.message}
-            disabled={isSubmitting}
-            register={form.register}
-          />
-        </FieldGroup>
+        <ListingPricingFields form={form} disabled={isSubmitting} />
       )}
 
       {stepIndex === 2 && (
-        <FieldGroup>
-          <Field data-invalid={Boolean(errors.city)}>
-            <FieldLabel htmlFor="city">City</FieldLabel>
-            <select
-              id="city"
-              className={SELECT_CLASS}
-              aria-invalid={Boolean(errors.city)}
-              disabled={isSubmitting}
-              {...form.register("city")}
-            >
-              <option value="">Choose a city</option>
-              {PAKISTANI_CITIES.map((city) => (
-                <option key={city.value} value={city.value}>
-                  {city.label}
-                </option>
-              ))}
-            </select>
-            <FieldDescription>
-              SamaanShare is live in three cities to start with.
-            </FieldDescription>
-            <FieldError errors={[errors.city]} />
-          </Field>
-
-          <Field data-invalid={Boolean(errors.area)}>
-            <FieldLabel htmlFor="area">Area (optional)</FieldLabel>
-            <Input
-              id="area"
-              placeholder="DHA Phase 6, Gulberg III, F-11"
-              aria-invalid={Boolean(errors.area)}
-              disabled={isSubmitting}
-              {...form.register("area")}
-            />
-            <FieldDescription>
-              Helps renters judge distance. Do not put your full address here -
-              it is shown publicly.
-            </FieldDescription>
-            <FieldError errors={[errors.area]} />
-          </Field>
-        </FieldGroup>
+        <ListingLocationFields form={form} disabled={isSubmitting} />
       )}
 
       {stepIndex === 3 && (
@@ -506,50 +315,6 @@ function StepIndicator({ current }: StepIndicatorProps) {
         })}
       </ol>
     </nav>
-  );
-}
-
-interface PriceFieldProps {
-  name: "pricePerDay" | "pricePerWeek" | "pricePerMonth" | "securityDeposit";
-  label: string;
-  description: string;
-  error: string | undefined;
-  disabled: boolean;
-  register: ReturnType<typeof useForm<ListingFormValues>>["register"];
-}
-
-/**
- * One rupee amount.
- *
- * `type="text"` with a numeric `inputMode` rather than `type="number"`: a number input
- * silently accepts `1e5` and `1.5`, exposes spinners that make a mis-scroll change the
- * price, and reports an empty string for invalid content - so the schema could not tell
- * "blank" from "not a number". Digits are enforced by the schema instead.
- */
-function PriceField({
-  name,
-  label,
-  description,
-  error,
-  disabled,
-  register,
-}: PriceFieldProps) {
-  return (
-    <Field data-invalid={Boolean(error)}>
-      <FieldLabel htmlFor={name}>{label}</FieldLabel>
-      <Input
-        id={name}
-        type="text"
-        inputMode="numeric"
-        autoComplete="off"
-        placeholder="0"
-        aria-invalid={Boolean(error)}
-        disabled={disabled}
-        {...register(name)}
-      />
-      <FieldDescription>{description}</FieldDescription>
-      {error && <FieldError errors={[{ message: error }]} />}
-    </Field>
   );
 }
 

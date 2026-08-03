@@ -82,9 +82,16 @@ function ListingGallery({ images, title }: ListingGalleryProps) {
                 type="button"
                 onClick={() => setActiveIndex(index)}
                 aria-label={`Show photo ${index + 1} of ${images.length}`}
-                // Conveys selection to assistive tech, which cannot infer it from
-                // the ring colour.
-                aria-pressed={isActive}
+                /**
+                 * `aria-current`, not `aria-pressed`.
+                 *
+                 * These thumbnails are mutually exclusive - one photo is shown at a time -
+                 * and `aria-pressed` on every button describes a row of independent toggles,
+                 * which is not what this is. `aria-current="true"` means "the current item
+                 * in a set", which is exactly the relationship. The availability calendar
+                 * still uses `aria-pressed`, correctly: blocking a day IS a toggle.
+                 */
+                aria-current={isActive ? "true" : undefined}
                 className={cn(
                   "focus-visible:ring-ring relative size-16 shrink-0 overflow-hidden rounded-lg transition-[box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
                   isActive
