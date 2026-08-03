@@ -2,6 +2,7 @@ import {
   BellIcon,
   CalendarCheckIcon,
   HeartIcon,
+  InboxIcon,
   LayoutDashboardIcon,
   PackageIcon,
   SettingsIcon,
@@ -74,6 +75,9 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
         href: "/dashboard/bookings",
         icon: CalendarCheckIcon,
       },
+      // The owner's side of the same system. Separate entry rather than a tab, because the
+      // two answer different questions: what have I rented, versus what is being asked of me.
+      { title: "Requests", href: "/dashboard/requests", icon: InboxIcon },
       { title: "Saved Listings", href: "/saved", icon: HeartIcon },
     ],
   },
@@ -110,6 +114,7 @@ export const SEGMENT_LABELS: Readonly<Record<string, string>> = {
   listings: "My Listings",
   bookings: "My Bookings",
   saved: "Saved Listings",
+  requests: "Requests",
   notifications: "Notifications",
   profile: "Profile",
   settings: "Settings",

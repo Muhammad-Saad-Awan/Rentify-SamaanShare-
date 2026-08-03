@@ -41,6 +41,8 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [ ] Add lint-staged for pre-commit hooks
 - [ ] Set up Husky for Git hooks
 - [x] Create `.nvmrc` with Node.js version
+- [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar)
+      — 86 tests; database and Server Action coverage still needs an integration harness
 
 ### Database
 
@@ -353,7 +355,7 @@ no listing, booking, search, review or admin functionality was implemented.
 - [ ] Add image zoom/lightbox
 - [ ] Display listing information
 - [ ] Show pricing breakdown (PKR)
-- [ ] Show security deposit
+- [x] Show security deposit
 - [ ] Display owner profile card
 - [ ] Add contact owner button
 - [ ] Add save to wishlist button
@@ -400,36 +402,40 @@ no listing, booking, search, review or admin functionality was implemented.
 
 ### Booking Request
 
-- [ ] Create booking request component
-- [ ] Add date range picker
-- [ ] Show pricing calculation (PKR)
-- [ ] Show security deposit
-- [ ] Add payment method selection (Cash/Bank Transfer)
-- [ ] Add booking notes field
-- [ ] Create `createBookingRequest` action
-- [ ] Check availability before booking
-- [ ] Handle booking conflicts
+- [x] Create booking request component
+- [x] Add date range picker
+- [x] Show pricing calculation (PKR)
+- [x] Show security deposit
+- [ ] Add payment method selection (Cash/Bank Transfer) — belongs with the payment slice:
+      `Booking` has no such column, it lives on `Payment`
+- [x] Add booking notes field
+- [x] Create `createBookingRequest` action
+- [x] Check availability before booking
+- [x] Handle booking conflicts — PENDING reserves the dates, and the
+      `@@unique([listingId, date])` constraint decides the race inside the same transaction
 
 ### Booking Lifecycle
 
-- [ ] Implement PENDING status
-- [ ] Implement APPROVED status
+- [x] Implement PENDING status
+- [x] Implement APPROVED status
 - [ ] Implement PAYMENT_PENDING status
 - [ ] Implement ACTIVE status
 - [ ] Implement COMPLETED status
 - [ ] Implement REVIEWED status
-- [ ] Implement DECLINED status
+- [x] Implement DECLINED status
 - [ ] Implement CANCELLED status
-- [ ] Implement EXPIRED status (auto-expire after 48h)
+- [x] Implement EXPIRED status (auto-expire after 48h) — lazy, not scheduled: swept on the
+      read and write paths that care, so it cannot rot the way a stopped cron would
 
 ### Owner Actions
 
-- [ ] Create booking requests page (`/dashboard/requests`)
-- [ ] Show pending requests
-- [ ] Create `acceptBooking` action
-- [ ] Add pickup instructions form
-- [ ] Create `declineBooking` action
-- [ ] Add decline reason
+- [x] Create booking requests page (`/dashboard/requests`)
+- [x] Show pending requests
+- [x] Create `acceptBooking` action
+- [x] Add pickup instructions form — the action accepts and stores them; the owner-facing
+      input lands with the payment slice
+- [x] Create `declineBooking` action
+- [x] Add decline reason
 
 ### Payment Flow (Offline MVP)
 
@@ -442,9 +448,9 @@ no listing, booking, search, review or admin functionality was implemented.
 
 ### Renter Actions
 
-- [ ] Create my bookings page (`/dashboard/bookings`)
-- [ ] Show booking status
-- [ ] Display pickup instructions (after approved)
+- [x] Create my bookings page (`/dashboard/bookings`)
+- [x] Show booking status
+- [x] Display pickup instructions (after approved)
 - [ ] Create `cancelBooking` action
 - [ ] Show cancellation policy
 

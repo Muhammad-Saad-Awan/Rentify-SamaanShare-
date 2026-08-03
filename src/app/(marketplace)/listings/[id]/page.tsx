@@ -1,6 +1,7 @@
-import { CalendarClockIcon, MapPinIcon, MessageSquareIcon } from "lucide-react";
+import { CalendarClockIcon, MapPinIcon } from "lucide-react";
 import { notFound } from "next/navigation";
 
+import { BookingRequestForm } from "@/components/bookings/booking-request-form";
 import { ListingBreadcrumbs } from "@/components/marketplace/listing-breadcrumbs";
 import { ListingGallery } from "@/components/marketplace/listing-gallery";
 import { ListingPricing } from "@/components/marketplace/listing-pricing";
@@ -19,7 +20,7 @@ import {
   getSimilarListings,
 } from "@/lib/queries/listing-detail";
 import { getSavedListingIds } from "@/lib/queries/saved-listings";
-import { formatDate } from "@/lib/utils/date";
+import { formatDate, todayInKarachi } from "@/lib/utils/date";
 import { CONDITION_LABELS, formatCity } from "@/lib/utils/listing";
 
 import type { Metadata } from "next";
@@ -178,30 +179,34 @@ export default async function ListingPage({ params }: ListingPageProps) {
               securityDeposit={listing.securityDeposit}
             />
 
-            <div className="flex flex-wrap items-center gap-2">
-              {/*
-                Booking arrives in Phase 4, so this is visibly inert rather than a
-                link to a route that does not exist - the same choice as the
-                dashboard's disabled "New listing" button.
-              */}
-              <Button disabled className="flex-1">
-                <MessageSquareIcon />
-                Contact owner
-              </Button>
+            <BookingRequestForm
+              listingId={listing.id}
+              pricePerDay={listing.pricePerDay}
+              pricePerWeek={listing.pricePerWeek}
+              pricePerMonth={listing.pricePerMonth}
+              securityDeposit={listing.securityDeposit}
+              // The market's today, resolved on the server - a device with a skewed clock
+              // would otherwise offer a date the action rejects.
+              today={todayInKarachi()}
+              isAuthenticated={user !== null}
+              isOwnListing={user?.id === listing.owner.id}
+            />
 
+            {/* Save and share sit together beneath the booking panel. */}
+            <div className="flex flex-wrap items-center gap-2">
               <SaveListingButton
                 listingId={listing.id}
                 listingTitle={listing.title}
                 isSaved={savedListingIds.has(listing.id)}
                 isAuthenticated={user !== null}
               />
-            </div>
 
-            <ShareListing
-              listingId={listing.id}
-              title={listing.title}
-              pricePerDay={listing.pricePerDay}
-            />
+              <ShareListing
+                listingId={listing.id}
+                title={listing.title}
+                pricePerDay={listing.pricePerDay}
+              />
+            </div>
 
             <OwnerCard owner={listing.owner} />
           </aside>
