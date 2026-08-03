@@ -1,7 +1,9 @@
 import { ListingStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 
+import type { Prisma } from "@/generated/prisma/client";
 import type { ItemCondition } from "@/generated/prisma/enums";
+import type { ListingFilters } from "@/lib/marketplace/filters";
 import type { PaginatedResult } from "@/types";
 
 /**
@@ -19,11 +21,11 @@ export const LISTINGS_PAGE_SIZE = 12;
 /**
  * The exact shape a listing card renders.
  *
- * Deliberately not `Listing` from the generated client. A card needs eleven
- * columns out of twenty-odd and exactly one image; selecting the whole row would
- * ship a listing's full `description` text to the browser for every card in the
- * grid. Naming the projection here also means a change to the card's needs shows
- * up as a type error rather than as an over-fetch nobody notices.
+ * Deliberately not `Listing` from the generated client. A card needs a handful
+ * of columns out of twenty-odd and exactly one image; selecting the whole row
+ * would ship a listing's full `description` text to the browser for every card
+ * in the grid. Naming the projection here also means a change to the card's
+ * needs shows up as a type error rather than as an over-fetch nobody notices.
  */
 export interface ListingCardData {
   id: string;
@@ -36,42 +38,41 @@ export interface ListingCardData {
   imageUrl: string | null;
 }
 
+/** Category with its subcategories, for the browse filter sidebar. */
+export interface CategoryOption {
+  name: string;
+  slug: string;
+  subcategories: readonly { name: string; slug: string }[];
+}
+
 interface GetActiveListingsOptions {
-  /** 1-based. Values below 1 are clamped rather than rejected. */
-  page?: number;
+  filters: ListingFilters;
   pageSize?: number;
 }
 
 /**
- * One page of publicly visible listings, newest first.
+ * One page of publicly visible listings matching `filters`.
  *
  * Visibility is `status = ACTIVE` *and* `deletedAt = null`. Both are required:
  * `DELETED` is the soft-delete status by decision D3, but a row could in
  * principle carry a `deletedAt` while some other code path has left the status
- * behind, and a deleted listing leaking into browse is the worse failure. The
- * ordering matches the `@@index([status, createdAt])` in the schema, so the
- * common case is served by an index rather than a sort.
+ * behind, and a deleted listing leaking into browse is the worse failure.
  *
  * The count runs in the same transaction as the page fetch, so the total cannot
  * be read from a different snapshot than the rows - which is what produces an
  * off-by-one "page 5 of 4" when a listing is published mid-request.
  */
 export async function getActiveListings({
-  page = 1,
+  filters,
   pageSize = LISTINGS_PAGE_SIZE,
-}: GetActiveListingsOptions = {}): Promise<PaginatedResult<ListingCardData>> {
-  const currentPage = Math.max(1, Math.trunc(page));
-
-  const where = {
-    status: ListingStatus.ACTIVE,
-    deletedAt: null,
-  };
+}: GetActiveListingsOptions): Promise<PaginatedResult<ListingCardData>> {
+  const where = buildListingWhere(filters);
 
   const [rows, total] = await prisma.$transaction([
     prisma.listing.findMany({
       where,
-      orderBy: { createdAt: "desc" },
-      skip: (currentPage - 1) * pageSize,
+      orderBy: buildListingOrderBy(filters.sort),
+      skip: (filters.page - 1) * pageSize,
       take: pageSize,
       select: {
         id: true,
@@ -106,8 +107,169 @@ export async function getActiveListings({
   return {
     items,
     total,
-    page: currentPage,
+    page: filters.page,
     pageSize,
     totalPages: Math.max(1, Math.ceil(total / pageSize)),
   };
+}
+
+/**
+ * The category tree for the filter sidebar.
+ *
+ * Ordered by name so the sidebar's option order is stable across requests -
+ * without an `orderBy` Postgres may return rows in any order, and a select whose
+ * options reshuffle between page loads is unusable.
+ */
+export async function getCategoryOptions(): Promise<CategoryOption[]> {
+  return prisma.category.findMany({
+    orderBy: { name: "asc" },
+    select: {
+      name: true,
+      slug: true,
+      subcategories: {
+        orderBy: { name: "asc" },
+        select: { name: true, slug: true },
+      },
+    },
+  });
+}
+
+/**
+ * Translates parsed filters into a Prisma `where`.
+ *
+ * Split out so the page fetch and the count share one definition - two
+ * hand-written predicates would eventually disagree and produce a total that
+ * does not match the rows.
+ */
+function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereInput {
+  const where: Prisma.ListingWhereInput = {
+    status: ListingStatus.ACTIVE,
+    deletedAt: null,
+  };
+
+  if (filters.q) {
+    // Substring match over title and description. `mode: "insensitive"` is a
+    // Postgres ILIKE, so this cannot use the btree indexes - the term length is
+    // capped in the filters module for that reason. A trigram or tsvector index
+    // is the upgrade path once the corpus is large enough to need it.
+    where.OR = [
+      { title: { contains: filters.q, mode: "insensitive" } },
+      { description: { contains: filters.q, mode: "insensitive" } },
+    ];
+  }
+
+  if (filters.category) {
+    where.category = { slug: filters.category };
+  }
+
+  // Only honoured alongside a category, matching the serializer, which drops an
+  // orphaned subcategory. Subcategory slugs are unique per category, not
+  // globally - "bicycles" exists under both sports and vehicles - so filtering
+  // on one without its parent would match listings from either.
+  if (filters.category && filters.subcategory) {
+    where.subcategory = { slug: filters.subcategory };
+  }
+
+  if (filters.city) {
+    where.city = filters.city;
+  }
+
+  if (filters.minPrice !== null || filters.maxPrice !== null) {
+    where.pricePerDay = {
+      ...(filters.minPrice !== null ? { gte: filters.minPrice } : {}),
+      ...(filters.maxPrice !== null ? { lte: filters.maxPrice } : {}),
+    };
+  }
+
+  if (filters.conditions.length > 0) {
+    where.condition = { in: filters.conditions };
+  }
+
+  const availability = buildAvailabilityWindow(filters);
+
+  if (availability) {
+    // "Available" means the listing has no blocked date inside the window.
+    // Expressed as NOT-some rather than every-not: `every` on an empty relation
+    // is vacuously true in SQL, which would be correct here, but NOT-some reads
+    // as the question actually being asked and needs no such reasoning.
+    //
+    // This currently sees only `UnavailableDate` rows. Dates held by a confirmed
+    // booking also live there - the model carries a `bookingId` and a
+    // reason of "booked" - so this stays correct when bookings land, provided
+    // booking creation keeps writing those rows.
+    where.NOT = {
+      unavailableDates: {
+        some: { date: { gte: availability.from, lte: availability.to } },
+      },
+    };
+  }
+
+  return where;
+}
+
+/**
+ * The availability window as a pair of dates, or `null` when unfiltered.
+ *
+ * A single supplied bound is treated as a one-day window rather than an open
+ * range: someone who sets only a start date is asking "can I have it that day",
+ * and reading it as "from then on, forever" would exclude any listing with a
+ * single blocked date years later.
+ *
+ * Dates are built at UTC midnight to match the `@db.Date` column, which stores a
+ * calendar day with no time or offset.
+ */
+function buildAvailabilityWindow(
+  filters: ListingFilters
+): { from: Date; to: Date } | null {
+  const from = filters.availableFrom ?? filters.availableTo;
+  const to = filters.availableTo ?? filters.availableFrom;
+
+  if (!from || !to) {
+    return null;
+  }
+
+  return {
+    from: new Date(`${from}T00:00:00.000Z`),
+    to: new Date(`${to}T00:00:00.000Z`),
+  };
+}
+
+/**
+ * Maps a sort option onto a Prisma `orderBy`.
+ *
+ * Every option ends with `createdAt: "desc"` as a tie-breaker. Without one, rows
+ * sharing a sort key come back in whatever order Postgres finds convenient, and
+ * that order can differ between two pages of the same result set - so a listing
+ * can appear on both page 1 and page 2, or on neither.
+ */
+function buildListingOrderBy(
+  sort: ListingFilters["sort"]
+): Prisma.ListingOrderByWithRelationInput[] {
+  switch (sort) {
+    case "price-asc":
+      return [{ pricePerDay: "asc" }, { createdAt: "desc" }];
+
+    case "price-desc":
+      return [{ pricePerDay: "desc" }, { createdAt: "desc" }];
+
+    case "rating":
+      // Sorts on the owner's denormalised `ratingAverage`, which is what the
+      // schema's P8 note exists for - a listing has no rating of its own, and
+      // averaging reviews inline is not expressible in a paginated query.
+      //
+      // `nulls: "last"` is essential rather than cosmetic: the column is null
+      // until an owner's first review, and Postgres places nulls *first* on a
+      // DESC sort by default. Without this, "sort by rating" would lead with
+      // every unrated owner - the exact opposite of the request.
+      return [
+        { owner: { ratingAverage: { sort: "desc", nulls: "last" } } },
+        { createdAt: "desc" },
+      ];
+
+    case "newest":
+    default:
+      // Matches the @@index([status, createdAt]) in the schema, so the default
+      // browse view is served by an index rather than a sort.
+      return [{ createdAt: "desc" }];
+  }
 }

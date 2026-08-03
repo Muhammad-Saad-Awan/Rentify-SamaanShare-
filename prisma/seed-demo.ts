@@ -41,6 +41,13 @@ dotenv.config({ path: [".env.local", ".env"], quiet: true });
  *
  * `example.com` is reserved by IANA and can never receive mail, so an accidental
  * notification send cannot reach a real inbox.
+ *
+ * The ratings are set directly rather than derived from seeded reviews, because
+ * `ratingAverage` is the denormalised aggregate the schema's P8 note describes -
+ * it is what "sort by rating" actually orders on. The three owners are
+ * deliberately unequal, and one is left unrated: without a null in the set,
+ * nulls-last ordering cannot be observed, and without two distinct values the
+ * rating sort is indistinguishable from the newest sort.
  */
 const DEMO_OWNERS = [
   {
@@ -48,18 +55,25 @@ const DEMO_OWNERS = [
     name: "Ayesha Khan",
     email: "ayesha.demo@example.com",
     city: "karachi",
+    ratingAverage: 4.3,
+    ratingCount: 8,
   },
   {
     id: "demo-owner-bilal",
     name: "Bilal Ahmed",
     email: "bilal.demo@example.com",
     city: "lahore",
+    ratingAverage: 4.9,
+    ratingCount: 20,
   },
   {
     id: "demo-owner-hassan",
     name: "Hassan Raza",
     email: "hassan.demo@example.com",
     city: "islamabad",
+    // Unrated on purpose - proves nulls sort last rather than first.
+    ratingAverage: null,
+    ratingCount: 0,
   },
 ] as const;
 
@@ -363,6 +377,28 @@ const DEMO_LISTINGS: DemoListing[] = [
 ];
 
 /**
+ * Blocked calendar days, so the availability filter has something to exclude.
+ *
+ * Without at least one of these, `?from=&to=` matches every listing and the
+ * filter looks like it works while never actually excluding anything - the same
+ * trap an empty listings table set for browse.
+ *
+ * All are owner-blocked (`bookingId` null). Dates held by a confirmed booking
+ * also live in this table, but creating those means creating bookings, which is
+ * a later phase.
+ */
+const DEMO_UNAVAILABLE_DATES: readonly { listingId: string; date: string }[] = [
+  // A three-day block on the camera, for testing a range that overlaps.
+  { listingId: "demo-listing-01", date: "2026-08-10" },
+  { listingId: "demo-listing-01", date: "2026-08-11" },
+  { listingId: "demo-listing-01", date: "2026-08-12" },
+  // A single day on the camping gear, for testing an exact-day match.
+  { listingId: "demo-listing-05", date: "2026-08-11" },
+  // Far from the others, so a narrow window excludes this listing alone.
+  { listingId: "demo-listing-09", date: "2026-09-01" },
+];
+
+/**
  * Cover image for a demo listing.
  *
  * picsum.photos keyed by the listing id, so a given listing always renders the
@@ -435,11 +471,18 @@ async function seedOwners() {
         name: owner.name,
         email: owner.email,
         city: owner.city,
+        ratingAverage: owner.ratingAverage,
+        ratingCount: owner.ratingCount,
         // Marks the account as usable without sending a verification mail. These
         // users never sign in, so nothing here grants access.
         emailVerified: new Date("2026-07-01T00:00:00.000Z"),
       },
-      update: { name: owner.name, city: owner.city },
+      update: {
+        name: owner.name,
+        city: owner.city,
+        ratingAverage: owner.ratingAverage,
+        ratingCount: owner.ratingCount,
+      },
       select: { id: true },
     });
   }
@@ -516,6 +559,35 @@ async function seedListings() {
 }
 
 /**
+ * Replaces the owner-blocked dates on demo listings.
+ *
+ * Delete-then-insert rather than upsert: the set is small, and clearing it first
+ * means a date removed from the array above actually disappears. Scoped to
+ * `bookingId: null` so it can never delete a date a booking is holding - that row
+ * belongs to the booking's lifecycle, not to this seed.
+ */
+async function seedUnavailableDates() {
+  await prisma.unavailableDate.deleteMany({
+    where: {
+      listingId: { startsWith: "demo-listing-" },
+      bookingId: null,
+    },
+  });
+
+  const { count } = await prisma.unavailableDate.createMany({
+    data: DEMO_UNAVAILABLE_DATES.map((entry) => ({
+      listingId: entry.listingId,
+      // UTC midnight to match the @db.Date column, which stores a calendar day
+      // with no time or offset.
+      date: new Date(`${entry.date}T00:00:00.000Z`),
+      reason: "owner_blocked",
+    })),
+  });
+
+  return count;
+}
+
+/**
  * Removes `demo-` listings this file no longer defines.
  *
  * What makes the seed declarative rather than additive: delete an entry above,
@@ -552,6 +624,7 @@ async function main() {
 
   const owners = await seedOwners();
   const listings = await seedListings();
+  const blockedDates = await seedUnavailableDates();
   const pruned = await pruneRemovedListings();
 
   // Counted from the database with the same filter the browse query uses, so
@@ -578,6 +651,7 @@ async function main() {
   console.log(
     `Database now holds ${totalListings} demo listings (${images} images), of which ${browsableListings} are visible in browse.`
   );
+  console.log(`Blocked ${blockedDates} calendar days across demo listings.`);
 }
 
 // No top-level await: the package has no "type": "module", so tsx runs this file

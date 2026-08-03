@@ -1,12 +1,25 @@
-import { PackageSearchIcon } from "lucide-react";
+import { PackageSearchIcon, SearchXIcon } from "lucide-react";
 import Link from "next/link";
 
+import { ActiveFilters } from "@/components/marketplace/active-filters";
+import { ListingsFilters } from "@/components/marketplace/listings-filters";
+import { ListingsFiltersSheet } from "@/components/marketplace/listings-filters-sheet";
 import { ListingsGrid } from "@/components/marketplace/listings-grid";
+import { ListingsSearch } from "@/components/marketplace/listings-search";
+import { ListingsSort } from "@/components/marketplace/listings-sort";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
 import { Button } from "@/components/ui/button";
-import { getActiveListings } from "@/lib/queries/listings";
+import {
+  activeFilterCount,
+  buildListingsHref,
+  clearListingFiltersHref,
+  hasActiveFilters,
+  parseListingFilters,
+} from "@/lib/marketplace/filters";
+import { getActiveListings, getCategoryOptions } from "@/lib/queries/listings";
 
+import type { RawSearchParams } from "@/lib/marketplace/filters";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -23,26 +36,34 @@ export const metadata: Metadata = {
  * shows up as a filter that silently never applies.
  */
 interface BrowseListingsPageProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<RawSearchParams>;
 }
 
 /**
- * Public browse view.
+ * Public browse view: keyword search, filters, sorting and pagination.
  *
- * Dynamic by necessity - it reads `searchParams`, and the header above it reads
- * the session - so there is no static shell to cache. Pagination state lives
- * entirely in the URL, which keeps a given page shareable and lets the back
- * button work without any client state.
+ * All of that state lives in the URL and nowhere else. There is no client store
+ * and no `useState` behind the controls - the page is a pure function of its
+ * query string, so any view is shareable, bookmarkable, and reachable with the
+ * back button. `@/lib/marketplace/filters` is the only place that reads or writes
+ * that query string.
+ *
+ * Dynamic by necessity: it reads `searchParams`, and the header above it reads
+ * the session.
  */
 export default async function BrowseListingsPage({
   searchParams,
 }: BrowseListingsPageProps) {
-  const params = await searchParams;
-  const requestedPage = parsePageParam(params.page);
+  const filters = parseListingFilters(await searchParams);
 
-  const { items, total, page, totalPages } = await getActiveListings({
-    page: requestedPage,
-  });
+  // Independent queries, so they overlap rather than waiting on each other. The
+  // category list is needed by the sidebar whether or not any listing matches.
+  const [{ items, total, page, totalPages }, categories] = await Promise.all([
+    getActiveListings({ filters }),
+    getCategoryOptions(),
+  ]);
+
+  const filtered = hasActiveFilters(filters);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-6">
@@ -51,108 +72,167 @@ export default async function BrowseListingsPage({
           Browse Listings
         </h1>
         <p className="text-muted-foreground text-sm">
-          {total === 0
-            ? "No items are listed for rent yet."
-            : `${total} ${total === 1 ? "item" : "items"} available to rent.`}
+          {resultSummary(total, filtered)}
         </p>
       </div>
 
-      <ListingsGrid listings={items} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <ListingsSearch filters={filters} className="sm:flex-1" />
 
-      {items.length === 0 &&
-        (total === 0 ? (
-          <EmptyState
-            icon={PackageSearchIcon}
-            title="Nothing listed yet"
-            description="No one has published a listing so far. Once items are listed for rent, they will appear here."
-          />
-        ) : (
-          // Reachable by editing `?page=` past the end, or by landing on a
-          // bookmarked page after listings were removed. An empty grid with no
-          // explanation reads as a broken page, so say what happened.
-          <EmptyState
-            icon={PackageSearchIcon}
-            title="No listings on this page"
-            description={`There ${totalPages === 1 ? "is only 1 page" : `are only ${totalPages} pages`} of results.`}
-            action={
-              <Button
-                variant="outline"
-                size="sm"
-                render={<Link href="/listings" />}
-              >
-                Back to first page
-              </Button>
-            }
-          />
-        ))}
+        <div className="flex items-center justify-between gap-2 sm:justify-end">
+          {/*
+            The drawer trigger is hidden at `lg`, where the sidebar below is
+            visible instead. Both render the same form component; only the
+            container differs, exactly as the dashboard nav does.
+          */}
+          <ListingsFiltersSheet activeCount={activeFilterCount(filters)}>
+            <ListingsFilters
+              filters={filters}
+              categories={categories}
+              idPrefix="mobile"
+            />
+          </ListingsFiltersSheet>
 
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        hrefFor={(target) => buildListingsHref(params, target)}
-      />
+          <ListingsSort filters={filters} />
+        </div>
+      </div>
+
+      <div className="flex gap-6">
+        <aside className="hidden w-64 shrink-0 lg:block">
+          {/*
+            `sticky` so a long result grid does not scroll the filters out of
+            reach. `top-20` clears the 14-unit sticky site header plus a gap.
+          */}
+          <div className="sticky top-20">
+            <ListingsFilters
+              filters={filters}
+              categories={categories}
+              idPrefix="desktop"
+            />
+          </div>
+        </aside>
+
+        {/*
+          `min-w-0` is load-bearing on a flex child: without it the column adopts
+          its content's intrinsic width and a long unbroken title pushes the grid
+          past the viewport.
+        */}
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <ActiveFilters filters={filters} categories={categories} />
+
+          <ListingsGrid listings={items} />
+
+          {items.length === 0 && (
+            <BrowseEmptyState
+              filtered={filtered}
+              total={total}
+              totalPages={totalPages}
+              clearHref={clearListingFiltersHref(filters)}
+              firstPageHref={buildListingsHref(filters, { page: 1 })}
+            />
+          )}
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            hrefFor={(target) => buildListingsHref(filters, { page: target })}
+          />
+        </div>
+      </div>
     </div>
   );
 }
 
-/**
- * Reads `?page=` into a positive integer, defaulting to 1.
- *
- * Everything unusable falls back to page 1 rather than erroring: the value comes
- * from a URL anyone can edit, and `?page=abc` or `?page=-4` should show the first
- * page, not a 500. A repeated parameter arrives as an array, in which case the
- * first entry wins.
- */
-function parsePageParam(value: string | string[] | undefined): number {
-  const raw = Array.isArray(value) ? value[0] : value;
-
-  if (!raw) {
-    return 1;
-  }
-
-  const parsed = Number.parseInt(raw, 10);
-
-  if (!Number.isFinite(parsed) || parsed < 1) {
-    return 1;
-  }
-
-  return parsed;
+interface BrowseEmptyStateProps {
+  filtered: boolean;
+  total: number;
+  totalPages: number;
+  clearHref: string;
+  firstPageHref: string;
 }
 
 /**
- * A browse URL for `page`, preserving every other query parameter.
+ * Picks the right explanation for an empty grid.
  *
- * Filters and sorting land in this same query string, so pagination has to carry
- * whatever is already there instead of rebuilding a bare `?page=`. `page=1` is
- * omitted to keep the canonical first-page URL free of a redundant parameter,
- * which also avoids two URLs serving identical content to a crawler.
+ * Three different situations produce zero cards, and collapsing them into one
+ * message misinforms: a user whose filters matched nothing would be told the
+ * marketplace is empty, and would have no reason to try clearing them.
  */
-function buildListingsHref(
-  params: Record<string, string | string[] | undefined>,
-  page: number
-): string {
-  const search = new URLSearchParams();
+function BrowseEmptyState({
+  filtered,
+  total,
+  totalPages,
+  clearHref,
+  firstPageHref,
+}: BrowseEmptyStateProps) {
+  // Filters or a search term excluded everything. The only useful action is to
+  // widen, so the empty state carries it.
+  if (total === 0 && filtered) {
+    return (
+      <EmptyState
+        icon={SearchXIcon}
+        title="No listings match your filters"
+        description="Nothing matched this combination. Try removing a filter, widening the price range, or searching for a different term."
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href={clearHref} />}
+          >
+            Clear all filters
+          </Button>
+        }
+      />
+    );
+  }
 
-  for (const [key, value] of Object.entries(params)) {
-    if (key === "page" || value === undefined) {
-      continue;
-    }
+  // Genuinely nothing published. Offering "clear filters" here would be a dead
+  // end, since there are none to clear.
+  if (total === 0) {
+    return (
+      <EmptyState
+        icon={PackageSearchIcon}
+        title="Nothing listed yet"
+        description="No one has published a listing so far. Once items are listed for rent, they will appear here."
+      />
+    );
+  }
 
-    if (Array.isArray(value)) {
-      for (const entry of value) {
-        search.append(key, entry);
+  // Matches exist, just not on the requested page - reachable by editing `?page=`
+  // past the end, or from a bookmark taken when there were more results.
+  return (
+    <EmptyState
+      icon={PackageSearchIcon}
+      title="No listings on this page"
+      description={`There ${totalPages === 1 ? "is only 1 page" : `are only ${totalPages} pages`} of results.`}
+      action={
+        <Button
+          variant="outline"
+          size="sm"
+          render={<Link href={firstPageHref} />}
+        >
+          Back to first page
+        </Button>
       }
-      continue;
-    }
+    />
+  );
+}
 
-    search.set(key, value);
+/** Result count line, phrased for whether the number is a filtered subset. */
+function resultSummary(total: number, filtered: boolean): string {
+  if (total === 0) {
+    return filtered
+      ? "No listings match your filters."
+      : "No items are listed for rent yet.";
   }
 
-  if (page > 1) {
-    search.set("page", String(page));
+  if (filtered) {
+    // The verb agrees with the count, not just the noun: "1 item match" reads as
+    // a bug to anyone who notices it.
+    return total === 1
+      ? "1 item matches your filters."
+      : `${total} items match your filters.`;
   }
 
-  const query = search.toString();
-
-  return query ? `/listings?${query}` : "/listings";
+  return `${total} ${total === 1 ? "item" : "items"} available to rent.`;
 }
