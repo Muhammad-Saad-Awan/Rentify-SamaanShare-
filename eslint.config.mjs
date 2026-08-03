@@ -32,8 +32,8 @@ const eslintConfig = [
   },
   {
     // CLI scripts report progress on stdout - console.log is their output, not
-    // a stray debug statement.
-    files: ["prisma/seed.ts"],
+    // a stray debug statement. Covers seed.ts and seed-demo.ts.
+    files: ["prisma/seed*.ts"],
     rules: {
       "no-console": "off",
     },
