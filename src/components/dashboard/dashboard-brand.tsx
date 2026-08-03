@@ -1,8 +1,5 @@
-import { PackageIcon } from "lucide-react";
-import Link from "next/link";
-
+import { Brand } from "@/components/shared/brand";
 import { DEFAULT_LOGIN_REDIRECT } from "@/config/routes";
-import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils/cn";
 
 interface DashboardBrandProps {
@@ -14,21 +11,17 @@ interface DashboardBrandProps {
  *
  * Points at `/dashboard` rather than `/`: inside the authenticated shell the
  * logo is expected to return to the app, not to the marketing home page.
+ *
+ * Thin wrapper over the shared `Brand` so the mark itself is defined once. The
+ * only difference here is the focus ring, which uses the sidebar's own ring
+ * token to stay legible against `--sidebar`.
  */
 function DashboardBrand({ className }: DashboardBrandProps) {
   return (
-    <Link
+    <Brand
       href={DEFAULT_LOGIN_REDIRECT}
-      className={cn(
-        "focus-visible:ring-sidebar-ring flex items-center gap-2 rounded-lg text-sm font-semibold tracking-tight transition-opacity outline-none hover:opacity-80 focus-visible:ring-2",
-        className
-      )}
-    >
-      <span className="bg-primary text-primary-foreground flex size-7 shrink-0 items-center justify-center rounded-lg">
-        <PackageIcon className="size-4" aria-hidden="true" />
-      </span>
-      {siteConfig.name}
-    </Link>
+      className={cn("focus-visible:ring-sidebar-ring", className)}
+    />
   );
 }
 

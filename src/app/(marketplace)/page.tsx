@@ -3,7 +3,16 @@ import Image from "next/image";
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
+      {/*
+        A `<div>`, not a `<main>`: the `(marketplace)` layout already renders the
+        page's single `<main>` landmark around this content.
+
+        This is still the create-next-app placeholder. Replacing it with the real
+        hero, category grid and city selector is the remaining Phase 2 homepage
+        work - the move into this route group only gives it the site header and
+        footer in the meantime.
+      */}
+      <div className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
         <Image
           className="dark:invert"
           src="/next.svg"
@@ -59,7 +68,7 @@ export default function Home() {
             Documentation
           </a>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
