@@ -7,6 +7,14 @@ const PRIORITY_CARD_COUNT = 4;
 
 interface ListingsGridProps {
   listings: readonly ListingCardData[];
+  /**
+   * Active search term, forwarded to every card for highlighting.
+   *
+   * Passed down rather than read from the URL here: the grid is a Server Component
+   * and has no access to `searchParams`, and threading it keeps the grid reusable
+   * on the homepage and category pages, where there is no search.
+   */
+  searchTerm?: string | null;
   /** Forwarded to every card - see the note on `ListingCard.linkToDetail`. */
   linkToDetail?: boolean;
 }
@@ -23,7 +31,11 @@ interface ListingsGridProps {
  *
  * Column counts stay in step with `ListingsGridSkeleton`.
  */
-function ListingsGrid({ listings, linkToDetail = false }: ListingsGridProps) {
+function ListingsGrid({
+  listings,
+  searchTerm = null,
+  linkToDetail = false,
+}: ListingsGridProps) {
   if (listings.length === 0) {
     return null;
   }
@@ -36,6 +48,7 @@ function ListingsGrid({ listings, linkToDetail = false }: ListingsGridProps) {
         <li key={listing.id}>
           <ListingCard
             listing={listing}
+            searchTerm={searchTerm}
             linkToDetail={linkToDetail}
             priority={index < PRIORITY_CARD_COUNT}
           />

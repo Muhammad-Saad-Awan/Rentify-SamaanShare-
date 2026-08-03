@@ -1,5 +1,6 @@
 import { ListingStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
+import { buildMatchSnippet } from "@/lib/utils/highlight";
 
 import type { Prisma } from "@/generated/prisma/client";
 import type { ItemCondition } from "@/generated/prisma/enums";
@@ -21,11 +22,17 @@ export const LISTINGS_PAGE_SIZE = 12;
 /**
  * The exact shape a listing card renders.
  *
- * Deliberately not `Listing` from the generated client. A card needs a handful
- * of columns out of twenty-odd and exactly one image; selecting the whole row
- * would ship a listing's full `description` text to the browser for every card
- * in the grid. Naming the projection here also means a change to the card's
- * needs shows up as a type error rather than as an over-fetch nobody notices.
+ * Deliberately not `Listing` from the generated client: a card needs a handful of
+ * columns out of twenty-odd and exactly one image. Naming the projection here also
+ * means a change to the card's needs shows up as a type error rather than as an
+ * over-fetch nobody notices.
+ *
+ * `description` is read from the database but never leaves the server whole - it is
+ * reduced to `descriptionSnippet` below. That is a change from the original
+ * projection, which omitted the column outright to keep prose off the wire; search
+ * needs to show *why* a listing matched, and an excerpt is the smallest thing that
+ * can. The cost is one extra text column per row on the database-to-server hop; the
+ * browser still receives at most ~140 characters, and only when searching.
  */
 export interface ListingCardData {
   id: string;
@@ -36,6 +43,13 @@ export interface ListingCardData {
   categoryName: string;
   /** First image by `order`, or `null` for a listing with none yet. */
   imageUrl: string | null;
+  /**
+   * Excerpt around the search term's first occurrence in the description.
+   *
+   * `null` when there is no search, or when the term appears only in the title -
+   * in which case there is nothing worth quoting.
+   */
+  descriptionSnippet: string | null;
 }
 
 interface GetActiveListingsOptions {
@@ -70,6 +84,7 @@ export async function getActiveListings({
       select: {
         id: true,
         title: true,
+        description: true,
         pricePerDay: true,
         city: true,
         condition: true,
@@ -95,6 +110,8 @@ export async function getActiveListings({
     // `[0]` is `T | undefined` under noUncheckedIndexedAccess; `?? null` keeps
     // the field's type honest instead of asserting the array is non-empty.
     imageUrl: row.images[0]?.url ?? null,
+    // Reduced here, on the server, so the full body never crosses to the client.
+    descriptionSnippet: buildMatchSnippet(row.description, filters.q),
   }));
 
   return {

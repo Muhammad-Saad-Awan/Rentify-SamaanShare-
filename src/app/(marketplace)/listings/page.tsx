@@ -73,7 +73,7 @@ export default async function BrowseListingsPage({
           Browse Listings
         </h1>
         <p className="text-muted-foreground text-sm">
-          {resultSummary(total, filtered)}
+          {resultSummary(total, filtered, filters.q)}
         </p>
       </div>
 
@@ -124,11 +124,18 @@ export default async function BrowseListingsPage({
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <ActiveFilters filters={filters} categories={categories} />
 
-          <ListingsGrid listings={items} />
+          <ListingsGrid listings={items} searchTerm={filters.q} />
 
           {items.length === 0 && (
             <BrowseEmptyState
-              filtered={filtered}
+              // Whether anything *besides* the search term is narrowing the
+              // results. `hasActiveFilters` counts `q` as a filter - correct for
+              // the chip row and the clear-all affordance - but the empty state
+              // has to tell "no results for a term" apart from "no results for a
+              // term with filters on", or it offers to clear filters that are not
+              // set. Nulling `q` and re-asking is cheaper than a second helper.
+              otherFiltersActive={hasActiveFilters({ ...filters, q: null })}
+              query={filters.q}
               total={total}
               totalPages={totalPages}
               clearHref={clearListingFiltersHref(filters)}
@@ -148,7 +155,10 @@ export default async function BrowseListingsPage({
 }
 
 interface BrowseEmptyStateProps {
-  filtered: boolean;
+  /** True when a filter other than the search term is narrowing the results. */
+  otherFiltersActive: boolean;
+  /** The active search term, which gets its own wording when present. */
+  query: string | null;
   total: number;
   totalPages: number;
   clearHref: string;
@@ -158,20 +168,47 @@ interface BrowseEmptyStateProps {
 /**
  * Picks the right explanation for an empty grid.
  *
- * Three different situations produce zero cards, and collapsing them into one
+ * Four different situations produce zero cards, and collapsing them into one
  * message misinforms: a user whose filters matched nothing would be told the
  * marketplace is empty, and would have no reason to try clearing them.
  */
 function BrowseEmptyState({
-  filtered,
+  otherFiltersActive,
+  query,
   total,
   totalPages,
   clearHref,
   firstPageHref,
 }: BrowseEmptyStateProps) {
-  // Filters or a search term excluded everything. The only useful action is to
-  // widen, so the empty state carries it.
-  if (total === 0 && filtered) {
+  // A search term is named back to the user, because "no results" without it
+  // leaves them unsure whether the term was even received - especially after a
+  // header search, where the box that submitted it is small and easy to mistype.
+  if (total === 0 && query) {
+    return (
+      <EmptyState
+        icon={SearchXIcon}
+        title={`No results for “${query}”`}
+        description={
+          otherFiltersActive
+            ? "Nothing matched that term with the current filters. Try a different word, or clear the filters to search everything."
+            : "Nothing matched that term. Check the spelling, or try a broader word - “camera” rather than a model number."
+        }
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href={clearHref} />}
+          >
+            {otherFiltersActive ? "Clear search and filters" : "Clear search"}
+          </Button>
+        }
+      />
+    );
+  }
+
+  // Filters alone excluded everything. The only useful action is to widen, so the
+  // empty state carries it.
+  if (total === 0 && otherFiltersActive) {
     return (
       <EmptyState
         icon={SearchXIcon}
@@ -222,12 +259,31 @@ function BrowseEmptyState({
   );
 }
 
-/** Result count line, phrased for whether the number is a filtered subset. */
-function resultSummary(total: number, filtered: boolean): string {
+/**
+ * Result count line, phrased for whether the number is a filtered subset.
+ *
+ * A search term is quoted back rather than folded into "your filters", so the
+ * heading area always confirms what was actually searched for.
+ */
+function resultSummary(
+  total: number,
+  filtered: boolean,
+  query: string | null
+): string {
   if (total === 0) {
+    if (query) {
+      return `No results for “${query}”.`;
+    }
+
     return filtered
       ? "No listings match your filters."
       : "No items are listed for rent yet.";
+  }
+
+  if (query) {
+    const noun = total === 1 ? "result" : "results";
+
+    return `${total} ${noun} for “${query}”.`;
   }
 
   if (filtered) {

@@ -2,6 +2,7 @@ import { ImageOffIcon, MapPinIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { HighlightText } from "@/components/shared/highlight-text";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { formatPKRPerDay } from "@/lib/utils/currency";
@@ -11,6 +12,13 @@ import type { ListingCardData } from "@/lib/queries/listings";
 
 interface ListingCardProps {
   listing: ListingCardData;
+  /**
+   * Active search term, highlighted in the title and excerpt.
+   *
+   * `null` on the homepage and category pages, which do not search - the card then
+   * renders its text unchanged.
+   */
+  searchTerm?: string | null;
   /**
    * Whether the card links to its detail page.
    *
@@ -37,6 +45,7 @@ interface ListingCardProps {
  */
 function ListingCard({
   listing,
+  searchTerm = null,
   linkToDetail = false,
   priority = false,
 }: ListingCardProps) {
@@ -88,9 +97,23 @@ function ListingCard({
             whose prices no longer line up across a row.
           */}
           <h3 className="font-heading line-clamp-2 min-h-10 text-sm leading-snug font-medium">
-            {listing.title}
+            <HighlightText text={listing.title} term={searchTerm} />
           </h3>
         </div>
+
+        {/*
+          Only present when the term was found in the description, so this row
+          appears exactly on the cards where the title alone does not explain the
+          match - and never shifts the layout of an unsearched grid.
+        */}
+        {listing.descriptionSnippet && (
+          <p className="text-muted-foreground line-clamp-2 text-xs">
+            <HighlightText
+              text={listing.descriptionSnippet}
+              term={searchTerm}
+            />
+          </p>
+        )}
 
         <div className="flex items-end justify-between gap-2">
           <span className="font-heading text-sm font-semibold tracking-tight">

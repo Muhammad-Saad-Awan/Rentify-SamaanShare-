@@ -98,6 +98,31 @@ export interface ListingFilters {
 /** The shape Next hands to a page as `searchParams`, once awaited. */
 export type RawSearchParams = Record<string, string | string[] | undefined>;
 
+/**
+ * Converts live `URLSearchParams` into the shape {@link parseListingFilters} reads.
+ *
+ * Exists for the header search, which is a Client Component: a layout cannot read
+ * `searchParams` in Next 15, so the only way for the header to preserve the
+ * filters already in the URL is to read them with `useSearchParams()` at
+ * request-independent runtime and feed them through this same parser. Reusing the
+ * parser rather than copying params by hand is what keeps the header's idea of
+ * browse state identical to the page's.
+ *
+ * Repeated keys - `condition` - collapse to an array, matching how Next presents
+ * them server-side, so a multi-select filter survives a header search.
+ */
+export function searchParamsToRaw(params: URLSearchParams): RawSearchParams {
+  const raw: RawSearchParams = {};
+
+  for (const key of new Set(params.keys())) {
+    const values = params.getAll(key);
+
+    raw[key] = values.length > 1 ? values : values[0];
+  }
+
+  return raw;
+}
+
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const VALID_CONDITIONS = new Set<string>(Object.values(ItemCondition));
