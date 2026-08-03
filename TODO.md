@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** July 2026
+**Last Updated:** 29 July 2026 (Phase 2.1 — Dashboard & Application Shell)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -44,23 +44,27 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 
 ### Database
 
-- [ ] Install Prisma
-- [ ] Configure Prisma for PostgreSQL
-- [ ] Create initial `schema.prisma` (from DATABASE.md)
-- [ ] Set up Prisma client singleton
-- [ ] Create seed script (`prisma/seed.ts`)
-- [ ] Run initial migration
-- [ ] Seed categories and initial data
+- [x] Install Prisma
+- [x] Configure Prisma for PostgreSQL
+- [x] Create initial `schema.prisma` (from DATABASE.md)
+- [x] Set up Prisma client singleton
+- [x] Create seed script (`prisma/seed.ts`)
+- [x] Run initial migration (`20260728105436_20260728_init`)
+- [x] Seed categories and initial data (verified: 7 categories, 30 subcategories)
 
 ### Authentication
 
-- [ ] Install Auth.js v5
-- [ ] Configure Auth.js with JWT strategy
-- [ ] Set up Credentials provider (email/password)
-- [ ] Set up Google OAuth provider
-- [ ] Create auth configuration (`auth.ts`)
-- [ ] Set up middleware for protected routes
-- [ ] Create session utilities
+- [x] Install Auth.js v5
+- [x] Configure Auth.js with JWT strategy
+- [x] Set up Credentials provider (email/password)
+- [x] Set up Google OAuth provider (registered only when keys are present)
+- [x] Create auth configuration (`auth.ts` + edge-safe `auth.config.ts`)
+- [x] Configure the Prisma Adapter
+- [x] Mount the Auth.js route handler (`api/auth/[...nextauth]`)
+- [x] Augment Auth.js types (`src/types/next-auth.d.ts`)
+- [x] Set up middleware for protected routes
+- [x] Create session utilities (`requireUser`, `requireActiveUser`, `requireAdmin`)
+- [x] Gate suspended / banned / soft-deleted accounts at sign-in
 
 ### Environment Variables
 
@@ -84,9 +88,12 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Create root layout (`app/layout.tsx`)
 - [x] Create metadata configuration
 - [x] Set up fonts (Inter or similar)
-- [ ] Create header component
+- [ ] Create header component — the *dashboard* header exists
+      (`DashboardHeader`, Phase 2.1). This item is the **public/marketing**
+      header, still outstanding.
 - [ ] Create footer component
-- [ ] Create mobile navigation
+- [ ] Create mobile navigation — the *dashboard* drawer exists
+      (`DashboardMobileNav`, Phase 2.1). Public mobile nav still outstanding.
 - [x] Add theme provider (light/dark mode ready)
 
 ### Utilities
@@ -100,7 +107,7 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 ### Verification
 
 - [x] Verify development server runs
-- [ ] Verify database connection
+- [x] Verify database connection
 - [ ] Verify Prisma Studio works
 - [x] Verify TypeScript compilation
 - [x] Verify ESLint passes
@@ -112,25 +119,27 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 
 ### Registration
 
-- [ ] Create registration page (`/register`)
-- [ ] Create registration form component
-- [ ] Add form validation (Zod + React Hook Form)
-- [ ] Create `registerUser` server action
-- [ ] Hash passwords with bcrypt
+- [x] Create registration page (`/register`)
+- [x] Create registration form component
+- [x] Add form validation (Zod + React Hook Form)
+- [x] Create `registerUser` server action
+- [x] Hash passwords with bcrypt (bcryptjs, cost 12)
 - [ ] Send verification email (placeholder for MVP)
-- [ ] Handle registration errors
-- [ ] Add success redirect
+- [x] Handle registration errors
+- [x] Add success redirect
 
 ### Login
 
-- [ ] Create login page (`/login`)
-- [ ] Create login form component
-- [ ] Add form validation
-- [ ] Create credentials login flow
-- [ ] Add Google OAuth button
-- [ ] Handle login errors
-- [ ] Add "Remember me" option
-- [ ] Add redirect after login
+- [x] Create login page (`/login`)
+- [x] Create login form component
+- [x] Add form validation
+- [x] Create credentials login flow
+- [x] Add Google OAuth button (rendered only when Google is configured)
+- [x] Handle login errors
+- [ ] Add "Remember me" option — needs a per-session `maxAge`, which under the
+      JWT strategy means overriding `jwt.encode`. Deferred deliberately rather
+      than shipped as a checkbox that does nothing.
+- [x] Add redirect after login (`callbackUrl`, sanitised against open redirect)
 
 ### Password Reset
 
@@ -171,18 +180,68 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 
 ### Session Management
 
-- [ ] Create session provider
-- [ ] Add session to client context
-- [ ] Create `useSession` hook
+- [x] Create session provider
+- [x] Add session to client context
+- [ ] Create `useSession` hook — `next-auth/react` already exports one; only
+      needed if we want a project-specific wrapper
 - [ ] Handle session expiration
-- [ ] Add logout functionality
+- [x] Add logout functionality (`UserMenu` in the dashboard header, Phase 2.1)
 
 ### Protected Routes
 
-- [ ] Configure middleware for auth routes
-- [ ] Create auth guard wrapper
-- [ ] Handle unauthorized access
-- [ ] Add redirect to login
+- [x] Configure middleware for auth routes
+- [x] Create auth guard wrapper (`requireUser` / `requireActiveUser` / `requireAdmin`)
+- [x] Handle unauthorized access
+- [x] Add redirect to login
+
+---
+
+## Phase 2.1 – Dashboard & Application Shell
+
+Shell, routing and navigation only. Every section below is a placeholder page —
+no listing, booking, search, review or admin functionality was implemented.
+
+### Shell
+
+- [x] Create authenticated dashboard layout (`(dashboard)` route group)
+- [x] Create navigation config (`src/config/navigation.ts`)
+- [x] Create responsive sidebar (`DashboardSidebar`, desktop `lg+`)
+- [x] Create mobile drawer navigation (`DashboardMobileNav`, Sheet-based)
+- [x] Create top header (`DashboardHeader`, sticky)
+- [x] Create user menu with sign-out (`UserMenu`)
+- [x] Create notification placeholder (`NotificationBell`)
+- [x] Create breadcrumb support (`DashboardBreadcrumbs` + `buildBreadcrumbs`)
+- [x] Create reusable layout components (`PageHeader`, `PlaceholderCard`,
+      `StatCard`, `DashboardPageSkeleton`)
+- [x] Add `loading.tsx` to every dashboard route
+- [x] Add `sheet` and `breadcrumb` shadcn/ui primitives
+
+### Placeholder pages
+
+- [x] Dashboard Home (`/dashboard`)
+- [x] My Listings (`/dashboard/listings`)
+- [x] My Bookings (`/dashboard/bookings`)
+- [x] Saved Listings (`/dashboard/saved`) — **note:** this file previously
+      specified `/saved`. Moved under `/dashboard` so it inherits the existing
+      `PROTECTED_PREFIXES` guard and matches the other dashboard sections.
+- [x] Notifications (`/dashboard/notifications`)
+- [x] Profile (`/profile`) — read-only session summary; editing still open
+- [x] Settings (`/settings`)
+- [x] Admin (`/admin`) — gated by `requireAdmin()` in `admin/layout.tsx`
+
+### Protected routing
+
+- [x] All dashboard routes protected via existing session utilities
+- [x] Unauthenticated users redirected to login with `callbackUrl`
+- [x] Authenticated users bounced away from `/login` and `/register`
+- [x] Non-admins bounced from `/admin` (middleware) and rejected by the
+      database re-read in `requireAdmin()`
+
+### Sign-out
+
+- [x] Add logout functionality (`UserMenu`, `signOut({ redirectTo: "/" })`) —
+      closes the Phase 1 "Session Management" item that was blocked on having a
+      header to hang it off
 
 ---
 
