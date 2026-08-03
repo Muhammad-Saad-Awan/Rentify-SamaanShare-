@@ -88,20 +88,20 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Create root layout (`app/layout.tsx`)
 - [x] Create metadata configuration
 - [x] Set up fonts (Inter or similar)
-- [ ] Create header component — the *dashboard* header exists
+- [x] Create header component — the *dashboard* header exists
       (`DashboardHeader`, Phase 2.1). This item is the **public/marketing**
       header, still outstanding.
-- [ ] Create footer component
-- [ ] Create mobile navigation — the *dashboard* drawer exists
+- [x] Create footer component
+- [x] Create mobile navigation — the *dashboard* drawer exists
       (`DashboardMobileNav`, Phase 2.1). Public mobile nav still outstanding.
 - [x] Add theme provider (light/dark mode ready)
 
 ### Utilities
 
-- [ ] Create PKR currency formatter (`formatPKR`)
-- [ ] Create date utilities (Asia/Karachi timezone)
-- [ ] Create validation schemas (Zod)
-- [ ] Create action result types
+- [x] Create PKR currency formatter (`formatPKR`)
+- [x] Create date utilities (Asia/Karachi timezone)
+- [x] Create validation schemas (Zod)
+- [x] Create action result types
 - [ ] Create error handling utilities
 
 ### Verification
@@ -249,68 +249,71 @@ no listing, booking, search, review or admin functionality was implemented.
 
 ### Homepage
 
-- [ ] Create homepage (`/`)
-- [ ] Add hero section (Pakistani context)
-- [ ] Add category showcase grid
-- [ ] Add featured listings section
-- [ ] Add "How it works" section
-- [ ] Add city selector (Karachi, Lahore, Islamabad)
-- [ ] Add call-to-action sections
-- [ ] Optimize for SEO
+- [x] Create homepage (`/`)
+- [x] Add hero section (Pakistani context)
+- [x] Add category showcase grid
+- [x] Add featured listings section
+- [x] Add "How it works" section
+- [x] Add city selector (Karachi, Lahore, Islamabad)
+- [x] Add call-to-action sections
+- [x] Optimize for SEO
 
 ### Listings Browse
 
-- [ ] Create listings page (`/listings`)
-- [ ] Create listings grid component
-- [ ] Create listing card component
-- [ ] Add pagination
-- [ ] Add loading skeletons
-- [ ] Add empty state
+- [x] Create listings page (`/listings`)
+- [x] Create listings grid component
+- [x] Create listing card component
+- [x] Add pagination
+- [x] Add loading skeletons
+- [x] Add empty state
 
 ### Search
 
-- [ ] Create search input component
-- [ ] Implement keyword search
-- [ ] Add search to header
-- [ ] Create search results page
-- [ ] Highlight search terms
+- [x] Create search input component
+- [x] Implement keyword search
+- [x] Add search to header
+- [x] Create search results page — results render on `/listings?q=`; a separate
+      route would be a second surface over identical data, splitting crawl signals
+- [x] Highlight search terms
 
 ### Filters
 
-- [ ] Create filter sidebar component
-- [ ] Add category filter
-- [ ] Add subcategory filter
-- [ ] Add city filter (Pakistani cities)
-- [ ] Add min price filter (PKR)
-- [ ] Add max price filter (PKR)
-- [ ] Add condition filter (New, Like New, Good, Fair)
-- [ ] Add availability date filter
-- [ ] Create filter state management (URL params)
-- [ ] Add "Clear filters" button
+- [x] Create filter sidebar component
+- [x] Add category filter
+- [x] Add subcategory filter
+- [x] Add city filter (Pakistani cities)
+- [x] Add min price filter (PKR)
+- [x] Add max price filter (PKR)
+- [x] Add condition filter (New, Like New, Good, Fair)
+- [x] Add availability date filter
+- [x] Create filter state management (URL params)
+- [x] Add "Clear filters" button
 
 ### Sorting
 
-- [ ] Create sort dropdown component
-- [ ] Add sort by newest
-- [ ] Add sort by price (low to high)
-- [ ] Add sort by price (high to low)
-- [ ] Add sort by rating
-- [ ] Persist sort in URL
+- [x] Create sort dropdown component — built as a segmented link group, not a
+      dropdown: four options fit inline, and links keep each ordering shareable
+      and reachable with the back button
+- [x] Add sort by newest
+- [x] Add sort by price (low to high)
+- [x] Add sort by price (high to low)
+- [x] Add sort by rating
+- [x] Persist sort in URL
 
 ### Category Pages
 
-- [ ] Create category page (`/categories/[slug]`)
-- [ ] Create category navigation
-- [ ] Add subcategory links
-- [ ] Display category-specific listings
+- [x] Create category page (`/categories/[slug]`)
+- [x] Create category navigation
+- [x] Add subcategory links
+- [x] Display category-specific listings
 
 ### Wishlist
 
-- [ ] Create saved listings page (`/saved`)
-- [ ] Create `saveListing` action
-- [ ] Create `unsaveListing` action
-- [ ] Add save button to listing cards
-- [ ] Show saved state on cards
+- [x] Create saved listings page (`/saved`)
+- [x] Create `saveListing` action
+- [x] Create `unsaveListing` action
+- [x] Add save button to listing cards
+- [x] Show saved state on cards
 
 ---
 

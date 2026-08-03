@@ -21,15 +21,6 @@ interface ListingCardProps {
    */
   searchTerm?: string | null;
   /**
-   * Whether the card links to its detail page.
-   *
-   * Off by default because `/listings/[id]` does not exist yet - it arrives with
-   * Phase 3. A card linking to a 404 is worse than one that does not link, and
-   * the same reasoning already governs the disabled "New listing" button on the
-   * dashboard. Flip this on with the detail route, do not add a second card.
-   */
-  linkToDetail?: boolean;
-  /**
    * Set on the first few cards above the fold. Next only honours `priority` on
    * a handful of images per page, so the grid passes it selectively rather than
    * every card claiming it.
@@ -45,13 +36,15 @@ interface ListingCardProps {
  * A single listing in the browse grid.
  *
  * Presentation only - it receives `ListingCardData` and never queries. That
- * projection is a deliberately narrow slice of `Listing` (no `description`), so
- * a grid of twelve cards does not ship twelve bodies of prose to the client.
+ * projection is a deliberately narrow slice of `Listing`, so a grid of twelve cards
+ * does not ship twelve bodies of prose to the client.
+ *
+ * The whole card is a link to the detail page. The save button is deliberately not
+ * inside that link - see the note at the return below.
  */
 function ListingCard({
   listing,
   searchTerm = null,
-  linkToDetail = false,
   priority = false,
   isSaved = false,
   isAuthenticated = false,
@@ -90,21 +83,6 @@ function ListingCard({
         >
           {CONDITION_LABELS[listing.condition]}
         </Badge>
-
-        {/*
-          Top-left, opposite the condition badge, so the two never overlap.
-
-          NOTE for Phase 3: when `linkToDetail` is switched on, this must be lifted
-          out of the wrapping `<Link>` below. A button inside an anchor is invalid
-          HTML and the click would race the navigation.
-        */}
-        <SaveListingButton
-          listingId={listing.id}
-          listingTitle={listing.title}
-          isSaved={isSaved}
-          isAuthenticated={isAuthenticated}
-          className="absolute top-2 left-2"
-        />
       </div>
 
       <div className="flex flex-col gap-2 px-(--card-spacing) pt-(--card-spacing)">
@@ -151,17 +129,28 @@ function ListingCard({
     </Card>
   );
 
-  if (!linkToDetail) {
-    return body;
-  }
-
   return (
-    <Link
-      href={`/listings/${listing.id}`}
-      className="focus-visible:ring-ring rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-    >
-      {body}
-    </Link>
+    // Positioning context for the save button, which must be a *sibling* of the
+    // link rather than inside it: a <button> inside an <a> is invalid HTML, and the
+    // click would race the navigation - you would toggle the heart and leave the
+    // page at the same time.
+    <div className="relative h-full">
+      <Link
+        href={`/listings/${listing.id}`}
+        className="focus-visible:ring-ring block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      >
+        {body}
+      </Link>
+
+      {/* Top-left, opposite the condition badge, so the two never overlap. */}
+      <SaveListingButton
+        listingId={listing.id}
+        listingTitle={listing.title}
+        isSaved={isSaved}
+        isAuthenticated={isAuthenticated}
+        className="absolute top-2 left-2 z-10"
+      />
+    </div>
   );
 }
 

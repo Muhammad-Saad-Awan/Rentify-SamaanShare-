@@ -86,7 +86,23 @@ interface DemoListing {
   subcategorySlug: string | null;
   condition: ItemCondition;
   pricePerDay: number;
+  /**
+   * Optional longer-term rates, as the schema allows.
+   *
+   * Only some listings set them, on purpose: the detail page's pricing breakdown
+   * has to render correctly both with and without them, and a fixture where every
+   * row is fully populated never exercises the absent case.
+   */
+  pricePerWeek?: number;
+  pricePerMonth?: number;
   securityDeposit: number;
+  /**
+   * How many cover images to attach. Defaults to 1.
+   *
+   * A couple of listings carry more so the detail gallery's thumbnail strip and
+   * image switching are exercised by real data rather than assumed.
+   */
+  imageCount?: number;
   city: string;
   area: string | null;
   /** Omitted means ACTIVE. The non-active rows prove browse filters them out. */
@@ -120,7 +136,10 @@ const DEMO_LISTINGS: DemoListing[] = [
     subcategorySlug: "cameras",
     condition: ItemCondition.LIKE_NEW,
     pricePerDay: 6500,
+    pricePerWeek: 35000,
+    pricePerMonth: 120000,
     securityDeposit: 40000,
+    imageCount: 3,
     city: "karachi",
     area: "DHA Phase 6",
     createdAt: "2026-08-01T09:00:00.000Z",
@@ -150,6 +169,7 @@ const DEMO_LISTINGS: DemoListing[] = [
     subcategorySlug: "generators",
     condition: ItemCondition.GOOD,
     pricePerDay: 3000,
+    pricePerMonth: 60000,
     securityDeposit: 20000,
     city: "islamabad",
     area: "F-11",
@@ -180,7 +200,9 @@ const DEMO_LISTINGS: DemoListing[] = [
     subcategorySlug: "camping",
     condition: ItemCondition.GOOD,
     pricePerDay: 2200,
+    pricePerWeek: 12000,
     securityDeposit: 12000,
+    imageCount: 2,
     city: "lahore",
     area: "Model Town",
     createdAt: "2026-07-26T16:00:00.000Z",
@@ -406,8 +428,10 @@ const DEMO_UNAVAILABLE_DATES: readonly { listingId: string; date: string }[] = [
  * The host is allowlisted in next.config.ts for exactly this reason and should
  * come out with the demo data.
  */
-function demoImageUrl(listingId: string): string {
-  return `https://picsum.photos/seed/${listingId}/800/600`;
+function demoImageUrl(listingId: string, index = 0): string {
+  // The index is part of the seed, so a listing's second and third images are
+  // different photographs but still stable across runs.
+  return `https://picsum.photos/seed/${listingId}-${index}/800/600`;
 }
 
 function createSeedClient() {
@@ -518,6 +542,11 @@ async function seedListings() {
       subcategoryId,
       condition: listing.condition,
       pricePerDay: listing.pricePerDay,
+      // `?? null` rather than omitting the key: on the update branch an omitted
+      // field leaves the old value in place, so a rate removed from this file
+      // would linger in the database and the seed would stop being declarative.
+      pricePerWeek: listing.pricePerWeek ?? null,
+      pricePerMonth: listing.pricePerMonth ?? null,
       securityDeposit: listing.securityDeposit,
       city: listing.city,
       area: listing.area,
@@ -539,19 +568,35 @@ async function seedListings() {
       select: { id: true },
     });
 
-    // One cover image each. The id is derived from the listing id so this
-    // upserts alongside its parent rather than appending a duplicate per run.
-    await prisma.listingImage.upsert({
-      where: { id: `${listing.id}-img-1` },
-      create: {
-        id: `${listing.id}-img-1`,
-        listingId: listing.id,
-        url: demoImageUrl(listing.id),
-        publicId: `demo/${listing.id}`,
-        order: 0,
-      },
-      update: { url: demoImageUrl(listing.id), order: 0 },
-      select: { id: true },
+    // Images, ids derived from the listing id so each upserts alongside its
+    // parent rather than appending a duplicate per run.
+    const imageCount = listing.imageCount ?? 1;
+    const imageIds: string[] = [];
+
+    for (let index = 0; index < imageCount; index += 1) {
+      const imageId = `${listing.id}-img-${index + 1}`;
+      const url = demoImageUrl(listing.id, index);
+
+      imageIds.push(imageId);
+
+      await prisma.listingImage.upsert({
+        where: { id: imageId },
+        create: {
+          id: imageId,
+          listingId: listing.id,
+          url,
+          publicId: `demo/${listing.id}-${index + 1}`,
+          order: index,
+        },
+        update: { url, order: index },
+        select: { id: true },
+      });
+    }
+
+    // Drops images left over from a higher `imageCount` on a previous run, so
+    // lowering the number in this file actually removes them.
+    await prisma.listingImage.deleteMany({
+      where: { listingId: listing.id, id: { notIn: imageIds } },
     });
   }
 

@@ -1,6 +1,6 @@
-import { ListingStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { LISTINGS_PAGE_SIZE } from "@/lib/queries/listings";
+import { VISIBLE_LISTING_RELATION_WHERE } from "@/lib/queries/visibility";
 
 import type { Prisma } from "@/generated/prisma/client";
 import type { ListingCardData } from "@/lib/queries/listings";
@@ -51,8 +51,8 @@ interface GetSavedListingsOptions {
 /**
  * One page of the user's saved listings, most recently saved first.
  *
- * Hides saves whose listing is no longer publicly visible - paused, rejected or
- * soft-deleted. The row stays in the database, so the item reappears if its owner
+ * Hides saves whose listing is no longer publicly visible - paused, rejected,
+ * soft-deleted, or owned by a suspended account. The row stays in the database, so the item reappears if its owner
  * republishes it, but a wishlist that renders a listing nobody can open is worse
  * than one that is quietly shorter. The consequence, which is worth knowing: the
  * count here can be lower than the number of rows the user has saved.
@@ -70,7 +70,7 @@ export async function getSavedListings({
 
   const where: Prisma.SavedListingWhereInput = {
     userId,
-    listing: { status: ListingStatus.ACTIVE, deletedAt: null },
+    ...VISIBLE_LISTING_RELATION_WHERE,
   };
 
   // Same transaction for rows and count, so the total cannot come from a

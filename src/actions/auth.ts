@@ -1,5 +1,7 @@
 "use server";
 
+import { headers } from "next/headers";
+
 import { Prisma } from "@/generated/prisma/client";
 import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/prisma";
@@ -8,6 +10,8 @@ import {
   normalizeName,
   registerSchema,
 } from "@/lib/validations/auth";
+
+import { checkRateLimit, clientIpFrom } from "@/lib/rate-limit";
 
 import type { RegisterInput } from "@/lib/validations/auth";
 import type { ActionResult } from "@/types";
@@ -24,9 +28,29 @@ import type { ActionResult } from "@/types";
  * `emailVerified` is left null. Email verification is a later phase; nothing
  * currently gates on it.
  */
+/**
+ * Signup budget per client address.
+ *
+ * Keyed on IP because there is no account yet to key on. Five per hour is far more
+ * than a real person needs and stops a script from filling the users table - which
+ * matters more than usual here, because every attempt costs a bcrypt hash at cost 12
+ * and is therefore a CPU-exhaustion vector as much as a data one.
+ */
+const REGISTER_RATE_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 };
+
 export async function registerUser(
   input: RegisterInput
 ): Promise<ActionResult<{ email: string }>> {
+  const ip = clientIpFrom(await headers());
+  const rate = checkRateLimit(`register:${ip}`, REGISTER_RATE_LIMIT);
+
+  if (!rate.allowed) {
+    return {
+      success: false,
+      error: "Too many sign-up attempts. Please try again later.",
+    };
+  }
+
   // Re-validated here, not just in the browser. A Server Action is a public
   // HTTP endpoint - the client-side Zod check can simply be skipped.
   const parsed = registerSchema.safeParse(input);

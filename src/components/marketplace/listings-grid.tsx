@@ -2,8 +2,12 @@ import { ListingCard } from "@/components/marketplace/listing-card";
 
 import type { ListingCardData } from "@/lib/queries/listings";
 
-/** How many leading cards get Next's `priority` hint. */
-const PRIORITY_CARD_COUNT = 4;
+/**
+ * Default leading cards to preload when a caller says the grid is above the fold.
+ *
+ * Four covers the widest single row (`xl:grid-cols-4`).
+ */
+export const ABOVE_FOLD_PRIORITY_COUNT = 4;
 
 interface ListingsGridProps {
   listings: readonly ListingCardData[];
@@ -15,8 +19,6 @@ interface ListingsGridProps {
    * on the homepage and category pages, where there is no search.
    */
   searchTerm?: string | null;
-  /** Forwarded to every card - see the note on `ListingCard.linkToDetail`. */
-  linkToDetail?: boolean;
   /**
    * Ids the viewer has saved, from `getSavedListingIds`.
    *
@@ -26,6 +28,17 @@ interface ListingsGridProps {
   savedListingIds?: ReadonlySet<string>;
   /** Whether a session exists, forwarded to each card's save control. */
   isAuthenticated?: boolean;
+  /**
+   * How many leading images to mark `priority`. Defaults to none.
+   *
+   * Off by default deliberately. This used to be a constant, which meant every grid
+   * preloaded four images regardless of where it sat - so the homepage's "Latest
+   * listings" row and the detail page's "More in..." row, both well below the fold,
+   * competed with the real LCP element. A detail page ended up with five priority
+   * images: the gallery hero plus four thumbnails nobody had scrolled to. Only the
+   * caller knows whether its grid is the first thing on screen.
+   */
+  priorityCount?: number;
 }
 
 /**
@@ -43,9 +56,9 @@ interface ListingsGridProps {
 function ListingsGrid({
   listings,
   searchTerm = null,
-  linkToDetail = false,
   savedListingIds,
   isAuthenticated = false,
+  priorityCount = 0,
 }: ListingsGridProps) {
   if (listings.length === 0) {
     return null;
@@ -60,8 +73,7 @@ function ListingsGrid({
           <ListingCard
             listing={listing}
             searchTerm={searchTerm}
-            linkToDetail={linkToDetail}
-            priority={index < PRIORITY_CARD_COUNT}
+            priority={index < priorityCount}
             isSaved={savedListingIds?.has(listing.id) ?? false}
             isAuthenticated={isAuthenticated}
           />

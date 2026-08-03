@@ -1,7 +1,7 @@
 import { cache } from "react";
 
-import { ListingStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
+import { VISIBLE_LISTING_WHERE } from "@/lib/queries/visibility";
 
 /**
  * Read-only category queries.
@@ -35,18 +35,6 @@ export interface CategoryDetail {
   icon: string | null;
   subcategories: readonly { name: string; slug: string }[];
 }
-
-/**
- * Only `ACTIVE`, never soft-deleted - the same visibility rule browse applies.
- *
- * Declared once here because three counts depend on it, and a category tile
- * advertising more items than its page shows is a bug a visitor notices
- * immediately.
- */
-const VISIBLE_LISTING = {
-  status: ListingStatus.ACTIVE,
-  deletedAt: null,
-} as const;
 
 /**
  * The category tree for the filter sidebar.
@@ -88,7 +76,7 @@ export async function getFeaturedCategories(): Promise<FeaturedCategory[]> {
       name: true,
       slug: true,
       icon: true,
-      _count: { select: { listings: { where: VISIBLE_LISTING } } },
+      _count: { select: { listings: { where: VISIBLE_LISTING_WHERE } } },
     },
   });
 

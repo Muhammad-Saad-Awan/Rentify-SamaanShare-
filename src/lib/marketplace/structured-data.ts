@@ -55,6 +55,79 @@ export function organizationJsonLd() {
   };
 }
 
+interface ListingJsonLdInput {
+  id: string;
+  title: string;
+  description: string;
+  pricePerDay: number;
+  imageUrls: readonly string[];
+  category: { name: string; slug: string };
+  ownerName: string;
+}
+
+/**
+ * A listing as a `Product` with a rental offer.
+ *
+ * `Product` rather than `Offer` alone, because that is what search engines render a
+ * rich result from - price, availability and image all hang off it.
+ *
+ * The price is the *daily* rate, and `priceCurrency` is PKR. There is no schema.org
+ * vocabulary for "per day" on a plain Offer, so the unit lives in the name and
+ * description instead; quoting the daily figure is still the honest choice, since
+ * it is the number the page leads with.
+ *
+ * `availability: InStock` reflects that only ACTIVE, non-deleted listings ever reach
+ * this function - a paused listing 404s before any metadata is built.
+ */
+export function listingJsonLd(listing: ListingJsonLdInput) {
+  const url = absoluteUrl(`/listings/${listing.id}`);
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Product",
+        name: listing.title,
+        description: listing.description,
+        url,
+        category: listing.category.name,
+        // Absolute URLs only: these are already Cloudinary or picsum links, so
+        // they pass through unchanged rather than being resolved against the site.
+        image: [...listing.imageUrls],
+        offers: {
+          "@type": "Offer",
+          url,
+          priceCurrency: "PKR",
+          price: listing.pricePerDay,
+          availability: "https://schema.org/InStock",
+          // A rental, not a sale - stated so the offer is not read as transfer of
+          // ownership.
+          businessFunction: "https://schema.org/LeaseOut",
+          seller: { "@type": "Person", name: listing.ownerName },
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Browse Listings",
+            item: absoluteUrl("/listings"),
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: listing.category.name,
+            item: absoluteUrl(`/categories/${listing.category.slug}`),
+          },
+          { "@type": "ListItem", position: 3, name: listing.title, item: url },
+        ],
+      },
+    ],
+  };
+}
+
 interface CategoryJsonLdInput {
   name: string;
   slug: string;

@@ -1,5 +1,5 @@
-import { ListingStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
+import { VISIBLE_LISTING_WHERE } from "@/lib/queries/visibility";
 import { buildMatchSnippet } from "@/lib/utils/highlight";
 
 import type { Prisma } from "@/generated/prisma/client";
@@ -60,10 +60,8 @@ interface GetActiveListingsOptions {
 /**
  * One page of publicly visible listings matching `filters`.
  *
- * Visibility is `status = ACTIVE` *and* `deletedAt = null`. Both are required:
- * `DELETED` is the soft-delete status by decision D3, but a row could in
- * principle carry a `deletedAt` while some other code path has left the status
- * behind, and a deleted listing leaking into browse is the worse failure.
+ * Visibility comes from `VISIBLE_LISTING_WHERE`, which also requires the owner to
+ * be active - see the note there on why a banned account keeps its listings.
  *
  * The count runs in the same transaction as the page fetch, so the total cannot
  * be read from a different snapshot than the rows - which is what produces an
@@ -140,7 +138,7 @@ export async function getActiveListingCountsByCity(): Promise<
 > {
   const groups = await prisma.listing.groupBy({
     by: ["city"],
-    where: { status: ListingStatus.ACTIVE, deletedAt: null },
+    where: VISIBLE_LISTING_WHERE,
     _count: { _all: true },
   });
 
@@ -155,10 +153,7 @@ export async function getActiveListingCountsByCity(): Promise<
  * does not match the rows.
  */
 function buildListingWhere(filters: ListingFilters): Prisma.ListingWhereInput {
-  const where: Prisma.ListingWhereInput = {
-    status: ListingStatus.ACTIVE,
-    deletedAt: null,
-  };
+  const where: Prisma.ListingWhereInput = { ...VISIBLE_LISTING_WHERE };
 
   if (filters.q) {
     // Substring match over title and description. `mode: "insensitive"` is a

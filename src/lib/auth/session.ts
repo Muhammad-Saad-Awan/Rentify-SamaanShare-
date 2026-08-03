@@ -34,17 +34,25 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
 }
 
 /**
- * Requires any signed-in user, or redirects to the login page.
+ * Requires a signed-in, currently-active user, or redirects.
  *
- * Reads `role` and `status` straight from the JWT - no database query - which is
- * the whole point of the JWT strategy. That means the values can be up to
- * `session.updateAge` (24h) stale. For ordinary browsing that is an acceptable
- * trade; where it is not, use {@link requireActiveUser} or
- * {@link requireAdmin}.
+ * VERIFIES AGAINST THE DATABASE, which is a deliberate reversal of the original
+ * design. This used to read `status` from the JWT for cheapness. That does not work:
+ * the token is minted at sign-in, so a user banned mid-session still carries
+ * `status: "ACTIVE"` until it refreshes - up to `session.updateAge` (24h). Measured
+ * during the audit: after suspending an account, its existing cookie still opened
+ * `/dashboard`, `/saved`, `/profile` and `/settings` with a 200. The `signIn` callback
+ * only refuses *new* sign-ins, so banning someone locked the front door and left
+ * everyone already inside untouched.
  *
- * No `callbackUrl` is attached: a Server Component cannot reliably read its own
- * pathname in Next 15. Middleware already supplies `callbackUrl` for normal
- * navigation to a protected prefix, so this is the backstop, not the main path.
+ * The cost is one primary-key lookup per protected page render. That is the price of a
+ * ban taking effect on the next request rather than tomorrow, and it is why middleware
+ * still runs the cheap token check first - that turns away already-refreshed tokens at
+ * the edge without reaching this far.
+ *
+ * No `callbackUrl` on the unauthenticated redirect: a Server Component cannot reliably
+ * read its own pathname in Next 15. Middleware supplies one for normal navigation, so
+ * this is the backstop, not the main path.
  */
 export async function requireUser(): Promise<SessionUser> {
   const session = await auth();
@@ -53,32 +61,50 @@ export async function requireUser(): Promise<SessionUser> {
     redirect(LOGIN_ROUTE);
   }
 
-  return session.user;
-}
-
-/**
- * Requires a signed-in user whose account is *currently* active, verified
- * against the database.
- *
- * Costs one indexed query, and in exchange closes the JWT revocation window:
- * a ban or soft delete takes effect on the next request instead of at the next
- * token refresh. Use this for anything that creates or moves value - bookings,
- * payments, listings - and prefer the cheaper {@link requireUser} for read-only
- * pages.
- */
-export async function requireActiveUser(): Promise<SessionUser> {
-  const user = await requireUser();
-
   const current = await prisma.user.findUnique({
-    where: { id: user.id },
+    where: { id: session.user.id },
     select: { status: true, deletedAt: true },
   });
 
   if (!current || current.deletedAt || current.status !== UserStatus.ACTIVE) {
-    redirect(LOGIN_ROUTE);
+    // `?error=` also breaks a redirect loop: middleware refuses to bounce a signed-in
+    // visitor away from the login page when the URL carries one. Without it, this
+    // stale-but-ACTIVE token would be sent straight back to the dashboard, which would
+    // land here again.
+    redirect(`${LOGIN_ROUTE}?error=AccountSuspended`);
   }
 
-  return user;
+  return session.user;
+}
+
+/**
+ * The signed-in user, database-verified as active, or `null`.
+ *
+ * The non-redirecting counterpart to {@link requireUser}, for Server Actions.
+ * A redirect is wrong there: an action invoked from a button should return a result
+ * its caller can act on, not navigate the page out from under the user mid-click.
+ *
+ * Costs one indexed query and in exchange closes the JWT revocation window - a ban
+ * takes effect on the next request rather than at the next token refresh. Use it for
+ * anything that writes; {@link getCurrentUser} is enough for deciding what to render.
+ */
+export async function getActiveUser(): Promise<SessionUser | null> {
+  const session = await auth();
+
+  if (!session?.user) {
+    return null;
+  }
+
+  const current = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { status: true, deletedAt: true },
+  });
+
+  if (!current || current.deletedAt || current.status !== UserStatus.ACTIVE) {
+    return null;
+  }
+
+  return session.user;
 }
 
 /**

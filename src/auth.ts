@@ -9,6 +9,7 @@ import { UserStatus } from "@/generated/prisma/enums";
 import { verifyPassword } from "@/lib/auth/password";
 import { isGoogleEnabled } from "@/lib/auth/providers";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, clientIpFrom } from "@/lib/rate-limit";
 import { loginSchema, normalizeEmail } from "@/lib/validations/auth";
 
 import type { Provider } from "next-auth/providers";
@@ -35,6 +36,14 @@ import type { Provider } from "next-auth/providers";
  * build. Middleware only ever *decodes* an existing token, so it needs no
  * provider list at all - `authConfig.providers` stays empty by design.
  */
+/**
+ * Sign-in attempts permitted per address per window.
+ *
+ * Ten a minute leaves room for genuine mistyping and typo-then-retry, while cutting a
+ * stuffing run from thousands of guesses an hour to tens.
+ */
+const LOGIN_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
+
 const providers: Provider[] = [
   Credentials({
     /**
@@ -51,7 +60,30 @@ const providers: Provider[] = [
      * intentional for every failure mode below: a distinct message for "no such
      * user" would turn this form into an account-enumeration oracle.
      */
-    async authorize(raw) {
+    async authorize(raw, request) {
+      /**
+       * Throttled before the password is even hashed.
+       *
+       * This endpoint is the credential-stuffing target, and every attempt costs a
+       * full bcrypt comparison at cost 12 - deliberately, to equalise timing - which
+       * makes an unthrottled login a CPU-exhaustion vector as well as a guessing one.
+       *
+       * Keyed on IP: there is no trustworthy account identity until the password
+       * verifies, and keying on the submitted email would let an attacker reset their
+       * own budget by varying it. Middleware cannot do this instead - its matcher
+       * excludes `api/auth/*`, because guarding those routes breaks the OAuth
+       * callback and the CSRF handshake.
+       *
+       * Returning null collapses into the same generic `CredentialsSignin` error as a
+       * wrong password, which keeps this from becoming an oracle for "this address is
+       * being targeted".
+       */
+      const ip = clientIpFrom(request.headers);
+
+      if (!checkRateLimit(`login:${ip}`, LOGIN_RATE_LIMIT).allowed) {
+        return null;
+      }
+
       // Re-validated server-side. The browser's Zod check is a UX affordance;
       // this call is reachable by a hand-rolled POST.
       const parsed = loginSchema.safeParse(raw);

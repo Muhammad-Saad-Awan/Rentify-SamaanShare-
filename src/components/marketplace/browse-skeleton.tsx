@@ -2,14 +2,24 @@ import { ListingsGridSkeleton } from "@/components/marketplace/listing-card-skel
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * Streamed while the browse queries run.
+ * Placeholder for the whole browse view while its queries run.
  *
- * The header and footer live in the layout above this boundary, so they stay
- * rendered and interactive - only the results column swaps. The toolbar and
- * sidebar are mirrored as well as the grid, because all three are absent on a
- * cold load and a skeleton that omits them shifts the layout when content lands.
+ * A plain component rather than a route-level `loading.tsx`, deliberately. A
+ * `loading.tsx` in the `listings` segment creates a Suspense boundary covering that
+ * segment *and every route nested under it*, including `/listings/[id]`. Next then
+ * flushes the shell with a 200 as soon as the fallback is ready, so the detail
+ * route's `notFound()` could no longer set a 404 status - an unknown listing
+ * returned 200 with the 404 page, which tells crawlers a dead URL is live. Measured
+ * both ways: 404 with this file absent as a route, 200 with it present.
+ *
+ * Rendered instead from an explicit `<Suspense>` inside the browse page, which
+ * keeps the streaming skeleton while leaving no boundary above the detail route.
+ *
+ * The toolbar and sidebar are mirrored as well as the grid, because all three are
+ * absent on a cold load and a skeleton that omits them shifts the layout when
+ * content arrives.
  */
-export default function BrowseListingsLoading() {
+function BrowseSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-6">
       <div className="flex flex-col gap-2">
@@ -45,3 +55,5 @@ export default function BrowseListingsLoading() {
     </div>
   );
 }
+
+export { BrowseSkeleton };

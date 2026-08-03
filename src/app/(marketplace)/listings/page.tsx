@@ -1,10 +1,16 @@
 import { PackageSearchIcon, SearchXIcon } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
+
+import { BrowseSkeleton } from "@/components/marketplace/browse-skeleton";
 
 import { ActiveFilters } from "@/components/marketplace/active-filters";
 import { ListingsFilters } from "@/components/marketplace/listings-filters";
 import { ListingsFiltersSheet } from "@/components/marketplace/listings-filters-sheet";
-import { ListingsGrid } from "@/components/marketplace/listings-grid";
+import {
+  ABOVE_FOLD_PRIORITY_COUNT,
+  ListingsGrid,
+} from "@/components/marketplace/listings-grid";
 import { ListingsSearch } from "@/components/marketplace/listings-search";
 import { ListingsSort } from "@/components/marketplace/listings-sort";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -22,7 +28,10 @@ import { getCategoryOptions } from "@/lib/queries/categories";
 import { getActiveListings } from "@/lib/queries/listings";
 import { getSavedListingIds } from "@/lib/queries/saved-listings";
 
-import type { RawSearchParams } from "@/lib/marketplace/filters";
+import type {
+  ListingFilters,
+  RawSearchParams,
+} from "@/lib/marketplace/filters";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -59,6 +68,33 @@ export default async function BrowseListingsPage({
 }: BrowseListingsPageProps) {
   const filters = parseListingFilters(await searchParams);
 
+  return (
+    // The skeleton is wired up here rather than as a route-level `loading.tsx` -
+    // see the note in `BrowseSkeleton` for why that file cannot exist in this
+    // segment without breaking the detail route's 404 status.
+    //
+    // The `key` is what makes the fallback reappear on a filter change. Without
+    // it React reuses the boundary across navigations and the user stares at the
+    // previous result set until the new one resolves. Keying on the serialised URL
+    // means one key per distinct browse state.
+    <Suspense key={buildListingsHref(filters)} fallback={<BrowseSkeleton />}>
+      <BrowseResults filters={filters} />
+    </Suspense>
+  );
+}
+
+interface BrowseResultsProps {
+  filters: ListingFilters;
+}
+
+/**
+ * Everything on the browse page that depends on a query.
+ *
+ * Split from the page so the whole view - heading, toolbar, sidebar and grid - sits
+ * behind one Suspense boundary. A narrower boundary would leave the toolbar waiting
+ * on the category query anyway, since it renders the filter selects.
+ */
+async function BrowseResults({ filters }: BrowseResultsProps) {
   // Independent reads, so they overlap rather than waiting on each other. The
   // category list is needed by the sidebar whether or not any listing matches.
   const [{ items, total, page, totalPages }, categories, user] =
@@ -141,6 +177,8 @@ export default async function BrowseListingsPage({
             searchTerm={filters.q}
             savedListingIds={savedListingIds}
             isAuthenticated={user !== null}
+            // The only grid on this page and the first thing below the toolbar.
+            priorityCount={ABOVE_FOLD_PRIORITY_COUNT}
           />
 
           {items.length === 0 && (

@@ -2,7 +2,10 @@ import { HeartIcon } from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/dashboard/page-header";
-import { ListingsGrid } from "@/components/marketplace/listings-grid";
+import {
+  ABOVE_FOLD_PRIORITY_COUNT,
+  ListingsGrid,
+} from "@/components/marketplace/listings-grid";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
 import { Button } from "@/components/ui/button";
@@ -67,6 +70,8 @@ export default async function SavedListingsPage({
         listings={items}
         savedListingIds={new Set(items.map((item) => item.id))}
         isAuthenticated
+        // The page's main content, directly under the title block.
+        priorityCount={ABOVE_FOLD_PRIORITY_COUNT}
       />
 
       {items.length === 0 &&

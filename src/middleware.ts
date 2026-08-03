@@ -11,7 +11,7 @@ import {
   PROTECTED_PREFIXES,
   matchesPrefix,
 } from "@/config/routes";
-import { UserRole } from "@/generated/prisma/enums";
+import { UserRole, UserStatus } from "@/generated/prisma/enums";
 
 /**
  * Edge middleware: session-aware routing.
@@ -35,13 +35,36 @@ export default auth((req) => {
   const session = req.auth;
   const isLoggedIn = Boolean(session?.user);
 
+  /**
+   * A session whose token still says the account is usable.
+   *
+   * Checked here as well as in `requireUser()` so a suspended user is turned away
+   * at the routing layer rather than after a page has already begun rendering. The
+   * value is up to 24h stale by design (`session.updateAge`); anything that must be
+   * exact re-reads the database.
+   */
+  const isUsable = isLoggedIn && session?.user.status === UserStatus.ACTIVE;
+
   const isAuthRoute = matchesPrefix(pathname, AUTH_ROUTES);
   const isProtectedRoute = matchesPrefix(pathname, PROTECTED_PREFIXES);
   const isAdminRoute = matchesPrefix(pathname, ADMIN_PREFIXES);
 
-  // Already signed in and visiting /login or /register - nothing to do there.
   if (isAuthRoute) {
-    if (isLoggedIn) {
+    /**
+     * Bounce a usable session away from /login and /register - except when the URL
+     * carries an `?error=`.
+     *
+     * That exception is load-bearing, not cosmetic. `requireUser()` verifies status
+     * against the *database*, while this check reads the *token*, and the two
+     * disagree for exactly the case that matters: an account banned mid-session
+     * still carries `status: "ACTIVE"` in its cookie for up to 24h. Without the
+     * exception, `requireUser()` would redirect that user to /login, this branch
+     * would see a healthy token and send them back to the dashboard, and
+     * `requireUser()` would reject them again - an infinite redirect loop.
+     */
+    const hasError = nextUrl.searchParams.has("error");
+
+    if (isUsable && !hasError) {
       return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
     }
 
@@ -57,6 +80,16 @@ export default auth((req) => {
       CALLBACK_URL_PARAM,
       `${pathname}${nextUrl.search}`
     );
+
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Signed in, but suspended or soft-deleted. No `callbackUrl`: there is nothing to
+  // return to until the account is reinstated, and carrying one would bounce them
+  // between login and the protected route.
+  if (isProtectedRoute && !isUsable) {
+    const loginUrl = new URL(LOGIN_ROUTE, nextUrl);
+    loginUrl.searchParams.set("error", "AccountSuspended");
 
     return NextResponse.redirect(loginUrl);
   }
