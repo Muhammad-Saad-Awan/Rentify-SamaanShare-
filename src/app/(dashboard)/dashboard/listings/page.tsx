@@ -1,4 +1,5 @@
 import { PackageIcon, PlusIcon } from "lucide-react";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/dashboard/page-header";
 import { PlaceholderCard } from "@/components/dashboard/placeholder-card";
@@ -13,11 +14,12 @@ export const metadata: Metadata = {
 };
 
 /**
- * Owner-facing listing management. Placeholder for Phase 3.
+ * Owner-facing listing management. Still a placeholder for the management grid.
  *
- * The "New listing" action is rendered `disabled`: `/listings/new` does not
- * exist yet, and a link to a 404 is worse than a visibly inert control. It
- * becomes a `Link` when the route lands.
+ * The "New listing" action is now a real link - `/listings/new` exists, so the
+ * previously-disabled button has been switched over. The listing *grid* below is still
+ * scaffolding: showing an owner their own listings with status controls is the
+ * remaining half of Phase 3.
  */
 export default async function MyListingsPage() {
   await requireUser();
@@ -28,7 +30,7 @@ export default async function MyListingsPage() {
         title="My Listings"
         description="Items you have published for rent."
         actions={
-          <Button disabled>
+          <Button render={<Link href="/listings/new" />}>
             <PlusIcon />
             New listing
           </Button>
@@ -38,7 +40,7 @@ export default async function MyListingsPage() {
       <PlaceholderCard
         icon={PackageIcon}
         title="No listings yet"
-        description="Creating and managing listings arrives in Phase 3. Your published items, their status and their view counts will all be shown here."
+        description="You can publish a listing now. Managing them here - status controls, view counts and quick edits - is the remaining part of Phase 3."
         phase="Phase 3"
       />
     </>

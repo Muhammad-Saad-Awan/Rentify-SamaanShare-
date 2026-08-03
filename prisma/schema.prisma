@@ -374,7 +374,14 @@ model ListingImage {
   id        String @id @default(cuid())
   listingId String
   url       String // Cloudinary URL
-  publicId  String // Cloudinary public ID for deletion
+  // Unique because one Cloudinary asset must belong to at most one listing. The
+  // create action already refuses a publicId that is attached elsewhere, but that
+  // check and the insert are separate statements: two concurrent submissions of the
+  // same photo both pass it, then both write. Deleting either listing would then
+  // destroy an image the other still displays. This constraint is what actually
+  // makes the rule hold - the application check turns it into a friendly error
+  // instead of a raw P2002.
+  publicId  String @unique // Cloudinary public ID for deletion
   order     Int    @default(0)
 
   createdAt DateTime @default(now())

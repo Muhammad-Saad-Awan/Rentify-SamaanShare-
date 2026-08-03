@@ -239,16 +239,16 @@ export type ListingImageOrderByWithRelationInput = {
 
 export type ListingImageWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  publicId?: string
   AND?: Prisma.ListingImageWhereInput | Prisma.ListingImageWhereInput[]
   OR?: Prisma.ListingImageWhereInput[]
   NOT?: Prisma.ListingImageWhereInput | Prisma.ListingImageWhereInput[]
   listingId?: Prisma.StringFilter<"ListingImage"> | string
   url?: Prisma.StringFilter<"ListingImage"> | string
-  publicId?: Prisma.StringFilter<"ListingImage"> | string
   order?: Prisma.IntFilter<"ListingImage"> | number
   createdAt?: Prisma.DateTimeFilter<"ListingImage"> | Date | string
   listing?: Prisma.XOR<Prisma.ListingScalarRelationFilter, Prisma.ListingWhereInput>
-}, "id">
+}, "id" | "publicId">
 
 export type ListingImageOrderByWithAggregationInput = {
   id?: Prisma.SortOrder

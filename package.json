@@ -20,6 +20,7 @@
     "db:migrate:reset": "prisma migrate reset",
     "db:seed": "prisma db seed",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
+    "cleanup:uploads": "tsx scripts/cleanup-pending-uploads.ts",
     "db:studio": "prisma studio",
     "db:validate": "prisma validate",
     "db:format": "prisma format"
