@@ -1,74 +1,136 @@
-import Image from "next/image";
+import { CategoryGrid } from "@/components/marketplace/category-grid";
+import { CityShortcuts } from "@/components/marketplace/city-shortcuts";
+import { CtaSection } from "@/components/marketplace/cta-section";
+import { HeroSection } from "@/components/marketplace/hero-section";
+import { HowItWorks } from "@/components/marketplace/how-it-works";
+import { ListingsGrid } from "@/components/marketplace/listings-grid";
+import { SectionHeading } from "@/components/marketplace/section-heading";
+import { JsonLd } from "@/components/shared/json-ld";
+import { siteConfig } from "@/config/site";
+import { parseListingFilters } from "@/lib/marketplace/filters";
+import {
+  organizationJsonLd,
+  websiteJsonLd,
+} from "@/lib/marketplace/structured-data";
+import { getFeaturedCategories } from "@/lib/queries/categories";
+import {
+  getActiveListingCountsByCity,
+  getActiveListings,
+} from "@/lib/queries/listings";
 
-export default function Home() {
+import type { Metadata } from "next";
+
+/** Two rows of four on the widest grid; a partial third row looks unfinished. */
+const FEATURED_LISTING_COUNT = 8;
+
+export const metadata: Metadata = {
+  // Overrides the `%s | SamaanShare` template from the root layout: the homepage
+  // title should not read "Home | SamaanShare".
+  title: {
+    absolute: `${siteConfig.name} - Rent Anything in Pakistan`,
+  },
+  description:
+    "Rent cameras, tools, camping gear and party equipment from people near you in Karachi, Lahore and Islamabad. List what you own and earn from it.",
+  alternates: {
+    // Explicit canonical so `/?utm_source=...` and other tracked variants
+    // consolidate onto one URL instead of competing as duplicates.
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: siteConfig.name,
+    title: `${siteConfig.name} - Rent Anything in Pakistan`,
+    description:
+      "Peer-to-peer rentals across Karachi, Lahore and Islamabad. Rent what you need, list what you own.",
+  },
+};
+
+/**
+ * Public homepage.
+ *
+ * Composes the marketplace's own data rather than static marketing copy: the
+ * category tiles, city counts and featured listings all come from the database, so
+ * the page cannot advertise a category that no longer exists or a count that does
+ * not match what browse shows.
+ *
+ * Dynamic rather than static, because `SiteHeader` in the layout above reads the
+ * session - a signed-in visitor must not be served a cached signed-out header. The
+ * three queries here are indexed count and page reads, not the reason it is
+ * dynamic.
+ */
+export default async function HomePage() {
+  // Independent reads, so they overlap instead of running in series.
+  const [featured, categories, cityCounts] = await Promise.all([
+    getActiveListings({
+      // The default state is "newest first, page 1", which is exactly what
+      // "latest listings" means - so this reuses the browse query rather than
+      // adding a second one that could drift from its visibility rule.
+      filters: parseListingFilters({}),
+      pageSize: FEATURED_LISTING_COUNT,
+    }),
+    getFeaturedCategories(),
+    getActiveListingCountsByCity(),
+  ]);
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      {/*
-        A `<div>`, not a `<main>`: the `(marketplace)` layout already renders the
-        page's single `<main>` landmark around this content.
+    <>
+      <JsonLd data={websiteJsonLd()} />
+      <JsonLd data={organizationJsonLd()} />
 
-        This is still the create-next-app placeholder. Replacing it with the real
-        hero, category grid and city selector is the remaining Phase 2 homepage
-        work - the move into this route group only gives it the site header and
-        footer in the meantime.
-      */}
-      <div className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl leading-10 font-semibold tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 transition-colors hover:bg-[#383838] md:w-[158px] dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+      <HeroSection listingCount={featured.total} />
+
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-14 px-4 py-14 lg:px-6">
+        <section className="flex flex-col gap-5">
+          <SectionHeading
+            title="Browse by category"
+            description="Every category below comes from the live catalogue, with the number of items currently available."
+            actionHref="/listings"
+            actionLabel="See all listings"
+          />
+
+          <CategoryGrid categories={categories} />
+        </section>
+
+        {/*
+          Hidden entirely when nothing is published. An empty state belongs on
+          browse, where the visitor asked to see listings; on the homepage a
+          "nothing here yet" panel just makes the marketplace look dead before
+          they have looked at anything.
+        */}
+        {featured.items.length > 0 && (
+          <section className="flex flex-col gap-5">
+            <SectionHeading
+              title="Latest listings"
+              description="The most recently published items across every city."
+              actionHref="/listings"
+              actionLabel="Browse all"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+            <ListingsGrid listings={featured.items} />
+          </section>
+        )}
+
+        <section className="flex flex-col gap-5">
+          <SectionHeading
+            title="Rent in your city"
+            description="SamaanShare is live in three cities to start with."
+          />
+
+          <CityShortcuts counts={cityCounts} />
+        </section>
+
+        <section className="flex flex-col gap-5">
+          <SectionHeading
+            title="How it works"
+            description="Three steps from finding an item to handing it back."
+          />
+
+          <HowItWorks />
+        </section>
       </div>
-    </div>
+
+      <CtaSection />
+    </>
   );
 }

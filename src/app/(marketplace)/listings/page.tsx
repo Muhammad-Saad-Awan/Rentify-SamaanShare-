@@ -17,7 +17,8 @@ import {
   hasActiveFilters,
   parseListingFilters,
 } from "@/lib/marketplace/filters";
-import { getActiveListings, getCategoryOptions } from "@/lib/queries/listings";
+import { getCategoryOptions } from "@/lib/queries/categories";
+import { getActiveListings } from "@/lib/queries/listings";
 
 import type { RawSearchParams } from "@/lib/marketplace/filters";
 import type { Metadata } from "next";
@@ -93,7 +94,10 @@ export default async function BrowseListingsPage({
             />
           </ListingsFiltersSheet>
 
-          <ListingsSort filters={filters} />
+          <ListingsSort
+            filters={filters}
+            hrefFor={(sort) => buildListingsHref(filters, { sort, page: 1 })}
+          />
         </div>
       </div>
 

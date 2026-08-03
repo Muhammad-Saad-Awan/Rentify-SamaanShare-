@@ -1,0 +1,131 @@
+import { cache } from "react";
+
+import { ListingStatus } from "@/generated/prisma/enums";
+import { prisma } from "@/lib/prisma";
+
+/**
+ * Read-only category queries.
+ *
+ * Split from `queries/listings.ts` once the homepage and the category route
+ * needed the taxonomy for their own sake rather than as filter options.
+ */
+
+/** Category with its subcategories, for the browse filter sidebar. */
+export interface CategoryOption {
+  name: string;
+  slug: string;
+  subcategories: readonly { name: string; slug: string }[];
+}
+
+/** A category tile on the homepage. */
+export interface FeaturedCategory {
+  name: string;
+  slug: string;
+  /** Lucide icon name from the seed, resolved by `categoryIcon()`. */
+  icon: string | null;
+  /** How many listings a visitor would actually find behind the tile. */
+  listingCount: number;
+}
+
+/** A category page's own content. */
+export interface CategoryDetail {
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string | null;
+  subcategories: readonly { name: string; slug: string }[];
+}
+
+/**
+ * Only `ACTIVE`, never soft-deleted - the same visibility rule browse applies.
+ *
+ * Declared once here because three counts depend on it, and a category tile
+ * advertising more items than its page shows is a bug a visitor notices
+ * immediately.
+ */
+const VISIBLE_LISTING = {
+  status: ListingStatus.ACTIVE,
+  deletedAt: null,
+} as const;
+
+/**
+ * The category tree for the filter sidebar.
+ *
+ * Ordered by name so the sidebar's option order is stable across requests -
+ * without an `orderBy` Postgres may return rows in any order, and a select whose
+ * options reshuffle between page loads is unusable.
+ */
+export async function getCategoryOptions(): Promise<CategoryOption[]> {
+  return prisma.category.findMany({
+    orderBy: { name: "asc" },
+    select: {
+      name: true,
+      slug: true,
+      subcategories: {
+        orderBy: { name: "asc" },
+        select: { name: true, slug: true },
+      },
+    },
+  });
+}
+
+/**
+ * Categories for the homepage grid, each with its live listing count.
+ *
+ * The count is filtered to visible listings rather than taken from a bare
+ * `_count`, which would include drafts, paused and soft-deleted rows. A tile
+ * reading "5 items" that opens onto three is worse than showing no count.
+ *
+ * Empty categories are kept, not hidden. The taxonomy is fixed reference data
+ * and a visitor browsing an empty category gets the "nothing here yet" empty
+ * state - which is honest - whereas a grid that silently changes shape as
+ * listings come and go looks broken.
+ */
+export async function getFeaturedCategories(): Promise<FeaturedCategory[]> {
+  const categories = await prisma.category.findMany({
+    orderBy: { name: "asc" },
+    select: {
+      name: true,
+      slug: true,
+      icon: true,
+      _count: { select: { listings: { where: VISIBLE_LISTING } } },
+    },
+  });
+
+  return categories.map((category) => ({
+    name: category.name,
+    slug: category.slug,
+    icon: category.icon,
+    listingCount: category._count.listings,
+  }));
+}
+
+/**
+ * One category by slug, or `null` when it does not exist.
+ *
+ * Returns `null` rather than throwing so the route can call `notFound()` and
+ * render a 404 - an unknown slug is a normal request for a page that is not
+ * there, not an error condition.
+ *
+ * Wrapped in React's `cache()` because three things in one request need it: the
+ * category layout (which validates the slug), the page, and `generateMetadata`.
+ * Without memoisation that is three identical round trips to Neon per page view;
+ * with it, the first call runs and the other two read its result.
+ */
+export const getCategoryBySlug = cache(
+  async (slug: string): Promise<CategoryDetail | null> => {
+    return prisma.category.findUnique({
+      where: { slug },
+      select: {
+        name: true,
+        slug: true,
+        description: true,
+        icon: true,
+        subcategories: {
+          orderBy: { name: "asc" },
+          select: { name: true, slug: true },
+        },
+      },
+    });
+  }
+);

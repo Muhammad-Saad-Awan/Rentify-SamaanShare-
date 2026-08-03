@@ -1,12 +1,20 @@
 import Link from "next/link";
 
-import { buildListingsHref, SORT_OPTIONS } from "@/lib/marketplace/filters";
+import { SORT_OPTIONS } from "@/lib/marketplace/filters";
 import { cn } from "@/lib/utils/cn";
 
-import type { ListingFilters } from "@/lib/marketplace/filters";
+import type { ListingFilters, ListingSort } from "@/lib/marketplace/filters";
 
 interface ListingsSortProps {
   filters: ListingFilters;
+  /**
+   * Builds the href for a sort option.
+   *
+   * Supplied by the caller for the same reason `Pagination` takes one: both
+   * `/listings` and `/categories/[slug]` render this control, and only the route
+   * knows its own base path and which parameters its path already implies.
+   */
+  hrefFor: (sort: ListingSort) => string;
   className?: string;
 }
 
@@ -19,14 +27,15 @@ interface ListingsSortProps {
  * JavaScript and no client component. With only four options a visible group
  * also shows the current ordering without opening anything.
  *
- * Every link resets `page` to 1. A reorder invalidates the current position - the
- * listings that were on page 3 are somewhere else entirely - so keeping the page
- * number would drop the user into an unrelated slice of the results.
+ * Callers are expected to reset `page` to 1 in `hrefFor`. A reorder invalidates
+ * the current position - the listings that were on page 3 are somewhere else
+ * entirely - so carrying the page number over would drop the user into an
+ * unrelated slice of the results.
  *
  * Scrolls horizontally rather than wrapping on a narrow viewport: a wrapped
  * segmented control breaks its shared border and reads as two separate controls.
  */
-function ListingsSort({ filters, className }: ListingsSortProps) {
+function ListingsSort({ filters, hrefFor, className }: ListingsSortProps) {
   return (
     <nav
       aria-label="Sort listings"
@@ -39,10 +48,7 @@ function ListingsSort({ filters, className }: ListingsSortProps) {
           return (
             <li key={option.value}>
               <Link
-                href={buildListingsHref(filters, {
-                  sort: option.value,
-                  page: 1,
-                })}
+                href={hrefFor(option.value)}
                 // `aria-current` is what conveys the active ordering; the
                 // background alone is invisible to assistive tech. `aria-label`
                 // carries the full phrasing, since "Price ↑" is not meaningful

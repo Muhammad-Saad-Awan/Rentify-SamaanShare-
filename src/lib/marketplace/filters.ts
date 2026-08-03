@@ -151,20 +151,47 @@ export function parseListingFilters(params: RawSearchParams): ListingFilters {
  */
 export function buildListingsHref(
   filters: ListingFilters,
-  overrides: Partial<ListingFilters> = {}
+  overrides: Partial<ListingFilters> = {},
+  options: BrowseHrefOptions = {}
 ): string {
+  const basePath = options.basePath ?? "/listings";
   const search = new URLSearchParams();
 
-  for (const [name, value] of listingFilterEntries({
-    ...filters,
-    ...overrides,
-  })) {
+  for (const [name, value] of listingFilterEntries(
+    { ...filters, ...overrides },
+    options
+  )) {
     search.append(name, value);
   }
 
   const query = search.toString();
 
-  return query ? `/listings?${query}` : "/listings";
+  return query ? `${basePath}?${query}` : basePath;
+}
+
+/**
+ * Where a browse URL points, and what the path already implies.
+ *
+ * Two routes render the same browse state: `/listings`, and
+ * `/categories/[slug]` scoped to one category. Both need sort and pagination
+ * links, so the path cannot be baked into the serializer.
+ */
+export interface BrowseHrefOptions {
+  /** Defaults to `/listings`. */
+  basePath?: string;
+  /**
+   * Leave `category` out of the query string.
+   *
+   * Set on `/categories/[slug]`, where the path already names the category.
+   * Without it every link there would read
+   * `/categories/electronics?category=electronics`, which is redundant and
+   * would let the two disagree if one were ever edited by hand.
+   *
+   * The category is still *present* in the filter state - it has to be, or the
+   * query would not scope and `subcategory` would be dropped as orphaned. It is
+   * only omitted from the rendered URL.
+   */
+  omitCategory?: boolean;
 }
 
 /**
@@ -180,14 +207,15 @@ export function buildListingsHref(
  * filtered" check ambiguous.
  */
 export function listingFilterEntries(
-  filters: ListingFilters
+  filters: ListingFilters,
+  options: BrowseHrefOptions = {}
 ): [string, string][] {
   const entries: [string, string][] = [];
 
   if (filters.q) {
     entries.push([FILTER_PARAM.q, filters.q]);
   }
-  if (filters.category) {
+  if (filters.category && !options.omitCategory) {
     entries.push([FILTER_PARAM.category, filters.category]);
   }
   // A subcategory without its parent category is meaningless to the user even

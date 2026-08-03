@@ -38,13 +38,6 @@ export interface ListingCardData {
   imageUrl: string | null;
 }
 
-/** Category with its subcategories, for the browse filter sidebar. */
-export interface CategoryOption {
-  name: string;
-  slug: string;
-  subcategories: readonly { name: string; slug: string }[];
-}
-
 interface GetActiveListingsOptions {
   filters: ListingFilters;
   pageSize?: number;
@@ -114,24 +107,27 @@ export async function getActiveListings({
 }
 
 /**
- * The category tree for the filter sidebar.
+ * Live listing counts for the homepage's city shortcuts.
  *
- * Ordered by name so the sidebar's option order is stable across requests -
- * without an `orderBy` Postgres may return rows in any order, and a select whose
- * options reshuffle between page loads is unusable.
+ * `groupBy` rather than one count per city: three sequential counts would be
+ * three round trips to Neon for a number each, and the list of cities is
+ * expected to grow past the three launch markets.
+ *
+ * Returned as a `Map` keyed by city slug because the caller renders from
+ * `PAKISTANI_CITIES` - the configured launch cities, in their configured order -
+ * and needs to look each one up. A city with no listings is simply absent from
+ * the result, so callers must treat a miss as zero.
  */
-export async function getCategoryOptions(): Promise<CategoryOption[]> {
-  return prisma.category.findMany({
-    orderBy: { name: "asc" },
-    select: {
-      name: true,
-      slug: true,
-      subcategories: {
-        orderBy: { name: "asc" },
-        select: { name: true, slug: true },
-      },
-    },
+export async function getActiveListingCountsByCity(): Promise<
+  Map<string, number>
+> {
+  const groups = await prisma.listing.groupBy({
+    by: ["city"],
+    where: { status: ListingStatus.ACTIVE, deletedAt: null },
+    _count: { _all: true },
   });
+
+  return new Map(groups.map((group) => [group.city, group._count._all]));
 }
 
 /**

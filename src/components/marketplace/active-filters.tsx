@@ -11,7 +11,7 @@ import { formatDate } from "@/lib/utils/date";
 import { CONDITION_LABELS, formatCity } from "@/lib/utils/listing";
 
 import type { ListingFilters } from "@/lib/marketplace/filters";
-import type { CategoryOption } from "@/lib/queries/listings";
+import type { CategoryOption } from "@/lib/queries/categories";
 
 interface ActiveFiltersProps {
   filters: ListingFilters;
