@@ -27,6 +27,11 @@ export const PROTECTED_PREFIXES = [
   "/dashboard",
   "/listings/new",
   "/bookings",
+  // The wishlist. A top-level prefix rather than `/dashboard/saved`, matching
+  // `/profile` and `/settings`, and it must be listed here for middleware to
+  // attach a `callbackUrl` - which is what returns a signed-out visitor to the
+  // page after they log in.
+  "/saved",
   "/profile",
   "/settings",
   "/admin",

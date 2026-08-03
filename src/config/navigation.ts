@@ -74,7 +74,7 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
         href: "/dashboard/bookings",
         icon: CalendarCheckIcon,
       },
-      { title: "Saved Listings", href: "/dashboard/saved", icon: HeartIcon },
+      { title: "Saved Listings", href: "/saved", icon: HeartIcon },
     ],
   },
   {

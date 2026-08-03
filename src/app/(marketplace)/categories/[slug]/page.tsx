@@ -13,9 +13,11 @@ import {
   buildListingsHref,
   parseListingFilters,
 } from "@/lib/marketplace/filters";
+import { getCurrentUser } from "@/lib/auth/session";
 import { categoryJsonLd } from "@/lib/marketplace/structured-data";
 import { getCategoryBySlug } from "@/lib/queries/categories";
 import { getActiveListings } from "@/lib/queries/listings";
+import { getSavedListingIds } from "@/lib/queries/saved-listings";
 import { categoryIcon } from "@/lib/utils/category-icon";
 
 import type {
@@ -109,9 +111,16 @@ export default async function CategoryPage({
     page: requested.page,
   };
 
-  const { items, total, page, totalPages } = await getActiveListings({
-    filters,
-  });
+  const [{ items, total, page, totalPages }, user] = await Promise.all([
+    getActiveListings({ filters }),
+    getCurrentUser(),
+  ]);
+
+  // Depends on which listings matched, so it runs after rather than alongside.
+  const savedListingIds = await getSavedListingIds(
+    user?.id,
+    items.map((item) => item.id)
+  );
 
   // The path already names the category, so no link on this page repeats it in a
   // query string.
@@ -205,7 +214,11 @@ export default async function CategoryPage({
           </div>
         </div>
 
-        <ListingsGrid listings={items} />
+        <ListingsGrid
+          listings={items}
+          savedListingIds={savedListingIds}
+          isAuthenticated={user !== null}
+        />
 
         {items.length === 0 && (
           <CategoryEmptyState

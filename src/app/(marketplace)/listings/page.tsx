@@ -17,8 +17,10 @@ import {
   hasActiveFilters,
   parseListingFilters,
 } from "@/lib/marketplace/filters";
+import { getCurrentUser } from "@/lib/auth/session";
 import { getCategoryOptions } from "@/lib/queries/categories";
 import { getActiveListings } from "@/lib/queries/listings";
+import { getSavedListingIds } from "@/lib/queries/saved-listings";
 
 import type { RawSearchParams } from "@/lib/marketplace/filters";
 import type { Metadata } from "next";
@@ -57,12 +59,22 @@ export default async function BrowseListingsPage({
 }: BrowseListingsPageProps) {
   const filters = parseListingFilters(await searchParams);
 
-  // Independent queries, so they overlap rather than waiting on each other. The
+  // Independent reads, so they overlap rather than waiting on each other. The
   // category list is needed by the sidebar whether or not any listing matches.
-  const [{ items, total, page, totalPages }, categories] = await Promise.all([
-    getActiveListings({ filters }),
-    getCategoryOptions(),
-  ]);
+  const [{ items, total, page, totalPages }, categories, user] =
+    await Promise.all([
+      getActiveListings({ filters }),
+      getCategoryOptions(),
+      getCurrentUser(),
+    ]);
+
+  // Sequential by necessity: which saves matter depends on which listings came
+  // back. Scoped to this page's ids, so it is one bounded indexed read rather than
+  // the user's entire wishlist.
+  const savedListingIds = await getSavedListingIds(
+    user?.id,
+    items.map((item) => item.id)
+  );
 
   const filtered = hasActiveFilters(filters);
 
@@ -124,7 +136,12 @@ export default async function BrowseListingsPage({
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <ActiveFilters filters={filters} categories={categories} />
 
-          <ListingsGrid listings={items} searchTerm={filters.q} />
+          <ListingsGrid
+            listings={items}
+            searchTerm={filters.q}
+            savedListingIds={savedListingIds}
+            isAuthenticated={user !== null}
+          />
 
           {items.length === 0 && (
             <BrowseEmptyState

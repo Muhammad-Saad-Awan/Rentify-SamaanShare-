@@ -17,6 +17,15 @@ interface ListingsGridProps {
   searchTerm?: string | null;
   /** Forwarded to every card - see the note on `ListingCard.linkToDetail`. */
   linkToDetail?: boolean;
+  /**
+   * Ids the viewer has saved, from `getSavedListingIds`.
+   *
+   * A set rather than a flag per card, so one membership test per card replaces a
+   * query per card. Omitted for a signed-out visitor, where nothing is saved.
+   */
+  savedListingIds?: ReadonlySet<string>;
+  /** Whether a session exists, forwarded to each card's save control. */
+  isAuthenticated?: boolean;
 }
 
 /**
@@ -35,6 +44,8 @@ function ListingsGrid({
   listings,
   searchTerm = null,
   linkToDetail = false,
+  savedListingIds,
+  isAuthenticated = false,
 }: ListingsGridProps) {
   if (listings.length === 0) {
     return null;
@@ -51,6 +62,8 @@ function ListingsGrid({
             searchTerm={searchTerm}
             linkToDetail={linkToDetail}
             priority={index < PRIORITY_CARD_COUNT}
+            isSaved={savedListingIds?.has(listing.id) ?? false}
+            isAuthenticated={isAuthenticated}
           />
         </li>
       ))}

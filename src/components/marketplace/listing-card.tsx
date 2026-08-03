@@ -2,6 +2,7 @@ import { ImageOffIcon, MapPinIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { SaveListingButton } from "@/components/marketplace/save-listing-button";
 import { HighlightText } from "@/components/shared/highlight-text";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -34,6 +35,10 @@ interface ListingCardProps {
    * every card claiming it.
    */
   priority?: boolean;
+  /** Whether the viewer has this listing on their wishlist. */
+  isSaved?: boolean;
+  /** Whether a session exists - the save control behaves differently without one. */
+  isAuthenticated?: boolean;
 }
 
 /**
@@ -48,6 +53,8 @@ function ListingCard({
   searchTerm = null,
   linkToDetail = false,
   priority = false,
+  isSaved = false,
+  isAuthenticated = false,
 }: ListingCardProps) {
   const body = (
     <Card className="h-full gap-0 pt-0 transition-shadow hover:shadow-md">
@@ -83,6 +90,21 @@ function ListingCard({
         >
           {CONDITION_LABELS[listing.condition]}
         </Badge>
+
+        {/*
+          Top-left, opposite the condition badge, so the two never overlap.
+
+          NOTE for Phase 3: when `linkToDetail` is switched on, this must be lifted
+          out of the wrapping `<Link>` below. A button inside an anchor is invalid
+          HTML and the click would race the navigation.
+        */}
+        <SaveListingButton
+          listingId={listing.id}
+          listingTitle={listing.title}
+          isSaved={isSaved}
+          isAuthenticated={isAuthenticated}
+          className="absolute top-2 left-2"
+        />
       </div>
 
       <div className="flex flex-col gap-2 px-(--card-spacing) pt-(--card-spacing)">

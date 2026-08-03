@@ -7,6 +7,7 @@ import { ListingsGrid } from "@/components/marketplace/listings-grid";
 import { SectionHeading } from "@/components/marketplace/section-heading";
 import { JsonLd } from "@/components/shared/json-ld";
 import { siteConfig } from "@/config/site";
+import { getCurrentUser } from "@/lib/auth/session";
 import { parseListingFilters } from "@/lib/marketplace/filters";
 import {
   organizationJsonLd,
@@ -17,6 +18,7 @@ import {
   getActiveListingCountsByCity,
   getActiveListings,
 } from "@/lib/queries/listings";
+import { getSavedListingIds } from "@/lib/queries/saved-listings";
 
 import type { Metadata } from "next";
 
@@ -61,7 +63,7 @@ export const metadata: Metadata = {
  */
 export default async function HomePage() {
   // Independent reads, so they overlap instead of running in series.
-  const [featured, categories, cityCounts] = await Promise.all([
+  const [featured, categories, cityCounts, user] = await Promise.all([
     getActiveListings({
       // The default state is "newest first, page 1", which is exactly what
       // "latest listings" means - so this reuses the browse query rather than
@@ -71,7 +73,14 @@ export default async function HomePage() {
     }),
     getFeaturedCategories(),
     getActiveListingCountsByCity(),
+    getCurrentUser(),
   ]);
+
+  // Depends on which listings were featured, so it cannot join the batch above.
+  const savedListingIds = await getSavedListingIds(
+    user?.id,
+    featured.items.map((item) => item.id)
+  );
 
   return (
     <>
@@ -107,7 +116,11 @@ export default async function HomePage() {
               actionLabel="Browse all"
             />
 
-            <ListingsGrid listings={featured.items} />
+            <ListingsGrid
+              listings={featured.items}
+              savedListingIds={savedListingIds}
+              isAuthenticated={user !== null}
+            />
           </section>
         )}
 
