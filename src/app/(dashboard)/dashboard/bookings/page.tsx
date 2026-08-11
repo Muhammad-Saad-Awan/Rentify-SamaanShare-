@@ -29,9 +29,10 @@ interface BookingsPageProps {
  * Scoped by `renterId` from the session, so there is no identifier for anyone else's bookings
  * to tamper with.
  *
- * Read-only in this slice. Cancelling is part of the renter-actions work, and a Cancel button
- * that did nothing would be worse than none - the same reasoning that kept "Contact owner"
- * visibly disabled until bookings existed.
+ * The renter's half of the lifecycle lives here: arranging payment, following the pickup
+ * instructions, cancelling while that is still possible, and tracking whether the deposit came
+ * back. What each row offers is decided by `BookingActions` from the status and the pre-computed
+ * eligibility on the summary.
  */
 export default async function MyBookingsPage({
   searchParams,

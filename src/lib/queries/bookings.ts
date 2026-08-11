@@ -1,8 +1,13 @@
 import { BookingStatus } from "@/generated/prisma/enums";
+import { depositState } from "@/lib/bookings/deposit";
 import { expireStalePendingBookings } from "@/lib/bookings/expire";
+import { canRenterCancel, canStartBooking } from "@/lib/bookings/lifecycle";
 import { prisma } from "@/lib/prisma";
 import { LISTINGS_PAGE_SIZE } from "@/lib/queries/listings";
 
+import type { DepositState } from "@/lib/bookings/deposit";
+import type { CancelEligibility } from "@/lib/bookings/lifecycle";
+import type { PaymentMethod, PaymentStatus } from "@/generated/prisma/enums";
 import type { PaginatedResult } from "@/types";
 
 /**
@@ -24,6 +29,8 @@ export interface BookingSummary {
   pickupInstructions: string | null;
   statusReason: string | null;
   createdAt: Date;
+  startedAt: Date | null;
+  completedAt: Date | null;
   listing: {
     id: string;
     title: string;
@@ -32,6 +39,31 @@ export interface BookingSummary {
   };
   /** The other party: the owner for a renter's view, the renter for an owner's. */
   counterparty: { name: string | null };
+  /** `null` until the renter has chosen how to pay. */
+  payment: {
+    method: PaymentMethod;
+    status: PaymentStatus;
+    confirmedAt: Date | null;
+  } | null;
+  /**
+   * Where the security deposit stands, computed server-side.
+   *
+   * Derived here rather than in the card because it depends on the current time, and a countdown
+   * evaluated in the browser against server-rendered HTML is a hydration mismatch. Every row in
+   * one list is measured against the same instant.
+   */
+  deposit: DepositState;
+  /**
+   * What each side is allowed to do next, decided by the pure lifecycle rules.
+   *
+   * Pre-computed so the card renders permissions rather than re-deriving them. The action still
+   * enforces every one of these independently - these exist to keep the UI from offering a button
+   * that would only fail, not to be the check.
+   */
+  eligibility: {
+    renterCanCancel: CancelEligibility;
+    ownerCanStart: CancelEligibility;
+  };
 }
 
 /**
@@ -52,6 +84,8 @@ const bookingSelect = {
   pickupInstructions: true,
   statusReason: true,
   createdAt: true,
+  startedAt: true,
+  completedAt: true,
   listing: {
     select: {
       id: true,
@@ -62,6 +96,22 @@ const bookingSelect = {
   },
   renter: { select: { name: true } },
   owner: { select: { name: true } },
+  /**
+   * The payment, for the status the two dashboards branch on.
+   *
+   * `securityDeposit` comes from the payment rather than the booking, because the deposit clock
+   * is about the money actually arranged - the two agree today, and reading the one the deposit
+   * state is derived from keeps them from silently disagreeing later.
+   */
+  payment: {
+    select: {
+      method: true,
+      status: true,
+      confirmedAt: true,
+      securityDeposit: true,
+      depositReturnedAt: true,
+    },
+  },
 } as const;
 
 type BookingRow = {
@@ -75,6 +125,8 @@ type BookingRow = {
   pickupInstructions: string | null;
   statusReason: string | null;
   createdAt: Date;
+  startedAt: Date | null;
+  completedAt: Date | null;
   listing: {
     id: string;
     title: string;
@@ -83,9 +135,29 @@ type BookingRow = {
   };
   renter: { name: string | null };
   owner: { name: string | null };
+  payment: {
+    method: PaymentMethod;
+    status: PaymentStatus;
+    confirmedAt: Date | null;
+    securityDeposit: number;
+    depositReturnedAt: Date | null;
+  } | null;
 };
 
-function toSummary(row: BookingRow, side: "renter" | "owner"): BookingSummary {
+/**
+ * Projects a row for one side of the booking.
+ *
+ * `now` is passed in rather than read here, so every row in a list is measured against a single
+ * instant - otherwise two bookings completed seconds apart can render countdowns that contradict
+ * their order.
+ */
+function toSummary(
+  row: BookingRow,
+  side: "renter" | "owner",
+  now: Date
+): BookingSummary {
+  const paymentStatus = row.payment?.status ?? null;
+
   return {
     id: row.id,
     status: row.status,
@@ -97,6 +169,8 @@ function toSummary(row: BookingRow, side: "renter" | "owner"): BookingSummary {
     pickupInstructions: row.pickupInstructions,
     statusReason: row.statusReason,
     createdAt: row.createdAt,
+    startedAt: row.startedAt,
+    completedAt: row.completedAt,
     listing: {
       id: row.listing.id,
       title: row.listing.title,
@@ -105,6 +179,25 @@ function toSummary(row: BookingRow, side: "renter" | "owner"): BookingSummary {
     },
     // A renter is shown the owner, and vice versa.
     counterparty: side === "renter" ? row.owner : row.renter,
+    payment: row.payment
+      ? {
+          method: row.payment.method,
+          status: row.payment.status,
+          confirmedAt: row.payment.confirmedAt,
+        }
+      : null,
+    deposit: depositState({
+      // Falls back to the booking's captured figure when no payment exists yet, so a booking
+      // awaiting payment still reports "not due" rather than "none" for a real deposit.
+      securityDeposit: row.payment?.securityDeposit ?? row.securityDeposit,
+      completedAt: row.completedAt,
+      depositReturnedAt: row.payment?.depositReturnedAt ?? null,
+      now,
+    }),
+    eligibility: {
+      renterCanCancel: canRenterCancel({ status: row.status, paymentStatus }),
+      ownerCanStart: canStartBooking({ status: row.status, paymentStatus }),
+    },
   };
 }
 
@@ -141,8 +234,11 @@ export async function getRenterBookings({
     prisma.booking.count({ where }),
   ]);
 
+  // One instant for the whole page, so deposit countdowns cannot contradict the ordering.
+  const now = new Date();
+
   return {
-    items: rows.map((row) => toSummary(row, "renter")),
+    items: rows.map((row) => toSummary(row, "renter", now)),
     total,
     page: currentPage,
     pageSize,
@@ -192,8 +288,10 @@ export async function getOwnerBookingRequests({
     }),
   ]);
 
+  const now = new Date();
+
   return {
-    items: rows.map((row) => toSummary(row, "owner")),
+    items: rows.map((row) => toSummary(row, "owner", now)),
     total,
     page: currentPage,
     pageSize,

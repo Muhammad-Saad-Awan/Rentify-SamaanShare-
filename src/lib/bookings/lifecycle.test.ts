@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 
+import { BookingStatus, PaymentStatus } from "@/generated/prisma/enums";
 import {
   ALLOWED_BOOKING_TRANSITIONS,
+  canRenterCancel,
+  canStartBooking,
   canTransition,
   DATE_HOLDING_STATUSES,
   holdsDates,
   isPendingExpired,
+  isTerminal,
   PENDING_EXPIRY_HOURS,
   pendingExpiryCutoff,
 } from "@/lib/bookings/lifecycle";
@@ -119,5 +123,157 @@ describe("BookingStatus declaration order", () => {
     // Postgres orders an enum by declaration order rather than alphabetically. Reordering the
     // enum in schema.prisma would silently reshuffle that screen, so it is pinned here.
     expect(Object.keys(ALLOWED_BOOKING_TRANSITIONS)[0]).toBe("PENDING");
+  });
+});
+
+/**
+ * Cancellation and pickup eligibility.
+ *
+ * These two guards carry the phase's most consequential rule: a renter may not cancel once the
+ * owner has confirmed receiving money, because payment is offline and the platform cannot refund
+ * what it never held. A regression here would put a Cancel button in front of a renter and then
+ * fail - or worse, succeed and leave them out of pocket with no recourse.
+ */
+
+describe("canRenterCancel", () => {
+  it("allows cancelling before the owner has responded", () => {
+    expect(
+      canRenterCancel({ status: BookingStatus.PENDING, paymentStatus: null })
+    ).toEqual({ allowed: true });
+  });
+
+  it("allows cancelling after approval, before payment is arranged", () => {
+    expect(
+      canRenterCancel({ status: BookingStatus.APPROVED, paymentStatus: null })
+    ).toEqual({ allowed: true });
+  });
+
+  it("allows cancelling while the payment is only arranged, not confirmed", () => {
+    expect(
+      canRenterCancel({
+        status: BookingStatus.PAYMENT_PENDING,
+        paymentStatus: PaymentStatus.AWAITING_CONFIRMATION,
+      })
+    ).toEqual({ allowed: true });
+  });
+
+  /** The rule the whole offline-payment design rests on. */
+  it("refuses once the owner has confirmed receiving payment", () => {
+    const result = canRenterCancel({
+      status: BookingStatus.PAYMENT_PENDING,
+      paymentStatus: PaymentStatus.COMPLETED,
+    });
+
+    expect(result.allowed).toBe(false);
+    // The renter must be pointed at the owner, and must not be told the platform holds the money.
+    expect(result).toMatchObject({
+      reason: expect.stringContaining("does not hold"),
+    });
+  });
+
+  it("refuses once the item is out", () => {
+    expect(
+      canRenterCancel({
+        status: BookingStatus.ACTIVE,
+        paymentStatus: PaymentStatus.COMPLETED,
+      }).allowed
+    ).toBe(false);
+  });
+
+  it("refuses on every terminal status", () => {
+    for (const status of [
+      BookingStatus.COMPLETED,
+      BookingStatus.REVIEWED,
+      BookingStatus.DECLINED,
+      BookingStatus.CANCELLED,
+      BookingStatus.EXPIRED,
+    ]) {
+      expect(canRenterCancel({ status, paymentStatus: null }).allowed).toBe(
+        false
+      );
+    }
+  });
+
+  it("never permits a cancellation the transition table forbids", () => {
+    // The two rules are written independently, so this pins them together: anything this guard
+    // allows must also be a legal edge, or an action would pass its own check and then fail.
+    for (const status of Object.values(BookingStatus)) {
+      const eligible = canRenterCancel({
+        status,
+        paymentStatus: PaymentStatus.AWAITING_CONFIRMATION,
+      }).allowed;
+
+      if (eligible) {
+        expect(canTransition(status, BookingStatus.CANCELLED)).toBe(true);
+      }
+    }
+  });
+});
+
+describe("canStartBooking", () => {
+  it("allows a pickup once payment is confirmed", () => {
+    expect(
+      canStartBooking({
+        status: BookingStatus.PAYMENT_PENDING,
+        paymentStatus: PaymentStatus.COMPLETED,
+      })
+    ).toEqual({ allowed: true });
+  });
+
+  it("refuses while the payment is merely arranged", () => {
+    const result = canStartBooking({
+      status: BookingStatus.PAYMENT_PENDING,
+      paymentStatus: PaymentStatus.AWAITING_CONFIRMATION,
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result).toMatchObject({
+      reason: expect.stringContaining("received the rental payment"),
+    });
+  });
+
+  it("refuses when no payment has been arranged at all", () => {
+    expect(
+      canStartBooking({
+        status: BookingStatus.PAYMENT_PENDING,
+        paymentStatus: null,
+      }).allowed
+    ).toBe(false);
+  });
+
+  it("explains that an approved booking is waiting on the renter", () => {
+    expect(
+      canStartBooking({
+        status: BookingStatus.APPROVED,
+        paymentStatus: null,
+      })
+    ).toMatchObject({
+      allowed: false,
+      reason: expect.stringContaining("not chosen how to pay"),
+    });
+  });
+
+  it("refuses from every status other than PAYMENT_PENDING", () => {
+    for (const status of Object.values(BookingStatus)) {
+      if (status === BookingStatus.PAYMENT_PENDING) {
+        continue;
+      }
+
+      expect(
+        canStartBooking({ status, paymentStatus: PaymentStatus.COMPLETED })
+          .allowed
+      ).toBe(false);
+    }
+  });
+});
+
+describe("isTerminal", () => {
+  it("is exactly the statuses with no outgoing edge", () => {
+    expect(Object.values(BookingStatus).filter(isTerminal)).toEqual([
+      BookingStatus.REVIEWED,
+      BookingStatus.DECLINED,
+      BookingStatus.CANCELLED,
+      BookingStatus.EXPIRED,
+    ]);
   });
 });

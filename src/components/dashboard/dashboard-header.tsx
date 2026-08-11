@@ -1,6 +1,11 @@
+import { Suspense } from "react";
+
 import { DashboardBreadcrumbs } from "@/components/dashboard/dashboard-breadcrumbs";
 import { DashboardMobileNav } from "@/components/dashboard/dashboard-mobile-nav";
-import { NotificationBell } from "@/components/dashboard/notification-bell";
+import {
+  NotificationBell,
+  NotificationBellFallback,
+} from "@/components/dashboard/notification-bell";
 import { UserMenu } from "@/components/dashboard/user-menu";
 
 import type { Session } from "next-auth";
@@ -28,7 +33,11 @@ function DashboardHeader({ user }: DashboardHeaderProps) {
       <DashboardBreadcrumbs className="min-w-0 flex-1" />
 
       <div className="flex shrink-0 items-center gap-0.5">
-        <NotificationBell />
+        {/* Suspended on its own so the two notification queries never hold up the header. */}
+        <Suspense fallback={<NotificationBellFallback />}>
+          <NotificationBell userId={user.id} />
+        </Suspense>
+
         <UserMenu user={user} />
       </div>
     </header>

@@ -1,20 +1,9 @@
-"use client";
-
-import {
-  CheckIcon,
-  ClockIcon,
-  ImageIcon,
-  Loader2Icon,
-  XIcon,
-} from "lucide-react";
+import { ClockIcon, ImageIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useTransition } from "react";
-import { toast } from "sonner";
 
-import { acceptBooking, declineBooking } from "@/actions/bookings";
+import { BookingActions } from "@/components/bookings/booking-actions";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { BookingStatus } from "@/generated/prisma/enums";
 import { PENDING_EXPIRY_HOURS } from "@/lib/bookings/lifecycle";
@@ -29,8 +18,8 @@ interface BookingCardProps {
   /**
    * Which side is looking.
    *
-   * The owner view gets accept and decline on a pending request; the renter view is read-only
-   * in this slice - cancelling belongs with the renter-actions work.
+   * Decides both the counterparty label and which half of the lifecycle the action area offers -
+   * the renter arranges payment and may cancel, the owner decides, confirms and records handovers.
    */
   side: "renter" | "owner";
 }
@@ -38,39 +27,13 @@ interface BookingCardProps {
 /**
  * One booking, from either side.
  *
- * A Client Component because the owner's decisions are actions with pending states. The server
- * decides what is permitted - ownership and the transition table both live in the action - so
- * the buttons here are an affordance, never the rule.
- *
- * No optimistic status. A decision changes what the whole row means and, for a decline, frees
- * the calendar; flipping the badge before the server agrees would be a guess about state that
- * governs whether someone else can book those days.
+ * A Server Component now: the interactive part moved to {@link BookingActions} when the lifecycle
+ * grew past two buttons, which keeps the row's presentation - image, dates, amounts - out of the
+ * client bundle. Everything time-dependent (the deposit window) is computed in the query against
+ * one instant per page, so nothing here has to know what time it is.
  */
 function BookingCard({ booking, side }: BookingCardProps) {
-  const [isPending, startTransition] = useTransition();
-
   const awaitingDecision = booking.status === BookingStatus.PENDING;
-
-  function decide(kind: "accept" | "decline") {
-    startTransition(async () => {
-      const result =
-        kind === "accept"
-          ? await acceptBooking({ bookingId: booking.id })
-          : await declineBooking({ bookingId: booking.id });
-
-      if (!result.success) {
-        toast.error(result.error);
-
-        return;
-      }
-
-      toast.success(
-        kind === "accept"
-          ? "Request approved. The renter can now arrange payment."
-          : "Request declined and those dates are free again."
-      );
-    });
-  }
 
   return (
     <Card>
@@ -168,33 +131,7 @@ function BookingCard({ booking, side }: BookingCardProps) {
             </p>
           )}
 
-          {side === "owner" && awaitingDecision && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() => decide("accept")}
-                disabled={isPending}
-                aria-busy={isPending}
-              >
-                {isPending ? (
-                  <Loader2Icon className="animate-spin" />
-                ) : (
-                  <CheckIcon />
-                )}
-                Approve
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => decide("decline")}
-                disabled={isPending}
-              >
-                <XIcon />
-                Decline
-              </Button>
-            </div>
-          )}
+          <BookingActions booking={booking} side={side} />
         </div>
       </div>
     </Card>

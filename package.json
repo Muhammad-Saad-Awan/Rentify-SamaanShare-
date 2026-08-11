@@ -23,6 +23,8 @@
     "db:seed": "prisma db seed",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
     "cleanup:uploads": "tsx scripts/cleanup-pending-uploads.ts",
+    "verify:phase4": "tsx --env-file=.env.local scripts/verify-phase4.ts",
+    "verify:phase4:ui": "tsx --env-file=.env.local scripts/verify-phase4-ui.ts",
     "db:studio": "prisma studio",
     "db:validate": "prisma validate",
     "db:format": "prisma format"

@@ -13,6 +13,7 @@ import {
   enumerateRentalDays,
   MAX_BOOKING_DAYS,
 } from "@/lib/bookings/pricing";
+import { emitBookingNotifications } from "@/lib/notifications/create";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { VISIBLE_LISTING_WHERE } from "@/lib/queries/visibility";
@@ -44,6 +45,16 @@ const UNEXPECTED_ERROR = "Something went wrong. Please try again.";
 
 const DATES_TAKEN_ERROR =
   "Some of those dates were just taken. Please pick another range.";
+
+/**
+ * Reported when a status guard matches nothing.
+ *
+ * Means the booking moved between the read and the write - another tab, the other party, or the
+ * expiry sweep. Not an error the caller can fix by retrying blindly, so the message asks for a
+ * refresh rather than implying the click failed.
+ */
+const CONCURRENT_CHANGE_ERROR =
+  "This booking was just updated somewhere else. Please refresh and try again.";
 
 /**
  * Whether a thrown error is the date-uniqueness constraint firing.
@@ -151,6 +162,7 @@ export async function createBookingRequest(
       select: {
         id: true,
         ownerId: true,
+        title: true,
         pricePerDay: true,
         pricePerWeek: true,
         pricePerMonth: true,
@@ -228,6 +240,17 @@ export async function createBookingRequest(
           reason: "booked",
           bookingId: created.id,
         })),
+      });
+
+      // Inside the transaction, so the request that loses the date race does not notify an
+      // owner about a booking that was rolled back.
+      await emitBookingNotifications(tx, {
+        event: "requested",
+        bookingId: created.id,
+        listingTitle: listing.title,
+        parties: { renterId: renter.id, ownerId: listing.ownerId },
+        startDate: toUtcDate(startDate),
+        endDate: toUtcDate(endDate),
       });
 
       return created;
@@ -348,7 +371,13 @@ async function decide({
 
     const booking = await prisma.booking.findFirst({
       where: { id: bookingId, ownerId: owner.id },
-      select: { id: true, status: true, listingId: true },
+      select: {
+        id: true,
+        status: true,
+        listingId: true,
+        renterId: true,
+        listing: { select: { title: true } },
+      },
     });
 
     if (!booking) {
@@ -370,9 +399,18 @@ async function decide({
       };
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.booking.update({
-        where: { id: booking.id },
+    const applied = await prisma.$transaction(async (tx) => {
+      /**
+       * The status read above is re-asserted in the WHERE, not trusted.
+       *
+       * `findFirst` then `update` leaves a window: two clicks, or a click racing the expiry
+       * sweep, both pass `canTransition` against the same stale row and both write. Putting
+       * the expected status in the predicate makes the database the arbiter - the second
+       * writer matches zero rows instead of overwriting the first one's outcome. Same
+       * reasoning as `@@unique([listingId, date])` deciding the date race.
+       */
+      const updated = await tx.booking.updateMany({
+        where: { id: booking.id, status: booking.status },
         data: {
           status: to,
           ...(pickupInstructions ? { pickupInstructions } : {}),
@@ -380,13 +418,32 @@ async function decide({
         },
       });
 
+      if (updated.count !== 1) {
+        return false;
+      }
+
       if (releaseDates) {
         // Matched by `bookingId`, so an owner's own manual block on the same day survives.
         await tx.unavailableDate.deleteMany({
           where: { bookingId: booking.id },
         });
       }
+
+      await emitBookingNotifications(tx, {
+        bookingId: booking.id,
+        listingTitle: booking.listing.title,
+        parties: { renterId: booking.renterId, ownerId: owner.id },
+        ...(to === BookingStatus.APPROVED
+          ? ({ event: "approved" } as const)
+          : ({ event: "declined", reason: statusReason ?? null } as const)),
+      });
+
+      return true;
     });
+
+    if (!applied) {
+      return { success: false, error: CONCURRENT_CHANGE_ERROR };
+    }
 
     revalidateBookingPaths(booking.listingId);
 
@@ -414,9 +471,14 @@ function revalidateBookingPaths(listingId: string): void {
   for (const path of [
     "/dashboard/requests",
     "/dashboard/bookings",
+    "/dashboard/notifications",
     `/dashboard/listings/${listingId}/availability`,
     "/listings",
   ]) {
     revalidatePath(path, "page");
   }
+
+  // The unread badge sits in the dashboard header, which is a layout rather than any of the
+  // pages above - refreshing only the pages would leave a stale count next to fresh content.
+  revalidatePath("/dashboard", "layout");
 }

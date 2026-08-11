@@ -344,6 +344,7 @@ export type UserWhereInput = {
   reportsResolved?: Prisma.ReportListRelationFilter
   paymentsConfirmed?: Prisma.PaymentListRelationFilter
   notifications?: Prisma.NotificationListRelationFilter
+  bookingsCancelled?: Prisma.BookingListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -378,6 +379,7 @@ export type UserOrderByWithRelationInput = {
   reportsResolved?: Prisma.ReportOrderByRelationAggregateInput
   paymentsConfirmed?: Prisma.PaymentOrderByRelationAggregateInput
   notifications?: Prisma.NotificationOrderByRelationAggregateInput
+  bookingsCancelled?: Prisma.BookingOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -415,6 +417,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   reportsResolved?: Prisma.ReportListRelationFilter
   paymentsConfirmed?: Prisma.PaymentListRelationFilter
   notifications?: Prisma.NotificationListRelationFilter
+  bookingsCancelled?: Prisma.BookingListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -501,6 +504,7 @@ export type UserCreateInput = {
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -535,6 +539,7 @@ export type UserUncheckedCreateInput = {
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUpdateInput = {
@@ -569,6 +574,7 @@ export type UserUpdateInput = {
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -603,6 +609,7 @@ export type UserUncheckedUpdateInput = {
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -859,6 +866,12 @@ export type UserUpdateOneWithoutPaymentsConfirmedNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutPaymentsConfirmedInput, Prisma.UserUpdateWithoutPaymentsConfirmedInput>, Prisma.UserUncheckedUpdateWithoutPaymentsConfirmedInput>
 }
 
+export type UserCreateNestedOneWithoutBookingsCancelledInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutBookingsCancelledInput, Prisma.UserUncheckedCreateWithoutBookingsCancelledInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutBookingsCancelledInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
 export type UserCreateNestedOneWithoutBookingsAsRenterInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutBookingsAsRenterInput, Prisma.UserUncheckedCreateWithoutBookingsAsRenterInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutBookingsAsRenterInput
@@ -869,6 +882,16 @@ export type UserCreateNestedOneWithoutBookingsAsOwnerInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutBookingsAsOwnerInput, Prisma.UserUncheckedCreateWithoutBookingsAsOwnerInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutBookingsAsOwnerInput
   connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutBookingsCancelledNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutBookingsCancelledInput, Prisma.UserUncheckedCreateWithoutBookingsCancelledInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutBookingsCancelledInput
+  upsert?: Prisma.UserUpsertWithoutBookingsCancelledInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutBookingsCancelledInput, Prisma.UserUpdateWithoutBookingsCancelledInput>, Prisma.UserUncheckedUpdateWithoutBookingsCancelledInput>
 }
 
 export type UserUpdateOneRequiredWithoutBookingsAsRenterNestedInput = {
@@ -1004,6 +1027,7 @@ export type UserCreateWithoutAccountsInput = {
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutAccountsInput = {
@@ -1037,6 +1061,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutAccountsInput = {
@@ -1086,6 +1111,7 @@ export type UserUpdateWithoutAccountsInput = {
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -1119,6 +1145,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserCreateWithoutSessionsInput = {
@@ -1152,6 +1179,7 @@ export type UserCreateWithoutSessionsInput = {
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -1185,6 +1213,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -1234,6 +1263,7 @@ export type UserUpdateWithoutSessionsInput = {
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -1267,6 +1297,7 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserCreateWithoutListingsInput = {
@@ -1300,6 +1331,7 @@ export type UserCreateWithoutListingsInput = {
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutListingsInput = {
@@ -1333,6 +1365,7 @@ export type UserUncheckedCreateWithoutListingsInput = {
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutListingsInput = {
@@ -1382,6 +1415,7 @@ export type UserUpdateWithoutListingsInput = {
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutListingsInput = {
@@ -1415,6 +1449,7 @@ export type UserUncheckedUpdateWithoutListingsInput = {
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserCreateWithoutPaymentsConfirmedInput = {
@@ -1448,6 +1483,7 @@ export type UserCreateWithoutPaymentsConfirmedInput = {
   reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutPaymentsConfirmedInput = {
@@ -1481,6 +1517,7 @@ export type UserUncheckedCreateWithoutPaymentsConfirmedInput = {
   reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutPaymentsConfirmedInput = {
@@ -1530,6 +1567,7 @@ export type UserUpdateWithoutPaymentsConfirmedInput = {
   reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPaymentsConfirmedInput = {
@@ -1563,6 +1601,80 @@ export type UserUncheckedUpdateWithoutPaymentsConfirmedInput = {
   reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
+}
+
+export type UserCreateWithoutBookingsCancelledInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  ratingAverage?: number | null
+  ratingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutBookingsCancelledInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  ratingAverage?: number | null
+  ratingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingUncheckedCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewUncheckedCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewUncheckedCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingUncheckedCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutBookingsCancelledInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutBookingsCancelledInput, Prisma.UserUncheckedCreateWithoutBookingsCancelledInput>
 }
 
 export type UserCreateWithoutBookingsAsRenterInput = {
@@ -1596,6 +1708,7 @@ export type UserCreateWithoutBookingsAsRenterInput = {
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutBookingsAsRenterInput = {
@@ -1629,6 +1742,7 @@ export type UserUncheckedCreateWithoutBookingsAsRenterInput = {
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutBookingsAsRenterInput = {
@@ -1667,6 +1781,7 @@ export type UserCreateWithoutBookingsAsOwnerInput = {
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutBookingsAsOwnerInput = {
@@ -1700,11 +1815,91 @@ export type UserUncheckedCreateWithoutBookingsAsOwnerInput = {
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutBookingsAsOwnerInput = {
   where: Prisma.UserWhereUniqueInput
   create: Prisma.XOR<Prisma.UserCreateWithoutBookingsAsOwnerInput, Prisma.UserUncheckedCreateWithoutBookingsAsOwnerInput>
+}
+
+export type UserUpsertWithoutBookingsCancelledInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutBookingsCancelledInput, Prisma.UserUncheckedUpdateWithoutBookingsCancelledInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutBookingsCancelledInput, Prisma.UserUncheckedCreateWithoutBookingsCancelledInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutBookingsCancelledInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutBookingsCancelledInput, Prisma.UserUncheckedUpdateWithoutBookingsCancelledInput>
+}
+
+export type UserUpdateWithoutBookingsCancelledInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutBookingsCancelledInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUncheckedUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUncheckedUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUncheckedUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutBookingsAsRenterInput = {
@@ -1749,6 +1944,7 @@ export type UserUpdateWithoutBookingsAsRenterInput = {
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutBookingsAsRenterInput = {
@@ -1782,6 +1978,7 @@ export type UserUncheckedUpdateWithoutBookingsAsRenterInput = {
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUpsertWithoutBookingsAsOwnerInput = {
@@ -1826,6 +2023,7 @@ export type UserUpdateWithoutBookingsAsOwnerInput = {
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutBookingsAsOwnerInput = {
@@ -1859,6 +2057,7 @@ export type UserUncheckedUpdateWithoutBookingsAsOwnerInput = {
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserCreateWithoutReviewsGivenInput = {
@@ -1892,6 +2091,7 @@ export type UserCreateWithoutReviewsGivenInput = {
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutReviewsGivenInput = {
@@ -1925,6 +2125,7 @@ export type UserUncheckedCreateWithoutReviewsGivenInput = {
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutReviewsGivenInput = {
@@ -1963,6 +2164,7 @@ export type UserCreateWithoutReviewsReceivedInput = {
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutReviewsReceivedInput = {
@@ -1996,6 +2198,7 @@ export type UserUncheckedCreateWithoutReviewsReceivedInput = {
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutReviewsReceivedInput = {
@@ -2045,6 +2248,7 @@ export type UserUpdateWithoutReviewsGivenInput = {
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReviewsGivenInput = {
@@ -2078,6 +2282,7 @@ export type UserUncheckedUpdateWithoutReviewsGivenInput = {
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUpsertWithoutReviewsReceivedInput = {
@@ -2122,6 +2327,7 @@ export type UserUpdateWithoutReviewsReceivedInput = {
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReviewsReceivedInput = {
@@ -2155,6 +2361,7 @@ export type UserUncheckedUpdateWithoutReviewsReceivedInput = {
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserCreateWithoutNotificationsInput = {
@@ -2188,6 +2395,7 @@ export type UserCreateWithoutNotificationsInput = {
   reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutNotificationsInput = {
@@ -2221,6 +2429,7 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutNotificationsInput = {
@@ -2270,6 +2479,7 @@ export type UserUpdateWithoutNotificationsInput = {
   reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutNotificationsInput = {
@@ -2303,6 +2513,7 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserCreateWithoutSavedListingsInput = {
@@ -2336,6 +2547,7 @@ export type UserCreateWithoutSavedListingsInput = {
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutSavedListingsInput = {
@@ -2369,6 +2581,7 @@ export type UserUncheckedCreateWithoutSavedListingsInput = {
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutSavedListingsInput = {
@@ -2418,6 +2631,7 @@ export type UserUpdateWithoutSavedListingsInput = {
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSavedListingsInput = {
@@ -2451,6 +2665,7 @@ export type UserUncheckedUpdateWithoutSavedListingsInput = {
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserCreateWithoutReportsSubmittedInput = {
@@ -2484,6 +2699,7 @@ export type UserCreateWithoutReportsSubmittedInput = {
   reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutReportsSubmittedInput = {
@@ -2517,6 +2733,7 @@ export type UserUncheckedCreateWithoutReportsSubmittedInput = {
   reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutReportsSubmittedInput = {
@@ -2555,6 +2772,7 @@ export type UserCreateWithoutReportsResolvedInput = {
   reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserUncheckedCreateWithoutReportsResolvedInput = {
@@ -2588,6 +2806,7 @@ export type UserUncheckedCreateWithoutReportsResolvedInput = {
   reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
 }
 
 export type UserCreateOrConnectWithoutReportsResolvedInput = {
@@ -2637,6 +2856,7 @@ export type UserUpdateWithoutReportsSubmittedInput = {
   reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReportsSubmittedInput = {
@@ -2670,6 +2890,7 @@ export type UserUncheckedUpdateWithoutReportsSubmittedInput = {
   reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUpsertWithoutReportsResolvedInput = {
@@ -2714,6 +2935,7 @@ export type UserUpdateWithoutReportsResolvedInput = {
   reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReportsResolvedInput = {
@@ -2747,6 +2969,7 @@ export type UserUncheckedUpdateWithoutReportsResolvedInput = {
   reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
 }
 
 
@@ -2767,6 +2990,7 @@ export type UserCountOutputType = {
   reportsResolved: number
   paymentsConfirmed: number
   notifications: number
+  bookingsCancelled: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2782,6 +3006,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   reportsResolved?: boolean | UserCountOutputTypeCountReportsResolvedArgs
   paymentsConfirmed?: boolean | UserCountOutputTypeCountPaymentsConfirmedArgs
   notifications?: boolean | UserCountOutputTypeCountNotificationsArgs
+  bookingsCancelled?: boolean | UserCountOutputTypeCountBookingsCancelledArgs
 }
 
 /**
@@ -2878,6 +3103,13 @@ export type UserCountOutputTypeCountNotificationsArgs<ExtArgs extends runtime.Ty
   where?: Prisma.NotificationWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountBookingsCancelledArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BookingWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2911,6 +3143,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   reportsResolved?: boolean | Prisma.User$reportsResolvedArgs<ExtArgs>
   paymentsConfirmed?: boolean | Prisma.User$paymentsConfirmedArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
+  bookingsCancelled?: boolean | Prisma.User$bookingsCancelledArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -2994,6 +3227,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   reportsResolved?: boolean | Prisma.User$reportsResolvedArgs<ExtArgs>
   paymentsConfirmed?: boolean | Prisma.User$paymentsConfirmedArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
+  bookingsCancelled?: boolean | Prisma.User$bookingsCancelledArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -3014,6 +3248,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     reportsResolved: Prisma.$ReportPayload<ExtArgs>[]
     paymentsConfirmed: Prisma.$PaymentPayload<ExtArgs>[]
     notifications: Prisma.$NotificationPayload<ExtArgs>[]
+    bookingsCancelled: Prisma.$BookingPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3441,6 +3676,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   reportsResolved<T extends Prisma.User$reportsResolvedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$reportsResolvedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   paymentsConfirmed<T extends Prisma.User$paymentsConfirmedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$paymentsConfirmedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   notifications<T extends Prisma.User$notificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  bookingsCancelled<T extends Prisma.User$bookingsCancelledArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$bookingsCancelledArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4167,6 +4403,30 @@ export type User$notificationsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.NotificationScalarFieldEnum | Prisma.NotificationScalarFieldEnum[]
+}
+
+/**
+ * User.bookingsCancelled
+ */
+export type User$bookingsCancelledArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Booking
+   */
+  select?: Prisma.BookingSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Booking
+   */
+  omit?: Prisma.BookingOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BookingInclude<ExtArgs> | null
+  where?: Prisma.BookingWhereInput
+  orderBy?: Prisma.BookingOrderByWithRelationInput | Prisma.BookingOrderByWithRelationInput[]
+  cursor?: Prisma.BookingWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BookingScalarFieldEnum | Prisma.BookingScalarFieldEnum[]
 }
 
 /**

@@ -58,5 +58,58 @@ export const bookingDeclineSchema = z.object({
   reason: z.string().trim().max(500).optional(),
 });
 
+/**
+ * An action that needs nothing but the booking it applies to.
+ *
+ * Confirming payment, marking the item collected, marking it returned, and recording the deposit
+ * as handed back all take exactly this. One schema rather than four identical ones, so they
+ * cannot drift apart.
+ */
+export const bookingActionSchema = z.object({
+  bookingId: listingIdSchema,
+});
+
+export const CANCEL_REASON_MAX = 500;
+
+/**
+ * A cancellation, with an optional reason the other side sees.
+ *
+ * Optional rather than required: making someone justify a cancellation before allowing it leads
+ * to "asdf", not to honesty. The other party is told a reason was not given, which is at least
+ * accurate.
+ */
+export const bookingCancelSchema = z.object({
+  bookingId: listingIdSchema,
+  reason: z.string().trim().max(CANCEL_REASON_MAX).optional(),
+});
+
+/**
+ * The payment methods a renter may actually choose.
+ *
+ * Narrowed to the two offline ones rather than accepting the whole `PaymentMethod` enum. The
+ * wallet and card values exist in the schema for the payment providers in Phase 2, and nothing
+ * in this phase can process them - a request naming `CREDIT_CARD` would otherwise write a
+ * `Payment` row describing a transaction that no code path can ever complete.
+ *
+ * Kept as a literal union rather than derived from the enum on purpose: this list must NOT grow
+ * automatically when a provider is added to the schema. Adding JazzCash means writing the flow
+ * that handles it, and that should be a deliberate edit here.
+ */
+export const OFFLINE_PAYMENT_METHODS = ["CASH", "BANK_TRANSFER"] as const;
+
+export const offlinePaymentMethodSchema = z.enum(OFFLINE_PAYMENT_METHODS);
+
+export type OfflinePaymentMethod = z.infer<typeof offlinePaymentMethodSchema>;
+
+/** The renter choosing how they will pay the owner. */
+export const selectPaymentMethodSchema = z.object({
+  bookingId: listingIdSchema,
+  method: offlinePaymentMethodSchema,
+});
+
+export type SelectPaymentMethodInput = z.infer<
+  typeof selectPaymentMethodSchema
+>;
+
 /** Shared bound so the form and the action agree on the longest rental. */
 export { MAX_BOOKING_DAYS };

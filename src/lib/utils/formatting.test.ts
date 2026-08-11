@@ -5,7 +5,11 @@ import {
   splitHighlightSegments,
 } from "@/lib/utils/highlight";
 import { formatPKR, formatPKRPerDay } from "@/lib/utils/currency";
-import { formatDate, todayInKarachi } from "@/lib/utils/date";
+import {
+  formatDate,
+  formatRelativeTime,
+  todayInKarachi,
+} from "@/lib/utils/date";
 import { CONDITION_LABELS, formatCity } from "@/lib/utils/listing";
 import { parsePageParam } from "@/lib/utils/pagination";
 
@@ -161,5 +165,45 @@ describe("parsePageParam", () => {
     expect(parsePageParam("-4")).toBe(1);
     expect(parsePageParam("3")).toBe(3);
     expect(parsePageParam(["2", "9"])).toBe(2);
+  });
+});
+
+describe("formatRelativeTime", () => {
+  const now = new Date("2026-09-10T12:00:00.000Z");
+  const ago = (ms: number) => new Date(now.getTime() - ms);
+
+  const SECOND = 1000;
+  const MINUTE = 60 * SECOND;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+
+  it("collapses anything under a minute to 'just now'", () => {
+    expect(formatRelativeTime(ago(0), now)).toBe("just now");
+    expect(formatRelativeTime(ago(59 * SECOND), now)).toBe("just now");
+  });
+
+  it("reads a future timestamp as 'just now' rather than a negative", () => {
+    // Clock skew between the app server and the database is normal, and "in 3s" in a
+    // notification feed would look like a bug.
+    expect(formatRelativeTime(new Date(now.getTime() + 5 * SECOND), now)).toBe(
+      "just now"
+    );
+  });
+
+  it("steps through minutes, hours and days", () => {
+    expect(formatRelativeTime(ago(MINUTE), now)).toBe("1m ago");
+    expect(formatRelativeTime(ago(59 * MINUTE), now)).toBe("59m ago");
+    expect(formatRelativeTime(ago(HOUR), now)).toBe("1h ago");
+    expect(formatRelativeTime(ago(23 * HOUR), now)).toBe("23h ago");
+    expect(formatRelativeTime(ago(DAY), now)).toBe("1d ago");
+    expect(formatRelativeTime(ago(6 * DAY), now)).toBe("6d ago");
+  });
+
+  it("falls back to an absolute date past a week", () => {
+    // "43d ago" is harder to place than the day itself, and the fallback must agree with how
+    // dates are rendered everywhere else.
+    const old = ago(30 * DAY);
+
+    expect(formatRelativeTime(old, now)).toBe(formatDate(old));
   });
 });

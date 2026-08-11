@@ -223,6 +223,10 @@ model User {
   paymentsConfirmed Payment[]      @relation("PaymentsConfirmed") // P7
   notifications     Notification[] // P1
 
+  // Phase 4: who cancelled a booking. A real foreign key rather than a bare
+  // userId, for the same reason as Payment.confirmedById (P7).
+  bookingsCancelled Booking[] @relation("BookingsCancelled")
+
   @@index([status]) // P5: admin user filtering - API.md:432
   @@index([city]) // P5: usersByCity stat - API.md:390
   @@index([deletedAt]) // D3: exclude soft-deleted users
@@ -494,6 +498,26 @@ model Booking {
   // only one terminal path, so a single field covers both.
   statusReason String? @db.Text
 
+  /**
+   * Lifecycle timestamps, Phase 4.
+   * `updatedAt` cannot carry these: every transition overwrites it, so after a
+   * completed rental there is no record of when the item was actually handed
+   * over. `completedAt` in particular is the clock the deposit-return window and
+   * the review window are measured from, and both outlive the transition itself.
+   */
+  startedAt   DateTime? // Picked up - PAYMENT_PENDING -> ACTIVE
+  completedAt DateTime? // Returned - ACTIVE -> COMPLETED
+  cancelledAt DateTime?
+
+  /**
+   * Who cancelled, when someone did.
+   * `statusReason` is free text and cannot answer "was this the renter or the
+   * owner", which is the question that decides what the other side is told - and
+   * later, whose record it lands on.
+   */
+  cancelledById String?
+  cancelledBy   User?   @relation("BookingsCancelled", fields: [cancelledById], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -513,6 +537,10 @@ model Booking {
   @@index([ownerId])
   @@index([status])
   @@index([listingId, status]) // P6: availability + listing booking history
+  @@index([cancelledById])
+  // Phase 4: the deposit-return queue - completed rentals whose deposit is still
+  // outstanding, ordered by how overdue they are.
+  @@index([ownerId, status, completedAt])
   @@map("bookings")
 }
 
