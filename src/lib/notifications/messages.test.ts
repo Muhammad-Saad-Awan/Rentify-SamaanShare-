@@ -144,6 +144,30 @@ describe("buildBookingNotifications addressing", () => {
     });
   });
 
+  /**
+   * Pickup details are the only channel between the two parties in this phase, so a change to
+   * them has to reach the renter - who may already have travelled on the old address. The owner
+   * made the edit, so they are not told about it.
+   */
+  it("tells only the renter when the owner edits the pickup details", () => {
+    const drafts = build({ event: "instructions-updated" });
+
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0]).toMatchObject({
+      userId: parties.renterId,
+      type: NotificationType.BOOKING_INSTRUCTIONS_UPDATED,
+      entityType: "booking",
+    });
+  });
+
+  it("does not repeat the new instructions in the notification body", () => {
+    // They can run to a thousand characters; the booking is where they live.
+    const body = build({ event: "instructions-updated" })[0]?.body ?? "";
+
+    expect(body.length).toBeLessThan(120);
+    expect(body).toContain("Check your booking");
+  });
+
   it("clips the listing title in every title it produces", () => {
     const drafts = buildBookingNotifications({
       ...base,
@@ -180,6 +204,7 @@ describe("buildBookingNotifications money wording", () => {
       { event: "review-reminder" },
       { event: "deposit-returned", amount: 10800 },
       { event: "cancelled", by: "renter" },
+      { event: "instructions-updated" },
     ];
 
     const text = everyEvent

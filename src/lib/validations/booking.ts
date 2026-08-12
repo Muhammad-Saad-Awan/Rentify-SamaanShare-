@@ -40,6 +40,8 @@ export type CreateBookingRequestInput = z.infer<
   typeof createBookingRequestSchema
 >;
 
+export const PICKUP_INSTRUCTIONS_MAX = 1000;
+
 /** An owner's decision on a pending request. */
 export const bookingDecisionSchema = z.object({
   bookingId: listingIdSchema,
@@ -49,8 +51,29 @@ export const bookingDecisionSchema = z.object({
    * Optional because an owner may simply accept; the field exists so "where and when to
    * collect" has somewhere to go other than a message the app cannot yet send.
    */
-  pickupInstructions: z.string().trim().max(1000).optional(),
+  pickupInstructions: z.string().trim().max(PICKUP_INSTRUCTIONS_MAX).optional(),
 });
+
+/**
+ * Editing the pickup details after approval.
+ *
+ * Required and non-empty here, unlike on the decision above. Approving without instructions is a
+ * legitimate choice; deliberately *replacing* them with nothing is not - it would delete the only
+ * collection details the renter has, and there is no other channel to ask for them back. An owner
+ * who wants them gone can say so in words.
+ */
+export const bookingInstructionsSchema = z.object({
+  bookingId: listingIdSchema,
+  pickupInstructions: z
+    .string()
+    .trim()
+    .min(1, "Please say where and when to collect the item.")
+    .max(PICKUP_INSTRUCTIONS_MAX),
+});
+
+export type BookingInstructionsInput = z.infer<
+  typeof bookingInstructionsSchema
+>;
 
 /** A decline, with an optional reason the renter sees. */
 export const bookingDeclineSchema = z.object({

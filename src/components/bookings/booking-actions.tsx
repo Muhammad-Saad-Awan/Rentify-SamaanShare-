@@ -4,8 +4,9 @@ import {
   BanknoteIcon,
   CheckIcon,
   HandCoinsIcon,
-  Loader2Icon,
   LandmarkIcon,
+  Loader2Icon,
+  MapPinIcon,
   PackageCheckIcon,
   PackageOpenIcon,
   XIcon,
@@ -13,12 +14,16 @@ import {
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { acceptBooking, declineBooking } from "@/actions/bookings";
 import {
   cancelBooking,
   completeBooking,
   startBooking,
 } from "@/actions/booking-lifecycle";
+import {
+  acceptBooking,
+  declineBooking,
+  updateBookingInstructions,
+} from "@/actions/bookings";
 import {
   confirmPaymentReceived,
   markDepositReturned,
@@ -27,10 +32,14 @@ import {
 import { PaymentInstructions } from "@/components/bookings/payment-instructions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { BookingStatus, PaymentStatus } from "@/generated/prisma/enums";
-import { CANCEL_REASON_MAX } from "@/lib/validations/booking";
 import { formatPKR } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
+import {
+  CANCEL_REASON_MAX,
+  PICKUP_INSTRUCTIONS_MAX,
+} from "@/lib/validations/booking";
 
 import type { BookingSummary } from "@/lib/queries/bookings";
 import type { ActionResult } from "@/types";
@@ -39,6 +48,9 @@ interface BookingActionsProps {
   booking: BookingSummary;
   side: "renter" | "owner";
 }
+
+/** Which inline panel is open, if any. */
+type OpenPanel = "approve" | "decline" | "cancel" | "instructions" | null;
 
 /**
  * Everything either party can do to a booking, for the state it is in.
@@ -59,9 +71,9 @@ interface BookingActionsProps {
 function BookingActions({ booking, side }: BookingActionsProps) {
   const [isPending, startTransition] = useTransition();
 
-  /** Which inline confirmation panel is open, if any. */
-  const [panel, setPanel] = useState<"cancel" | "decline" | null>(null);
+  const [panel, setPanel] = useState<OpenPanel>(null);
   const [reason, setReason] = useState("");
+  const [instructions, setInstructions] = useState("");
 
   /**
    * Runs an action and reports the outcome.
@@ -83,131 +95,225 @@ function BookingActions({ booking, side }: BookingActionsProps) {
         return;
       }
 
-      setPanel(null);
-      setReason("");
+      close();
       toast.success(successMessage);
     });
+  }
+
+  function close() {
+    setPanel(null);
+    setReason("");
+    setInstructions("");
+  }
+
+  /** Opens the pickup-details editor seeded with whatever is already there. */
+  function openInstructions() {
+    setInstructions(booking.pickupInstructions ?? "");
+    setPanel("instructions");
   }
 
   const { payment, deposit, eligibility } = booking;
   const isPaymentConfirmed = payment?.status === PaymentStatus.COMPLETED;
 
-  /** A short inline form for the optional reason on a cancel or a decline. */
-  function ReasonPanel({
-    label,
-    confirmLabel,
-    onConfirm,
-  }: {
-    label: string;
-    confirmLabel: string;
-    onConfirm: () => void;
-  }) {
-    return (
-      <div className="bg-muted/50 flex flex-col gap-2 rounded-lg px-3 py-2.5">
-        <label className="text-xs font-medium" htmlFor={`reason-${booking.id}`}>
-          {label}
-        </label>
-
-        <Input
-          id={`reason-${booking.id}`}
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-          maxLength={CANCEL_REASON_MAX}
-          placeholder="Optional — the other person sees this"
-          disabled={isPending}
-        />
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onConfirm}
-            disabled={isPending}
-            aria-busy={isPending}
-          >
-            {isPending && <Loader2Icon className="animate-spin" />}
-            {confirmLabel}
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setPanel(null);
-              setReason("");
-            }}
-            disabled={isPending}
-          >
-            Keep it
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const cancelPanel = (confirmLabel: string, successMessage: string) => (
+    <EditPanel
+      id={`reason-${booking.id}`}
+      label="Why are you cancelling?"
+      value={reason}
+      onChange={setReason}
+      maxLength={CANCEL_REASON_MAX}
+      placeholder="Optional — the other person sees this"
+      confirmLabel={confirmLabel}
+      confirmVariant="destructive"
+      cancelLabel="Keep it"
+      isPending={isPending}
+      onCancel={close}
+      onConfirm={() =>
+        run(
+          () =>
+            cancelBooking({
+              bookingId: booking.id,
+              ...(reason.trim() ? { reason: reason.trim() } : {}),
+            }),
+          successMessage
+        )
+      }
+    />
+  );
 
   // ---------------------------------------------------------------- owner side
 
   if (side === "owner") {
     if (booking.status === BookingStatus.PENDING) {
-      return (
-        <div className="flex flex-col gap-2">
-          {panel === "decline" ? (
-            <ReasonPanel
-              label="Why are you declining?"
-              confirmLabel="Decline request"
-              onConfirm={() =>
-                run(
-                  () =>
-                    declineBooking({
-                      bookingId: booking.id,
-                      ...(reason.trim() ? { reason: reason.trim() } : {}),
-                    }),
-                  "Request declined and those dates are free again."
-                )
-              }
-            />
-          ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() =>
-                  run(
-                    () => acceptBooking({ bookingId: booking.id }),
-                    "Request approved. The renter can now arrange payment."
-                  )
-                }
-                disabled={isPending}
-                aria-busy={isPending}
-              >
-                {isPending ? (
-                  <Loader2Icon className="animate-spin" />
-                ) : (
-                  <CheckIcon />
-                )}
-                Approve
-              </Button>
+      if (panel === "decline") {
+        return (
+          <EditPanel
+            id={`reason-${booking.id}`}
+            label="Why are you declining?"
+            value={reason}
+            onChange={setReason}
+            maxLength={CANCEL_REASON_MAX}
+            placeholder="Optional — the renter sees this"
+            confirmLabel="Decline request"
+            confirmVariant="destructive"
+            cancelLabel="Keep it"
+            isPending={isPending}
+            onCancel={close}
+            onConfirm={() =>
+              run(
+                () =>
+                  declineBooking({
+                    bookingId: booking.id,
+                    ...(reason.trim() ? { reason: reason.trim() } : {}),
+                  }),
+                "Request declined and those dates are free again."
+              )
+            }
+          />
+        );
+      }
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPanel("decline")}
-                disabled={isPending}
-              >
-                <XIcon />
-                Decline
-              </Button>
-            </div>
-          )}
+      /**
+       * Approval collects the pickup details in the same step.
+       *
+       * Not a separate screen afterwards, because this is the moment the owner is thinking about
+       * the handover - and because these details are the ONLY channel to the renter until profiles
+       * carry a verified phone. An approval with no instructions leaves two people with each
+       * other's first name and no way to meet.
+       */
+      if (panel === "approve") {
+        return (
+          <EditPanel
+            id={`pickup-${booking.id}`}
+            label="Where and when should the renter collect?"
+            description="Include your phone number — this is the only message the renter gets from you."
+            value={instructions}
+            onChange={setInstructions}
+            maxLength={PICKUP_INSTRUCTIONS_MAX}
+            placeholder="e.g. Flat 4, Bahria Town Phase 5, after 6pm. Call 0300 1234567 when you arrive."
+            multiline
+            confirmLabel="Approve and send"
+            cancelLabel="Back"
+            isPending={isPending}
+            onCancel={close}
+            onConfirm={() =>
+              run(
+                () =>
+                  acceptBooking({
+                    bookingId: booking.id,
+                    ...(instructions.trim()
+                      ? { pickupInstructions: instructions.trim() }
+                      : {}),
+                  }),
+                "Request approved. The renter can now arrange payment."
+              )
+            }
+            secondary={{
+              label: "Approve without details",
+              onClick: () =>
+                run(
+                  () => acceptBooking({ bookingId: booking.id }),
+                  "Request approved. Add pickup details from the booking when you can."
+                ),
+            }}
+          />
+        );
+      }
+
+      return (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              setInstructions(booking.pickupInstructions ?? "");
+              setPanel("approve");
+            }}
+            disabled={isPending}
+          >
+            <CheckIcon />
+            Approve
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPanel("decline")}
+            disabled={isPending}
+          >
+            <XIcon />
+            Decline
+          </Button>
         </div>
       );
     }
 
+    /**
+     * The pickup-details editor, available for the whole live part of a booking.
+     *
+     * An owner who typed the wrong address had no way to correct it before this existed, and the
+     * renter has no other contact route. Editing notifies them, because they may already have
+     * read - and travelled on - the old version.
+     */
+    const instructionsEditor = panel === "instructions" && (
+      <EditPanel
+        id={`pickup-${booking.id}`}
+        label="Pickup and return details"
+        description="The renter is notified when you change this."
+        value={instructions}
+        onChange={setInstructions}
+        maxLength={PICKUP_INSTRUCTIONS_MAX}
+        placeholder="e.g. Flat 4, Bahria Town Phase 5, after 6pm. Call 0300 1234567 when you arrive."
+        multiline
+        confirmLabel="Save details"
+        cancelLabel="Cancel"
+        isPending={isPending}
+        onCancel={close}
+        onConfirm={() =>
+          run(
+            () =>
+              updateBookingInstructions({
+                bookingId: booking.id,
+                pickupInstructions: instructions.trim(),
+              }),
+            "Pickup details updated. The renter has been notified."
+          )
+        }
+      />
+    );
+
+    const editInstructionsButton = panel !== "instructions" && (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="self-start"
+        onClick={openInstructions}
+        disabled={isPending}
+      >
+        <MapPinIcon />
+        {booking.pickupInstructions
+          ? "Edit pickup details"
+          : "Add pickup details"}
+      </Button>
+    );
+
     if (booking.status === BookingStatus.APPROVED) {
       return (
-        <Note>
-          Waiting for the renter to choose how they will pay you. You will be
-          notified when they do.
-        </Note>
+        <div className="flex flex-col gap-2">
+          {!booking.pickupInstructions && (
+            <Note tone="warning">
+              The renter has no way to reach you yet. Add pickup details with
+              your phone number so they can arrange collection.
+            </Note>
+          )}
+
+          <Note>
+            Waiting for the renter to choose how they will pay you. You will be
+            notified when they do.
+          </Note>
+
+          {instructionsEditor}
+          {editInstructionsButton}
+        </div>
       );
     }
 
@@ -246,6 +352,9 @@ function BookingActions({ booking, side }: BookingActionsProps) {
                 Confirm payment received
               </Button>
             </div>
+
+            {instructionsEditor}
+            {editInstructionsButton}
           </div>
         );
       }
@@ -278,6 +387,9 @@ function BookingActions({ booking, side }: BookingActionsProps) {
               Mark item as collected
             </Button>
           </div>
+
+          {instructionsEditor}
+          {editInstructionsButton}
         </div>
       );
     }
@@ -310,6 +422,9 @@ function BookingActions({ booking, side }: BookingActionsProps) {
               Mark item as returned
             </Button>
           </div>
+
+          {instructionsEditor}
+          {editInstructionsButton}
         </div>
       );
     }
@@ -370,42 +485,27 @@ function BookingActions({ booking, side }: BookingActionsProps) {
   // --------------------------------------------------------------- renter side
 
   if (booking.status === BookingStatus.PENDING) {
+    if (panel === "cancel") {
+      return cancelPanel("Cancel request", "Request cancelled.");
+    }
+
     return (
       <div className="flex flex-col gap-2">
-        {panel === "cancel" ? (
-          <ReasonPanel
-            label="Why are you cancelling?"
-            confirmLabel="Cancel request"
-            onConfirm={() =>
-              run(
-                () =>
-                  cancelBooking({
-                    bookingId: booking.id,
-                    ...(reason.trim() ? { reason: reason.trim() } : {}),
-                  }),
-                "Request cancelled."
-              )
-            }
-          />
-        ) : (
-          <>
-            <Note>
-              Waiting for the owner to respond. Requests expire after 48 hours.
-            </Note>
+        <Note>
+          Waiting for the owner to respond. Requests expire after 48 hours.
+        </Note>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPanel("cancel")}
-                disabled={isPending}
-              >
-                <XIcon />
-                Cancel request
-              </Button>
-            </div>
-          </>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPanel("cancel")}
+            disabled={isPending}
+          >
+            <XIcon />
+            Cancel request
+          </Button>
+        </div>
       </div>
     );
   }
@@ -417,6 +517,15 @@ function BookingActions({ booking, side }: BookingActionsProps) {
           Approved. Choose how you will pay the owner — payment is arranged
           directly between the two of you.
         </Note>
+
+        {/* Said explicitly, because an approval with no instructions leaves the renter with
+            nobody to contact and no indication that is unexpected. */}
+        {!booking.pickupInstructions && (
+          <Note tone="warning">
+            The owner has not added collection details yet. They are notified to
+            do so — check back before you travel.
+          </Note>
+        )}
 
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -463,20 +572,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
         </div>
 
         {panel === "cancel" ? (
-          <ReasonPanel
-            label="Why are you cancelling?"
-            confirmLabel="Cancel booking"
-            onConfirm={() =>
-              run(
-                () =>
-                  cancelBooking({
-                    bookingId: booking.id,
-                    ...(reason.trim() ? { reason: reason.trim() } : {}),
-                  }),
-                "Booking cancelled."
-              )
-            }
-          />
+          cancelPanel("Cancel booking", "Booking cancelled.")
         ) : (
           <Button
             variant="ghost"
@@ -505,7 +601,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
         {isPaymentConfirmed ? (
           <Note>
             The owner confirmed receiving your payment. Arrange collection using
-            the pickup instructions above.
+            the pickup details above.
           </Note>
         ) : (
           <>
@@ -531,34 +627,19 @@ function BookingActions({ booking, side }: BookingActionsProps) {
               Switch to {payment.method === "CASH" ? "bank transfer" : "cash"}
             </Button>
 
-            {panel === "cancel" ? (
-              <ReasonPanel
-                label="Why are you cancelling?"
-                confirmLabel="Cancel booking"
-                onConfirm={() =>
-                  run(
-                    () =>
-                      cancelBooking({
-                        bookingId: booking.id,
-                        ...(reason.trim() ? { reason: reason.trim() } : {}),
-                      }),
-                    "Booking cancelled."
-                  )
-                }
-              />
-            ) : (
-              eligibility.renterCanCancel.allowed && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="self-start"
-                  onClick={() => setPanel("cancel")}
-                  disabled={isPending}
-                >
-                  Cancel booking
-                </Button>
-              )
-            )}
+            {panel === "cancel"
+              ? cancelPanel("Cancel booking", "Booking cancelled.")
+              : eligibility.renterCanCancel.allowed && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="self-start"
+                    onClick={() => setPanel("cancel")}
+                    disabled={isPending}
+                  >
+                    Cancel booking
+                  </Button>
+                )}
           </>
         )}
 
@@ -618,6 +699,113 @@ function BookingActions({ booking, side }: BookingActionsProps) {
   }
 
   return null;
+}
+
+interface EditPanelProps {
+  id: string;
+  label: string;
+  description?: string;
+  value: string;
+  onChange: (value: string) => void;
+  maxLength: number;
+  placeholder: string;
+  /** Renders a textarea instead of a single-line input. */
+  multiline?: boolean;
+  confirmLabel: string;
+  confirmVariant?: "default" | "destructive";
+  cancelLabel: string;
+  isPending: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  /** An alternative that skips the text entirely, e.g. approving with no details. */
+  secondary?: { label: string; onClick: () => void };
+}
+
+/**
+ * The inline text panel behind every confirm-with-text action.
+ *
+ * DECLARED AT MODULE SCOPE, WHICH IS THE WHOLE POINT. It was originally nested inside
+ * `BookingActions`, which made it a new component *type* on every render - React compares element
+ * types by reference, so each keystroke unmounted and remounted the field and the caret jumped
+ * out. Server-rendered HTML looks identical either way, which is exactly why the render checks
+ * did not catch it.
+ *
+ * The value lives in the parent because several call sites share one piece of state; only the
+ * presentation is here.
+ */
+function EditPanel({
+  id,
+  label,
+  description,
+  value,
+  onChange,
+  maxLength,
+  placeholder,
+  multiline = false,
+  confirmLabel,
+  confirmVariant = "default",
+  cancelLabel,
+  isPending,
+  onConfirm,
+  onCancel,
+  secondary,
+}: EditPanelProps) {
+  const Field = multiline ? Textarea : Input;
+
+  return (
+    <div className="bg-muted/50 flex flex-col gap-2 rounded-lg px-3 py-2.5">
+      <label className="text-xs font-medium" htmlFor={id}>
+        {label}
+      </label>
+
+      {description && (
+        <p className="text-muted-foreground text-xs">{description}</p>
+      )}
+
+      <Field
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        disabled={isPending}
+        {...(multiline ? { rows: 3 } : {})}
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant={confirmVariant}
+          size="sm"
+          onClick={onConfirm}
+          disabled={isPending}
+          aria-busy={isPending}
+        >
+          {isPending && <Loader2Icon className="animate-spin" />}
+          {confirmLabel}
+        </Button>
+
+        {secondary && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={secondary.onClick}
+            disabled={isPending}
+          >
+            {secondary.label}
+          </Button>
+        )}
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onCancel}
+          disabled={isPending}
+        >
+          {cancelLabel}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 interface NoteProps {

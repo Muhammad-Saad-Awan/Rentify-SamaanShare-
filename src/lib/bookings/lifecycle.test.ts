@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 import { BookingStatus, PaymentStatus } from "@/generated/prisma/enums";
 import {
   ALLOWED_BOOKING_TRANSITIONS,
+  canEditInstructions,
   canRenterCancel,
   canStartBooking,
   canTransition,
   DATE_HOLDING_STATUSES,
   holdsDates,
+  INSTRUCTIONS_EDITABLE_STATUSES,
   isPendingExpired,
   isTerminal,
   PENDING_EXPIRY_HOURS,
@@ -275,5 +277,47 @@ describe("isTerminal", () => {
       BookingStatus.CANCELLED,
       BookingStatus.EXPIRED,
     ]);
+  });
+});
+
+describe("canEditInstructions", () => {
+  it("allows editing through the whole live part of a booking", () => {
+    for (const status of INSTRUCTIONS_EDITABLE_STATUSES) {
+      expect(canEditInstructions(status)).toEqual({ allowed: true });
+    }
+  });
+
+  it("points a pending request at approval instead", () => {
+    // Instructions are collected as part of approving, so there is nothing to edit yet.
+    expect(canEditInstructions(BookingStatus.PENDING)).toMatchObject({
+      allowed: false,
+      reason: expect.stringContaining("Approve the request first"),
+    });
+  });
+
+  it("refuses once the booking is closed", () => {
+    // Editing the record after the fact would rewrite details the renter may need to refer back
+    // to - the only account either side has of where the handover was meant to happen.
+    for (const status of [
+      BookingStatus.COMPLETED,
+      BookingStatus.REVIEWED,
+      BookingStatus.DECLINED,
+      BookingStatus.CANCELLED,
+      BookingStatus.EXPIRED,
+    ]) {
+      expect(canEditInstructions(status).allowed).toBe(false);
+    }
+  });
+
+  it("permits editing exactly the statuses that still hold their dates, minus PENDING", () => {
+    // Not a coincidence worth relying on, but worth pinning: a booking whose dates are held is
+    // one that is still going to happen, which is the same set that can still be redirected.
+    const editable = Object.values(BookingStatus).filter(
+      (status) => canEditInstructions(status).allowed
+    );
+
+    expect(editable).toEqual(
+      DATE_HOLDING_STATUSES.filter((status) => status !== BookingStatus.PENDING)
+    );
   });
 });

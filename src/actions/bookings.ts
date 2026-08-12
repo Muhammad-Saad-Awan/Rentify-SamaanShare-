@@ -6,7 +6,11 @@ import { Prisma } from "@/generated/prisma/client";
 import { BookingStatus } from "@/generated/prisma/enums";
 import { getActiveUser } from "@/lib/auth/session";
 import { expireStalePendingBookings } from "@/lib/bookings/expire";
-import { canTransition } from "@/lib/bookings/lifecycle";
+import {
+  canEditInstructions,
+  canTransition,
+  INSTRUCTIONS_EDITABLE_STATUSES,
+} from "@/lib/bookings/lifecycle";
 import {
   calculateRentalPrice,
   countRentalDays,
@@ -21,6 +25,7 @@ import { todayInKarachi } from "@/lib/utils/date";
 import {
   bookingDeclineSchema,
   bookingDecisionSchema,
+  bookingInstructionsSchema,
   createBookingRequestSchema,
 } from "@/lib/validations/booking";
 import { UNAUTHENTICATED_ERROR } from "@/types";
@@ -318,6 +323,119 @@ export async function declineBooking(
     releaseDates: true,
     ...(parsed.data.reason ? { statusReason: parsed.data.reason } : {}),
   });
+}
+
+/**
+ * Replaces the pickup details on an approved booking.
+ *
+ * WHY THIS EXISTS. Until profiles carry a verified phone number, `pickupInstructions` is the only
+ * channel between the two parties - the booking queries select the counterparty's `name` and
+ * nothing else, deliberately, so there is no email or phone to fall back on. An owner who typed
+ * the wrong address, or who needs to change a collection time, currently has no way to say so.
+ * That makes this a correctness fix rather than a convenience.
+ *
+ * Changes nothing about the status, so there is no transition to guard - but the *set* of
+ * permitted statuses is still asserted in the write, so a booking that completed between the read
+ * and the write cannot have its record edited afterwards.
+ */
+export async function updateBookingInstructions(
+  input: unknown
+): Promise<ActionResult> {
+  const parsed = bookingInstructionsSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error:
+        parsed.error.issues[0]?.message ?? "Please check the pickup details.",
+    };
+  }
+
+  const owner = await getActiveUser();
+
+  if (!owner) {
+    return { success: false, error: UNAUTHENTICATED_ERROR };
+  }
+
+  const rate = checkRateLimit(
+    `booking-instructions:${owner.id}`,
+    DECISION_RATE_LIMIT
+  );
+
+  if (!rate.allowed) {
+    return {
+      success: false,
+      error: "Too many changes just now. Please try again shortly.",
+    };
+  }
+
+  const { bookingId, pickupInstructions } = parsed.data;
+
+  try {
+    const booking = await prisma.booking.findFirst({
+      // Ownership in the predicate, so another owner's booking is simply not found.
+      where: { id: bookingId, ownerId: owner.id },
+      select: {
+        id: true,
+        status: true,
+        listingId: true,
+        renterId: true,
+        pickupInstructions: true,
+        listing: { select: { title: true } },
+      },
+    });
+
+    if (!booking) {
+      return { success: false, error: "That booking was not found." };
+    }
+
+    const eligibility = canEditInstructions(booking.status);
+
+    if (!eligibility.allowed) {
+      return { success: false, error: eligibility.reason };
+    }
+
+    // Nothing changed, so nothing is written and the renter is not pestered about an edit that
+    // was not one. A resubmitted form is the common way this happens.
+    if (booking.pickupInstructions === pickupInstructions) {
+      return { success: true, data: undefined };
+    }
+
+    const applied = await prisma.$transaction(async (tx) => {
+      const updated = await tx.booking.updateMany({
+        where: {
+          id: booking.id,
+          status: { in: [...INSTRUCTIONS_EDITABLE_STATUSES] },
+        },
+        data: { pickupInstructions },
+      });
+
+      if (updated.count !== 1) {
+        return false;
+      }
+
+      await emitBookingNotifications(tx, {
+        event: "instructions-updated",
+        bookingId: booking.id,
+        listingTitle: booking.listing.title,
+        parties: { renterId: booking.renterId, ownerId: owner.id },
+      });
+
+      return true;
+    });
+
+    if (!applied) {
+      return { success: false, error: CONCURRENT_CHANGE_ERROR };
+    }
+
+    revalidateBookingPaths(booking.listingId);
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    console.error("updateBookingInstructions failed", error);
+
+    return { success: false, error: UNEXPECTED_ERROR };
+  }
 }
 
 interface DecideOptions {

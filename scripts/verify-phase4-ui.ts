@@ -235,6 +235,8 @@ async function main() {
     ["deposit window copy", "deposit within"],
     ["overdue deposit warning", "overdue"],
     ["no escrow claim", "does not hold it"],
+    // Stage A: the renter is told when the owner has left them no way to make contact.
+    ["missing-instructions warning", "has not added collection details"],
   ] as const) {
     check(label, bookings.html.includes(needle));
   }
@@ -258,6 +260,9 @@ async function main() {
     ["mark returned button", "Mark item as returned"],
     ["deposit return button", "I have returned the deposit"],
     ["waiting-on-renter note", "Waiting for the renter"],
+    // Stage A: the owner's only channel to the renter.
+    ["pickup details affordance", "pickup details"],
+    ["warns when the renter cannot reach the owner", "no way to reach you"],
   ] as const) {
     check(label, requests.html.includes(needle));
   }

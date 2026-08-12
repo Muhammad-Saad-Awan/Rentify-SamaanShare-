@@ -166,6 +166,12 @@ enum NotificationType {
   REVIEW_RECEIVED
   REVIEW_REMINDER
   REPORT_RESOLVED
+  // Stage A: pickup instructions are the only channel between the two parties
+  // until profiles carry a verified phone, so an owner correcting a wrong
+  // address has to be able to reach a renter who already read the old one.
+  // Appended rather than inserted: nothing orders by this enum (unlike
+  // BookingStatus, where declaration order drives the requests screen).
+  BOOKING_INSTRUCTIONS_UPDATED
 }
 
 // ==================== AUTH.JS MODELS ====================

@@ -460,9 +460,12 @@ no listing, booking, search, review or admin functionality was implemented.
 - [x] Create booking requests page (`/dashboard/requests`)
 - [x] Show pending requests
 - [x] Create `acceptBooking` action
-- [x] Add pickup instructions form — the action accepts and stores them, and the renter is shown
-      them once approved. The owner-facing *input* is still absent: approval is a single click,
-      and there is no dialog primitive in the project to collect the text without one.
+- [x] Add pickup instructions form — collected as part of approving (Stage A1). Approval opens an
+      inline panel prompting for a phone number, because until profiles carry a verified phone
+      this field is the **only** channel between the two parties: the booking queries select the
+      counterparty's `name` and nothing else. Editable for the whole live part of the booking via
+      `updateBookingInstructions`, and editing notifies the renter — they may already have
+      travelled on the old address.
 - [x] Create `declineBooking` action
 - [x] Add decline reason — inline panel on the card, no new UI primitive
 
@@ -515,6 +518,45 @@ no listing, booking, search, review or admin functionality was implemented.
 - [x] Notify owner on renter cancellation
 
 ---
+
+---
+
+## Stage A – Production-critical fixes
+
+Between Phase 4 and Trust & Safety. Approved 12 August 2026.
+
+- [x] **A1. Owner pickup / contact gap** — see Owner Actions above. Added
+      `src/components/ui/textarea.tsx` (no such primitive existed), the
+      approve-with-details panel, `updateBookingInstructions`, and
+      `canEditInstructions` in the pure lifecycle module beside its siblings.
+      Both dashboards now warn when an approved booking has no collection
+      details, since that state leaves two people with each other's first name
+      and no way to meet.
+      Also fixed a focus bug this surfaced: the decline and cancel reason panels
+      were declared *inside* `BookingActions`, making them a new component type
+      on every render, so React remounted the field and the caret jumped out
+      after each keystroke. Server-rendered HTML is identical either way, which
+      is why the render checks missed it. Extracted to module scope as
+      `EditPanel`.
+- [ ] **A2. Password reset** — needs an email transport; none exists. Resend
+      chosen. Requires a verified sending domain (DNS lead time) and a separate
+      `PasswordResetToken` model storing a **hash**, not the token: Auth.js's
+      `VerificationToken` has no type discriminator, so reusing it would let a
+      reset token be redeemed as a verification token.
+- [ ] **A3. Zod environment validation** — `src/config/env.ts`, parsed once at
+      load. Google OAuth and Cloudinary keys stay optional; `providers.ts`
+      already registers Google only when present.
+- [ ] **A4. Neon cold start / P2028** — convert read-only `$transaction([...])`
+      pairs to `Promise.all` (they open interactive transactions purely to batch
+      two independent reads, which is what timed out), then raise
+      `transactionOptions.maxWait`. Measured on 12 Aug: first request after idle
+      took 61s, subsequent ones 2.7s in dev.
+- [ ] **A5. viewCount** — rendered to owners, never incremented. Increment via a
+      client-side action on the detail page, deduped and rate-limited.
+- [ ] **A6. Staging deployment** — separate staging database (decided). Remove
+      the `picsum.photos` remote pattern and the demo seed before launch, per the
+      note in `next.config.ts`. Verify that in-process rate limiting behaves as
+      documented across instances.
 
 ### Left open in Phase 4, deliberately
 

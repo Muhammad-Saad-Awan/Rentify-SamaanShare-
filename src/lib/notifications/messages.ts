@@ -77,7 +77,8 @@ export type BookingNotificationEvent =
   | { event: "returned" }
   | { event: "review-reminder" }
   | { event: "deposit-returned"; amount: number }
-  | { event: "cancelled"; by: "renter" | "owner"; reason?: string | null };
+  | { event: "cancelled"; by: "renter" | "owner"; reason?: string | null }
+  | { event: "instructions-updated" };
 
 export type BookingNotificationInput = BookingNotificationBase &
   BookingNotificationEvent;
@@ -165,6 +166,23 @@ export function buildBookingNotifications(
           NotificationType.BOOKING_APPROVED,
           `Your request for ${item} was approved`,
           "Choose how you will pay the owner to continue."
+        ),
+      ];
+
+    /**
+     * The owner changed where or when to collect.
+     *
+     * Worth its own notification rather than a silent edit: pickup instructions are the only
+     * channel between the two parties until profiles carry a verified phone, so a renter may
+     * already have read - and acted on - the previous address. The new text is not repeated in
+     * the body, because it can run to a thousand characters; the booking is where it lives.
+     */
+    case "instructions-updated":
+      return [
+        toRenter(
+          NotificationType.BOOKING_INSTRUCTIONS_UPDATED,
+          `The owner updated the pickup details for ${item}`,
+          "Check your booking for the current collection details before you travel."
         ),
       ];
 

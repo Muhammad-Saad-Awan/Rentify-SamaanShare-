@@ -173,6 +173,48 @@ export function canRenterCancel({
 }
 
 /**
+ * The statuses whose pickup details an owner may still edit.
+ *
+ * PENDING is excluded because instructions are given *at* approval - there is no approved booking
+ * to give them for yet. The terminal statuses are excluded because the collection has already
+ * happened or been called off, and editing the record afterwards would rewrite something the
+ * renter may need to refer back to.
+ *
+ * ACTIVE is included deliberately: the item is out, and the same field is the only place to say
+ * where and when to bring it back.
+ */
+export const INSTRUCTIONS_EDITABLE_STATUSES = [
+  BookingStatus.APPROVED,
+  BookingStatus.PAYMENT_PENDING,
+  BookingStatus.ACTIVE,
+] as const;
+
+/**
+ * Whether the owner may still change where and when to collect.
+ *
+ * Lives here rather than in the action for the same reason `canRenterCancel` does: it is a rule
+ * about the lifecycle, it is the kind of rule that gets quietly widened, and in a pure module it
+ * can be asserted without a database.
+ */
+export function canEditInstructions(status: BookingStatus): CancelEligibility {
+  if (
+    (INSTRUCTIONS_EDITABLE_STATUSES as readonly BookingStatus[]).includes(
+      status
+    )
+  ) {
+    return { allowed: true };
+  }
+
+  return {
+    allowed: false,
+    reason:
+      status === BookingStatus.PENDING
+        ? "Approve the request first - you can add pickup details as you do."
+        : "This booking is closed, so its pickup details can no longer be changed.",
+  };
+}
+
+/**
  * Whether the item may be marked as collected.
  *
  * Gated on the payment being confirmed, not merely arranged. The owner is the one handing over
