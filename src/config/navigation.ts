@@ -2,6 +2,7 @@ import {
   BellIcon,
   CalendarCheckIcon,
   HeartIcon,
+  HomeIcon,
   InboxIcon,
   LayoutDashboardIcon,
   PackageIcon,
@@ -21,9 +22,13 @@ import type { LucideIcon } from "lucide-react";
  * desktop sidebar, the mobile drawer, and the breadcrumb trail. Adding a
  * dashboard section means adding one entry here - no component edits.
  *
- * Paths deliberately mirror `PROTECTED_PREFIXES` in `@/config/routes`. Every
- * `href` below already sits under one of those prefixes, so middleware guards
- * the whole map without a second list to maintain.
+ * Paths deliberately mirror `PROTECTED_PREFIXES` in `@/config/routes`, with one
+ * deliberate exception: the "Home" entry points at `/`, which is public. It is
+ * the way *out* of the dashboard rather than a section of it, so it is the only
+ * href here that middleware does not guard - and it must stay that way, since
+ * the whole point is reaching the marketplace. Every other entry sits under a
+ * protected prefix, so middleware still guards the rest of the map without a
+ * second list to maintain.
  */
 
 export interface NavItem {
@@ -58,6 +63,23 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
   {
     title: "Overview",
     items: [
+      /**
+       * Back to the public marketplace.
+       *
+       * `exact` is load-bearing here, more than anywhere else in this map: `/` is a prefix of
+       * every route in the app, so a prefix match would light this up permanently and leave the
+       * sidebar with two "current" items on every page. Pinned by a test.
+       *
+       * First in the list because it is what someone reaches for when they are done with the
+       * dashboard, and because a link out of a section belongs above that section's contents
+       * rather than buried among them.
+       */
+      {
+        title: "Home",
+        href: "/",
+        icon: HomeIcon,
+        exact: true,
+      },
       {
         title: "Dashboard",
         href: "/dashboard",
