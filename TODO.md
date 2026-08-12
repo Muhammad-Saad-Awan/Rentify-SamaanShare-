@@ -611,9 +611,8 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
 - [ ] **A6. Staging deployment** — **fully prepared, blocked on infrastructure.**
       See `docs/DEPLOYMENT.md` for the complete checklist: what is needed from
       you, every environment variable and what happens when each is absent, the
-      migration sequence, the `picsum.photos` and demo-seed removals (not yet
-      made — they are load-bearing for local development and removing them is a
-      launch decision), and the eight things to verify once it is up. The
+      migration sequence, and the eight things to verify once it is up. The
+      `picsum.photos` pattern and the demo seed are now removed. The
       verification section is the actual point of A6: rate limiting is
       in-process by design and its real behaviour across instances has never
       been measured.
@@ -756,7 +755,9 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
 
 ### Performance
 
-- [ ] Optimize images (Next.js Image)
+- [ ] Optimize images (Next.js Image) — `remotePatterns` is Cloudinary-only as of
+      Stage A6; `next/image` throws on an unlisted host rather than degrading, so
+      that list is a security boundary
 - [ ] Add lazy loading
 - [ ] Implement pagination
 - [ ] Add infinite scroll (where appropriate)

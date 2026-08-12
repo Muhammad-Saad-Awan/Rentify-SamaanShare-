@@ -91,8 +91,8 @@ export function listingJsonLd(listing: ListingJsonLdInput) {
         description: listing.description,
         url,
         category: listing.category.name,
-        // Absolute URLs only: these are already Cloudinary or picsum links, so
-        // they pass through unchanged rather than being resolved against the site.
+        // Absolute URLs only: these are Cloudinary links already, so they pass
+        // through unchanged rather than being resolved against the site.
         image: [...listing.imageUrls],
         offers: {
           "@type": "Offer",

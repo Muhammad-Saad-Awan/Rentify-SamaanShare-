@@ -105,7 +105,7 @@ npm run db:seed        # 7 categories, 30 subcategories
 npx prisma migrate status
 ```
 
-**Do not run `npm run db:seed:demo`** — see below.
+There is no demo seed to avoid any more — it was removed in §4.
 
 All Stage A migrations are additive (new nullable columns, one new table, one
 appended enum value), so there is no destructive step and no rollback plan is
@@ -113,39 +113,50 @@ needed beyond restoring the branch.
 
 ---
 
-## 4. Pre-deploy code changes still outstanding
+## 4. Pre-deploy code changes — DONE
 
-Two things `next.config.ts` and the seed explicitly say to remove before launch.
-**I have not removed them** — they are load-bearing for local development, and
-removing them is a launch decision rather than a Stage A one.
+Both removals `next.config.ts` and the seed called for are made.
 
-### 4a. `picsum.photos` remote pattern
+### 4a. `picsum.photos` remote pattern — removed
 
-`next.config.ts:19` allows `picsum.photos` in `images.remotePatterns` purely so
-demo-seed listings render. Its own comment says to remove it, and the reason is
-real: every host in that list is a host `next/image` will proxy and cache
-arbitrary remote images from.
+`images.remotePatterns` now contains Cloudinary and nothing else. Every host in
+that list is one `next/image` will fetch, proxy and cache arbitrary bytes from on
+request, so it is a security boundary rather than a convenience.
 
-```ts
-// next.config.ts — delete this entry before any public deploy
-{
-  protocol: "https",
-  hostname: "picsum.photos",
-},
+Verified: the optimizer returns **400** for a `picsum.photos` URL and **200** for a
+Cloudinary one.
+
+### 4b. Demo seed — removed
+
+`prisma/seed-demo.ts` and the `db:seed:demo` script are gone.
+
+### 4c. Demo *rows* still in the dev database — action required locally
+
+Not a deployment concern, but it will bite you the moment you run the app locally.
+
+`next/image` **throws during server render** for an unconfigured host — it does not
+fall back to a broken image. So any page rendering a demo listing now returns a
+**500**, which is exactly the coupling the old config comment warned about: the
+pattern and the data had to go together.
+
+The dev database is entirely demo data — 17 of 17 listings, 3 users, 20 picsum
+images, and **no bookings attached to any of them**.
+
+```bash
+npm run clean:demo              # dry run: report what would go
+npm run clean:demo -- --delete  # remove it
 ```
 
-### 4b. Demo seed
+Dry run by default, matching `cleanup:uploads`. It only touches rows with the
+seed's `demo-` id prefix (real ids are cuids and cannot collide) plus any
+`ListingImage` still pointing at picsum, and it **refuses to run** if any booking
+is attached — deleting then would destroy real booking history.
 
-`prisma/seed-demo.ts` creates fake listings with `picsum.photos` images and is
-already guarded to development (`process.env.NODE_ENV`). Never run it against
-staging: the two changes go together, since removing the remote pattern leaves
-demo listings with broken images.
+Categories and subcategories are left alone; `npm run db:seed` owns those.
 
-**Recommendation:** remove 4a and skip 4b for staging, and create two or three
-real listings by hand with real Cloudinary uploads. That also exercises the upload
-path, which the demo seed bypasses entirely.
-
-Say the word and I will make both changes as a separate commit.
+**Staging needs none of this** — it starts from an empty database. Create two or
+three real listings by hand with real Cloudinary uploads instead, which also
+exercises the upload path the demo seed bypassed entirely.
 
 ---
 
@@ -260,7 +271,7 @@ production.
 
 1. You: create the staging Neon project and the Vercel project (§1).
 2. You: start Resend domain verification — longest lead time (§1 item 3).
-3. Me: remove `picsum.photos` (§4a) — say the word.
+3. ~~Me: remove `picsum.photos`~~ — done (§4).
 4. You: set environment variables in Vercel (§2).
 5. Either: run `migrate deploy` + `db:seed` against staging (§3).
 6. Deploy.

@@ -119,21 +119,60 @@ export type ParseResult<T> =
   { success: true; data: T } | { success: false; errors: string[] };
 
 /**
+ * Strips one matching pair of surrounding quotes.
+ *
+ * WHY THIS IS NECESSARY, and it cost a real 500. `.env` files routinely quote values - Neon's own
+ * copy button produces `DATABASE_URL='postgresql://...'` - and whether the quotes survive into
+ * `process.env` depends on which loader got there first. They did survive here, so the connection
+ * string arrived as `'postgresql://...'` with a literal leading apostrophe. The old code never
+ * noticed because it only checked the variable was present; the moment validation asserted the
+ * scheme, every page 500ed on `Invalid server environment variables`.
+ *
+ * Stripping is the right fix rather than "quote your env file correctly". A validator's job is to
+ * accept the input people actually produce and reject what is genuinely wrong, and a quoted value
+ * is not wrong - it is the format half the tooling emits. Same reasoning as treating an empty string
+ * as absent below.
+ *
+ * Only a MATCHING pair is removed, so a password that legitimately starts or ends with a quote is
+ * left alone.
+ */
+function unquote(value: string): string {
+  const trimmed = value.trim();
+
+  if (trimmed.length < 2) {
+    return trimmed;
+  }
+
+  const first = trimmed[0];
+  const last = trimmed[trimmed.length - 1];
+
+  if ((first === "'" || first === '"') && first === last) {
+    return trimmed.slice(1, -1);
+  }
+
+  return trimmed;
+}
+
+/**
  * Runs a schema over a candidate environment, collecting every problem.
  *
- * Empty strings are dropped before validation. That is how a hosting platform's dashboard records
- * "I cleared this field", and an empty string satisfies `.optional()` - so without this, a blank
- * `RESEND_API_KEY` would be handed to the provider as a real credential and produce an opaque
- * third-party error instead of "this is not configured".
+ * Values are unquoted and trimmed first - see `unquote`.
+ *
+ * Empty strings are then dropped. That is how a hosting platform's dashboard records "I cleared this
+ * field", and an empty string satisfies `.optional()` - so without this, a blank `RESEND_API_KEY`
+ * would be handed to the provider as a real credential and produce an opaque third-party error
+ * instead of "this is not configured". A value of `""` counts as cleared too, which is why the
+ * unquoting happens before the filter and not after.
  */
 function parseWith<T>(
   schema: z.ZodType<T>,
   source: Record<string, string | undefined>
 ): ParseResult<T> {
   const cleaned = Object.fromEntries(
-    Object.entries(source).filter(
-      ([, value]) => value !== undefined && value !== ""
-    )
+    Object.entries(source)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [key, unquote(value as string)])
+      .filter(([, value]) => value !== "")
   );
 
   const result = schema.safeParse(cleaned);

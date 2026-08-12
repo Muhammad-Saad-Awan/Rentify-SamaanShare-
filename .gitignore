@@ -43,10 +43,11 @@ src/generated/
 # ----------------
 # Local env files (contain secrets - NEVER commit these)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Glob rather than the four standard Next suffixes: a `.env.staging.local` was
+# created during Stage A6 and slipped past the explicit list into a commit,
+# because "staging" is not one of Next's conventional environment names. Any
+# *.local env file is by definition machine-local and must never be committed.
+.env*.local
 
 # Only .env.example should be committed (no real secrets)
 !.env.example

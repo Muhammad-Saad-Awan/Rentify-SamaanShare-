@@ -96,6 +96,71 @@ describe("parseServerEnv", () => {
     }
   });
 
+  /**
+   * The case that produced a real 500 after A3 landed.
+   *
+   * Neon's copy button emits `DATABASE_URL='postgresql://...'`, and whether those quotes survive
+   * into `process.env` depends on which loader ran first. Here they did, so the scheme check failed
+   * and every page returned "Invalid server environment variables". A validator has to accept the
+   * input people actually produce.
+   */
+  it("strips surrounding single quotes", () => {
+    const result = parseServerEnv({
+      ...minimal,
+      DATABASE_URL: "'postgresql://user:pass@host:5432/db'",
+    });
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.data.DATABASE_URL).toBe(
+        "postgresql://user:pass@host:5432/db"
+      );
+    }
+  });
+
+  it("strips surrounding double quotes", () => {
+    expect(
+      parseServerEnv({
+        ...minimal,
+        DATABASE_URL: '"postgresql://user:pass@host:5432/db"',
+      }).success
+    ).toBe(true);
+  });
+
+  it("trims surrounding whitespace", () => {
+    expect(
+      parseServerEnv({
+        ...minimal,
+        DATABASE_URL: "  postgresql://user:pass@host:5432/db  ",
+      }).success
+    ).toBe(true);
+  });
+
+  /** Only a matching pair is removed, so a value that merely contains a quote is untouched. */
+  it("leaves an unmatched quote alone", () => {
+    const result = parseServerEnv({
+      ...minimal,
+      AUTH_SECRET: `'${"x".repeat(40)}`,
+    });
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.data.AUTH_SECRET.startsWith("'")).toBe(true);
+    }
+  });
+
+  it("treats a quoted empty string as absent", () => {
+    const result = parseServerEnv({ ...minimal, RESEND_API_KEY: "''" });
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.data.RESEND_API_KEY).toBeUndefined();
+    }
+  });
+
   it("keeps the third-party integrations optional", () => {
     // Cloudinary, Google and Resend each degrade honestly when absent, so requiring them would
     // mean nobody could run the project locally.
