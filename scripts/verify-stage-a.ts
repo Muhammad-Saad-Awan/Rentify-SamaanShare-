@@ -226,6 +226,102 @@ async function main() {
     Array.isArray(notifications) && typeof notificationCount === "number"
   );
 
+  console.log("\n=== A5: viewCount increments atomically ===");
+
+  const subcategory = await prisma.subcategory.findFirstOrThrow({
+    select: { id: true, categoryId: true },
+  });
+
+  const listing = await prisma.listing.create({
+    data: {
+      ownerId: user.id,
+      categoryId: subcategory.categoryId,
+      subcategoryId: subcategory.id,
+      title: "Stage A View Counter",
+      description: "Throwaway listing for view-count verification.",
+      condition: "GOOD",
+      pricePerDay: 100,
+      securityDeposit: 0,
+      city: "karachi",
+      area: "Stage A",
+      status: "ACTIVE",
+    },
+    select: { id: true, viewCount: true },
+  });
+
+  check("a new listing starts at zero views", listing.viewCount === 0);
+
+  /**
+   * Twenty concurrent increments must all land.
+   *
+   * This is why the action uses `{ increment: 1 }` rather than reading the count and writing back:
+   * a read-then-write loses views under exactly this condition, silently, and the owner would never
+   * know the number was wrong.
+   */
+  await Promise.all(
+    Array.from({ length: 20 }, () =>
+      prisma.listing.update({
+        where: { id: listing.id },
+        data: { viewCount: { increment: 1 } },
+      })
+    )
+  );
+
+  const counted = await prisma.listing.findUniqueOrThrow({
+    where: { id: listing.id },
+    select: { viewCount: true },
+  });
+
+  check(
+    "20 concurrent increments all landed",
+    counted.viewCount === 20,
+    counted.viewCount
+  );
+
+  console.log("\n=== A5: a hidden listing is not countable ===");
+
+  // The action looks the listing up through VISIBLE_LISTING_WHERE, so a paused one is simply not
+  // found and the count cannot be moved by a stale tab.
+  await prisma.listing.update({
+    where: { id: listing.id },
+    data: { status: "PAUSED" },
+  });
+
+  const whileHidden = await prisma.listing.findFirst({
+    where: { id: listing.id, status: "ACTIVE", deletedAt: null },
+    select: { id: true },
+  });
+
+  check("a paused listing is invisible to the counter", whileHidden === null);
+
+  console.log("\n=== A5: the tracker is wired into the listing page ===");
+
+  /**
+   * Guards against the tracker being dropped from the page.
+   *
+   * It renders `null`, so there is no markup to look for - but a Client Component appears in the RSC
+   * payload as a module reference, and that is enough to know it will hydrate and run its effect.
+   * Whether the effect then fires is React's job, not something worth asserting here; what can
+   * regress silently is someone removing the component from the tree, and this catches that.
+   */
+  const anyListing = await prisma.listing.findFirst({
+    where: { status: "ACTIVE", deletedAt: null },
+    select: { id: true },
+  });
+
+  if (anyListing) {
+    const html = await fetch(`${BASE}/listings/${anyListing.id}`)
+      .then((r) => r.text())
+      .catch(() => "");
+
+    check(
+      "the listing page references the view tracker",
+      html.includes("listing-view-tracker")
+    );
+  } else {
+    console.log("  SKIP  no active listing to check against");
+  }
+
   console.log("\n=== pages render ===");
 
   const forgot = await status("/forgot-password");
@@ -255,6 +351,7 @@ async function main() {
   await prisma.passwordResetToken.deleteMany({
     where: { userId: { in: [user.id, suspended.id] } },
   });
+  await prisma.listing.deleteMany({ where: { ownerId: user.id } });
   await prisma.user.deleteMany({
     where: { id: { in: [user.id, suspended.id] } },
   });

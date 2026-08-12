@@ -117,11 +117,9 @@ export const forgotPasswordSchema = z.object({
  */
 export const resetPasswordSchema = z
   .object({
-    token: z
-      .string()
-      .regex(/^[A-Za-z0-9_-]{20,200}$/, {
-        error: "That reset link is not valid.",
-      }),
+    token: z.string().regex(/^[A-Za-z0-9_-]{20,200}$/, {
+      error: "That reset link is not valid.",
+    }),
     password: newPasswordField,
     confirmPassword: z.string().min(1, { error: "Confirm your password." }),
   })

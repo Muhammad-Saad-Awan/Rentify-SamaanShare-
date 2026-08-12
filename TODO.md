@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 12 August 2026 (Stage A — production-critical fixes: A1–A4 done, A5–A6 open)
+**Last Updated:** 12 August 2026 (Stage A — A1–A5 done; A6 prepared, blocked on staging infrastructure)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -43,7 +43,7 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Create `.nvmrc` with Node.js version
 - [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar,
       lifecycle, deposit window, notification copy, environment schema, reset
-      tokens, email copy) — 182 tests
+      tokens, email copy, view keys) — 193 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
@@ -122,7 +122,7 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [ ] Verify Prisma Studio works
 - [x] Verify TypeScript compilation
 - [x] Verify ESLint passes
-- [ ] Deploy to Vercel (staging)
+- [ ] Deploy to Vercel (staging) — prepared, see `docs/DEPLOYMENT.md` (A6)
 
 ---
 
@@ -398,12 +398,10 @@ no listing, booking, search, review or admin functionality was implemented.
 ### Listing Management
 
 - [x] Create my listings page (`/dashboard/listings`)
-- [ ] Show listing statistics (views, inquiries) — **partly broken.** The owner
-      card renders `listing.viewCount` (`owner-listing-card.tsx:155`) but nothing
-      ever increments it: the detail page deliberately does not, because a GET
-      that mutates fires on prefetch. So every owner sees 0 views. Either drop
-      the stat or increment it from somewhere safe. "Inquiries" has no source at
-      all until messaging exists.
+- [x] Show listing statistics (views) — fixed in Stage A5; see that section.
+      Views are now recorded from a browser effect, so the detail page still does
+      not mutate on GET.
+- [ ] Show listing statistics (inquiries) — no source until messaging exists
 - [x] Add listing status controls (active/paused)
 - [x] Create `updateListingStatus` action
 - [x] Add quick edit actions
@@ -591,12 +589,34 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
       `transactionOptions.maxWait`/`timeout` raised from 2s/5s to 15s for the
       genuine write transactions. Measured 12 Aug: first request after idle 61s,
       warm 2.7s in dev.
-- [ ] **A5. viewCount** — rendered to owners, never incremented. Increment via a
-      client-side action on the detail page, deduped and rate-limited.
-- [ ] **A6. Staging deployment** — separate staging database (decided). Remove
-      the `picsum.photos` remote pattern and the demo seed before launch, per the
-      note in `next.config.ts`. Verify that in-process rate limiting behaves as
-      documented across instances.
+- [x] **A5. viewCount** — was rendered to owners and never incremented, so every
+      owner saw 0 forever. The detail page still refuses to write it on render,
+      and that refusal was always right: a GET that mutates fires on every
+      crawler hit, link preview and prefetch, so the number would have measured
+      indexing rather than interest. `ListingViewTracker` records it from a
+      browser effect instead — a prefetch fetches the RSC payload without
+      mounting the tree, so it does not count, and anything executing no
+      JavaScript is not counted either, which for this metric is correct.
+      Three overlapping guards: a ref (React's double-invoke and re-renders), a
+      `sessionStorage` key (back-navigation and refresh within a tab), and a
+      six-hour server window per viewer. Owner views excluded on the page *and*
+      re-checked in the action, since the action is a public endpoint. Hidden
+      listings are not countable — the lookup goes through
+      `VISIBLE_LISTING_WHERE`. **Never revalidates**: `revalidatePath` here would
+      discard the cached page on every view, so a popular listing would be
+      cached less and each fresh render would trigger another view.
+      Dedupe is best-effort by construction — the rate limiter is in-process, so
+      across instances the same viewer can be counted more than once. Acceptable
+      for a view counter; would not be for anything a decision hangs on.
+- [ ] **A6. Staging deployment** — **fully prepared, blocked on infrastructure.**
+      See `docs/DEPLOYMENT.md` for the complete checklist: what is needed from
+      you, every environment variable and what happens when each is absent, the
+      migration sequence, the `picsum.photos` and demo-seed removals (not yet
+      made — they are load-bearing for local development and removing them is a
+      launch decision), and the eight things to verify once it is up. The
+      verification section is the actual point of A6: rate limiting is
+      in-process by design and its real behaviour across instances has never
+      been measured.
 
 ### Left open in Phase 4, deliberately
 

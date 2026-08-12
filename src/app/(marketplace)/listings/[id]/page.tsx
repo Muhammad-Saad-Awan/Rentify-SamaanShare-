@@ -9,6 +9,7 @@ import { ListingsGrid } from "@/components/marketplace/listings-grid";
 import { OwnerCard } from "@/components/marketplace/owner-card";
 import { SaveListingButton } from "@/components/marketplace/save-listing-button";
 import { SectionHeading } from "@/components/marketplace/section-heading";
+import { ListingViewTracker } from "@/components/marketplace/listing-view-tracker";
 import { ShareListing } from "@/components/marketplace/share-listing";
 import { JsonLd } from "@/components/shared/json-ld";
 import { Badge } from "@/components/ui/badge";
@@ -71,9 +72,10 @@ export async function generateMetadata({
  * unknown or unpublished listing a real 404 - see the note there. The repeat call
  * below is free: `getListingDetail` is memoised per request with React `cache()`.
  *
- * Deliberately does not increment `viewCount`. A GET that mutates would fire on
- * every crawler hit and every back-button return, so view counting belongs with the
- * listing management work that actually reads the number.
+ * Still does not increment `viewCount` here, and that has not changed: a GET that mutates
+ * would fire on every crawler hit, every link preview and every prefetch. Stage A5 added
+ * `ListingViewTracker` instead, which records the view from an effect in the browser - so
+ * only a real render by a real visitor counts. See `@/lib/listings/views`.
  */
 export default async function ListingPage({ params }: ListingPageProps) {
   const { id } = await params;
@@ -102,6 +104,13 @@ export default async function ListingPage({ params }: ListingPageProps) {
 
   return (
     <>
+      {/* Records the view from the browser. Skipped outright for an owner looking at their own
+          listing - the action re-checks that itself, this only avoids the round trip. */}
+      <ListingViewTracker
+        listingId={listing.id}
+        enabled={listing.owner.id !== user?.id}
+      />
+
       <JsonLd
         data={listingJsonLd({
           id: listing.id,
