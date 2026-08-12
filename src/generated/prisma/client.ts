@@ -62,6 +62,25 @@ export type Session = Prisma.SessionModel
  */
 export type VerificationToken = Prisma.VerificationTokenModel
 /**
+ * Model PasswordResetToken
+ * *
+ *  * Password reset tokens. Stage A2.
+ *  * WHY NOT REUSE VerificationToken. That table belongs to the Auth.js adapter and
+ *  * has no type discriminator and no used-marker - so a password-reset token and
+ *  * an email-verification token would be indistinguishable, and one could be
+ *  * redeemed as the other. It also cannot record single use, which is the property
+ *  * that stops a leaked reset link being replayed after the fact.
+ *  * ONLY A HASH IS STORED. The token in the emailed URL is never written down. A
+ *  * leaked database dump of plaintext reset tokens is account takeover for every
+ *  * user with an outstanding request; a dump of SHA-256 hashes of 256-bit random
+ *  * values is worth nothing. SHA-256 rather than bcrypt is deliberate and correct
+ *  * here: bcrypt's slowness exists to protect low-entropy secrets that humans
+ *  * chose, and these are high-entropy values a CSPRNG chose - there is nothing to
+ *  * brute-force, and a fast hash keeps the unique-index lookup a single probe
+ *  * instead of a table scan.
+ */
+export type PasswordResetToken = Prisma.PasswordResetTokenModel
+/**
  * Model Category
  * 
  */

@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import { env } from "@/config/env";
+
 /**
  * Cloudinary signing, without the SDK.
  *
@@ -22,14 +24,17 @@ export interface CloudinaryConfig {
 /**
  * Reads the three credentials, failing loudly if any is missing.
  *
- * Called at request time rather than at module load: throwing during module
- * evaluation would take down every route that transitively imports this, including
- * pages that never upload anything.
+ * Called at request time rather than at module load, and that is still true after env validation
+ * moved to `@/config/env`: the three Cloudinary variables are deliberately *optional* there, so
+ * that a developer without a Cloudinary account can run everything except uploads. This is where
+ * the requirement actually bites, so this is where it throws.
  */
 export function getCloudinaryConfig(): CloudinaryConfig {
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY;
-  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  const {
+    CLOUDINARY_CLOUD_NAME: cloudName,
+    CLOUDINARY_API_KEY: apiKey,
+    CLOUDINARY_API_SECRET: apiSecret,
+  } = env;
 
   if (!cloudName || !apiKey || !apiSecret) {
     throw new Error(

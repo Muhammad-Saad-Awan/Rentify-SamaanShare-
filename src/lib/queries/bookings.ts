@@ -223,7 +223,9 @@ export async function getRenterBookings({
   const currentPage = Math.max(1, Math.trunc(page));
   const where = { renterId: userId };
 
-  const [rows, total] = await prisma.$transaction([
+  // Concurrent reads rather than a transaction: READ COMMITTED re-snapshots per statement, so
+  // batching these gave no consistency guarantee - see the note in `getActiveListings`.
+  const [rows, total] = await Promise.all([
     prisma.booking.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -266,7 +268,8 @@ export async function getOwnerBookingRequests({
   const currentPage = Math.max(1, Math.trunc(page));
   const where = { ownerId: userId };
 
-  const [rows, total, pendingCount] = await prisma.$transaction([
+  // Concurrent reads rather than a transaction - see the note in `getActiveListings`.
+  const [rows, total, pendingCount] = await Promise.all([
     prisma.booking.findMany({
       where,
       /**

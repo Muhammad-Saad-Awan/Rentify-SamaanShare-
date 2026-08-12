@@ -25,6 +25,7 @@
     "cleanup:uploads": "tsx scripts/cleanup-pending-uploads.ts",
     "verify:phase4": "tsx --env-file=.env.local scripts/verify-phase4.ts",
     "verify:phase4:ui": "tsx --env-file=.env.local scripts/verify-phase4-ui.ts",
+    "verify:stage-a": "tsx --env-file=.env.local scripts/verify-stage-a.ts",
     "db:studio": "prisma studio",
     "db:validate": "prisma validate",
     "db:format": "prisma format"

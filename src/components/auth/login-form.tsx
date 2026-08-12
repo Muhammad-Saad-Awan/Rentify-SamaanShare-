@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -22,9 +23,18 @@ import type { LoginInput } from "@/lib/validations/auth";
 interface LoginFormProps {
   /** Already sanitised by the page - never trust the raw query parameter. */
   callbackUrl: string;
+  /**
+   * Whether to offer the reset link.
+   *
+   * Decided on the server by `isEmailEnabled()` and passed down, exactly like the Google button: the
+   * variable it depends on is unprefixed and must not reach the browser. Without a transport the
+   * link would lead to a form that accepts an address and silently sends nothing, so it is not shown
+   * at all - and `/forgot-password` 404s for the same reason, covering a direct visit.
+   */
+  showForgotPassword: boolean;
 }
 
-function LoginForm({ callbackUrl }: LoginFormProps) {
+function LoginForm({ callbackUrl, showForgotPassword }: LoginFormProps) {
   const router = useRouter();
 
   /**
@@ -98,7 +108,20 @@ function LoginForm({ callbackUrl }: LoginFormProps) {
         </Field>
 
         <Field data-invalid={Boolean(errors.password)}>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
+          <div className="flex items-baseline justify-between gap-2">
+            <FieldLabel htmlFor="password">Password</FieldLabel>
+
+            {/* Rendered only when a transport exists - see the note on the prop. */}
+            {showForgotPassword && (
+              <Link
+                href="/forgot-password"
+                className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-4"
+              >
+                Forgot password?
+              </Link>
+            )}
+          </div>
+
           <Input
             id="password"
             type="password"

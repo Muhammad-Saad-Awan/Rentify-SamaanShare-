@@ -1,3 +1,5 @@
+import { env } from "@/config/env";
+
 /**
  * Which optional providers are actually usable in this environment.
  *
@@ -19,5 +21,5 @@
  * `AUTH_GOOGLE_SECRET` automatically, so those names are load-bearing.
  */
 export function isGoogleEnabled(): boolean {
-  return Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
+  return Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
 }

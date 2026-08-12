@@ -16,8 +16,14 @@ export const API_AUTH_PREFIX = "/api/auth";
 /**
  * Pages that are part of the auth flow itself. A signed-in visitor is bounced
  * away from these to {@link DEFAULT_LOGIN_REDIRECT}.
+ *
+ * `/reset-password` is deliberately NOT here. A signed-in visitor holding a
+ * valid reset link must still be able to redeem it - that is precisely the
+ * person whose session was established before they realised their password was
+ * compromised, and bouncing them to the dashboard would strand them. Asking for
+ * a *new* link while signed in is different, so `/forgot-password` is listed.
  */
-export const AUTH_ROUTES = ["/login", "/register"] as const;
+export const AUTH_ROUTES = ["/login", "/register", "/forgot-password"] as const;
 
 /**
  * Everything under these prefixes requires a session. Anything not listed

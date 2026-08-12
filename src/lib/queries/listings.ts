@@ -73,7 +73,24 @@ export async function getActiveListings({
 }: GetActiveListingsOptions): Promise<PaginatedResult<ListingCardData>> {
   const where = buildListingWhere(filters);
 
-  const [rows, total] = await prisma.$transaction([
+  /**
+   * `Promise.all`, not `$transaction`. Read this before changing it back.
+   *
+   * These two reads were batched in an interactive transaction to keep the count and the page from
+   * coming out of different snapshots. That reasoning does not hold: Prisma uses the database's
+   * default isolation level, which in Postgres is READ COMMITTED, and READ COMMITTED takes a **new
+   * snapshot for every statement**. So the count and the rows could already disagree inside that
+   * transaction - the guarantee was never there to lose. Getting it would need
+   * `isolationLevel: "RepeatableRead"`, which is a different and more expensive request.
+   *
+   * What the transaction did cost was a connection acquired up front and held across both
+   * statements, and that is what produced the P2028 "Unable to start a transaction in the given
+   * time" 500s on the first request after Neon's compute had scaled to zero.
+   *
+   * The drifting-count case is handled where it belongs: every paginated screen renders an explicit
+   * "no results on this page" state with a link back to the first page.
+   */
+  const [rows, total] = await Promise.all([
     prisma.listing.findMany({
       where,
       orderBy: buildListingOrderBy(filters.sort),

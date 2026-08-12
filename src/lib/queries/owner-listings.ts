@@ -59,9 +59,11 @@ export async function getOwnerListings({
   const currentPage = Math.max(1, Math.trunc(page));
   const where = { ownerId, deletedAt: null };
 
-  // Rows and count in one transaction, so the total cannot come from a different
-  // snapshot than the page - what otherwise produces "page 3 of 2" after a delete.
-  const [rows, total] = await prisma.$transaction([
+  // Concurrent reads rather than a transaction. The shared-snapshot guarantee this used to claim
+  // does not exist at Postgres's READ COMMITTED default, which re-snapshots per statement - see the
+  // full note in `getActiveListings`. The transaction's real effect was holding a connection across
+  // both statements, which is what timed out on Neon's cold start.
+  const [rows, total] = await Promise.all([
     prisma.listing.findMany({
       where,
       orderBy: { createdAt: "desc" },

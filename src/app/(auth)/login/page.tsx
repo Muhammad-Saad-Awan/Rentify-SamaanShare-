@@ -13,6 +13,7 @@ import { FieldSeparator } from "@/components/ui/field";
 import { CALLBACK_URL_PARAM, sanitizeCallbackUrl } from "@/config/routes";
 import { getAuthErrorMessage } from "@/lib/auth/errors";
 import { isGoogleEnabled } from "@/lib/auth/providers";
+import { isEmailEnabled } from "@/config/env";
 
 import type { Metadata } from "next";
 
@@ -49,6 +50,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
    */
   const googleEnabled = isGoogleEnabled();
 
+  // Same reasoning: resolved where the env vars exist, and crosses to the client as a boolean.
+  const emailEnabled = isEmailEnabled();
+
   return (
     <Card>
       <CardHeader>
@@ -68,7 +72,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
         )}
 
-        <LoginForm callbackUrl={callbackUrl} />
+        <LoginForm
+          callbackUrl={callbackUrl}
+          showForgotPassword={emailEnabled}
+        />
 
         {googleEnabled && (
           <>

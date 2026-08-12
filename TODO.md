@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 11 August 2026 (Phase 4 — Booking System, complete)
+**Last Updated:** 12 August 2026 (Stage A — production-critical fixes: A1–A4 done, A5–A6 open)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -42,12 +42,14 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [ ] Set up Husky for Git hooks
 - [x] Create `.nvmrc` with Node.js version
 - [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar,
-      lifecycle, deposit window, notification copy) — 133 tests
+      lifecycle, deposit window, notification copy, environment schema, reset
+      tokens, email copy) — 182 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
       renders both dashboards at every status behind a real session. Both create
-      their own throwaway rows and delete them. **Not** a substitute for a Vitest
+      their own throwaway rows and delete them. `npm run verify:stage-a` does the
+      same for the reset-token lifecycle. **Not** a substitute for a Vitest
       integration harness: they are scripts with assertions, not a suite, and they
       cannot run without a database.
 
@@ -79,7 +81,7 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 
 - [x] Create `.env.example` template
 - [x] Create `.env.local` (gitignored)
-- [ ] Set up environment validation with Zod
+- [x] Set up environment validation with Zod (Stage A3)
 - [x] Document all required variables
 
 ### Project Structure
@@ -152,13 +154,21 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 
 ### Password Reset
 
-- [ ] Create forgot password page (`/forgot-password`)
-- [ ] Create `requestPasswordReset` action
-- [ ] Generate reset tokens
-- [ ] Create reset password page (`/reset-password`)
-- [ ] Create `resetPassword` action
-- [ ] Validate reset tokens
-- [ ] Handle expiration
+Completed in Stage A2 — see that section for the security reasoning.
+
+- [x] Create forgot password page (`/forgot-password`) — 404s when email is
+      unconfigured, mirroring the Google button: a recovery form that accepts an
+      address and silently sends nothing is worse than none
+- [x] Create `requestPasswordReset` action
+- [x] Generate reset tokens — 32 random bytes, base64url, stored as SHA-256
+- [x] Create reset password page (`/reset-password`) — deliberately does **not**
+      404 when email is unconfigured, since an already-emailed token must stay
+      redeemable; and deliberately does not validate the token on render, or a
+      link preview would consume a single-use token before the user clicked
+- [x] Create `resetPassword` action — signs the user in on success
+- [x] Validate reset tokens — expired, spent and never-existed all report one
+      identical message
+- [x] Handle expiration — 1 hour, and single use is the stronger protection
 
 ### Email Verification
 
@@ -538,19 +548,49 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
       after each keystroke. Server-rendered HTML is identical either way, which
       is why the render checks missed it. Extracted to module scope as
       `EditPanel`.
-- [ ] **A2. Password reset** — needs an email transport; none exists. Resend
-      chosen. Requires a verified sending domain (DNS lead time) and a separate
-      `PasswordResetToken` model storing a **hash**, not the token: Auth.js's
-      `VerificationToken` has no type discriminator, so reusing it would let a
-      reset token be redeemed as a verification token.
-- [ ] **A3. Zod environment validation** — `src/config/env.ts`, parsed once at
-      load. Google OAuth and Cloudinary keys stay optional; `providers.ts`
-      already registers Google only when present.
-- [ ] **A4. Neon cold start / P2028** — convert read-only `$transaction([...])`
-      pairs to `Promise.all` (they open interactive transactions purely to batch
-      two independent reads, which is what timed out), then raise
-      `transactionOptions.maxWait`. Measured on 12 Aug: first request after idle
-      took 61s, subsequent ones 2.7s in dev.
+- [x] **A2. Password reset** — Resend, called over `fetch` rather than via the
+      SDK (one authenticated POST; same trade as `cloudinary.ts` rejecting the
+      Cloudinary SDK, so **no new dependency**). Its own
+      `PasswordResetToken` model storing a **SHA-256 hash, never the token** —
+      Auth.js's `VerificationToken` has no type discriminator and no used-marker,
+      so reusing it would let a reset token be redeemed as a verification token
+      and would make replay undetectable. SHA-256 rather than bcrypt is correct
+      here: the value is 256 bits of CSPRNG output, so there is nothing to
+      brute-force, and a fast hash keeps lookup a single indexed probe.
+      Single-use enforced by compare-and-swap (`usedAt: null` in the predicate),
+      token claimed *before* the password is written so a losing racer changes
+      nothing, and every sibling token spent on success so an attacker's parallel
+      request cannot take the account straight back. Enumeration-safe: one
+      neutral response for registered, unregistered, suspended and OAuth-only —
+      including when rate-limited, since a distinct 429 would be the same leak.
+      Suspended and soft-deleted accounts are refused at request *and* at
+      redemption, because an account can be suspended inside the 1-hour window.
+      - [ ] **Verified sending domain still needed.** `EMAIL_FROM` defaults to
+            `onboarding@resend.dev`, which only delivers to the Resend account
+            owner's own address. Set a verified domain before staging.
+      - [ ] **Session invalidation on password change** — known gap. Under the
+            JWT strategy a session is a signed cookie with no server-side record,
+            so a stolen session survives a reset until the token expires. Needs a
+            token version on `User` checked in the `jwt` callback. Worth doing
+            before launch.
+- [x] **A3. Zod environment validation** — three modules, and the split is
+      load-bearing: `env.schema.ts` is pure (so the rules are testable without a
+      valid secret-bearing environment), `env.ts` parses `process.env` at import
+      and is server-only, `env.public.ts` handles the `NEXT_PUBLIC_*` half
+      because unprefixed names do not exist in the browser. Empty strings are
+      treated as absent — that is how a hosting dashboard records a cleared
+      field, and an empty string satisfies `.optional()`. Cloudinary, Google and
+      Resend stay optional; each already degrades honestly when absent.
+- [x] **A4. Neon cold start / P2028** — six read-only `$transaction([...])` pairs
+      converted to `Promise.all`, and the comments claiming they guaranteed a
+      shared snapshot were **wrong**: Prisma uses the database default isolation
+      level, and Postgres READ COMMITTED takes a new snapshot per statement, so
+      the count and the page could already disagree inside the transaction. The
+      guarantee was never there to lose; what the transaction did cost was a
+      connection held across both statements, which is what timed out. Plus
+      `transactionOptions.maxWait`/`timeout` raised from 2s/5s to 15s for the
+      genuine write transactions. Measured 12 Aug: first request after idle 61s,
+      warm 2.7s in dev.
 - [ ] **A5. viewCount** — rendered to owners, never incremented. Increment via a
       client-side action on the detail page, deduped and rate-limited.
 - [ ] **A6. Staging deployment** — separate staging database (decided). Remove

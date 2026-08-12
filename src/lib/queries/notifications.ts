@@ -97,7 +97,8 @@ export async function getNotifications({
   const currentPage = Math.max(1, Math.trunc(page));
   const where = { userId };
 
-  const [items, total, unreadCount] = await prisma.$transaction([
+  // Concurrent reads rather than a transaction - see the note in `getActiveListings`.
+  const [items, total, unreadCount] = await Promise.all([
     prisma.notification.findMany({
       where,
       orderBy: { createdAt: "desc" },

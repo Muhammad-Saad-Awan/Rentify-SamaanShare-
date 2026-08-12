@@ -73,10 +73,9 @@ export async function getSavedListings({
     ...VISIBLE_LISTING_RELATION_WHERE,
   };
 
-  // Same transaction for rows and count, so the total cannot come from a
-  // different snapshot than the page - which is what produces "page 3 of 2" when
-  // something is unsaved mid-request.
-  const [rows, total] = await prisma.$transaction([
+  // Concurrent reads rather than a transaction: READ COMMITTED re-snapshots per statement, so the
+  // consistency this used to claim was never provided - see the full note in `getActiveListings`.
+  const [rows, total] = await Promise.all([
     prisma.savedListing.findMany({
       where,
       orderBy: { createdAt: "desc" },

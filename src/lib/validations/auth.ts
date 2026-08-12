@@ -100,8 +100,40 @@ export const registerSchema = z
     path: ["confirmPassword"],
   });
 
+/** Asking for a reset link. Email only - nothing else is needed or trusted. */
+export const forgotPasswordSchema = z.object({
+  email: emailField,
+});
+
+/**
+ * Choosing a new password from a reset link.
+ *
+ * Reuses `newPasswordField`, so a reset cannot set a password that registration would have refused -
+ * otherwise the reset flow becomes a way around the policy.
+ *
+ * The token is validated only for shape here. It is 32 random bytes as base64url, so 43 characters
+ * of the URL-safe alphabet; anything else cannot match a stored hash and is rejected without a
+ * database round trip.
+ */
+export const resetPasswordSchema = z
+  .object({
+    token: z
+      .string()
+      .regex(/^[A-Za-z0-9_-]{20,200}$/, {
+        error: "That reset link is not valid.",
+      }),
+    password: newPasswordField,
+    confirmPassword: z.string().min(1, { error: "Confirm your password." }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    error: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 /**
  * Canonical form of an email for storage and lookup.
