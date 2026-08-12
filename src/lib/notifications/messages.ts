@@ -78,7 +78,15 @@ export type BookingNotificationEvent =
   | { event: "review-reminder" }
   | { event: "deposit-returned"; amount: number }
   | { event: "cancelled"; by: "renter" | "owner"; reason?: string | null }
-  | { event: "instructions-updated" };
+  | { event: "instructions-updated" }
+  /**
+   * Both reviews have been released and are now readable.
+   *
+   * Sent on RELEASE, never on submission. Telling someone "you have a review" the moment it is
+   * written would hand them the one fact reciprocal withholding exists to withhold - that the other
+   * side has already committed - and re-open exactly the retaliation window the design closes.
+   */
+  | { event: "reviews-published" };
 
 export type BookingNotificationInput = BookingNotificationBase &
   BookingNotificationEvent;
@@ -257,6 +265,27 @@ export function buildBookingNotifications(
           NotificationType.BOOKING_COMPLETED,
           `Your rental of ${item} is complete`,
           "The owner confirmed the item came back. Your security deposit should be returned by the owner within 48 hours."
+        ),
+      ];
+
+    /**
+     * Both sides, because release is mutual.
+     *
+     * The copy says the reviews are readable rather than what they say. A notification that leaked
+     * the rating would make the feed a way to learn the outcome without opening it, and a bad rating
+     * delivered as a push line is a worse experience than one read in context.
+     */
+    case "reviews-published":
+      return [
+        toRenter(
+          NotificationType.REVIEW_RECEIVED,
+          `Your review of ${item} is now public`,
+          "The owner's review of you has been published too - both are visible now that you have each written one."
+        ),
+        toOwner(
+          NotificationType.REVIEW_RECEIVED,
+          `Your review of the renter for ${item} is now public`,
+          "Their review of you has been published too - both are visible now that you have each written one."
         ),
       ];
 

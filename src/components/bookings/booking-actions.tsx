@@ -30,6 +30,7 @@ import {
   selectPaymentMethod,
 } from "@/actions/payments";
 import { PaymentInstructions } from "@/components/bookings/payment-instructions";
+import { BookingReviewSection } from "@/components/reviews/booking-review-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -464,19 +465,30 @@ function BookingActions({ booking, side }: BookingActionsProps) {
                 I have returned the deposit
               </Button>
             </div>
+
+            <BookingReviewSection booking={booking} side="owner" />
           </div>
         );
       }
 
-      if (deposit.kind === "returned") {
-        return (
+      /**
+       * Deposit settled, or none was taken.
+       *
+       * The review block follows either way - it is the last thing left to do on a finished rental,
+       * and it is offered on the deposit-owed branch above too so an owner who has not yet handed the
+       * money back is not blocked from reviewing.
+       */
+      return (
+        <div className="flex flex-col gap-2">
           <Note>
-            Deposit recorded as returned on {formatDate(deposit.returnedAt)}.
+            {deposit.kind === "returned"
+              ? `Deposit recorded as returned on ${formatDate(deposit.returnedAt)}.`
+              : "This rental is complete."}
           </Note>
-        );
-      }
 
-      return <Note>This rental is complete.</Note>;
+          <BookingReviewSection booking={booking} side="owner" />
+        </div>
+      );
     }
 
     return null;
@@ -666,36 +678,44 @@ function BookingActions({ booking, side }: BookingActionsProps) {
     booking.status === BookingStatus.COMPLETED ||
     booking.status === BookingStatus.REVIEWED
   ) {
-    if (deposit.kind === "returned") {
-      return (
-        <Note>
-          The owner recorded your {formatPKR(booking.securityDeposit)} deposit
-          as returned on {formatDate(deposit.returnedAt)}.
-        </Note>
-      );
-    }
+    /**
+     * One note plus the review block, rather than four separate returns.
+     *
+     * The deposit state and the review state are independent: a renter waiting on their money should
+     * still be able to review, and one whose deposit came back still needs to. Restructured so the
+     * review block cannot be forgotten on one branch - which is exactly what happened when these
+     * were four returns.
+     */
+    return (
+      <div className="flex flex-col gap-2">
+        {deposit.kind === "returned" && (
+          <Note>
+            The owner recorded your {formatPKR(booking.securityDeposit)} deposit
+            as returned on {formatDate(deposit.returnedAt)}.
+          </Note>
+        )}
 
-    if (deposit.kind === "due") {
-      return (
-        <Note>
-          The owner should return your {formatPKR(booking.securityDeposit)}{" "}
-          deposit within {deposit.hoursRemaining}h. SamaanShare does not hold
-          it.
-        </Note>
-      );
-    }
+        {deposit.kind === "due" && (
+          <Note>
+            The owner should return your {formatPKR(booking.securityDeposit)}{" "}
+            deposit within {deposit.hoursRemaining}h. SamaanShare does not hold
+            it.
+          </Note>
+        )}
 
-    if (deposit.kind === "overdue") {
-      return (
-        <Note tone="warning">
-          Your {formatPKR(booking.securityDeposit)} deposit is{" "}
-          {deposit.hoursLate}h overdue. Contact the owner — SamaanShare does not
-          hold the deposit and cannot release it.
-        </Note>
-      );
-    }
+        {deposit.kind === "overdue" && (
+          <Note tone="warning">
+            Your {formatPKR(booking.securityDeposit)} deposit is{" "}
+            {deposit.hoursLate}h overdue. Contact the owner — SamaanShare does
+            not hold the deposit and cannot release it.
+          </Note>
+        )}
 
-    return <Note>This rental is complete.</Note>;
+        {deposit.kind === "none" && <Note>This rental is complete.</Note>}
+
+        <BookingReviewSection booking={booking} side="renter" />
+      </div>
+    );
   }
 
   return null;

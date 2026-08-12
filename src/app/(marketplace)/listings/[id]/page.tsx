@@ -9,6 +9,7 @@ import { ListingsGrid } from "@/components/marketplace/listings-grid";
 import { OwnerCard } from "@/components/marketplace/owner-card";
 import { SaveListingButton } from "@/components/marketplace/save-listing-button";
 import { SectionHeading } from "@/components/marketplace/section-heading";
+import { ListingReviews } from "@/components/reviews/listing-reviews";
 import { ListingViewTracker } from "@/components/marketplace/listing-view-tracker";
 import { ShareListing } from "@/components/marketplace/share-listing";
 import { JsonLd } from "@/components/shared/json-ld";
@@ -20,6 +21,7 @@ import {
   getListingDetail,
   getSimilarListings,
 } from "@/lib/queries/listing-detail";
+import { getOwnerReviews } from "@/lib/queries/reviews";
 import { getSavedListingIds } from "@/lib/queries/saved-listings";
 import { formatDate, todayInKarachi } from "@/lib/utils/date";
 import { CONDITION_LABELS, formatCity } from "@/lib/utils/listing";
@@ -88,12 +90,15 @@ export default async function ListingPage({ params }: ListingPageProps) {
     notFound();
   }
 
-  const [similar, user] = await Promise.all([
+  const [similar, user, reviews] = await Promise.all([
     getSimilarListings({
       listingId: listing.id,
       categorySlug: listing.category.slug,
     }),
     getCurrentUser(),
+    // What previous renters said about this owner. Joins the batch because it depends only on the
+    // listing, which is already loaded.
+    getOwnerReviews(listing.owner.id),
   ]);
 
   // Covers this listing and the similar row in one read.
@@ -174,6 +179,11 @@ export default async function ListingPage({ params }: ListingPageProps) {
                 {listing.description}
               </p>
             </div>
+
+            <ListingReviews
+              reviews={reviews}
+              ownerName={listing.owner.name?.trim() || "this owner"}
+            />
           </div>
 
           {/*

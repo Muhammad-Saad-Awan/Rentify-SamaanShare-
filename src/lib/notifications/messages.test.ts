@@ -168,6 +168,35 @@ describe("buildBookingNotifications addressing", () => {
     expect(body).toContain("Check your booking");
   });
 
+  /**
+   * Release notifies both sides, because release is mutual.
+   *
+   * Critically this fires on RELEASE, not on submission: telling someone a review exists the moment
+   * it is written hands them the one fact reciprocal withholding exists to withhold.
+   */
+  it("tells both parties when reviews are published", () => {
+    const drafts = build({ event: "reviews-published" });
+
+    expect(drafts.map((draft) => draft.userId)).toEqual([
+      parties.renterId,
+      parties.ownerId,
+    ]);
+    expect(new Set(drafts.map((draft) => draft.type))).toEqual(
+      new Set([NotificationType.REVIEW_RECEIVED])
+    );
+  });
+
+  it("does not leak the rating into the release notification", () => {
+    // A rating delivered as a notification line is both a spoiler and a worse way to receive bad
+    // news than reading it in context.
+    const text = build({ event: "reviews-published" })
+      .flatMap((draft) => [draft.title, draft.body ?? ""])
+      .join(" ");
+
+    expect(text).not.toMatch(/[1-5]\s*(star|out of)/i);
+    expect(text).not.toMatch(/[1-5]\/5/);
+  });
+
   it("clips the listing title in every title it produces", () => {
     const drafts = buildBookingNotifications({
       ...base,
@@ -205,6 +234,7 @@ describe("buildBookingNotifications money wording", () => {
       { event: "deposit-returned", amount: 10800 },
       { event: "cancelled", by: "renter" },
       { event: "instructions-updated" },
+      { event: "reviews-published" },
     ];
 
     const text = everyEvent

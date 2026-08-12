@@ -2,11 +2,14 @@ import { BookingStatus } from "@/generated/prisma/enums";
 import { depositState } from "@/lib/bookings/deposit";
 import { expireStalePendingBookings } from "@/lib/bookings/expire";
 import { canRenterCancel, canStartBooking } from "@/lib/bookings/lifecycle";
+import { releaseDueReviews } from "@/lib/reviews/release";
+import { canReviewBooking } from "@/lib/reviews/rules";
 import { prisma } from "@/lib/prisma";
 import { LISTINGS_PAGE_SIZE } from "@/lib/queries/listings";
 
 import type { DepositState } from "@/lib/bookings/deposit";
 import type { CancelEligibility } from "@/lib/bookings/lifecycle";
+import type { ReviewEligibility } from "@/lib/reviews/rules";
 import type { PaymentMethod, PaymentStatus } from "@/generated/prisma/enums";
 import type { PaginatedResult } from "@/types";
 
@@ -64,6 +67,30 @@ export interface BookingSummary {
     renterCanCancel: CancelEligibility;
     ownerCanStart: CancelEligibility;
   };
+  /**
+   * Review state for the viewer of this row.
+   *
+   * `counterpart` is populated ONLY once the review has been released. That filter is applied here,
+   * on the server, rather than in the card: a withheld review that crossed to the client would be
+   * readable in the RSC payload regardless of what the UI chose to render, and reciprocal
+   * withholding would be decorative.
+   */
+  review: {
+    /** Whether this viewer may write one now, and why not if they may not. */
+    canWrite: ReviewEligibility;
+    /** What this viewer wrote, if anything. Always visible to its own author. */
+    mine: ReviewSnapshot | null;
+    /** What the other party wrote about this viewer - released reviews only. */
+    counterpart: ReviewSnapshot | null;
+  };
+}
+
+export interface ReviewSnapshot {
+  rating: number;
+  comment: string | null;
+  createdAt: Date;
+  /** `null` means written but still withheld pending the counterpart. */
+  publishedAt: Date | null;
 }
 
 /**
@@ -112,6 +139,16 @@ const bookingSelect = {
       depositReturnedAt: true,
     },
   },
+  // Both sides' reviews. Which of them the viewer is allowed to see is decided in `toSummary`.
+  reviews: {
+    select: {
+      reviewerId: true,
+      rating: true,
+      comment: true,
+      createdAt: true,
+      publishedAt: true,
+    },
+  },
 } as const;
 
 type BookingRow = {
@@ -142,6 +179,13 @@ type BookingRow = {
     securityDeposit: number;
     depositReturnedAt: Date | null;
   } | null;
+  reviews: {
+    reviewerId: string;
+    rating: number;
+    comment: string | null;
+    createdAt: Date;
+    publishedAt: Date | null;
+  }[];
 };
 
 /**
@@ -154,9 +198,23 @@ type BookingRow = {
 function toSummary(
   row: BookingRow,
   side: "renter" | "owner",
-  now: Date
+  now: Date,
+  viewerId: string
 ): BookingSummary {
   const paymentStatus = row.payment?.status ?? null;
+
+  const mine = row.reviews.find((review) => review.reviewerId === viewerId);
+  const theirs = row.reviews.find((review) => review.reviewerId !== viewerId);
+
+  const snapshot = (review: typeof mine): ReviewSnapshot | null =>
+    review
+      ? {
+          rating: review.rating,
+          comment: review.comment,
+          createdAt: review.createdAt,
+          publishedAt: review.publishedAt,
+        }
+      : null;
 
   return {
     id: row.id,
@@ -198,6 +256,17 @@ function toSummary(
       renterCanCancel: canRenterCancel({ status: row.status, paymentStatus }),
       ownerCanStart: canStartBooking({ status: row.status, paymentStatus }),
     },
+    review: {
+      canWrite: canReviewBooking({
+        status: row.status,
+        completedAt: row.completedAt,
+        alreadyReviewed: Boolean(mine),
+        now,
+      }),
+      mine: snapshot(mine),
+      // The gate. A withheld counterpart review never leaves the server.
+      counterpart: theirs?.publishedAt ? snapshot(theirs) : null,
+    },
   };
 }
 
@@ -218,7 +287,11 @@ export async function getRenterBookings({
   page = 1,
   pageSize = LISTINGS_PAGE_SIZE,
 }: PageOptions): Promise<PaginatedResult<BookingSummary>> {
+  // Two lazy sweeps, for the same reason: a list that offers an action, or hides a review, must
+  // tell the truth at the moment it renders. Scoped to this user as reviewee - the reviews that
+  // affect what they see here are the ones written about them.
   await expireStalePendingBookings();
+  await releaseDueReviews(userId);
 
   const currentPage = Math.max(1, Math.trunc(page));
   const where = { renterId: userId };
@@ -240,7 +313,7 @@ export async function getRenterBookings({
   const now = new Date();
 
   return {
-    items: rows.map((row) => toSummary(row, "renter", now)),
+    items: rows.map((row) => toSummary(row, "renter", now, userId)),
     total,
     page: currentPage,
     pageSize,
@@ -263,7 +336,11 @@ export async function getOwnerBookingRequests({
 }: PageOptions): Promise<
   PaginatedResult<BookingSummary> & { pendingCount: number }
 > {
+  // Two lazy sweeps, for the same reason: a list that offers an action, or hides a review, must
+  // tell the truth at the moment it renders. Scoped to this user as reviewee - the reviews that
+  // affect what they see here are the ones written about them.
   await expireStalePendingBookings();
+  await releaseDueReviews(userId);
 
   const currentPage = Math.max(1, Math.trunc(page));
   const where = { ownerId: userId };
@@ -294,7 +371,7 @@ export async function getOwnerBookingRequests({
   const now = new Date();
 
   return {
-    items: rows.map((row) => toSummary(row, "owner", now)),
+    items: rows.map((row) => toSummary(row, "owner", now, userId)),
     total,
     page: currentPage,
     pageSize,

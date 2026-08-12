@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 12 August 2026 (Stage A — A1–A5 done; A6 prepared, blocked on staging infrastructure)
+**Last Updated:** 12 August 2026 (Phase 5 — Reviews; Stage A6 awaiting production env vars)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -43,13 +43,15 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Create `.nvmrc` with Node.js version
 - [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar,
       lifecycle, deposit window, notification copy, environment schema, reset
-      tokens, email copy, view keys) — 193 tests
+      tokens, email copy, view keys, nav map, review rules) — 231 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
       renders both dashboards at every status behind a real session. Both create
       their own throwaway rows and delete them. `npm run verify:stage-a` does the
-      same for the reset-token lifecycle. **Not** a substitute for a Vitest
+      same for the reset-token lifecycle, and `npm run verify:phase5` for the
+      review lifecycle - including the assertion that a *withheld* review does
+      not move the rating aggregate. **Not** a substitute for a Vitest
       integration harness: they are scripts with assertions, not a suite, and they
       cannot run without a database.
 
@@ -453,9 +455,10 @@ no listing, booking, search, review or admin functionality was implemented.
 - [x] Implement ACTIVE status — `startBooking`, owner-driven, gated on a *confirmed* payment
 - [x] Implement COMPLETED status — `completeBooking`, releases the held dates and stamps
       `completedAt`, which the deposit window is measured from
-- [ ] Implement REVIEWED status — Phase 5. The `COMPLETED -> REVIEWED` edge exists in the
-      transition table but nothing drives it; writing a `Review` and recalculating
-      `User.ratingAverage` belongs with reviews.
+- [x] Implement REVIEWED status — driven by `createReview` when the second review lands, in the
+      same transaction that publishes both. Tolerant of failure by design: if the booking has moved
+      on, the reviews are still correctly published - the status is a convenience for the
+      dashboards, not the source of truth for whether reviews exist.
 - [x] Implement DECLINED status
 - [x] Implement CANCELLED status — renter-driven, and refused once the owner has confirmed
       receiving payment. Payment is offline, so the platform cannot refund what it never held;
@@ -632,29 +635,78 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
 
 ## Phase 5 – Reviews & Trust
 
+Reciprocal release is the design decision everything else follows from. A review
+is withheld until the counterpart submits theirs, or until the 14-day window
+closes — otherwise whoever writes second reads the first and answers it, and
+ratings compress towards 5 because nobody risks going first.
+
+The non-obvious consequence: `User.ratingAverage` counts **released reviews
+only**. If it moved when a review was written, an owner watching their average
+drop would learn the renter left a bad one before being able to read it, and
+could retaliate. That is why `Review.publishedAt` is a column rather than a
+derived flag, and why publishing and recomputing the aggregate are one
+transaction (`src/lib/reviews/publish.ts`). Asserted by
+`npm run verify:phase5`.
+
 ### Create Review
 
-- [ ] Create review form component
-- [ ] Add star rating (1-5)
-- [ ] Add review comment
-- [ ] Create `createReview` action
-- [ ] Enforce one review per booking
-- [ ] Only allow after COMPLETED status
+- [x] Create review form component — stars are real radio buttons in a
+      `radiogroup`, and **no rating is preselected**: a default of 5 would be
+      answered by inertia and the average would be manufactured by the form
+- [x] Add star rating (1-5)
+- [x] Add review comment — optional; an empty string is normalised away rather
+      than stored, so it cannot render as an empty quote
+- [x] Create `createReview` action
+- [x] Enforce one review per booking — `@@unique([bookingId, reviewerId])` plus
+      the `alreadyReviewed` guard
+- [x] Only allow after COMPLETED status — and refused on every non-finished
+      status, so a cancelled or declined request can never be used as a free
+      shot at someone's rating
 
 ### Two-Way Reviews
 
-- [ ] Owner reviews renter
-- [ ] Renter reviews owner
-- [ ] Create `markBookingReviewed` action
-- [ ] Show review status in booking
+- [x] Owner reviews renter
+- [x] Renter reviews owner — direction is **derived from the caller's role**,
+      never accepted from input. A client-supplied `type` would let a renter file
+      an owner-to-renter review: their words on the owner's record, the rating
+      aimed at themselves.
+- [x] Create `markBookingReviewed` action — folded into `createReview` rather
+      than a separate action: `COMPLETED -> REVIEWED` happens in the same
+      transaction as the second review, guarded by the usual compare-and-swap
+- [x] Show review status in booking — four states on both dashboards: offered,
+      refused-with-reason, written-but-withheld, and released
+- [x] Lazy release sweep (`releaseDueReviews`) — publishes reviews whose window
+      closed unanswered, swept on the read paths that care. Not a cron, for the
+      same reason as booking expiry: one that stopped running would leave reviews
+      invisible forever with nothing noticing.
+- [x] `REVIEW_RECEIVED` notification — fired on **release**, never on submission.
+      Telling someone a review exists the moment it is written hands them the one
+      fact withholding exists to withhold.
+- [x] Closed the dead-end `REVIEW_REMINDER` — it now points at screens that can
+      actually take a review
 
 ### Display Reviews
 
-- [ ] Show reviews on listing detail
-- [ ] Show reviews on user profile
-- [ ] Calculate average rating
-- [ ] Sort reviews by date
-- [ ] Add pagination for reviews
+- [x] Show reviews on listing detail — filtered to `RENTER_TO_OWNER`, because a
+      browser wants to know what renting *from* this person is like, not what
+      they are like as a customer
+- [ ] Show reviews on user profile — blocked on `/users/[id]`, which does not
+      exist; belongs with the Trust & Safety public trust panel
+- [x] Calculate average rating — `ratingAggregate`; an empty set yields `null`
+      not `0`, or a brand-new owner would sort below the worst-reviewed one on
+      the sort-by-rating filter
+- [x] Sort reviews by date — newest first
+- [ ] Add pagination for reviews — the query supports it; the listing page shows
+      the five newest with an honest total rather than adding a second control
+      that loses your scroll position
+
+### Known gap
+
+- [ ] `User.ratingAverage` is a single aggregate over **both** directions, so the
+      average shown on a listing can disagree with the reviews listed beneath it
+      when that person has also rented. Splitting it needs two more columns and a
+      migration; the `[revieweeId, type]` index already exists for when that
+      happens.
 
 ### Trust Score
 
