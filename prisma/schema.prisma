@@ -610,6 +610,25 @@ model Review {
   rating  Int // 1-5
   comment String?    @db.Text
 
+  /**
+   * When this review became publicly visible. Phase 5.
+   * RECIPROCAL RELEASE. A review is withheld until the counterpart submits theirs
+   * or the review window closes. Without that, whoever writes second can read the
+   * first and answer it, and ratings compress towards 5 because nobody risks
+   * going first - the number stops carrying information.
+   * WHY THIS IS A COLUMN AND NOT A DERIVED FLAG. `User.ratingAverage` is a stored
+   * aggregate, and if it moved when a review was *written* it would leak the
+   * withheld review's content: an owner watching their average drop knows the
+   * renter left a bad one and can retaliate before it is visible. So the
+   * aggregate counts only released reviews, which makes release a real event with
+   * a time of its own rather than a predicate evaluated at read time.
+   * Set either in the transaction that writes the second review, or by the lazy
+   * sweep once the window has closed - the same pattern as booking expiry, and
+   * for the same reason: a cron that stops running would leave reviews withheld
+   * forever with nothing noticing.
+   */
+  publishedAt DateTime?
+
   createdAt DateTime @default(now())
 
   booking  Booking @relation(fields: [bookingId], references: [id])
@@ -621,6 +640,11 @@ model Review {
   @@index([bookingId]) // P5
   @@index([reviewerId]) // P5
   @@index([revieweeId, type]) // P6: asOwner/asRenter split - API.md:696
+  // Phase 5: public review lists and the rating aggregate both read released
+  // reviews only, newest first.
+  @@index([revieweeId, publishedAt])
+  // Phase 5: the lazy release sweep - withheld reviews past their window.
+  @@index([publishedAt])
   @@map("reviews")
 }
 
