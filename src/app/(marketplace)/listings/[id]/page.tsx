@@ -9,11 +9,13 @@ import { ListingsGrid } from "@/components/marketplace/listings-grid";
 import { OwnerCard } from "@/components/marketplace/owner-card";
 import { SaveListingButton } from "@/components/marketplace/save-listing-button";
 import { SectionHeading } from "@/components/marketplace/section-heading";
+import { ReportButton } from "@/components/reports/report-button";
 import { ListingReviews } from "@/components/reviews/listing-reviews";
 import { ListingViewTracker } from "@/components/marketplace/listing-view-tracker";
 import { ShareListing } from "@/components/marketplace/share-listing";
 import { JsonLd } from "@/components/shared/json-ld";
 import { Badge } from "@/components/ui/badge";
+import { ReportType } from "@/generated/prisma/enums";
 import { getCurrentUser } from "@/lib/auth/session";
 import { listingJsonLd } from "@/lib/marketplace/structured-data";
 import {
@@ -182,6 +184,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
             <ListingReviews
               reviews={reviews}
               ownerName={listing.owner.name?.trim() || "this owner"}
+              viewerId={user?.id ?? null}
             />
           </div>
 
@@ -227,6 +230,23 @@ export default async function ListingPage({ params }: ListingPageProps) {
             </div>
 
             <OwnerCard owner={listing.owner} />
+
+            {/*
+              Reporting the listing, offered only to a signed-in visitor who does not own it.
+              Beneath the owner card rather than beside Save and Share: those are things you do
+              because you like a listing, and putting "Report" among them invites misclicks on the
+              one control with a person on the other end of it.
+            */}
+            {user && user.id !== listing.owner.id && (
+              <div className="flex justify-end">
+                <ReportButton
+                  targetType={ReportType.LISTING}
+                  targetId={listing.id}
+                  label="this listing"
+                  className="text-muted-foreground -mr-2 h-7 px-2 text-xs"
+                />
+              </div>
+            )}
           </aside>
         </div>
 

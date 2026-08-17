@@ -1,6 +1,7 @@
 import {
   BellIcon,
   CalendarCheckIcon,
+  FlagIcon,
   HeartIcon,
   HomeIcon,
   InboxIcon,
@@ -118,7 +119,10 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
   {
     title: "Administration",
     requiredRole: UserRole.ADMIN,
-    items: [{ title: "Admin", href: "/admin", icon: ShieldIcon }],
+    items: [
+      { title: "Admin", href: "/admin", icon: ShieldIcon, exact: true },
+      { title: "Reports", href: "/admin/reports", icon: FlagIcon },
+    ],
   },
 ] as const;
 
@@ -141,4 +145,5 @@ export const SEGMENT_LABELS: Readonly<Record<string, string>> = {
   profile: "Profile",
   settings: "Settings",
   admin: "Admin",
+  reports: "Reports",
 };

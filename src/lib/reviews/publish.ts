@@ -37,8 +37,14 @@ export async function recomputeUserRating(
   userId: string
 ): Promise<DirectionalRatings> {
   const rows = await client.review.findMany({
-    // `publishedAt: { not: null }` is the whole point - a withheld review must not move the number.
-    where: { revieweeId: userId, publishedAt: { not: null } },
+    /**
+     * `publishedAt: { not: null }` is the whole point - a withheld review must not move the number.
+     *
+     * `removedAt: null` is the moderation half of the same rule: a review nobody is allowed to read
+     * must not go on contributing a rating. Without it, removing an abusive 1-star review would take
+     * the words down and leave the score it dragged down exactly where it was.
+     */
+    where: { revieweeId: userId, publishedAt: { not: null }, removedAt: null },
     select: { rating: true, type: true },
   });
 

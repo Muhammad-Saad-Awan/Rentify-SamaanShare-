@@ -32,8 +32,8 @@ import type { ActionResult } from "@/types";
  * both, in the same transaction that writes it, so neither party can read the other's before their own
  * is committed. A review that is never answered is released by the lazy sweep once the window closes.
  *
- * `User.ratingAverage` is recomputed only when a review is released - see `publishReviews`. Moving it
- * on submission would leak the withheld review's content through the average.
+ * The stored rating is recomputed only when a review is released - see `publishReviews`. Moving it on
+ * submission would leak the withheld review's content through the average.
  */
 
 const UNEXPECTED_ERROR = "Something went wrong. Please try again.";

@@ -91,6 +91,14 @@ export interface ReviewSnapshot {
   createdAt: Date;
   /** `null` means written but still withheld pending the counterpart. */
   publishedAt: Date | null;
+  /**
+   * When a moderator removed it. Only ever set on a review the viewer wrote themselves.
+   *
+   * A removed review never reaches the other party at all - see `counterpart` below - but its author
+   * is told, because the alternative is their words disappearing with no explanation and no way to
+   * tell that from a bug.
+   */
+  removedAt: Date | null;
 }
 
 /**
@@ -140,6 +148,11 @@ const bookingSelect = {
     },
   },
   // Both sides' reviews. Which of them the viewer is allowed to see is decided in `toSummary`.
+  //
+  // Moderator-removed reviews are fetched rather than filtered out here, which is deliberate. The
+  // row is still what `@@unique([bookingId, reviewerId])` is protecting, so dropping it would make
+  // `alreadyReviewed` false and offer the author a form whose submission the database refuses.
+  // Whether a removed review is *readable* is decided below, per viewer.
   reviews: {
     select: {
       reviewerId: true,
@@ -147,6 +160,7 @@ const bookingSelect = {
       comment: true,
       createdAt: true,
       publishedAt: true,
+      removedAt: true,
     },
   },
 } as const;
@@ -185,6 +199,7 @@ type BookingRow = {
     comment: string | null;
     createdAt: Date;
     publishedAt: Date | null;
+    removedAt: Date | null;
   }[];
 };
 
@@ -213,6 +228,7 @@ function toSummary(
           comment: review.comment,
           createdAt: review.createdAt,
           publishedAt: review.publishedAt,
+          removedAt: review.removedAt,
         }
       : null;
 
@@ -264,8 +280,13 @@ function toSummary(
         now,
       }),
       mine: snapshot(mine),
-      // The gate. A withheld counterpart review never leaves the server.
-      counterpart: theirs?.publishedAt ? snapshot(theirs) : null,
+      /**
+       * The gate. A withheld counterpart review never leaves the server, and neither does a removed
+       * one - moderation took it down, so the person it was written about is the last one who should
+       * still be handed it.
+       */
+      counterpart:
+        theirs?.publishedAt && !theirs.removedAt ? snapshot(theirs) : null,
     },
   };
 }

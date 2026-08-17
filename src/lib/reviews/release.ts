@@ -51,6 +51,9 @@ export async function releaseDueReviews(revieweeId?: string): Promise<number> {
   const due = await prisma.review.findMany({
     where: {
       publishedAt: null,
+      // Defensive: only a released review can be reported, so a withheld-and-removed row should not
+      // exist. If one ever does, publishing it here would make moderation reversible by waiting.
+      removedAt: null,
       ...(revieweeId ? { revieweeId } : {}),
       booking: {
         completedAt: { not: null, lte: cutoffFor(now) },

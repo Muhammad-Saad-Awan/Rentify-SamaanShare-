@@ -1,6 +1,8 @@
 import { MessageSquareIcon } from "lucide-react";
 
+import { ReportButton } from "@/components/reports/report-button";
 import { RatingStars } from "@/components/reviews/rating-stars";
+import { ReportType } from "@/generated/prisma/enums";
 import { formatDate } from "@/lib/utils/date";
 
 import type { OwnerReviewSummary } from "@/lib/queries/reviews";
@@ -8,6 +10,8 @@ import type { OwnerReviewSummary } from "@/lib/queries/reviews";
 interface ListingReviewsProps {
   reviews: OwnerReviewSummary;
   ownerName: string;
+  /** The signed-in reader, or `null`. Decides whether a Report control is offered at all. */
+  viewerId?: string | null;
 }
 
 /**
@@ -22,7 +26,11 @@ interface ListingReviewsProps {
  * and worse, it invites the reader to conclude something negative from an absence that only means
  * the owner is new. The owner card already shows an unrated state.
  */
-function ListingReviews({ reviews, ownerName }: ListingReviewsProps) {
+function ListingReviews({
+  reviews,
+  ownerName,
+  viewerId = null,
+}: ListingReviewsProps) {
   if (reviews.items.length === 0) {
     return null;
   }
@@ -65,6 +73,22 @@ function ListingReviews({ reviews, ownerName }: ListingReviewsProps) {
               <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
                 {review.comment}
               </p>
+            )}
+
+            {/*
+              Offered only to a signed-in reader who did not write it. Hiding it from the author is
+              not the security boundary - `canFileReport` refuses a self-report on the server - it
+              just avoids opening a form whose submission is already known to fail.
+            */}
+            {viewerId && viewerId !== review.reviewer.id && (
+              <div className="flex justify-end">
+                <ReportButton
+                  targetType={ReportType.REVIEW}
+                  targetId={review.id}
+                  label="this review"
+                  className="-mr-2 h-7 px-2 text-xs"
+                />
+              </div>
             )}
           </li>
         ))}

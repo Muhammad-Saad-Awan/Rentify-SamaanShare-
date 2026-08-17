@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 17 August 2026 (Phase 5 — Reviews, directional rating aggregate; Stage A6 awaiting production env vars)
+**Last Updated:** 17 August 2026 (Phase 5 — directional rating aggregate; Trust & Safety — reporting and moderation; Stage A6 awaiting production env vars)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -43,7 +43,8 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Create `.nvmrc` with Node.js version
 - [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar,
       lifecycle, deposit window, notification copy, environment schema, reset
-      tokens, email copy, view keys, nav map, review rules) — 237 tests
+      tokens, email copy, view keys, nav map, review rules, report rules,
+      moderation copy) — 260 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
@@ -52,7 +53,9 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
       same for the reset-token lifecycle, and `npm run verify:phase5` for the
       review lifecycle - including the assertion that a *withheld* review does
       not move the rating aggregate, and that the average a listing prints is
-      computed over exactly the reviews listed beneath it. **Not** a substitute for a Vitest
+      computed over exactly the reviews listed beneath it, and
+      `npm run verify:trust-safety` for reporting and moderation.
+      **Not** a substitute for a Vitest
       integration harness: they are scripts with assertions, not a suite, and they
       cannot run without a database.
 
@@ -729,9 +732,22 @@ See "Directional aggregate" below.
 
 ### Review Moderation
 
-- [ ] Create `reportReview` action
-- [ ] Add report reasons
-- [ ] Show in admin dashboard
+Shipped with the Trust & Safety reporting slice below — see Phase 6 "User
+Reporting" and "Reports Management".
+
+- [x] Create `reportReview` action — the subject is the review's **author**, not
+      the person it is about. A suspension arising from this report has to land
+      on whoever wrote it; the obvious mistake would suspend the person the
+      review was already unfair to.
+- [x] Add report reasons — `FAKE_REVIEW`, harassment, offensive language,
+      inappropriate content, spam and other. Reasons are scoped per target type
+      (`REPORT_REASONS_BY_TYPE`); offering all fifteen everywhere would make the
+      queue untriageable by reason, which is what `@@index([reason])` is for.
+- [x] Show in admin dashboard — `/admin/reports`
+- [x] `Review.removedAt` — soft removal, **distinct from `publishedAt: null`**.
+      Unpublishing to hide a review would have it republished by the release
+      sweep a fortnight later. A removed review also leaves both rating
+      aggregates, or the score would keep reflecting words nobody may read.
 
 ---
 
@@ -739,20 +755,46 @@ See "Directional aggregate" below.
 
 ### User Reporting
 
-- [ ] Create report listing component
-- [ ] Create report user component
-- [ ] Create `reportListing` action
-- [ ] Create `reportUser` action
-- [ ] Add report reasons (predefined)
-- [ ] Add report description (optional)
+Shipped 17 August 2026 as the first Trust & Safety slice. The `Report` model,
+`ReportReason`, `ReportStatus` and `ReportAction` were fully designed in the
+schema and entirely unused; this is what connects them.
+
+- [x] Create report listing component — one `ReportButton` serves all three
+      targets, built from the same `REPORT_REASONS_BY_TYPE` map the server
+      validates against, so the form cannot offer a reason the action rejects
+- [x] Create report user component — same component
+- [x] Create `reportListing` action
+- [x] Create `reportUser` action
+- [x] Add report reasons (predefined) — scoped per target type
+- [x] Add report description (optional) — empty is normalised away rather than
+      stored, so it cannot render as a blank quote in the queue
+- [x] **The type is fixed by which action you call**, never accepted as input.
+      `Report.targetId` is polymorphic with no foreign key, so a client able to
+      pair `type: LISTING` with a review's id would be choosing which table a
+      moderator's later `REMOVE_LISTING` runs against
+- [x] **You can only report what you can see** — each target is looked up through
+      the same predicate that governs reading it. Otherwise the form is an oracle
+      for probing ids: file a report, read the error, learn whether a hidden
+      listing exists
+- [x] **Nothing is notified on filing** — not the reported account, which would
+      hand them the warning and the motive to retaliate against whoever could
+      plausibly have filed it; and not moderators, whose queue would then be
+      floodable. Same reasoning as withholding a review until its counterpart lands
 
 ### Admin Layout
 
-- [ ] Create admin layout (`/admin/layout.tsx`)
-- [ ] Add admin sidebar navigation
-- [ ] Add admin header
-- [ ] Implement admin route protection
-- [ ] Create admin dashboard home
+- [x] Create admin layout (`/admin/layout.tsx`) — shipped in Phase 2.1 as the
+      boundary new admin routes inherit automatically; `/admin/reports` is the
+      first route to rely on that
+- [x] Add admin sidebar navigation — an `Administration` section in the shared
+      dashboard nav map, filtered by `requiredRole`. Hiding a link is not
+      authorization; the real gate is `requireAdmin()` plus `ADMIN_PREFIXES`
+- [ ] Add admin header — the dashboard header is shared; a distinct admin one is
+      still open
+- [x] Implement admin route protection — `requireAdmin()` re-reads role from the
+      database, because middleware sees only the JWT and a demoted admin carries
+      `role: "ADMIN"` in their cookie for up to 24h
+- [ ] Create admin dashboard home — still the Phase 6 placeholder
 
 ### User Management
 
@@ -782,12 +824,41 @@ See "Directional aggregate" below.
 
 ### Reports Management
 
-- [ ] Create reports page (`/admin/reports`)
-- [ ] Show reported listings
-- [ ] Show reported users
-- [ ] Create `resolveReport` action
-- [ ] Create `dismissReport` action
-- [ ] Add resolution notes
+- [x] Create reports page (`/admin/reports`) — pending / resolved / dismissed as
+      links rather than a client filter, so a report can be linked to a colleague
+- [x] Show reported listings
+- [x] Show reported users — and reported reviews. The polymorphic `targetId`
+      cannot be joined, so targets are hydrated in one query per kind for the
+      page. A card that showed only "LISTING, id abc123" would make every
+      decision start in another tab, and a moderator working that way decides
+      from the reason alone — which is the reporter's opinion, not evidence
+- [x] Create `resolveReport` action — the decision and its consequence are **one
+      transaction**. Split apart, the failure modes are a suspension nobody is
+      accountable for and an audit trail describing something that never
+      happened, and neither would ever be detected
+- [x] Create `dismissReport` action — kept separate from resolving with `NONE`,
+      because the two say different things: nothing-warranted versus the
+      complaint did not hold. A target with ten dismissals reads very differently
+      from one with ten investigated-no-action decisions
+- [x] Add resolution notes — and an **absent** note is shown as absent rather
+      than hidden, since a suspension with no reasoning recorded is exactly the
+      decision someone will need to review later
+- [x] **The action must fit the report type** (`REPORT_ACTIONS_BY_TYPE`).
+      `REMOVE_LISTING` on a review report would run against whatever row shares
+      that id; the database has no opinion, so this is caught here or not at all
+- [x] **Resolved once**, by compare-and-swap on `status`. Two moderators on one
+      queue is the normal case, and without it a report resolves twice and
+      suspends an account twice for a single complaint
+- [x] **Admins cannot be suspended through the queue**, and nobody can suspend
+      themselves. A report queue that can disable an administrator is a way to
+      take the platform's own controls away from it
+- [x] `getActiveAdmin()` — the non-redirecting counterpart to `requireAdmin()`.
+      A redirect from a Server Action would discard whatever the moderator had
+      typed into the resolution note
+- [x] Integration verification — `npm run verify:trust-safety`, 16 checks,
+      including that a removed review leaves the public list **and** both rating
+      aggregates together, that the release sweep will not resurrect one, and
+      that a report whose target was deleted still renders and can still be closed
 
 ### Analytics Dashboard
 
@@ -941,7 +1012,13 @@ See "Directional aggregate" below.
 
 *Last reviewed: 11 August 2026, against the code — Phase 4 complete, Phase 3 checkboxes corrected.*
 
-**Next:** Trust & Safety (identity verification, value-gated access, handover protocol, damage
-claims). Phase 4 was built to receive it: `canStartBooking` and the completion guard are the two
-points a sealed handover record becomes a condition rather than a rewrite, and no copy anywhere
-claims SamaanShare holds a deposit — so escrow can be added without walking a promise back.
+**Next:** Trust & Safety continues. Reporting and moderation shipped 17 August 2026; what remains is
+identity verification, value-gated access, the handover protocol and damage claims. Phase 4 was built
+to receive the last two: `canStartBooking` and the completion guard are the points a sealed handover
+record becomes a condition rather than a rewrite, and no copy anywhere claims SamaanShare holds a
+deposit — so escrow can be added without walking a promise back.
+
+**Known gap, worth fixing early:** `User.isVerified` is rendered as a "Verified" badge on
+`OwnerCard`, and **nothing in the codebase ever writes it**. It is `@default(false)`, so the badge is
+currently unreachable — harmless today, but the moment anyone sets that column by hand it becomes a
+trust claim with no verification behind it. Identity verification is what should set it.

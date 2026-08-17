@@ -21,8 +21,15 @@ export interface PublicReview {
   rating: number;
   comment: string | null;
   publishedAt: Date;
-  /** Name only - never an email. */
-  reviewer: { name: string | null };
+  /**
+   * Name only - never an email.
+   *
+   * The id is here so the page can hide its own Report button from the person who wrote the review.
+   * The server refuses a self-report regardless; this only avoids offering a form that would then
+   * be rejected. An id is not sensitive - the owner's is already on this page - but the email is,
+   * and it is still not selected.
+   */
+  reviewer: { id: string; name: string | null };
 }
 
 export interface OwnerReviewSummary {
@@ -62,6 +69,9 @@ export async function getOwnerReviews(
     revieweeId: ownerId,
     type: ReviewType.RENTER_TO_OWNER,
     publishedAt: { not: null },
+    // Moderator-removed reviews are gone from every public surface. The same predicate governs the
+    // stored aggregate, so the count above the list and the list itself stay in agreement.
+    removedAt: null,
   } as const;
 
   // Concurrent reads, not a transaction - see the note in `getActiveListings`.
@@ -77,7 +87,7 @@ export async function getOwnerReviews(
         rating: true,
         comment: true,
         publishedAt: true,
-        reviewer: { select: { name: true } },
+        reviewer: { select: { id: true, name: true } },
       },
     }),
     prisma.review.count({ where }),

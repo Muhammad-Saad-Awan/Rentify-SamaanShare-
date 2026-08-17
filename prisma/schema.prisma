@@ -644,6 +644,21 @@ model Review {
    */
   publishedAt DateTime?
 
+  /**
+   * When a moderator removed this review. Trust & Safety.
+   * SOFT, like User.deletedAt and Listing.deletedAt, and for a stronger reason
+   * than either: a removed review is the evidence for the report that removed it
+   * and for any appeal against that decision. Deleting the row would destroy the
+   * only record of what was actually said, leaving a resolution note asserting it.
+   * DISTINCT FROM publishedAt: null. Withheld means "not yet released", and the
+   * release sweep will publish it the moment the window closes. Unpublishing a
+   * review to hide it would therefore un-hide it a fortnight later. Removal has to
+   * be its own state, and every public read filters on both.
+   * A removed review is excluded from the rating aggregates too - leaving it
+   * counted would keep a rating nobody is allowed to read.
+   */
+  removedAt DateTime?
+
   createdAt DateTime @default(now())
 
   booking  Booking @relation(fields: [bookingId], references: [id])
@@ -660,6 +675,9 @@ model Review {
   @@index([revieweeId, publishedAt])
   // Phase 5: the lazy release sweep - withheld reviews past their window.
   @@index([publishedAt])
+  // Trust & Safety: public lists and both aggregates read live reviews only,
+  // and every one of those queries is scoped to a single reviewee.
+  @@index([revieweeId, removedAt])
   @@map("reviews")
 }
 

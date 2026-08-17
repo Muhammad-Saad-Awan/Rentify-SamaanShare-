@@ -39,11 +39,20 @@ export interface NotificationDraft {
    * owner's is at `/dashboard/requests`. Storing which one avoids having to re-derive the
    * reader's role in the booking at render time.
    */
-  entityType: BookingEntityType;
+  entityType: NotificationEntityType;
   entityId: string;
 }
 
 export type BookingEntityType = "booking" | "booking-request";
+
+/**
+ * Every deep-link discriminator in use.
+ *
+ * Widened past bookings for Trust & Safety. `"report"` has no screen to point at yet - a person
+ * has no page listing the reports they filed - so {@link notificationHref} deliberately returns
+ * `null` for it and the row renders unclickable rather than linking somewhere unrelated.
+ */
+export type NotificationEntityType = BookingEntityType | "report";
 
 /** Who the booking belongs to, so a draft can be addressed without another query. */
 export interface BookingParties {
@@ -388,6 +397,16 @@ export function notificationHref(
       return "/dashboard/bookings";
     case "booking-request":
       return "/dashboard/requests";
+    /**
+     * Reports have no reader-facing screen.
+     *
+     * Not an oversight and not a stub: there is nowhere for a reporter to go, and linking to
+     * `/dashboard/notifications` - the page they are already on - or to the reported listing would
+     * be worse than not linking. The `entityId` is still stored, so the row can become a link the
+     * day a "reports you filed" page exists.
+     */
+    case "report":
+      return null;
     default:
       return null;
   }
