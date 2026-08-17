@@ -30,7 +30,15 @@ import {
 } from "../src/lib/auth/email-verification";
 import { getReports } from "../src/lib/queries/reports";
 import { getOwnerReviews } from "../src/lib/queries/reviews";
+import { getRenterAccessSignals } from "../src/lib/queries/renter-access";
 import { getPublicProfile } from "../src/lib/queries/user-profile";
+import {
+  accessTierFor,
+  checkRenterAccess,
+  ELEVATED_DEPOSIT_PKR,
+  ESTABLISHED_RENTAL_COUNT,
+  HIGH_VALUE_DEPOSIT_PKR,
+} from "../src/lib/trust/access";
 import { assessTrust } from "../src/lib/trust/score";
 import {
   publishReviews,
@@ -575,6 +583,130 @@ async function main() {
     ) === "stale"
   );
 
+  // ----------------------------- 8. value-gated access, against real signals
+  console.log("\n=== value-gated access ===");
+
+  /**
+   * A fresh account, so the signals are known exactly. The `renter` above already has a pile of
+   * completed bookings from the earlier sections and would clear every gate.
+   */
+  const newcomer = await prisma.user.create({
+    data: { email: `ts-newcomer-${stamp}@example.test`, name: "TS Newcomer" },
+    select: { id: true },
+  });
+
+  const asRead = () => getRenterAccessSignals(newcomer.id);
+
+  check(
+    "a brand-new account reads as unconfirmed with no history",
+    JSON.stringify(await asRead()) ===
+      JSON.stringify({
+        emailVerified: false,
+        isVerified: false,
+        completedRentals: 0,
+      }),
+    await asRead()
+  );
+
+  check(
+    "an everyday item is open to them",
+    checkRenterAccess(accessTierFor(2_000), await asRead()).allowed
+  );
+
+  check(
+    "a high-deposit item is not",
+    !checkRenterAccess(accessTierFor(HIGH_VALUE_DEPOSIT_PKR), await asRead())
+      .allowed
+  );
+
+  /**
+   * `emailVerified` is a DateTime, not a boolean, and the query has to translate it. Getting that
+   * wrong in either direction is silent: everyone gated out, or the gate open to everyone.
+   */
+  await prisma.user.update({
+    where: { id: newcomer.id },
+    data: { emailVerified: new Date() },
+  });
+
+  check(
+    "confirming the address opens the elevated tier",
+    checkRenterAccess(accessTierFor(ELEVATED_DEPOSIT_PKR), await asRead())
+      .allowed
+  );
+
+  check(
+    "but not the high-value tier on its own",
+    !checkRenterAccess(accessTierFor(HIGH_VALUE_DEPOSIT_PKR), await asRead())
+      .allowed
+  );
+
+  /**
+   * The route that does not depend on an administrator. Identity verification is granted out of
+   * band, so if it were the only way through, every high-value listing would be unbookable by
+   * everyone at launch.
+   *
+   * REVIEWED counts as well as COMPLETED - it is the same finished rental with both reviews written.
+   * Counting only COMPLETED would lock the most engaged members out of the tier they had earned.
+   */
+  const earned = await Promise.all(
+    Array.from({ length: ESTABLISHED_RENTAL_COUNT }, (_, index) =>
+      prisma.booking.create({
+        data: {
+          listingId: listing.id,
+          renterId: newcomer.id,
+          ownerId: owner.id,
+          startDate: new Date(`2028-01-${String(index + 1).padStart(2, "0")}`),
+          endDate: new Date(`2028-01-${String(index + 1).padStart(2, "0")}`),
+          totalPrice: 800,
+          securityDeposit: 0,
+          // One of them REVIEWED, so the status filter is exercised in both states.
+          status:
+            index === 0 ? BookingStatus.REVIEWED : BookingStatus.COMPLETED,
+          completedAt: new Date(),
+        },
+        select: { id: true },
+      })
+    )
+  );
+
+  const withHistory = await asRead();
+
+  check(
+    "completed and reviewed rentals both count towards the history",
+    withHistory.completedRentals === ESTABLISHED_RENTAL_COUNT,
+    withHistory
+  );
+
+  check(
+    "a real track record opens the high-value tier without any admin action",
+    checkRenterAccess(accessTierFor(HIGH_VALUE_DEPOSIT_PKR), withHistory)
+      .allowed
+  );
+
+  await prisma.booking.deleteMany({
+    where: { id: { in: earned.map((booking) => booking.id) } },
+  });
+
+  /** The other route: verification instead of history. */
+  await prisma.user.update({
+    where: { id: newcomer.id },
+    data: { isVerified: true, verifiedAt: new Date(), verifiedById: owner.id },
+  });
+
+  const verifiedNewcomer = await asRead();
+
+  check(
+    "history was removed again, so this tests verification alone",
+    verifiedNewcomer.completedRentals === 0,
+    verifiedNewcomer
+  );
+
+  check(
+    "a verified identity opens the high-value tier with no history at all",
+    checkRenterAccess(accessTierFor(HIGH_VALUE_DEPOSIT_PKR), verifiedNewcomer)
+      .allowed
+  );
+
   // ---------------------------------------------------------------- cleanup
   console.log("\n=== cleanup ===");
 
@@ -591,7 +723,7 @@ async function main() {
   await prisma.booking.deleteMany({ where: { listingId: listing.id } });
   await prisma.listing.deleteMany({ where: { id: listing.id } });
   await prisma.user.deleteMany({
-    where: { id: { in: [owner.id, renter.id, reporter.id] } },
+    where: { id: { in: [owner.id, renter.id, reporter.id, newcomer.id] } },
   });
 
   console.log("  removed test rows");

@@ -44,7 +44,8 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar,
       lifecycle, deposit window, notification copy, environment schema, reset
       tokens, email copy, view keys, nav map, review rules, report rules,
-      moderation copy, trust score, email verification tokens) — 303 tests
+      moderation copy, trust score, email verification tokens, access tiers) —
+      323 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
@@ -1103,14 +1104,15 @@ schema and entirely unused; this is what connects them.
 *Last reviewed: 11 August 2026, against the code — Phase 4 complete, Phase 3 checkboxes corrected.*
 
 **Next:** Trust & Safety continues. Shipped 17 August 2026 — reporting and moderation, public trust
-profiles and the trust score, and identity verification. What remains is **value-gated access**, the
-**handover protocol** and **damage claims**. Phase 4 was built to receive the last two:
-`canStartBooking` and the completion guard are the points a sealed handover record becomes a
-condition rather than a rewrite, and no copy anywhere claims SamaanShare holds a deposit — so escrow
-can be added without walking a promise back.
+profiles and the trust score, identity verification, and value-gated access. What remains is the
+**handover protocol** and **damage claims**. Phase 4 was built to receive both: `canStartBooking` and
+the completion guard are the points a sealed handover record becomes a condition rather than a
+rewrite, and no copy anywhere claims SamaanShare holds a deposit — so escrow can be added without
+walking a promise back.
 
-Value-gated access is now buildable and was not before: `assessTrust` and `isVerified` are the inputs
-a rule like "items above PKR 50,000 require a verified renter" would read.
+`ReportReason` already carries `ITEM_DAMAGED` and `ITEM_NOT_RETURNED`, and both are filed against a
+**person** rather than a booking. A damage claim needs the booking attached, which is the gap between
+the report queue as it stands and a claim someone could act on.
 
 ### Identity Verification
 
@@ -1148,3 +1150,47 @@ could never be true.
       administrator confirming a document out of band, which is a perfectly
       ordinary way to run this **provided the decision is attributable** — which
       is what the two columns above are for
+
+### Value-Gated Access
+
+Shipped 17 August 2026. What a stranger has to have shown before they can ask to
+rent something, scaled to what is at stake.
+
+Payment is offline and there is no escrow, so when an owner hands over a
+generator the platform is holding nothing that could make them whole. On a
+PKR 800 drill that is fine. On something worth six figures it is not.
+
+- [x] `src/lib/trust/access.ts` — pure, 20 tests. Three tiers on
+      `Listing.securityDeposit`: open below PKR 25,000, **elevated** to
+      PKR 100,000, **high-value** above it
+- [x] **Gated on what the owner said is at risk**, not a number the platform
+      invented. An owner wanting fewer hurdles can ask for a smaller deposit and
+      carries that risk themselves, so the incentive points the right way with no
+      extra machinery. A listing with no deposit gates nothing — that is the
+      owner's call
+- [x] Elevated requires a confirmed email address — one click, and it is the
+      difference between an account with a reachable person behind it and one
+      made in ten seconds with a throwaway address
+- [x] High-value requires a confirmed address **and** either a verified identity
+      **or** 3 completed rentals. **The "or" is load-bearing**: identity
+      verification is granted by an administrator out of band, so requiring it
+      alone would make every high-value listing unbookable by everyone at launch.
+      A rule so strict it stops the feature working is an outage, not a safety
+      measure. Completed rentals are different evidence for the same thing — an
+      account with a history it would lose
+- [x] **Every gate is clearable, and every refusal says how.** Asserted across
+      all tiers: a gate that cannot be passed is a dead end wearing the costume
+      of a safety feature. All unmet requirements are reported at once, because
+      naming one at a time is how someone gives up on the second refusal
+- [x] Enforced in `createBookingRequest`, which is the boundary. The listing page
+      shows the gate instead of the date fields, but that is a courtesy — the
+      form is a rendering decision and the action is a public endpoint
+- [x] Signals read from the **database, never the session**. A withdrawn
+      verification would otherwise keep clearing high-value gates for up to 24h
+      while the JWT went stale — the same reasoning that made `requireUser`
+      re-read `status`
+- [x] The rule is stated on the listing to everyone who can see it, **including
+      the owner**: setting a large deposit narrows who may ask to rent the item,
+      and that consequence should not be discovered through an empty inbox
+- [x] Nothing promises safety. Asserted — clearing a gate does not make a rental
+      safe, and the copy never implies SamaanShare stands behind it

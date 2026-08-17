@@ -18,6 +18,12 @@ import { Badge } from "@/components/ui/badge";
 import { ReportType } from "@/generated/prisma/enums";
 import { getCurrentUser } from "@/lib/auth/session";
 import { listingJsonLd } from "@/lib/marketplace/structured-data";
+import { getRenterAccessSignals } from "@/lib/queries/renter-access";
+import {
+  accessTierDescription,
+  accessTierFor,
+  checkRenterAccess,
+} from "@/lib/trust/access";
 import {
   getListingDetail,
   getSimilarListings,
@@ -107,6 +113,22 @@ export default async function ListingPage({ params }: ListingPageProps) {
     listing.id,
     ...similar.map((item) => item.id),
   ]);
+
+  /**
+   * Value-gated access, decided for display only.
+   *
+   * `createBookingRequest` re-checks all of it against the database - this exists so a renter who
+   * cannot request the item learns that while reading it rather than after choosing dates.
+   *
+   * Evaluated only for a signed-in visitor who is not the owner. Signed out there is nobody to
+   * evaluate, and the panel already becomes a login link; naming requirements to an anonymous
+   * visitor would be describing an account that does not exist yet.
+   */
+  const accessTier = accessTierFor(listing.securityDeposit);
+  const access =
+    user && user.id !== listing.owner.id
+      ? checkRenterAccess(accessTier, await getRenterAccessSignals(user.id))
+      : null;
 
   return (
     <>
@@ -211,7 +233,21 @@ export default async function ListingPage({ params }: ListingPageProps) {
               today={todayInKarachi()}
               isAuthenticated={user !== null}
               isOwnListing={user?.id === listing.owner.id}
+              accessTier={accessTier}
+              access={access}
             />
+
+            {/*
+              The rule, stated to everyone else who can see this listing.
+              Suppressed when the gate panel is already showing, which repeats the same sentence.
+              An owner sees it too, deliberately: setting a large deposit narrows who may ask to rent
+              the item, and that consequence should not be discovered through an empty inbox.
+            */}
+            {accessTier !== "open" && !(access && !access.allowed) && (
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                {accessTierDescription(accessTier)}
+              </p>
+            )}
 
             {/* Save and share sit together beneath the booking panel. */}
             <div className="flex flex-wrap items-center gap-2">
