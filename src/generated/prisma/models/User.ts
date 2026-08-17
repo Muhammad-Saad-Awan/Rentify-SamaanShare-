@@ -55,6 +55,8 @@ export type UserMinAggregateOutputType = {
   role: $Enums.UserRole | null
   status: $Enums.UserStatus | null
   isVerified: boolean | null
+  verifiedAt: Date | null
+  verifiedById: string | null
   ownerRatingAverage: number | null
   ownerRatingCount: number | null
   renterRatingAverage: number | null
@@ -79,6 +81,8 @@ export type UserMaxAggregateOutputType = {
   role: $Enums.UserRole | null
   status: $Enums.UserStatus | null
   isVerified: boolean | null
+  verifiedAt: Date | null
+  verifiedById: string | null
   ownerRatingAverage: number | null
   ownerRatingCount: number | null
   renterRatingAverage: number | null
@@ -103,6 +107,8 @@ export type UserCountAggregateOutputType = {
   role: number
   status: number
   isVerified: number
+  verifiedAt: number
+  verifiedById: number
   ownerRatingAverage: number
   ownerRatingCount: number
   renterRatingAverage: number
@@ -143,6 +149,8 @@ export type UserMinAggregateInputType = {
   role?: true
   status?: true
   isVerified?: true
+  verifiedAt?: true
+  verifiedById?: true
   ownerRatingAverage?: true
   ownerRatingCount?: true
   renterRatingAverage?: true
@@ -167,6 +175,8 @@ export type UserMaxAggregateInputType = {
   role?: true
   status?: true
   isVerified?: true
+  verifiedAt?: true
+  verifiedById?: true
   ownerRatingAverage?: true
   ownerRatingCount?: true
   renterRatingAverage?: true
@@ -191,6 +201,8 @@ export type UserCountAggregateInputType = {
   role?: true
   status?: true
   isVerified?: true
+  verifiedAt?: true
+  verifiedById?: true
   ownerRatingAverage?: true
   ownerRatingCount?: true
   renterRatingAverage?: true
@@ -302,6 +314,8 @@ export type UserGroupByOutputType = {
   role: $Enums.UserRole
   status: $Enums.UserStatus
   isVerified: boolean
+  verifiedAt: Date | null
+  verifiedById: string | null
   ownerRatingAverage: number | null
   ownerRatingCount: number
   renterRatingAverage: number | null
@@ -349,6 +363,8 @@ export type UserWhereInput = {
   role?: Prisma.EnumUserRoleFilter<"User"> | $Enums.UserRole
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   isVerified?: Prisma.BoolFilter<"User"> | boolean
+  verifiedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+  verifiedById?: Prisma.StringNullableFilter<"User"> | string | null
   ownerRatingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
   ownerRatingCount?: Prisma.IntFilter<"User"> | number
   renterRatingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
@@ -370,6 +386,9 @@ export type UserWhereInput = {
   notifications?: Prisma.NotificationListRelationFilter
   bookingsCancelled?: Prisma.BookingListRelationFilter
   passwordResetTokens?: Prisma.PasswordResetTokenListRelationFilter
+  emailVerificationTokens?: Prisma.EmailVerificationTokenListRelationFilter
+  verifiedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  verifiedUsers?: Prisma.UserListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -387,6 +406,8 @@ export type UserOrderByWithRelationInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isVerified?: Prisma.SortOrder
+  verifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  verifiedById?: Prisma.SortOrderInput | Prisma.SortOrder
   ownerRatingAverage?: Prisma.SortOrderInput | Prisma.SortOrder
   ownerRatingCount?: Prisma.SortOrder
   renterRatingAverage?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -408,6 +429,9 @@ export type UserOrderByWithRelationInput = {
   notifications?: Prisma.NotificationOrderByRelationAggregateInput
   bookingsCancelled?: Prisma.BookingOrderByRelationAggregateInput
   passwordResetTokens?: Prisma.PasswordResetTokenOrderByRelationAggregateInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenOrderByRelationAggregateInput
+  verifiedBy?: Prisma.UserOrderByWithRelationInput
+  verifiedUsers?: Prisma.UserOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -428,6 +452,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   role?: Prisma.EnumUserRoleFilter<"User"> | $Enums.UserRole
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   isVerified?: Prisma.BoolFilter<"User"> | boolean
+  verifiedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+  verifiedById?: Prisma.StringNullableFilter<"User"> | string | null
   ownerRatingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
   ownerRatingCount?: Prisma.IntFilter<"User"> | number
   renterRatingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
@@ -449,6 +475,9 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   notifications?: Prisma.NotificationListRelationFilter
   bookingsCancelled?: Prisma.BookingListRelationFilter
   passwordResetTokens?: Prisma.PasswordResetTokenListRelationFilter
+  emailVerificationTokens?: Prisma.EmailVerificationTokenListRelationFilter
+  verifiedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  verifiedUsers?: Prisma.UserListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -466,6 +495,8 @@ export type UserOrderByWithAggregationInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isVerified?: Prisma.SortOrder
+  verifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  verifiedById?: Prisma.SortOrderInput | Prisma.SortOrder
   ownerRatingAverage?: Prisma.SortOrderInput | Prisma.SortOrder
   ownerRatingCount?: Prisma.SortOrder
   renterRatingAverage?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -498,6 +529,8 @@ export type UserScalarWhereWithAggregatesInput = {
   role?: Prisma.EnumUserRoleWithAggregatesFilter<"User"> | $Enums.UserRole
   status?: Prisma.EnumUserStatusWithAggregatesFilter<"User"> | $Enums.UserStatus
   isVerified?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  verifiedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
+  verifiedById?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   ownerRatingAverage?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
   ownerRatingCount?: Prisma.IntWithAggregatesFilter<"User"> | number
   renterRatingAverage?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
@@ -522,6 +555,7 @@ export type UserCreateInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -543,6 +577,9 @@ export type UserCreateInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -560,6 +597,8 @@ export type UserUncheckedCreateInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -581,6 +620,8 @@ export type UserUncheckedCreateInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUpdateInput = {
@@ -598,6 +639,7 @@ export type UserUpdateInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -619,6 +661,9 @@ export type UserUpdateInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -636,6 +681,8 @@ export type UserUncheckedUpdateInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -657,6 +704,8 @@ export type UserUncheckedUpdateInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -674,6 +723,8 @@ export type UserCreateManyInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -698,6 +749,7 @@ export type UserUpdateManyMutationInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -722,6 +774,8 @@ export type UserUncheckedUpdateManyInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -729,6 +783,21 @@ export type UserUncheckedUpdateManyInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+}
+
+export type UserNullableScalarRelationFilter = {
+  is?: Prisma.UserWhereInput | null
+  isNot?: Prisma.UserWhereInput | null
+}
+
+export type UserListRelationFilter = {
+  every?: Prisma.UserWhereInput
+  some?: Prisma.UserWhereInput
+  none?: Prisma.UserWhereInput
+}
+
+export type UserOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type UserCountOrderByAggregateInput = {
@@ -746,6 +815,8 @@ export type UserCountOrderByAggregateInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isVerified?: Prisma.SortOrder
+  verifiedAt?: Prisma.SortOrder
+  verifiedById?: Prisma.SortOrder
   ownerRatingAverage?: Prisma.SortOrder
   ownerRatingCount?: Prisma.SortOrder
   renterRatingAverage?: Prisma.SortOrder
@@ -777,6 +848,8 @@ export type UserMaxOrderByAggregateInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isVerified?: Prisma.SortOrder
+  verifiedAt?: Prisma.SortOrder
+  verifiedById?: Prisma.SortOrder
   ownerRatingAverage?: Prisma.SortOrder
   ownerRatingCount?: Prisma.SortOrder
   renterRatingAverage?: Prisma.SortOrder
@@ -801,6 +874,8 @@ export type UserMinOrderByAggregateInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isVerified?: Prisma.SortOrder
+  verifiedAt?: Prisma.SortOrder
+  verifiedById?: Prisma.SortOrder
   ownerRatingAverage?: Prisma.SortOrder
   ownerRatingCount?: Prisma.SortOrder
   renterRatingAverage?: Prisma.SortOrder
@@ -822,9 +897,24 @@ export type UserScalarRelationFilter = {
   isNot?: Prisma.UserWhereInput
 }
 
-export type UserNullableScalarRelationFilter = {
-  is?: Prisma.UserWhereInput | null
-  isNot?: Prisma.UserWhereInput | null
+export type UserCreateNestedOneWithoutVerifiedUsersInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutVerifiedUsersInput, Prisma.UserUncheckedCreateWithoutVerifiedUsersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutVerifiedUsersInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedManyWithoutVerifiedByInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutVerifiedByInput, Prisma.UserUncheckedCreateWithoutVerifiedByInput> | Prisma.UserCreateWithoutVerifiedByInput[] | Prisma.UserUncheckedCreateWithoutVerifiedByInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutVerifiedByInput | Prisma.UserCreateOrConnectWithoutVerifiedByInput[]
+  createMany?: Prisma.UserCreateManyVerifiedByInputEnvelope
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+}
+
+export type UserUncheckedCreateNestedManyWithoutVerifiedByInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutVerifiedByInput, Prisma.UserUncheckedCreateWithoutVerifiedByInput> | Prisma.UserCreateWithoutVerifiedByInput[] | Prisma.UserUncheckedCreateWithoutVerifiedByInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutVerifiedByInput | Prisma.UserCreateOrConnectWithoutVerifiedByInput[]
+  createMany?: Prisma.UserCreateManyVerifiedByInputEnvelope
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
 }
 
 export type StringFieldUpdateOperationsInput = {
@@ -871,6 +961,44 @@ export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
 }
 
+export type UserUpdateOneWithoutVerifiedUsersNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutVerifiedUsersInput, Prisma.UserUncheckedCreateWithoutVerifiedUsersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutVerifiedUsersInput
+  upsert?: Prisma.UserUpsertWithoutVerifiedUsersInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutVerifiedUsersInput, Prisma.UserUpdateWithoutVerifiedUsersInput>, Prisma.UserUncheckedUpdateWithoutVerifiedUsersInput>
+}
+
+export type UserUpdateManyWithoutVerifiedByNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutVerifiedByInput, Prisma.UserUncheckedCreateWithoutVerifiedByInput> | Prisma.UserCreateWithoutVerifiedByInput[] | Prisma.UserUncheckedCreateWithoutVerifiedByInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutVerifiedByInput | Prisma.UserCreateOrConnectWithoutVerifiedByInput[]
+  upsert?: Prisma.UserUpsertWithWhereUniqueWithoutVerifiedByInput | Prisma.UserUpsertWithWhereUniqueWithoutVerifiedByInput[]
+  createMany?: Prisma.UserCreateManyVerifiedByInputEnvelope
+  set?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  disconnect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  delete?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  update?: Prisma.UserUpdateWithWhereUniqueWithoutVerifiedByInput | Prisma.UserUpdateWithWhereUniqueWithoutVerifiedByInput[]
+  updateMany?: Prisma.UserUpdateManyWithWhereWithoutVerifiedByInput | Prisma.UserUpdateManyWithWhereWithoutVerifiedByInput[]
+  deleteMany?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+}
+
+export type UserUncheckedUpdateManyWithoutVerifiedByNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutVerifiedByInput, Prisma.UserUncheckedCreateWithoutVerifiedByInput> | Prisma.UserCreateWithoutVerifiedByInput[] | Prisma.UserUncheckedCreateWithoutVerifiedByInput[]
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutVerifiedByInput | Prisma.UserCreateOrConnectWithoutVerifiedByInput[]
+  upsert?: Prisma.UserUpsertWithWhereUniqueWithoutVerifiedByInput | Prisma.UserUpsertWithWhereUniqueWithoutVerifiedByInput[]
+  createMany?: Prisma.UserCreateManyVerifiedByInputEnvelope
+  set?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  disconnect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  delete?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  connect?: Prisma.UserWhereUniqueInput | Prisma.UserWhereUniqueInput[]
+  update?: Prisma.UserUpdateWithWhereUniqueWithoutVerifiedByInput | Prisma.UserUpdateWithWhereUniqueWithoutVerifiedByInput[]
+  updateMany?: Prisma.UserUpdateManyWithWhereWithoutVerifiedByInput | Prisma.UserUpdateManyWithWhereWithoutVerifiedByInput[]
+  deleteMany?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+}
+
 export type UserCreateNestedOneWithoutAccountsInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutAccountsInput, Prisma.UserUncheckedCreateWithoutAccountsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutAccountsInput
@@ -911,6 +1039,20 @@ export type UserUpdateOneRequiredWithoutPasswordResetTokensNestedInput = {
   upsert?: Prisma.UserUpsertWithoutPasswordResetTokensInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutPasswordResetTokensInput, Prisma.UserUpdateWithoutPasswordResetTokensInput>, Prisma.UserUncheckedUpdateWithoutPasswordResetTokensInput>
+}
+
+export type UserCreateNestedOneWithoutEmailVerificationTokensInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutEmailVerificationTokensInput, Prisma.UserUncheckedCreateWithoutEmailVerificationTokensInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutEmailVerificationTokensInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutEmailVerificationTokensNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutEmailVerificationTokensInput, Prisma.UserUncheckedCreateWithoutEmailVerificationTokensInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutEmailVerificationTokensInput
+  upsert?: Prisma.UserUpsertWithoutEmailVerificationTokensInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutEmailVerificationTokensInput, Prisma.UserUpdateWithoutEmailVerificationTokensInput>, Prisma.UserUncheckedUpdateWithoutEmailVerificationTokensInput>
 }
 
 export type UserCreateNestedOneWithoutListingsInput = {
@@ -1073,6 +1215,323 @@ export type UserUpdateOneWithoutReportsResolvedNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutReportsResolvedInput, Prisma.UserUpdateWithoutReportsResolvedInput>, Prisma.UserUncheckedUpdateWithoutReportsResolvedInput>
 }
 
+export type UserCreateWithoutVerifiedUsersInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+}
+
+export type UserUncheckedCreateWithoutVerifiedUsersInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingUncheckedCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewUncheckedCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewUncheckedCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingUncheckedCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutVerifiedUsersInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutVerifiedUsersInput, Prisma.UserUncheckedCreateWithoutVerifiedUsersInput>
+}
+
+export type UserCreateWithoutVerifiedByInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserUncheckedCreateWithoutVerifiedByInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingUncheckedCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewUncheckedCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewUncheckedCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingUncheckedCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserCreateOrConnectWithoutVerifiedByInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutVerifiedByInput, Prisma.UserUncheckedCreateWithoutVerifiedByInput>
+}
+
+export type UserCreateManyVerifiedByInputEnvelope = {
+  data: Prisma.UserCreateManyVerifiedByInput | Prisma.UserCreateManyVerifiedByInput[]
+  skipDuplicates?: boolean
+}
+
+export type UserUpsertWithoutVerifiedUsersInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutVerifiedUsersInput, Prisma.UserUncheckedUpdateWithoutVerifiedUsersInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutVerifiedUsersInput, Prisma.UserUncheckedCreateWithoutVerifiedUsersInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutVerifiedUsersInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutVerifiedUsersInput, Prisma.UserUncheckedUpdateWithoutVerifiedUsersInput>
+}
+
+export type UserUpdateWithoutVerifiedUsersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+}
+
+export type UserUncheckedUpdateWithoutVerifiedUsersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUncheckedUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUncheckedUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUncheckedUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserUpsertWithWhereUniqueWithoutVerifiedByInput = {
+  where: Prisma.UserWhereUniqueInput
+  update: Prisma.XOR<Prisma.UserUpdateWithoutVerifiedByInput, Prisma.UserUncheckedUpdateWithoutVerifiedByInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutVerifiedByInput, Prisma.UserUncheckedCreateWithoutVerifiedByInput>
+}
+
+export type UserUpdateWithWhereUniqueWithoutVerifiedByInput = {
+  where: Prisma.UserWhereUniqueInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutVerifiedByInput, Prisma.UserUncheckedUpdateWithoutVerifiedByInput>
+}
+
+export type UserUpdateManyWithWhereWithoutVerifiedByInput = {
+  where: Prisma.UserScalarWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateManyMutationInput, Prisma.UserUncheckedUpdateManyWithoutVerifiedByInput>
+}
+
+export type UserScalarWhereInput = {
+  AND?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+  OR?: Prisma.UserScalarWhereInput[]
+  NOT?: Prisma.UserScalarWhereInput | Prisma.UserScalarWhereInput[]
+  id?: Prisma.StringFilter<"User"> | string
+  name?: Prisma.StringNullableFilter<"User"> | string | null
+  email?: Prisma.StringFilter<"User"> | string
+  emailVerified?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+  image?: Prisma.StringNullableFilter<"User"> | string | null
+  password?: Prisma.StringNullableFilter<"User"> | string | null
+  phone?: Prisma.StringNullableFilter<"User"> | string | null
+  phoneVerified?: Prisma.BoolFilter<"User"> | boolean
+  bio?: Prisma.StringNullableFilter<"User"> | string | null
+  city?: Prisma.StringNullableFilter<"User"> | string | null
+  avatarUrl?: Prisma.StringNullableFilter<"User"> | string | null
+  role?: Prisma.EnumUserRoleFilter<"User"> | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
+  isVerified?: Prisma.BoolFilter<"User"> | boolean
+  verifiedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+  verifiedById?: Prisma.StringNullableFilter<"User"> | string | null
+  ownerRatingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
+  ownerRatingCount?: Prisma.IntFilter<"User"> | number
+  renterRatingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
+  renterRatingCount?: Prisma.IntFilter<"User"> | number
+  createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  deletedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+}
+
 export type UserCreateWithoutAccountsInput = {
   id?: string
   name?: string | null
@@ -1088,6 +1547,7 @@ export type UserCreateWithoutAccountsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1108,6 +1568,9 @@ export type UserCreateWithoutAccountsInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutAccountsInput = {
@@ -1125,6 +1588,8 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1145,6 +1610,8 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutAccountsInput = {
@@ -1178,6 +1645,7 @@ export type UserUpdateWithoutAccountsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1198,6 +1666,9 @@ export type UserUpdateWithoutAccountsInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -1215,6 +1686,8 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1235,6 +1708,8 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserCreateWithoutSessionsInput = {
@@ -1252,6 +1727,7 @@ export type UserCreateWithoutSessionsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1272,6 +1748,9 @@ export type UserCreateWithoutSessionsInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -1289,6 +1768,8 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1309,6 +1790,8 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -1342,6 +1825,7 @@ export type UserUpdateWithoutSessionsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1362,6 +1846,9 @@ export type UserUpdateWithoutSessionsInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -1379,6 +1866,8 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1399,6 +1888,8 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserCreateWithoutPasswordResetTokensInput = {
@@ -1416,6 +1907,7 @@ export type UserCreateWithoutPasswordResetTokensInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1436,6 +1928,9 @@ export type UserCreateWithoutPasswordResetTokensInput = {
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutPasswordResetTokensInput = {
@@ -1453,6 +1948,8 @@ export type UserUncheckedCreateWithoutPasswordResetTokensInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1473,6 +1970,8 @@ export type UserUncheckedCreateWithoutPasswordResetTokensInput = {
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutPasswordResetTokensInput = {
@@ -1506,6 +2005,7 @@ export type UserUpdateWithoutPasswordResetTokensInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1526,6 +2026,9 @@ export type UserUpdateWithoutPasswordResetTokensInput = {
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPasswordResetTokensInput = {
@@ -1543,6 +2046,8 @@ export type UserUncheckedUpdateWithoutPasswordResetTokensInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1563,6 +2068,188 @@ export type UserUncheckedUpdateWithoutPasswordResetTokensInput = {
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserCreateWithoutEmailVerificationTokensInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserUncheckedCreateWithoutEmailVerificationTokensInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingUncheckedCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewUncheckedCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewUncheckedCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingUncheckedCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserCreateOrConnectWithoutEmailVerificationTokensInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutEmailVerificationTokensInput, Prisma.UserUncheckedCreateWithoutEmailVerificationTokensInput>
+}
+
+export type UserUpsertWithoutEmailVerificationTokensInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutEmailVerificationTokensInput, Prisma.UserUncheckedUpdateWithoutEmailVerificationTokensInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutEmailVerificationTokensInput, Prisma.UserUncheckedCreateWithoutEmailVerificationTokensInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutEmailVerificationTokensInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutEmailVerificationTokensInput, Prisma.UserUncheckedUpdateWithoutEmailVerificationTokensInput>
+}
+
+export type UserUpdateWithoutEmailVerificationTokensInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutEmailVerificationTokensInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUncheckedUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUncheckedUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUncheckedUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserCreateWithoutListingsInput = {
@@ -1580,6 +2267,7 @@ export type UserCreateWithoutListingsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1600,6 +2288,9 @@ export type UserCreateWithoutListingsInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutListingsInput = {
@@ -1617,6 +2308,8 @@ export type UserUncheckedCreateWithoutListingsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1637,6 +2330,8 @@ export type UserUncheckedCreateWithoutListingsInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutListingsInput = {
@@ -1670,6 +2365,7 @@ export type UserUpdateWithoutListingsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1690,6 +2386,9 @@ export type UserUpdateWithoutListingsInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutListingsInput = {
@@ -1707,6 +2406,8 @@ export type UserUncheckedUpdateWithoutListingsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1727,6 +2428,8 @@ export type UserUncheckedUpdateWithoutListingsInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserCreateWithoutPaymentsConfirmedInput = {
@@ -1744,6 +2447,7 @@ export type UserCreateWithoutPaymentsConfirmedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1764,6 +2468,9 @@ export type UserCreateWithoutPaymentsConfirmedInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutPaymentsConfirmedInput = {
@@ -1781,6 +2488,8 @@ export type UserUncheckedCreateWithoutPaymentsConfirmedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1801,6 +2510,8 @@ export type UserUncheckedCreateWithoutPaymentsConfirmedInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutPaymentsConfirmedInput = {
@@ -1834,6 +2545,7 @@ export type UserUpdateWithoutPaymentsConfirmedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1854,6 +2566,9 @@ export type UserUpdateWithoutPaymentsConfirmedInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPaymentsConfirmedInput = {
@@ -1871,6 +2586,8 @@ export type UserUncheckedUpdateWithoutPaymentsConfirmedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1891,6 +2608,8 @@ export type UserUncheckedUpdateWithoutPaymentsConfirmedInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserCreateWithoutBookingsCancelledInput = {
@@ -1908,6 +2627,7 @@ export type UserCreateWithoutBookingsCancelledInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1928,6 +2648,9 @@ export type UserCreateWithoutBookingsCancelledInput = {
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutBookingsCancelledInput = {
@@ -1945,6 +2668,8 @@ export type UserUncheckedCreateWithoutBookingsCancelledInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -1965,6 +2690,8 @@ export type UserUncheckedCreateWithoutBookingsCancelledInput = {
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutBookingsCancelledInput = {
@@ -1987,6 +2714,7 @@ export type UserCreateWithoutBookingsAsRenterInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2007,6 +2735,9 @@ export type UserCreateWithoutBookingsAsRenterInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutBookingsAsRenterInput = {
@@ -2024,6 +2755,8 @@ export type UserUncheckedCreateWithoutBookingsAsRenterInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2044,6 +2777,8 @@ export type UserUncheckedCreateWithoutBookingsAsRenterInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutBookingsAsRenterInput = {
@@ -2066,6 +2801,7 @@ export type UserCreateWithoutBookingsAsOwnerInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2086,6 +2822,9 @@ export type UserCreateWithoutBookingsAsOwnerInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutBookingsAsOwnerInput = {
@@ -2103,6 +2842,8 @@ export type UserUncheckedCreateWithoutBookingsAsOwnerInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2123,6 +2864,8 @@ export type UserUncheckedCreateWithoutBookingsAsOwnerInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutBookingsAsOwnerInput = {
@@ -2156,6 +2899,7 @@ export type UserUpdateWithoutBookingsCancelledInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2176,6 +2920,9 @@ export type UserUpdateWithoutBookingsCancelledInput = {
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutBookingsCancelledInput = {
@@ -2193,6 +2940,8 @@ export type UserUncheckedUpdateWithoutBookingsCancelledInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2213,6 +2962,8 @@ export type UserUncheckedUpdateWithoutBookingsCancelledInput = {
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUpsertWithoutBookingsAsRenterInput = {
@@ -2241,6 +2992,7 @@ export type UserUpdateWithoutBookingsAsRenterInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2261,6 +3013,9 @@ export type UserUpdateWithoutBookingsAsRenterInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutBookingsAsRenterInput = {
@@ -2278,6 +3033,8 @@ export type UserUncheckedUpdateWithoutBookingsAsRenterInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2298,6 +3055,8 @@ export type UserUncheckedUpdateWithoutBookingsAsRenterInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUpsertWithoutBookingsAsOwnerInput = {
@@ -2326,6 +3085,7 @@ export type UserUpdateWithoutBookingsAsOwnerInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2346,6 +3106,9 @@ export type UserUpdateWithoutBookingsAsOwnerInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutBookingsAsOwnerInput = {
@@ -2363,6 +3126,8 @@ export type UserUncheckedUpdateWithoutBookingsAsOwnerInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2383,6 +3148,8 @@ export type UserUncheckedUpdateWithoutBookingsAsOwnerInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserCreateWithoutReviewsGivenInput = {
@@ -2400,6 +3167,7 @@ export type UserCreateWithoutReviewsGivenInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2420,6 +3188,9 @@ export type UserCreateWithoutReviewsGivenInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutReviewsGivenInput = {
@@ -2437,6 +3208,8 @@ export type UserUncheckedCreateWithoutReviewsGivenInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2457,6 +3230,8 @@ export type UserUncheckedCreateWithoutReviewsGivenInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutReviewsGivenInput = {
@@ -2479,6 +3254,7 @@ export type UserCreateWithoutReviewsReceivedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2499,6 +3275,9 @@ export type UserCreateWithoutReviewsReceivedInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutReviewsReceivedInput = {
@@ -2516,6 +3295,8 @@ export type UserUncheckedCreateWithoutReviewsReceivedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2536,6 +3317,8 @@ export type UserUncheckedCreateWithoutReviewsReceivedInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutReviewsReceivedInput = {
@@ -2569,6 +3352,7 @@ export type UserUpdateWithoutReviewsGivenInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2589,6 +3373,9 @@ export type UserUpdateWithoutReviewsGivenInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReviewsGivenInput = {
@@ -2606,6 +3393,8 @@ export type UserUncheckedUpdateWithoutReviewsGivenInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2626,6 +3415,8 @@ export type UserUncheckedUpdateWithoutReviewsGivenInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUpsertWithoutReviewsReceivedInput = {
@@ -2654,6 +3445,7 @@ export type UserUpdateWithoutReviewsReceivedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2674,6 +3466,9 @@ export type UserUpdateWithoutReviewsReceivedInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReviewsReceivedInput = {
@@ -2691,6 +3486,8 @@ export type UserUncheckedUpdateWithoutReviewsReceivedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2711,6 +3508,8 @@ export type UserUncheckedUpdateWithoutReviewsReceivedInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserCreateWithoutNotificationsInput = {
@@ -2728,6 +3527,7 @@ export type UserCreateWithoutNotificationsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2748,6 +3548,9 @@ export type UserCreateWithoutNotificationsInput = {
   paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutNotificationsInput = {
@@ -2765,6 +3568,8 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2785,6 +3590,8 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutNotificationsInput = {
@@ -2818,6 +3625,7 @@ export type UserUpdateWithoutNotificationsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2838,6 +3646,9 @@ export type UserUpdateWithoutNotificationsInput = {
   paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutNotificationsInput = {
@@ -2855,6 +3666,8 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2875,6 +3688,8 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserCreateWithoutSavedListingsInput = {
@@ -2892,6 +3707,7 @@ export type UserCreateWithoutSavedListingsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2912,6 +3728,9 @@ export type UserCreateWithoutSavedListingsInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutSavedListingsInput = {
@@ -2929,6 +3748,8 @@ export type UserUncheckedCreateWithoutSavedListingsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -2949,6 +3770,8 @@ export type UserUncheckedCreateWithoutSavedListingsInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutSavedListingsInput = {
@@ -2982,6 +3805,7 @@ export type UserUpdateWithoutSavedListingsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -3002,6 +3826,9 @@ export type UserUpdateWithoutSavedListingsInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSavedListingsInput = {
@@ -3019,6 +3846,8 @@ export type UserUncheckedUpdateWithoutSavedListingsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -3039,6 +3868,8 @@ export type UserUncheckedUpdateWithoutSavedListingsInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserCreateWithoutReportsSubmittedInput = {
@@ -3056,6 +3887,7 @@ export type UserCreateWithoutReportsSubmittedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -3076,6 +3908,9 @@ export type UserCreateWithoutReportsSubmittedInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutReportsSubmittedInput = {
@@ -3093,6 +3928,8 @@ export type UserUncheckedCreateWithoutReportsSubmittedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -3113,6 +3950,8 @@ export type UserUncheckedCreateWithoutReportsSubmittedInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutReportsSubmittedInput = {
@@ -3135,6 +3974,7 @@ export type UserCreateWithoutReportsResolvedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -3155,6 +3995,9 @@ export type UserCreateWithoutReportsResolvedInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserUncheckedCreateWithoutReportsResolvedInput = {
@@ -3172,6 +4015,8 @@ export type UserUncheckedCreateWithoutReportsResolvedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
   ownerRatingAverage?: number | null
   ownerRatingCount?: number
   renterRatingAverage?: number | null
@@ -3192,6 +4037,8 @@ export type UserUncheckedCreateWithoutReportsResolvedInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
 export type UserCreateOrConnectWithoutReportsResolvedInput = {
@@ -3225,6 +4072,7 @@ export type UserUpdateWithoutReportsSubmittedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -3245,6 +4093,9 @@ export type UserUpdateWithoutReportsSubmittedInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReportsSubmittedInput = {
@@ -3262,6 +4113,8 @@ export type UserUncheckedUpdateWithoutReportsSubmittedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -3282,6 +4135,8 @@ export type UserUncheckedUpdateWithoutReportsSubmittedInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUpsertWithoutReportsResolvedInput = {
@@ -3310,6 +4165,7 @@ export type UserUpdateWithoutReportsResolvedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -3330,6 +4186,9 @@ export type UserUpdateWithoutReportsResolvedInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReportsResolvedInput = {
@@ -3347,6 +4206,8 @@ export type UserUncheckedUpdateWithoutReportsResolvedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -3367,6 +4228,140 @@ export type UserUncheckedUpdateWithoutReportsResolvedInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserCreateManyVerifiedByInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+}
+
+export type UserUpdateWithoutVerifiedByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutVerifiedByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUncheckedUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUncheckedUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUncheckedUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUncheckedUpdateManyWithoutVerifiedByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 
@@ -3389,6 +4384,8 @@ export type UserCountOutputType = {
   notifications: number
   bookingsCancelled: number
   passwordResetTokens: number
+  emailVerificationTokens: number
+  verifiedUsers: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3406,6 +4403,8 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   notifications?: boolean | UserCountOutputTypeCountNotificationsArgs
   bookingsCancelled?: boolean | UserCountOutputTypeCountBookingsCancelledArgs
   passwordResetTokens?: boolean | UserCountOutputTypeCountPasswordResetTokensArgs
+  emailVerificationTokens?: boolean | UserCountOutputTypeCountEmailVerificationTokensArgs
+  verifiedUsers?: boolean | UserCountOutputTypeCountVerifiedUsersArgs
 }
 
 /**
@@ -3516,6 +4515,20 @@ export type UserCountOutputTypeCountPasswordResetTokensArgs<ExtArgs extends runt
   where?: Prisma.PasswordResetTokenWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountEmailVerificationTokensArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.EmailVerificationTokenWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountVerifiedUsersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UserWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -3532,6 +4545,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   role?: boolean
   status?: boolean
   isVerified?: boolean
+  verifiedAt?: boolean
+  verifiedById?: boolean
   ownerRatingAverage?: boolean
   ownerRatingCount?: boolean
   renterRatingAverage?: boolean
@@ -3553,6 +4568,9 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
   bookingsCancelled?: boolean | Prisma.User$bookingsCancelledArgs<ExtArgs>
   passwordResetTokens?: boolean | Prisma.User$passwordResetTokensArgs<ExtArgs>
+  emailVerificationTokens?: boolean | Prisma.User$emailVerificationTokensArgs<ExtArgs>
+  verifiedBy?: boolean | Prisma.User$verifiedByArgs<ExtArgs>
+  verifiedUsers?: boolean | Prisma.User$verifiedUsersArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -3571,6 +4589,8 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   role?: boolean
   status?: boolean
   isVerified?: boolean
+  verifiedAt?: boolean
+  verifiedById?: boolean
   ownerRatingAverage?: boolean
   ownerRatingCount?: boolean
   renterRatingAverage?: boolean
@@ -3578,6 +4598,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
+  verifiedBy?: boolean | Prisma.User$verifiedByArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -3595,6 +4616,8 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   role?: boolean
   status?: boolean
   isVerified?: boolean
+  verifiedAt?: boolean
+  verifiedById?: boolean
   ownerRatingAverage?: boolean
   ownerRatingCount?: boolean
   renterRatingAverage?: boolean
@@ -3602,6 +4625,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
+  verifiedBy?: boolean | Prisma.User$verifiedByArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectScalar = {
@@ -3619,6 +4643,8 @@ export type UserSelectScalar = {
   role?: boolean
   status?: boolean
   isVerified?: boolean
+  verifiedAt?: boolean
+  verifiedById?: boolean
   ownerRatingAverage?: boolean
   ownerRatingCount?: boolean
   renterRatingAverage?: boolean
@@ -3628,7 +4654,7 @@ export type UserSelectScalar = {
   deletedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "password" | "phone" | "phoneVerified" | "bio" | "city" | "avatarUrl" | "role" | "status" | "isVerified" | "ownerRatingAverage" | "ownerRatingCount" | "renterRatingAverage" | "renterRatingCount" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "password" | "phone" | "phoneVerified" | "bio" | "city" | "avatarUrl" | "role" | "status" | "isVerified" | "verifiedAt" | "verifiedById" | "ownerRatingAverage" | "ownerRatingCount" | "renterRatingAverage" | "renterRatingCount" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
@@ -3644,10 +4670,17 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
   bookingsCancelled?: boolean | Prisma.User$bookingsCancelledArgs<ExtArgs>
   passwordResetTokens?: boolean | Prisma.User$passwordResetTokensArgs<ExtArgs>
+  emailVerificationTokens?: boolean | Prisma.User$emailVerificationTokensArgs<ExtArgs>
+  verifiedBy?: boolean | Prisma.User$verifiedByArgs<ExtArgs>
+  verifiedUsers?: boolean | Prisma.User$verifiedUsersArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
-export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
-export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  verifiedBy?: boolean | Prisma.User$verifiedByArgs<ExtArgs>
+}
+export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  verifiedBy?: boolean | Prisma.User$verifiedByArgs<ExtArgs>
+}
 
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "User"
@@ -3666,6 +4699,9 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     notifications: Prisma.$NotificationPayload<ExtArgs>[]
     bookingsCancelled: Prisma.$BookingPayload<ExtArgs>[]
     passwordResetTokens: Prisma.$PasswordResetTokenPayload<ExtArgs>[]
+    emailVerificationTokens: Prisma.$EmailVerificationTokenPayload<ExtArgs>[]
+    verifiedBy: Prisma.$UserPayload<ExtArgs> | null
+    verifiedUsers: Prisma.$UserPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3681,7 +4717,21 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     avatarUrl: string | null
     role: $Enums.UserRole
     status: $Enums.UserStatus
+    /**
+     * *
+     *    * Identity verified by SamaanShare. Trust & Safety.
+     *    * NOT the same claim as `emailVerified`, and the gap is the whole point.
+     *    * Confirming an inbox takes a minute and proves control of an email address;
+     *    * this is meant to mean a human checked a document against a person. The trust
+     *    * score weights them 1.0 against 0.4 for exactly that reason, and withholds its
+     *    * top band entirely without this one.
+     *    * Granted by an administrator until phone OTP and CNIC checks exist (Phase 2),
+     *    * which is why it carries who decided and when - a claim this strong, made by
+     *    * the platform about a person, has to be attributable to someone.
+     */
     isVerified: boolean
+    verifiedAt: Date | null
+    verifiedById: string | null
     ownerRatingAverage: number | null
     ownerRatingCount: number
     renterRatingAverage: number | null
@@ -4097,6 +5147,9 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   notifications<T extends Prisma.User$notificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   bookingsCancelled<T extends Prisma.User$bookingsCancelledArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$bookingsCancelledArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   passwordResetTokens<T extends Prisma.User$passwordResetTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$passwordResetTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PasswordResetTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  emailVerificationTokens<T extends Prisma.User$emailVerificationTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$emailVerificationTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailVerificationTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  verifiedBy<T extends Prisma.User$verifiedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$verifiedByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  verifiedUsers<T extends Prisma.User$verifiedUsersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$verifiedUsersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4140,6 +5193,8 @@ export interface UserFieldRefs {
   readonly role: Prisma.FieldRef<"User", 'UserRole'>
   readonly status: Prisma.FieldRef<"User", 'UserStatus'>
   readonly isVerified: Prisma.FieldRef<"User", 'Boolean'>
+  readonly verifiedAt: Prisma.FieldRef<"User", 'DateTime'>
+  readonly verifiedById: Prisma.FieldRef<"User", 'String'>
   readonly ownerRatingAverage: Prisma.FieldRef<"User", 'Float'>
   readonly ownerRatingCount: Prisma.FieldRef<"User", 'Int'>
   readonly renterRatingAverage: Prisma.FieldRef<"User", 'Float'>
@@ -4401,6 +5456,10 @@ export type UserCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions
    */
   data: Prisma.UserCreateManyInput | Prisma.UserCreateManyInput[]
   skipDuplicates?: boolean
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -4471,6 +5530,10 @@ export type UserUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensions
    * Limit how many Users to update.
    */
   limit?: number
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -4873,6 +5936,73 @@ export type User$passwordResetTokensArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.PasswordResetTokenScalarFieldEnum | Prisma.PasswordResetTokenScalarFieldEnum[]
+}
+
+/**
+ * User.emailVerificationTokens
+ */
+export type User$emailVerificationTokensArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the EmailVerificationToken
+   */
+  select?: Prisma.EmailVerificationTokenSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the EmailVerificationToken
+   */
+  omit?: Prisma.EmailVerificationTokenOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.EmailVerificationTokenInclude<ExtArgs> | null
+  where?: Prisma.EmailVerificationTokenWhereInput
+  orderBy?: Prisma.EmailVerificationTokenOrderByWithRelationInput | Prisma.EmailVerificationTokenOrderByWithRelationInput[]
+  cursor?: Prisma.EmailVerificationTokenWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.EmailVerificationTokenScalarFieldEnum | Prisma.EmailVerificationTokenScalarFieldEnum[]
+}
+
+/**
+ * User.verifiedBy
+ */
+export type User$verifiedByArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
+}
+
+/**
+ * User.verifiedUsers
+ */
+export type User$verifiedUsersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
+  orderBy?: Prisma.UserOrderByWithRelationInput | Prisma.UserOrderByWithRelationInput[]
+  cursor?: Prisma.UserWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UserScalarFieldEnum | Prisma.UserScalarFieldEnum[]
 }
 
 /**

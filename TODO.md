@@ -44,7 +44,7 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar,
       lifecycle, deposit window, notification copy, environment schema, reset
       tokens, email copy, view keys, nav map, review rules, report rules,
-      moderation copy, trust score) — 280 tests
+      moderation copy, trust score, email verification tokens) — 303 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
@@ -178,11 +178,42 @@ Completed in Stage A2 — see that section for the security reasoning.
 
 ### Email Verification
 
-- [ ] Create verification page (`/verify-email`)
-- [ ] Generate verification tokens
-- [ ] Create `verifyEmail` action
-- [ ] Handle verification success/failure
-- [ ] Resend verification option
+Shipped 17 August 2026 with the Identity Verification slice. Uses the Resend
+integration Stage A2 added, so no new dependency.
+
+- [x] Create verification page (`/verify-email`) — renders a **button**, not an
+      effect on render. Redeeming is a write, and a write triggered by loading a
+      page fires on every link preview, mail scanner and prefetch; a scanner
+      spending the token would leave the person who actually clicked staring at
+      "no longer valid". Same call as `viewCount` and `/reset-password`
+- [x] Generate verification tokens — own `EmailVerificationToken` table. Sharing
+      `PasswordResetToken` or Auth.js's `VerificationToken` would let a token
+      minted to confirm an address be redeemed to reset a password: a privilege
+      escalation between two credentials of very different strength
+- [x] Create `verifyEmail` action — single-use by compare-and-swap on `usedAt`,
+      and **requires the session to belong to the token's owner**, so a link
+      forwarded or scraped from a mailbox cannot confirm the address on its own
+- [x] **The token carries the address it was minted for.** Without it, changing
+      an email to one you do not control and clicking an older link would mark
+      the new address confirmed. Checked at redemption *and* enforced in the
+      `updateMany` predicate, closing both ends of the race
+- [x] Handle verification success/failure — expired, spent, stale and
+      never-existed all report one identical message; distinguishing them would
+      tell someone holding a leaked link whether it was ever real
+- [x] Resend verification option — on `/profile`, and takes **no address
+      parameter**. One would let any signed-in account send SamaanShare-branded
+      mail to anyone, which is a spam relay with a login form in front of it
+- [x] Sent on registration, best-effort — a Resend outage must not turn a
+      completed signup into an error the user answers by registering again,
+      straight into the "already exists" branch
+- [x] 24-hour TTL, against the reset token's one hour. The threat is different:
+      the worst a stale confirmation link can do is confirm an address that
+      receiving it already confirmed, while a one-hour window would punish anyone
+      who registers in the evening and reads their email next morning
+- [x] **No enumeration rule here**, unlike password reset. That flow takes an
+      address from an anonymous visitor, so any difference in its response leaks
+      who has an account. This one only acts on the caller's own session, so the
+      messages can be specific and useful
 
 ### User Profile
 
@@ -847,11 +878,21 @@ schema and entirely unused; this is what connects them.
 
 ### User Management
 
-- [ ] Create users list page (`/admin/users`)
-- [ ] Add user search
+- [x] Create users list page (`/admin/users`) — **scoped to identity
+      verification only.** Suspension, banning and role changes are deliberately
+      not on it: they are the platform's most consequential controls, and
+      attaching them to a search box built for a different task is how one gets
+      used by accident
+- [x] Add user search — **search-first, never browse-first.** Nothing renders
+      until a query is entered, so this cannot be left open as a directory of the
+      user base with email addresses attached. `email` is selected here and
+      nowhere public, because it is the only reliable way to tell two members
+      with the same display name apart
 - [ ] Add user filters (status, role)
 - [ ] Create user detail view
-- [ ] Create `suspendUser` action
+- [ ] Create `suspendUser` action — note `resolveReport` can already suspend
+      through the moderation queue, with a report attached as the reason. A
+      standalone action still needs one
 - [ ] Create `banUser` action
 - [ ] Create `changeUserRole` action
 
@@ -1061,13 +1102,49 @@ schema and entirely unused; this is what connects them.
 
 *Last reviewed: 11 August 2026, against the code — Phase 4 complete, Phase 3 checkboxes corrected.*
 
-**Next:** Trust & Safety continues. Reporting and moderation shipped 17 August 2026; what remains is
-identity verification, value-gated access, the handover protocol and damage claims. Phase 4 was built
-to receive the last two: `canStartBooking` and the completion guard are the points a sealed handover
-record becomes a condition rather than a rewrite, and no copy anywhere claims SamaanShare holds a
-deposit — so escrow can be added without walking a promise back.
+**Next:** Trust & Safety continues. Shipped 17 August 2026 — reporting and moderation, public trust
+profiles and the trust score, and identity verification. What remains is **value-gated access**, the
+**handover protocol** and **damage claims**. Phase 4 was built to receive the last two:
+`canStartBooking` and the completion guard are the points a sealed handover record becomes a
+condition rather than a rewrite, and no copy anywhere claims SamaanShare holds a deposit — so escrow
+can be added without walking a promise back.
 
-**Known gap, worth fixing early:** `User.isVerified` is rendered as a "Verified" badge on
-`OwnerCard`, and **nothing in the codebase ever writes it**. It is `@default(false)`, so the badge is
-currently unreachable — harmless today, but the moment anyone sets that column by hand it becomes a
-trust claim with no verification behind it. Identity verification is what should set it.
+Value-gated access is now buildable and was not before: `assessTrust` and `isVerified` are the inputs
+a rule like "items above PKR 50,000 require a verified renter" would read.
+
+### Identity Verification
+
+Shipped 17 August 2026. Closes the gap recorded here previously: `User.isVerified`
+rendered a "Verified" badge on `OwnerCard` and **nothing ever wrote it**, so the
+badge was unreachable and the trust score's top band was gated on a flag that
+could never be true.
+
+- [x] **Two claims, kept apart.** `emailVerified` proves an inbox was reachable —
+      minutes of work for anyone with a mail account. `isVerified` is meant to
+      mean a human checked a document against a person. The trust score weights
+      them 1.0 against 0.4 and gates its top band on the second, so nothing in
+      the email-confirmation path may set the first. A test greps the
+      confirmation email copy for "identity", "verified" and "badge" to keep the
+      wording from blurring them
+- [x] `setIdentityVerified` — one action for grant and withdrawal. Reversal is
+      not exceptional (a forged document, an account changing hands), and
+      splitting it would give the reversal its own untested path
+- [x] **Recorded, not just set** — `verifiedAt` and `verifiedById`, the same way
+      `Payment.confirmedById` records who vouched for money arriving. A claim
+      this strong, made by the platform about a person, has to be attributable
+- [x] **An admin cannot verify themselves.** The whole value of the flag is that
+      someone other than its subject decided it, and a self-grant is the first
+      thing a compromised admin account would reach for
+- [x] A suspended account cannot be granted verification — publishing the
+      platform's strongest endorsement about someone moderation just acted
+      against. Withdrawal from a suspended account stays permitted, which is the
+      direction that case actually needs
+- [x] Withdrawal clears the timestamp too. A `verifiedAt` left on an unverified
+      account reads as a current grant to anything querying the column
+- [ ] Phone OTP verification (+92) — **blocked on an SMS provider**, which this
+      deployment does not have. `User.phoneVerified` stays honestly `false`; no
+      fake OTP was built. Listed under Phase 2 below
+- [ ] CNIC verification (NADRA) — Phase 2. Until it exists, verification is an
+      administrator confirming a document out of band, which is a perfectly
+      ordinary way to run this **provided the decision is attributable** — which
+      is what the two columns above are for

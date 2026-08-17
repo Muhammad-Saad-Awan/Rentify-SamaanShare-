@@ -192,9 +192,23 @@ model User {
   avatarUrl     String?
 
   // Platform fields
-  role       UserRole   @default(USER)
-  status     UserStatus @default(ACTIVE)
-  isVerified Boolean    @default(false) // Trust verification
+  role   UserRole   @default(USER)
+  status UserStatus @default(ACTIVE)
+
+  /**
+   * Identity verified by SamaanShare. Trust & Safety.
+   * NOT the same claim as `emailVerified`, and the gap is the whole point.
+   * Confirming an inbox takes a minute and proves control of an email address;
+   * this is meant to mean a human checked a document against a person. The trust
+   * score weights them 1.0 against 0.4 for exactly that reason, and withholds its
+   * top band entirely without this one.
+   * Granted by an administrator until phone OTP and CNIC checks exist (Phase 2),
+   * which is why it carries who decided and when - a claim this strong, made by
+   * the platform about a person, has to be attributable to someone.
+   */
+  isVerified   Boolean   @default(false)
+  verifiedAt   DateTime?
+  verifiedById String?
 
   // P8: denormalized review aggregate. PRD.md:169 makes "Sort by Rating" a
   // Must Have and API.md:613 exposes sortBy:'rating'. Ordering paginated
@@ -251,9 +265,19 @@ model User {
   // Stage A2: outstanding password reset requests.
   passwordResetTokens PasswordResetToken[]
 
+  // Trust & Safety: outstanding email confirmation links.
+  emailVerificationTokens EmailVerificationToken[]
+
+  // Who granted this account's identity verification, and whose grants they are.
+  // A real foreign key rather than a bare id, for the same reason as
+  // Payment.confirmedById and Report.resolvedBy: the row should say who vouched.
+  verifiedBy    User?  @relation("IdentityVerifications", fields: [verifiedById], references: [id])
+  verifiedUsers User[] @relation("IdentityVerifications")
+
   @@index([status]) // P5: admin user filtering - API.md:432
   @@index([city]) // P5: usersByCity stat - API.md:390
   @@index([deletedAt]) // D3: exclude soft-deleted users
+  @@index([verifiedById]) // Trust & Safety: an admin's own grants
   @@map("users")
 }
 
@@ -341,6 +365,49 @@ model PasswordResetToken {
   // Sweeping expired tokens.
   @@index([expiresAt])
   @@map("password_reset_tokens")
+}
+
+/**
+ * Outstanding email confirmation links. Trust & Safety.
+ * WHY NOT REUSE PasswordResetToken OR Auth.js's VerificationToken. The same
+ * argument Stage A2 made for splitting reset tokens out applies again, in both
+ * directions: a single table with no type discriminator lets a token minted for
+ * one purpose be redeemed for another, and an email-confirmation link is a far
+ * weaker credential than a password reset - handing one the other's powers is a
+ * privilege escalation, not a tidy-up.
+ * Same mechanics as the reset token, and for the same reasons: the token is 256
+ * bits of CSPRNG output, stored only as a SHA-256 digest, single-use by
+ * compare-and-swap on usedAt.
+ */
+model EmailVerificationToken {
+  id     String @id @default(cuid())
+  userId String
+
+  /** SHA-256 of the token from the emailed link. Unique, so lookup is one probe. */
+  tokenHash String @unique
+
+  /**
+   * The address this link was sent to, and the address it may confirm.
+   * Bound at mint time rather than read from the user at redemption. Without it,
+   * a link emailed to an old address would confirm whatever address the account
+   * happens to carry when it is finally clicked - so changing an email to one you
+   * do not control, then clicking an older link, would mark it verified.
+   */
+  email String
+
+  expiresAt DateTime
+
+  /** Set when redeemed. Non-null means the token is spent and cannot be replayed. */
+  usedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  // Cascade, like the reset token: a confirmation link has no value as history.
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("email_verification_tokens")
 }
 
 // ==================== CATEGORY MODELS ====================

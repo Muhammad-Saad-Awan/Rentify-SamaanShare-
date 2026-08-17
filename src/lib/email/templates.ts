@@ -1,3 +1,4 @@
+import { VERIFICATION_TOKEN_TTL_HOURS } from "@/lib/auth/email-verification";
 import { RESET_TOKEN_TTL_MINUTES } from "@/lib/auth/password-reset";
 import { siteConfig } from "@/config/site";
 
@@ -101,6 +102,81 @@ export function passwordResetEmail({
           <p style="margin:0;font-size:13px;line-height:1.6;color:#52525b;">
             If you did not ask for this, you can ignore this email — your password has not changed,
             and nobody can use this link without access to your inbox.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+
+  return { subject, html, text };
+}
+
+interface EmailVerificationEmailOptions {
+  /** The absolute confirmation URL, token included. */
+  verifyUrl: string;
+  /** The recipient's display name, when known. */
+  name?: string | null;
+}
+
+/**
+ * The email confirmation message.
+ *
+ * PROMISES ONLY WHAT CONFIRMING AN INBOX ACTUALLY DOES. It does not say "verify your identity" or
+ * imply a badge: `User.isVerified` is a separate and much stronger claim, granted after a human
+ * checks a document, and copy that blurred the two would have people believing they were verified
+ * when they had only clicked a link. The trust score treats them as 0.4 against 1.0 for that reason.
+ *
+ * The closing line matters. Unlike a password reset, an unexpected confirmation email usually means
+ * someone typed the wrong address rather than that an account is under attack - so it tells the
+ * reader that ignoring it is enough, without the alarm the reset email's wording carries.
+ */
+export function emailVerificationEmail({
+  verifyUrl,
+  name,
+}: EmailVerificationEmailOptions): EmailContent {
+  const greeting = name?.trim() ? `Hi ${name.trim()},` : "Hi,";
+  const validFor = `${VERIFICATION_TOKEN_TTL_HOURS} hours`;
+
+  const subject = `Confirm your email for ${siteConfig.name}`;
+
+  const text = [
+    greeting,
+    "",
+    `Confirm this address so we know we can reach you about your ${siteConfig.name} rentals.`,
+    "",
+    "Open this link to confirm:",
+    verifyUrl,
+    "",
+    `The link works once and expires in ${validFor}.`,
+    "",
+    "If you did not create an account, you can ignore this email - nothing has been set up in your name that this link would complete.",
+    "",
+    `- ${siteConfig.name}`,
+  ].join("\n");
+
+  const safeUrl = escapeHtml(verifyUrl);
+
+  const html = `<!doctype html>
+<html lang="en">
+  <body style="margin:0;padding:24px;background:#f6f6f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#18181b;">
+    <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px;">
+      <tr>
+        <td>
+          <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;">Confirm your email</h1>
+          <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">${escapeHtml(greeting)}</p>
+          <p style="margin:0 0 24px;font-size:15px;line-height:1.6;">Confirm this address so we know we can reach you about your ${escapeHtml(siteConfig.name)} rentals.</p>
+          <p style="margin:0 0 24px;">
+            <a href="${safeUrl}" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-size:15px;font-weight:500;">Confirm my email</a>
+          </p>
+          <p style="margin:0 0 24px;font-size:13px;line-height:1.6;color:#52525b;">
+            Or copy this link into your browser:<br />
+            <span style="word-break:break-all;">${safeUrl}</span>
+          </p>
+          <p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#52525b;">The link works once and expires in ${validFor}.</p>
+          <p style="margin:0;font-size:13px;line-height:1.6;color:#52525b;">
+            If you did not create an account, you can ignore this email — nothing has been set up in
+            your name that this link would complete.
           </p>
         </td>
       </tr>

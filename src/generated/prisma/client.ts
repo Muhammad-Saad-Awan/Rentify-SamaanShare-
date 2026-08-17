@@ -81,6 +81,21 @@ export type VerificationToken = Prisma.VerificationTokenModel
  */
 export type PasswordResetToken = Prisma.PasswordResetTokenModel
 /**
+ * Model EmailVerificationToken
+ * *
+ *  * Outstanding email confirmation links. Trust & Safety.
+ *  * WHY NOT REUSE PasswordResetToken OR Auth.js's VerificationToken. The same
+ *  * argument Stage A2 made for splitting reset tokens out applies again, in both
+ *  * directions: a single table with no type discriminator lets a token minted for
+ *  * one purpose be redeemed for another, and an email-confirmation link is a far
+ *  * weaker credential than a password reset - handing one the other's powers is a
+ *  * privilege escalation, not a tidy-up.
+ *  * Same mechanics as the reset token, and for the same reasons: the token is 256
+ *  * bits of CSPRNG output, stored only as a SHA-256 digest, single-use by
+ *  * compare-and-swap on usedAt.
+ */
+export type EmailVerificationToken = Prisma.EmailVerificationTokenModel
+/**
  * Model Category
  * 
  */

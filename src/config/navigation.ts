@@ -10,6 +10,7 @@ import {
   SettingsIcon,
   ShieldIcon,
   UserIcon,
+  UsersIcon,
 } from "lucide-react";
 
 import { UserRole } from "@/generated/prisma/enums";
@@ -122,6 +123,7 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
     items: [
       { title: "Admin", href: "/admin", icon: ShieldIcon, exact: true },
       { title: "Reports", href: "/admin/reports", icon: FlagIcon },
+      { title: "Members", href: "/admin/users", icon: UsersIcon },
     ],
   },
 ] as const;
@@ -146,4 +148,6 @@ export const SEGMENT_LABELS: Readonly<Record<string, string>> = {
   settings: "Settings",
   admin: "Admin",
   reports: "Reports",
+  users: "Members",
+  "verify-email": "Confirm email",
 };

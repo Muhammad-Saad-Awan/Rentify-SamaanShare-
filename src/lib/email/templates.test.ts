@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { passwordResetEmail } from "@/lib/email/templates";
+import {
+  emailVerificationEmail,
+  passwordResetEmail,
+} from "@/lib/email/templates";
 
 /**
  * Outbound email copy.
@@ -104,5 +107,77 @@ describe("passwordResetEmail", () => {
 
   it("names the product in the subject", () => {
     expect(passwordResetEmail({ resetUrl }).subject).toContain("SamaanShare");
+  });
+});
+
+const verifyUrl = "https://samaanshare.pk/verify-email?token=abc123";
+
+describe("emailVerificationEmail", () => {
+  it("always includes a plain-text part", () => {
+    const email = emailVerificationEmail({ verifyUrl });
+
+    expect(email.text.length).toBeGreaterThan(50);
+    expect(email.html.length).toBeGreaterThan(50);
+  });
+
+  it("puts the link in both parts, and visibly in the HTML", () => {
+    const email = emailVerificationEmail({ verifyUrl });
+
+    expect(email.text).toContain(verifyUrl);
+    expect(email.html).toContain(`href="${verifyUrl}"`);
+    // Copyable even in a client that strips anchors.
+    expect(email.html).toContain(`>${verifyUrl}<`);
+  });
+
+  /**
+   * THE ONE THAT MATTERS.
+   *
+   * Confirming an inbox is not identity verification. `User.isVerified` is granted by a person after
+   * checking a document and is what earns the public badge; the trust score weights the two 0.4
+   * against 1.0. Copy that blurred them would leave people believing they were verified when they
+   * had only clicked a link - a belief they would act on when deciding who to trust.
+   */
+  it("never claims the reader's identity has been verified", () => {
+    const email = emailVerificationEmail({ verifyUrl, name: "Ali" });
+    const copy = `${email.subject} ${email.text} ${email.html}`.toLowerCase();
+
+    for (const claim of [
+      "identity",
+      "verified",
+      "verify your identity",
+      "badge",
+    ]) {
+      expect(copy).not.toContain(claim);
+    }
+  });
+
+  /**
+   * An unexpected confirmation email usually means someone mistyped an address, not that an account
+   * is under attack - so it must not carry the reset email's alarm.
+   */
+  it("tells an unintended recipient that ignoring it is enough", () => {
+    const email = emailVerificationEmail({ verifyUrl });
+
+    expect(email.text.toLowerCase()).toContain("ignore this email");
+  });
+
+  it("greets by name when there is one, and neutrally when there is not", () => {
+    expect(emailVerificationEmail({ verifyUrl, name: "Ali" }).text).toContain(
+      "Hi Ali,"
+    );
+    expect(emailVerificationEmail({ verifyUrl, name: null }).text).toContain(
+      "Hi,"
+    );
+    expect(emailVerificationEmail({ verifyUrl, name: "   " }).text).toContain(
+      "Hi,"
+    );
+  });
+
+  it("escapes a URL that would otherwise break out of the attribute", () => {
+    const hostile = 'https://x.test/?a="onload="alert(1)';
+    const email = emailVerificationEmail({ verifyUrl: hostile });
+
+    expect(email.html).not.toContain('onload="alert(1)"');
+    expect(email.html).toContain("&quot;");
   });
 });

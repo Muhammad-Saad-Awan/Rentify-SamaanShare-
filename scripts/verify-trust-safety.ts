@@ -23,9 +23,15 @@ import {
   ReviewType,
   UserStatus,
 } from "../src/generated/prisma/enums";
+import {
+  checkVerificationToken,
+  createVerificationToken,
+  verificationTokenExpiry,
+} from "../src/lib/auth/email-verification";
 import { getReports } from "../src/lib/queries/reports";
 import { getOwnerReviews } from "../src/lib/queries/reviews";
 import { getPublicProfile } from "../src/lib/queries/user-profile";
+import { assessTrust } from "../src/lib/trust/score";
 import {
   publishReviews,
   recomputeUserRating,
@@ -428,6 +434,146 @@ async function main() {
     where: { id: owner.id },
     data: { deletedAt: null },
   });
+
+  // ------------------- 6. identity verification is attributable, and reachable
+  console.log("\n=== identity verification ===");
+
+  /**
+   * The badge was unreachable before this: `isVerified` has existed since the initial migration and
+   * nothing ever wrote it, so `OwnerCard` rendered a "Verified" state no account could reach and the
+   * trust score's top band was gated on a flag that could never be true.
+   */
+  await prisma.user.update({
+    where: { id: renter.id },
+    data: {
+      isVerified: true,
+      verifiedAt: new Date(),
+      verifiedById: reporter.id,
+    },
+  });
+
+  const granted = await prisma.user.findUniqueOrThrow({
+    where: { id: renter.id },
+    select: {
+      isVerified: true,
+      verifiedAt: true,
+      verifiedBy: { select: { name: true } },
+    },
+  });
+
+  check(
+    "a grant records who decided it and when",
+    granted.isVerified &&
+      granted.verifiedAt !== null &&
+      granted.verifiedBy?.name === "TS Reporter",
+    granted
+  );
+
+  /**
+   * The whole point of the gate. Same record, scored twice - the only difference is the flag.
+   *
+   * Everything else feeding the score is behaviour reported by other users, which a determined
+   * person can manufacture; the strongest claim the platform makes should rest on something outside
+   * the reputation system.
+   */
+  const strongRecord = {
+    ownerRating: { average: 5, count: 40 },
+    renterRating: { average: 5, count: 40 },
+    completedRentals: 40,
+    cancelledByThem: 0,
+    emailVerified: true,
+  };
+
+  const unverified = assessTrust({ ...strongRecord, isVerified: false });
+  const verified = assessTrust({ ...strongRecord, isVerified: true });
+
+  check(
+    "an identical record stops at 'trusted' while unverified",
+    unverified.band === "trusted",
+    unverified.band
+  );
+  check(
+    "and reaches 'highly trusted' once verified",
+    verified.band === "highly-trusted",
+    verified.band
+  );
+
+  /** Withdrawing clears the timestamp too - a stale one would read as a current grant. */
+  await prisma.user.update({
+    where: { id: renter.id },
+    data: { isVerified: false, verifiedAt: null, verifiedById: null },
+  });
+
+  const withdrawn = await prisma.user.findUniqueOrThrow({
+    where: { id: renter.id },
+    select: { isVerified: true, verifiedAt: true, verifiedById: true },
+  });
+
+  check(
+    "withdrawing clears the flag and its audit trail together",
+    !withdrawn.isVerified &&
+      withdrawn.verifiedAt === null &&
+      withdrawn.verifiedById === null,
+    withdrawn
+  );
+
+  // ------------------- 7. an email confirmation link is single-use and bound
+  console.log("\n=== email confirmation tokens ===");
+
+  const { token, tokenHash } = createVerificationToken();
+
+  await prisma.emailVerificationToken.create({
+    data: {
+      userId: renter.id,
+      tokenHash,
+      email: `ts-renter-${stamp}@example.test`,
+      expiresAt: verificationTokenExpiry(),
+    },
+  });
+
+  check(
+    "the token is never stored in a form that could be replayed",
+    (await prisma.emailVerificationToken.count({
+      where: { tokenHash: token },
+    })) === 0
+  );
+
+  /** The same compare-and-swap `verifyEmail` performs, run twice against one row. */
+  const spend = () =>
+    prisma.emailVerificationToken.updateMany({
+      where: { tokenHash, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+  const [firstSpend, secondSpend] = await Promise.all([spend(), spend()]);
+
+  check(
+    "exactly one redemption takes effect",
+    firstSpend.count + secondSpend.count === 1,
+    { first: firstSpend.count, second: secondSpend.count }
+  );
+
+  const storedToken = await prisma.emailVerificationToken.findUniqueOrThrow({
+    where: { tokenHash },
+    select: { email: true, expiresAt: true, usedAt: true },
+  });
+
+  check(
+    "a spent token is refused",
+    checkVerificationToken(storedToken, storedToken.email) === "used"
+  );
+
+  /**
+   * The check a reset token does not need. Without it, changing an email to an address you do not
+   * control and clicking an older link would mark the new address confirmed.
+   */
+  check(
+    "a token minted for another address is refused as stale",
+    checkVerificationToken(
+      { ...storedToken, usedAt: null },
+      "someone-else@example.test"
+    ) === "stale"
+  );
 
   // ---------------------------------------------------------------- cleanup
   console.log("\n=== cleanup ===");

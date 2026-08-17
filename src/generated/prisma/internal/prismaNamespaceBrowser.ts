@@ -56,6 +56,7 @@ export const ModelName = {
   Session: 'Session',
   VerificationToken: 'VerificationToken',
   PasswordResetToken: 'PasswordResetToken',
+  EmailVerificationToken: 'EmailVerificationToken',
   Category: 'Category',
   Subcategory: 'Subcategory',
   Listing: 'Listing',
@@ -100,6 +101,8 @@ export const UserScalarFieldEnum = {
   role: 'role',
   status: 'status',
   isVerified: 'isVerified',
+  verifiedAt: 'verifiedAt',
+  verifiedById: 'verifiedById',
   ownerRatingAverage: 'ownerRatingAverage',
   ownerRatingCount: 'ownerRatingCount',
   renterRatingAverage: 'renterRatingAverage',
@@ -159,6 +162,19 @@ export const PasswordResetTokenScalarFieldEnum = {
 } as const
 
 export type PasswordResetTokenScalarFieldEnum = (typeof PasswordResetTokenScalarFieldEnum)[keyof typeof PasswordResetTokenScalarFieldEnum]
+
+
+export const EmailVerificationTokenScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  tokenHash: 'tokenHash',
+  email: 'email',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type EmailVerificationTokenScalarFieldEnum = (typeof EmailVerificationTokenScalarFieldEnum)[keyof typeof EmailVerificationTokenScalarFieldEnum]
 
 
 export const CategoryScalarFieldEnum = {
