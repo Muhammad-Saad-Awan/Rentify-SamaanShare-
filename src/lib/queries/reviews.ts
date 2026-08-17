@@ -61,13 +61,44 @@ export async function getOwnerReviews(
   page = 1,
   pageSize = REVIEWS_PAGE_SIZE
 ): Promise<OwnerReviewSummary> {
-  await releaseDueReviews(ownerId);
+  return getReceivedReviews({
+    userId: ownerId,
+    type: ReviewType.RENTER_TO_OWNER,
+    page,
+    pageSize,
+  });
+}
+
+interface ReceivedReviewsOptions {
+  userId: string;
+  type: ReviewType;
+  page?: number;
+  pageSize?: number;
+}
+
+/**
+ * Reviews received in one direction, with the matching stored aggregate.
+ *
+ * The general form of {@link getOwnerReviews}, added for the public profile, which shows both
+ * directions as separate sections. The aggregate returned is always the one for the direction being
+ * listed - `ownerRating*` for `RENTER_TO_OWNER`, `renterRating*` for `OWNER_TO_RENTER` - so the
+ * figure above a list always describes that list. Passing the wrong pair here would reintroduce
+ * exactly the mismatch the directional split removed.
+ */
+export async function getReceivedReviews({
+  userId,
+  type,
+  page = 1,
+  pageSize = REVIEWS_PAGE_SIZE,
+}: ReceivedReviewsOptions): Promise<OwnerReviewSummary> {
+  await releaseDueReviews(userId);
 
   const currentPage = Math.max(1, Math.trunc(page));
+  const asOwner = type === ReviewType.RENTER_TO_OWNER;
 
   const where = {
-    revieweeId: ownerId,
-    type: ReviewType.RENTER_TO_OWNER,
+    revieweeId: userId,
+    type,
     publishedAt: { not: null },
     // Moderator-removed reviews are gone from every public surface. The same predicate governs the
     // stored aggregate, so the count above the list and the list itself stay in agreement.
@@ -75,7 +106,7 @@ export async function getOwnerReviews(
   } as const;
 
   // Concurrent reads, not a transaction - see the note in `getActiveListings`.
-  const [rows, total, owner] = await Promise.all([
+  const [rows, total, subject] = await Promise.all([
     prisma.review.findMany({
       where,
       // Newest first: the most recent experience of this owner is the most useful one.
@@ -92,8 +123,13 @@ export async function getOwnerReviews(
     }),
     prisma.review.count({ where }),
     prisma.user.findUnique({
-      where: { id: ownerId },
-      select: { ownerRatingAverage: true, ownerRatingCount: true },
+      where: { id: userId },
+      select: {
+        ownerRatingAverage: true,
+        ownerRatingCount: true,
+        renterRatingAverage: true,
+        renterRatingCount: true,
+      },
     }),
   ]);
 
@@ -107,7 +143,61 @@ export async function getOwnerReviews(
       reviewer: row.reviewer,
     })),
     total,
-    average: owner?.ownerRatingAverage ?? null,
-    count: owner?.ownerRatingCount ?? 0,
+    // The pair matching the direction being listed, never the other one.
+    average:
+      (asOwner ? subject?.ownerRatingAverage : subject?.renterRatingAverage) ??
+      null,
+    count:
+      (asOwner ? subject?.ownerRatingCount : subject?.renterRatingCount) ?? 0,
+  };
+}
+
+/**
+ * Both directions of a person's rating at once, for the profile header and the trust score.
+ *
+ * This is `getUserReviewStats` from docs/API.md:691, finally implementable: it specified
+ * `asOwner`/`asRenter` from the start, and until the directional split there were no columns to
+ * answer it with.
+ *
+ * DEVIATES FROM THAT SPEC IN ONE WAY. The document types the averages as `number`; they are
+ * `number | null` here, because an unrated person is not rated zero - zero would sort below every
+ * real rating and read as "rated badly" rather than "not yet rated". The same decision the aggregate
+ * itself makes.
+ */
+export interface UserReviewStats {
+  asOwner: { average: number | null; count: number };
+  asRenter: { average: number | null; count: number };
+  /** Reviews received in total, across both directions. */
+  totalReviews: number;
+}
+
+export async function getUserReviewStats(
+  userId: string
+): Promise<UserReviewStats> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      ownerRatingAverage: true,
+      ownerRatingCount: true,
+      renterRatingAverage: true,
+      renterRatingCount: true,
+    },
+  });
+
+  const asOwner = {
+    average: user?.ownerRatingAverage ?? null,
+    count: user?.ownerRatingCount ?? 0,
+  };
+  const asRenter = {
+    average: user?.renterRatingAverage ?? null,
+    count: user?.renterRatingCount ?? 0,
+  };
+
+  return {
+    asOwner,
+    asRenter,
+    // A count, not an average. Averaging the two averages would weight one review as heavily as
+    // fifty, and there is no honest single number to report here anyway.
+    totalReviews: asOwner.count + asRenter.count,
   };
 }

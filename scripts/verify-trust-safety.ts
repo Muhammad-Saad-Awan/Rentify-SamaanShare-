@@ -21,9 +21,11 @@ import {
   ReportStatus,
   ReportType,
   ReviewType,
+  UserStatus,
 } from "../src/generated/prisma/enums";
 import { getReports } from "../src/lib/queries/reports";
 import { getOwnerReviews } from "../src/lib/queries/reviews";
+import { getPublicProfile } from "../src/lib/queries/user-profile";
 import {
   publishReviews,
   recomputeUserRating,
@@ -377,6 +379,55 @@ async function main() {
     listingRow?.reporter.name === "TS Reporter",
     listingRow?.reporter
   );
+
+  // ------------------------- 5. a profile is only public while the account is
+  console.log("\n=== profile visibility follows account standing ===");
+
+  /**
+   * The same rule `VISIBLE_LISTING_WHERE` applies to listings. Users are never physically deleted
+   * (D3), so without it a banned account would keep a public page complete with its rating and its
+   * history - and moderation would visibly not have worked.
+   *
+   * The route turns each `null` into a real 404 from `users/[id]/layout.tsx`, which runs before the
+   * first byte. That ordering is what stops it being a soft 404, and it is the reason the check
+   * lives in a layout rather than in the page.
+   */
+  const visible = await getPublicProfile(owner.id);
+  check("an active member has a public profile", visible !== null);
+  check(
+    "and it carries the split ratings the trust score needs",
+    visible?.ownerRating.count === 1 && visible?.renterRating.count === 0,
+    visible && {
+      owner: visible.ownerRating,
+      renter: visible.renterRating,
+    }
+  );
+
+  await prisma.user.update({
+    where: { id: owner.id },
+    data: { status: UserStatus.SUSPENDED },
+  });
+
+  check(
+    "a suspended member has no public profile",
+    (await getPublicProfile(owner.id)) === null
+  );
+
+  await prisma.user.update({
+    where: { id: owner.id },
+    data: { status: UserStatus.ACTIVE, deletedAt: new Date() },
+  });
+
+  check(
+    "a soft-deleted member has no public profile",
+    (await getPublicProfile(owner.id)) === null
+  );
+
+  // Restored so the remaining cleanup reads normally.
+  await prisma.user.update({
+    where: { id: owner.id },
+    data: { deletedAt: null },
+  });
 
   // ---------------------------------------------------------------- cleanup
   console.log("\n=== cleanup ===");

@@ -1,4 +1,5 @@
 import { BadgeCheckIcon, MapPinIcon, StarIcon } from "lucide-react";
+import Link from "next/link";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
@@ -46,7 +47,18 @@ function OwnerCard({ owner }: OwnerCardProps) {
 
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-            <span className="font-heading text-sm font-medium">{name}</span>
+            {/*
+              Links to the full profile, where both directions of their rating and the trust panel
+              live. The card stays deliberately thin: someone reading a listing wants to know who
+              they would be renting from, not their whole history, and the link is there for when
+              they do.
+            */}
+            <Link
+              href={`/users/${owner.id}`}
+              className="font-heading text-sm font-medium underline-offset-4 hover:underline"
+            >
+              {name}
+            </Link>
 
             {owner.isVerified && (
               <span

@@ -44,7 +44,7 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar,
       lifecycle, deposit window, notification copy, environment schema, reset
       tokens, email copy, view keys, nav map, review rules, report rules,
-      moderation copy) — 260 tests
+      moderation copy, trust score) — 280 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
@@ -197,11 +197,29 @@ Completed in Stage A2 — see that section for the security reasoning.
 
 ### Public Profile
 
-- [ ] Create public profile page (`/users/[id]`)
-- [ ] Display user info (name, bio, city)
-- [ ] Display user's listings
-- [ ] Display user's reviews
-- [ ] Calculate and show trust score
+Shipped 17 August 2026 as the Trust Profile & Reputation slice. This is what the
+directional rating split was for: a reader here may be asking either question.
+
+- [x] Create public profile page (`/users/[id]`) — the id is validated in
+      `layout.tsx`, **not** the page, per the invariant in AGENTS.md. Verified
+      with `curl -w '%{http_code}'`: unknown 404, suspended 404, soft-deleted
+      404, active 200 — real statuses, not soft 404s
+- [x] Display user info (name, bio, city) — never `email` or `phone`. The column
+      is not even selected, so `getDisplayName`'s email fallback cannot fire
+- [x] Display user's listings — through `VISIBLE_LISTING_WHERE`, composed rather
+      than hand-written even though the owner is already known to be active
+- [x] Display user's reviews — **both directions, as separate sections with their
+      own averages**, which closes the Phase 5 item that was blocked on this page
+- [x] Calculate and show trust score — `src/lib/trust/score.ts`, pure, 20 tests
+- [x] `getUserReviewStats` — specced at `docs/API.md:691` with `asOwner`/`asRenter`
+      from the start and unanswerable until the split. Deviates from that doc in
+      one way: the averages are `number | null`, because an unrated person is not
+      rated zero
+- [x] **noindex.** Every fact here is already public on the member's listings, so
+      this is not secrecy — it is aggregation. A listing page is about an item;
+      this collects one person's whole history, location and reviews into a
+      single document, and indexing that turns a marketplace profile into a
+      searchable dossier on a named individual
 
 ### Session Management
 
@@ -697,8 +715,9 @@ See "Directional aggregate" below.
 - [x] Show reviews on listing detail — filtered to `RENTER_TO_OWNER`, because a
       browser wants to know what renting *from* this person is like, not what
       they are like as a customer
-- [ ] Show reviews on user profile — blocked on `/users/[id]`, which does not
-      exist; belongs with the Trust & Safety public trust panel
+- [x] Show reviews on user profile — unblocked and shipped 17 August 2026.
+      `/users/[id]` renders **both** directions as separate sections, each with
+      the aggregate for its own direction
 - [x] Calculate average rating — `ratingAggregate`; an empty set yields `null`
       not `0`, or a brand-new owner would sort below the worst-reviewed one on
       the sort-by-rating filter
@@ -726,9 +745,39 @@ See "Directional aggregate" below.
 
 ### Trust Score
 
-- [ ] Calculate trust score algorithm
-- [ ] Display trust badges
-- [ ] Show verification status
+- [x] Calculate trust score algorithm — `src/lib/trust/score.ts`. Four weighted
+      components: reputation (0.45), experience (0.25), reliability (0.20),
+      verification (0.10).
+      **A trust score that is mostly the star average adds nothing but false
+      authority**, so this deliberately carries what a rating cannot: how much
+      evidence there is, whether the person finishes what they start, and whether
+      the account is anchored to a real identity.
+      Ratings are **shrunk towards a 3.5 prior by their own count**, so a perfect
+      average from one rental does not outrank a strong one from fifty.
+      Experience **saturates** at ten rentals — on a marketplace where an owner
+      can list ten cheap items, linear growth would make trust purchasable.
+      Reliability counts only cancellations *they* made; being cancelled on is
+      not evidence about you, and counting it would let one party damage the
+      other's standing by cancelling.
+- [x] Display trust badges — **only positive bands exist**. A "low trust" badge
+      is a published accusation assembled from proxies, and falling short earns
+      no badge rather than a negative one. The score itself is **never printed**:
+      "73 out of 100" implies a precision four weighted proxies cannot support,
+      so the panel shows the checkable evidence instead
+- [x] **A new account scores `null`, not zero** — the same argument as
+      `ratingAggregate` returning null. "Not yet established" and "established as
+      unreliable" are opposite claims, and a number cannot say the first
+- [x] Show verification status — stated either way, since omitting it would let a
+      reader assume the badge above covers it
+- [x] **The top band requires a verified identity**, as an explicit gate rather
+      than as arithmetic. Weighting verification at 0.1 does not achieve it: the
+      other three carry 0.9 between them, so a flawless unverified record reaches
+      ~0.94 and clears any threshold worth setting. Everything else feeding the
+      score is behaviour reported by other users, which a determined person can
+      manufacture; the strongest claim the platform makes should rest on
+      something outside the reputation system.
+      **Currently unreachable** — nothing writes `isVerified` yet. Identity
+      verification is what makes it attainable
 
 ### Review Moderation
 

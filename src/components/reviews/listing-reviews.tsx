@@ -12,6 +12,15 @@ interface ListingReviewsProps {
   ownerName: string;
   /** The signed-in reader, or `null`. Decides whether a Report control is offered at all. */
   viewerId?: string | null;
+  /**
+   * Overrides the heading.
+   *
+   * The public profile renders this component twice - once per review direction - and the default
+   * wording ("What renters say about…") is only true of one of them. Passing the heading in beats a
+   * `direction` prop that this component would then have to translate back into words it does not
+   * otherwise care about.
+   */
+  heading?: string;
 }
 
 /**
@@ -30,6 +39,7 @@ function ListingReviews({
   reviews,
   ownerName,
   viewerId = null,
+  heading,
 }: ListingReviewsProps) {
   if (reviews.items.length === 0) {
     return null;
@@ -39,7 +49,7 @@ function ListingReviews({
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 className="font-heading text-base font-medium">
-          What renters say about {ownerName}
+          {heading ?? `What renters say about ${ownerName}`}
         </h2>
 
         {reviews.average !== null && (
