@@ -28,7 +28,10 @@ export interface PublicReview {
 export interface OwnerReviewSummary {
   items: PublicReview[];
   total: number;
-  /** The stored aggregate, which counts released reviews only. */
+  /**
+   * The stored `asOwner` aggregate: released reviews only, and this direction only, so it describes
+   * precisely the reviews in `items`.
+   */
   average: number | null;
   count: number;
 }
@@ -41,10 +44,10 @@ export interface OwnerReviewSummary {
  * wrong question: a browser wants to know what it is like to rent *from* this person, not what they
  * are like as a customer.
  *
- * Note the consequence, recorded rather than hidden: `User.ratingAverage` is a single aggregate over
- * *both* directions, so the average returned here can disagree with the listed reviews when someone
- * has rented as well as let out. Splitting the aggregate needs two more columns and a migration; the
- * `[revieweeId, type]` index exists for when that happens.
+ * The average returned alongside them is `ownerRatingAverage`, which aggregates exactly the same set
+ * of reviews the list is drawn from. That correspondence is the point: while a single mixed
+ * aggregate was stored, this function returned a number computed over reviews it was not showing, so
+ * a reader could see 4.8 above a list averaging 3.2 with nothing to explain the gap.
  */
 export async function getOwnerReviews(
   ownerId: string,
@@ -80,7 +83,7 @@ export async function getOwnerReviews(
     prisma.review.count({ where }),
     prisma.user.findUnique({
       where: { id: ownerId },
-      select: { ratingAverage: true, ratingCount: true },
+      select: { ownerRatingAverage: true, ownerRatingCount: true },
     }),
   ]);
 
@@ -94,7 +97,7 @@ export async function getOwnerReviews(
       reviewer: row.reviewer,
     })),
     total,
-    average: owner?.ratingAverage ?? null,
-    count: owner?.ratingCount ?? 0,
+    average: owner?.ownerRatingAverage ?? null,
+    count: owner?.ownerRatingCount ?? 0,
   };
 }

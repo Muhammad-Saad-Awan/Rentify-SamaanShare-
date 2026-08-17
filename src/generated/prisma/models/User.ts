@@ -27,13 +27,17 @@ export type AggregateUser = {
 }
 
 export type UserAvgAggregateOutputType = {
-  ratingAverage: number | null
-  ratingCount: number | null
+  ownerRatingAverage: number | null
+  ownerRatingCount: number | null
+  renterRatingAverage: number | null
+  renterRatingCount: number | null
 }
 
 export type UserSumAggregateOutputType = {
-  ratingAverage: number | null
-  ratingCount: number | null
+  ownerRatingAverage: number | null
+  ownerRatingCount: number | null
+  renterRatingAverage: number | null
+  renterRatingCount: number | null
 }
 
 export type UserMinAggregateOutputType = {
@@ -51,8 +55,10 @@ export type UserMinAggregateOutputType = {
   role: $Enums.UserRole | null
   status: $Enums.UserStatus | null
   isVerified: boolean | null
-  ratingAverage: number | null
-  ratingCount: number | null
+  ownerRatingAverage: number | null
+  ownerRatingCount: number | null
+  renterRatingAverage: number | null
+  renterRatingCount: number | null
   createdAt: Date | null
   updatedAt: Date | null
   deletedAt: Date | null
@@ -73,8 +79,10 @@ export type UserMaxAggregateOutputType = {
   role: $Enums.UserRole | null
   status: $Enums.UserStatus | null
   isVerified: boolean | null
-  ratingAverage: number | null
-  ratingCount: number | null
+  ownerRatingAverage: number | null
+  ownerRatingCount: number | null
+  renterRatingAverage: number | null
+  renterRatingCount: number | null
   createdAt: Date | null
   updatedAt: Date | null
   deletedAt: Date | null
@@ -95,8 +103,10 @@ export type UserCountAggregateOutputType = {
   role: number
   status: number
   isVerified: number
-  ratingAverage: number
-  ratingCount: number
+  ownerRatingAverage: number
+  ownerRatingCount: number
+  renterRatingAverage: number
+  renterRatingCount: number
   createdAt: number
   updatedAt: number
   deletedAt: number
@@ -105,13 +115,17 @@ export type UserCountAggregateOutputType = {
 
 
 export type UserAvgAggregateInputType = {
-  ratingAverage?: true
-  ratingCount?: true
+  ownerRatingAverage?: true
+  ownerRatingCount?: true
+  renterRatingAverage?: true
+  renterRatingCount?: true
 }
 
 export type UserSumAggregateInputType = {
-  ratingAverage?: true
-  ratingCount?: true
+  ownerRatingAverage?: true
+  ownerRatingCount?: true
+  renterRatingAverage?: true
+  renterRatingCount?: true
 }
 
 export type UserMinAggregateInputType = {
@@ -129,8 +143,10 @@ export type UserMinAggregateInputType = {
   role?: true
   status?: true
   isVerified?: true
-  ratingAverage?: true
-  ratingCount?: true
+  ownerRatingAverage?: true
+  ownerRatingCount?: true
+  renterRatingAverage?: true
+  renterRatingCount?: true
   createdAt?: true
   updatedAt?: true
   deletedAt?: true
@@ -151,8 +167,10 @@ export type UserMaxAggregateInputType = {
   role?: true
   status?: true
   isVerified?: true
-  ratingAverage?: true
-  ratingCount?: true
+  ownerRatingAverage?: true
+  ownerRatingCount?: true
+  renterRatingAverage?: true
+  renterRatingCount?: true
   createdAt?: true
   updatedAt?: true
   deletedAt?: true
@@ -173,8 +191,10 @@ export type UserCountAggregateInputType = {
   role?: true
   status?: true
   isVerified?: true
-  ratingAverage?: true
-  ratingCount?: true
+  ownerRatingAverage?: true
+  ownerRatingCount?: true
+  renterRatingAverage?: true
+  renterRatingCount?: true
   createdAt?: true
   updatedAt?: true
   deletedAt?: true
@@ -282,8 +302,10 @@ export type UserGroupByOutputType = {
   role: $Enums.UserRole
   status: $Enums.UserStatus
   isVerified: boolean
-  ratingAverage: number | null
-  ratingCount: number
+  ownerRatingAverage: number | null
+  ownerRatingCount: number
+  renterRatingAverage: number | null
+  renterRatingCount: number
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
@@ -327,8 +349,10 @@ export type UserWhereInput = {
   role?: Prisma.EnumUserRoleFilter<"User"> | $Enums.UserRole
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   isVerified?: Prisma.BoolFilter<"User"> | boolean
-  ratingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
-  ratingCount?: Prisma.IntFilter<"User"> | number
+  ownerRatingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
+  ownerRatingCount?: Prisma.IntFilter<"User"> | number
+  renterRatingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
+  renterRatingCount?: Prisma.IntFilter<"User"> | number
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   deletedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
@@ -363,8 +387,10 @@ export type UserOrderByWithRelationInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isVerified?: Prisma.SortOrder
-  ratingAverage?: Prisma.SortOrderInput | Prisma.SortOrder
-  ratingCount?: Prisma.SortOrder
+  ownerRatingAverage?: Prisma.SortOrderInput | Prisma.SortOrder
+  ownerRatingCount?: Prisma.SortOrder
+  renterRatingAverage?: Prisma.SortOrderInput | Prisma.SortOrder
+  renterRatingCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -402,8 +428,10 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   role?: Prisma.EnumUserRoleFilter<"User"> | $Enums.UserRole
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   isVerified?: Prisma.BoolFilter<"User"> | boolean
-  ratingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
-  ratingCount?: Prisma.IntFilter<"User"> | number
+  ownerRatingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
+  ownerRatingCount?: Prisma.IntFilter<"User"> | number
+  renterRatingAverage?: Prisma.FloatNullableFilter<"User"> | number | null
+  renterRatingCount?: Prisma.IntFilter<"User"> | number
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   deletedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
@@ -438,8 +466,10 @@ export type UserOrderByWithAggregationInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isVerified?: Prisma.SortOrder
-  ratingAverage?: Prisma.SortOrderInput | Prisma.SortOrder
-  ratingCount?: Prisma.SortOrder
+  ownerRatingAverage?: Prisma.SortOrderInput | Prisma.SortOrder
+  ownerRatingCount?: Prisma.SortOrder
+  renterRatingAverage?: Prisma.SortOrderInput | Prisma.SortOrder
+  renterRatingCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -468,8 +498,10 @@ export type UserScalarWhereWithAggregatesInput = {
   role?: Prisma.EnumUserRoleWithAggregatesFilter<"User"> | $Enums.UserRole
   status?: Prisma.EnumUserStatusWithAggregatesFilter<"User"> | $Enums.UserStatus
   isVerified?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
-  ratingAverage?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
-  ratingCount?: Prisma.IntWithAggregatesFilter<"User"> | number
+  ownerRatingAverage?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
+  ownerRatingCount?: Prisma.IntWithAggregatesFilter<"User"> | number
+  renterRatingAverage?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
+  renterRatingCount?: Prisma.IntWithAggregatesFilter<"User"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
@@ -490,8 +522,10 @@ export type UserCreateInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -526,8 +560,10 @@ export type UserUncheckedCreateInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -562,8 +598,10 @@ export type UserUpdateInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -598,8 +636,10 @@ export type UserUncheckedUpdateInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -634,8 +674,10 @@ export type UserCreateManyInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -656,8 +698,10 @@ export type UserUpdateManyMutationInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -678,8 +722,10 @@ export type UserUncheckedUpdateManyInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -700,16 +746,20 @@ export type UserCountOrderByAggregateInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isVerified?: Prisma.SortOrder
-  ratingAverage?: Prisma.SortOrder
-  ratingCount?: Prisma.SortOrder
+  ownerRatingAverage?: Prisma.SortOrder
+  ownerRatingCount?: Prisma.SortOrder
+  renterRatingAverage?: Prisma.SortOrder
+  renterRatingCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
 }
 
 export type UserAvgOrderByAggregateInput = {
-  ratingAverage?: Prisma.SortOrder
-  ratingCount?: Prisma.SortOrder
+  ownerRatingAverage?: Prisma.SortOrder
+  ownerRatingCount?: Prisma.SortOrder
+  renterRatingAverage?: Prisma.SortOrder
+  renterRatingCount?: Prisma.SortOrder
 }
 
 export type UserMaxOrderByAggregateInput = {
@@ -727,8 +777,10 @@ export type UserMaxOrderByAggregateInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isVerified?: Prisma.SortOrder
-  ratingAverage?: Prisma.SortOrder
-  ratingCount?: Prisma.SortOrder
+  ownerRatingAverage?: Prisma.SortOrder
+  ownerRatingCount?: Prisma.SortOrder
+  renterRatingAverage?: Prisma.SortOrder
+  renterRatingCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
@@ -749,16 +801,20 @@ export type UserMinOrderByAggregateInput = {
   role?: Prisma.SortOrder
   status?: Prisma.SortOrder
   isVerified?: Prisma.SortOrder
-  ratingAverage?: Prisma.SortOrder
-  ratingCount?: Prisma.SortOrder
+  ownerRatingAverage?: Prisma.SortOrder
+  ownerRatingCount?: Prisma.SortOrder
+  renterRatingAverage?: Prisma.SortOrder
+  renterRatingCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
 }
 
 export type UserSumOrderByAggregateInput = {
-  ratingAverage?: Prisma.SortOrder
-  ratingCount?: Prisma.SortOrder
+  ownerRatingAverage?: Prisma.SortOrder
+  ownerRatingCount?: Prisma.SortOrder
+  renterRatingAverage?: Prisma.SortOrder
+  renterRatingCount?: Prisma.SortOrder
 }
 
 export type UserScalarRelationFilter = {
@@ -1032,8 +1088,10 @@ export type UserCreateWithoutAccountsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1067,8 +1125,10 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1118,8 +1178,10 @@ export type UserUpdateWithoutAccountsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1153,8 +1215,10 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1188,8 +1252,10 @@ export type UserCreateWithoutSessionsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1223,8 +1289,10 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1274,8 +1342,10 @@ export type UserUpdateWithoutSessionsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1309,8 +1379,10 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1344,8 +1416,10 @@ export type UserCreateWithoutPasswordResetTokensInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1379,8 +1453,10 @@ export type UserUncheckedCreateWithoutPasswordResetTokensInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1430,8 +1506,10 @@ export type UserUpdateWithoutPasswordResetTokensInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1465,8 +1543,10 @@ export type UserUncheckedUpdateWithoutPasswordResetTokensInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1500,8 +1580,10 @@ export type UserCreateWithoutListingsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1535,8 +1617,10 @@ export type UserUncheckedCreateWithoutListingsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1586,8 +1670,10 @@ export type UserUpdateWithoutListingsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1621,8 +1707,10 @@ export type UserUncheckedUpdateWithoutListingsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1656,8 +1744,10 @@ export type UserCreateWithoutPaymentsConfirmedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1691,8 +1781,10 @@ export type UserUncheckedCreateWithoutPaymentsConfirmedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1742,8 +1834,10 @@ export type UserUpdateWithoutPaymentsConfirmedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1777,8 +1871,10 @@ export type UserUncheckedUpdateWithoutPaymentsConfirmedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1812,8 +1908,10 @@ export type UserCreateWithoutBookingsCancelledInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1847,8 +1945,10 @@ export type UserUncheckedCreateWithoutBookingsCancelledInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1887,8 +1987,10 @@ export type UserCreateWithoutBookingsAsRenterInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1922,8 +2024,10 @@ export type UserUncheckedCreateWithoutBookingsAsRenterInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1962,8 +2066,10 @@ export type UserCreateWithoutBookingsAsOwnerInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1997,8 +2103,10 @@ export type UserUncheckedCreateWithoutBookingsAsOwnerInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -2048,8 +2156,10 @@ export type UserUpdateWithoutBookingsCancelledInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2083,8 +2193,10 @@ export type UserUncheckedUpdateWithoutBookingsCancelledInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2129,8 +2241,10 @@ export type UserUpdateWithoutBookingsAsRenterInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2164,8 +2278,10 @@ export type UserUncheckedUpdateWithoutBookingsAsRenterInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2210,8 +2326,10 @@ export type UserUpdateWithoutBookingsAsOwnerInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2245,8 +2363,10 @@ export type UserUncheckedUpdateWithoutBookingsAsOwnerInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2280,8 +2400,10 @@ export type UserCreateWithoutReviewsGivenInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -2315,8 +2437,10 @@ export type UserUncheckedCreateWithoutReviewsGivenInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -2355,8 +2479,10 @@ export type UserCreateWithoutReviewsReceivedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -2390,8 +2516,10 @@ export type UserUncheckedCreateWithoutReviewsReceivedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -2441,8 +2569,10 @@ export type UserUpdateWithoutReviewsGivenInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2476,8 +2606,10 @@ export type UserUncheckedUpdateWithoutReviewsGivenInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2522,8 +2654,10 @@ export type UserUpdateWithoutReviewsReceivedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2557,8 +2691,10 @@ export type UserUncheckedUpdateWithoutReviewsReceivedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2592,8 +2728,10 @@ export type UserCreateWithoutNotificationsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -2627,8 +2765,10 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -2678,8 +2818,10 @@ export type UserUpdateWithoutNotificationsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2713,8 +2855,10 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2748,8 +2892,10 @@ export type UserCreateWithoutSavedListingsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -2783,8 +2929,10 @@ export type UserUncheckedCreateWithoutSavedListingsInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -2834,8 +2982,10 @@ export type UserUpdateWithoutSavedListingsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2869,8 +3019,10 @@ export type UserUncheckedUpdateWithoutSavedListingsInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2904,8 +3056,10 @@ export type UserCreateWithoutReportsSubmittedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -2939,8 +3093,10 @@ export type UserUncheckedCreateWithoutReportsSubmittedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -2979,8 +3135,10 @@ export type UserCreateWithoutReportsResolvedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -3014,8 +3172,10 @@ export type UserUncheckedCreateWithoutReportsResolvedInput = {
   role?: $Enums.UserRole
   status?: $Enums.UserStatus
   isVerified?: boolean
-  ratingAverage?: number | null
-  ratingCount?: number
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -3065,8 +3225,10 @@ export type UserUpdateWithoutReportsSubmittedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3100,8 +3262,10 @@ export type UserUncheckedUpdateWithoutReportsSubmittedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3146,8 +3310,10 @@ export type UserUpdateWithoutReportsResolvedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3181,8 +3347,10 @@ export type UserUncheckedUpdateWithoutReportsResolvedInput = {
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  ratingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  ratingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3364,8 +3532,10 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   role?: boolean
   status?: boolean
   isVerified?: boolean
-  ratingAverage?: boolean
-  ratingCount?: boolean
+  ownerRatingAverage?: boolean
+  ownerRatingCount?: boolean
+  renterRatingAverage?: boolean
+  renterRatingCount?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
@@ -3401,8 +3571,10 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   role?: boolean
   status?: boolean
   isVerified?: boolean
-  ratingAverage?: boolean
-  ratingCount?: boolean
+  ownerRatingAverage?: boolean
+  ownerRatingCount?: boolean
+  renterRatingAverage?: boolean
+  renterRatingCount?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
@@ -3423,8 +3595,10 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   role?: boolean
   status?: boolean
   isVerified?: boolean
-  ratingAverage?: boolean
-  ratingCount?: boolean
+  ownerRatingAverage?: boolean
+  ownerRatingCount?: boolean
+  renterRatingAverage?: boolean
+  renterRatingCount?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
@@ -3445,14 +3619,16 @@ export type UserSelectScalar = {
   role?: boolean
   status?: boolean
   isVerified?: boolean
-  ratingAverage?: boolean
-  ratingCount?: boolean
+  ownerRatingAverage?: boolean
+  ownerRatingCount?: boolean
+  renterRatingAverage?: boolean
+  renterRatingCount?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "password" | "phone" | "phoneVerified" | "bio" | "city" | "avatarUrl" | "role" | "status" | "isVerified" | "ratingAverage" | "ratingCount" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "password" | "phone" | "phoneVerified" | "bio" | "city" | "avatarUrl" | "role" | "status" | "isVerified" | "ownerRatingAverage" | "ownerRatingCount" | "renterRatingAverage" | "renterRatingCount" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
@@ -3506,8 +3682,10 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     role: $Enums.UserRole
     status: $Enums.UserStatus
     isVerified: boolean
-    ratingAverage: number | null
-    ratingCount: number
+    ownerRatingAverage: number | null
+    ownerRatingCount: number
+    renterRatingAverage: number | null
+    renterRatingCount: number
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -3962,8 +4140,10 @@ export interface UserFieldRefs {
   readonly role: Prisma.FieldRef<"User", 'UserRole'>
   readonly status: Prisma.FieldRef<"User", 'UserStatus'>
   readonly isVerified: Prisma.FieldRef<"User", 'Boolean'>
-  readonly ratingAverage: Prisma.FieldRef<"User", 'Float'>
-  readonly ratingCount: Prisma.FieldRef<"User", 'Int'>
+  readonly ownerRatingAverage: Prisma.FieldRef<"User", 'Float'>
+  readonly ownerRatingCount: Prisma.FieldRef<"User", 'Int'>
+  readonly renterRatingAverage: Prisma.FieldRef<"User", 'Float'>
+  readonly renterRatingCount: Prisma.FieldRef<"User", 'Int'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly deletedAt: Prisma.FieldRef<"User", 'DateTime'>

@@ -199,11 +199,26 @@ model User {
   // P8: denormalized review aggregate. PRD.md:169 makes "Sort by Rating" a
   // Must Have and API.md:613 exposes sortBy:'rating'. Ordering paginated
   // listings by their owner's rating is not expressible in SQL without a
-  // stored aggregate. Recalculated in the transaction that writes a Review.
+  // stored aggregate. Recalculated in the transaction that PUBLISHES a Review,
+  // never when one is written - see Review.publishedAt for why that distinction
+  // is the whole of reciprocal release.
   // Float rather than Decimal: this is not currency, and an average of
   // integers 1-5 needs no exact decimal representation.
-  ratingAverage Float? // 1.00 - 5.00
-  ratingCount   Int    @default(0)
+  //
+  // WHY TWO PAIRS AND NOT ONE. A person is reviewed in both directions - as an
+  // owner letting an item out, and as a renter borrowing one - and the two
+  // measure different things. A single mixed average meant a listing page could
+  // show 4.8 above a list of owner reviews averaging 3.2 the moment that person
+  // had also rented: the number and the evidence directly beneath it
+  // contradicted each other, which is worse than showing neither. Split here so
+  // each surface can state the figure it actually has reviews for.
+  // ownerRating* aggregates RENTER_TO_OWNER reviews received (this person as an
+  // owner); renterRating* aggregates OWNER_TO_RENTER. Fed by the
+  // [revieweeId, type] index, which existed for this from the start.
+  ownerRatingAverage  Float? // 1.00 - 5.00, as an owner
+  ownerRatingCount    Int    @default(0)
+  renterRatingAverage Float? // 1.00 - 5.00, as a renter
+  renterRatingCount   Int    @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -14,7 +14,6 @@ import { ListingViewTracker } from "@/components/marketplace/listing-view-tracke
 import { ShareListing } from "@/components/marketplace/share-listing";
 import { JsonLd } from "@/components/shared/json-ld";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/session";
 import { listingJsonLd } from "@/lib/marketplace/structured-data";
 import {

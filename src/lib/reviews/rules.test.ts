@@ -7,6 +7,7 @@ import {
   RATING_MAX,
   RATING_MIN,
   ratingAggregate,
+  ratingAggregatesByDirection,
   releasesOnSubmit,
   REVIEW_WINDOW_DAYS,
   reviewTypeFor,
@@ -190,5 +191,82 @@ describe("ratingAggregate", () => {
   it("counts every rating it was given", () => {
     expect(ratingAggregate([5, 5, 5, 1]).count).toBe(4);
     expect(ratingAggregate([5, 5, 5, 1]).average).toBe(4);
+  });
+});
+
+describe("ratingAggregatesByDirection", () => {
+  const asOwner = (rating: number) => ({
+    rating,
+    type: ReviewType.RENTER_TO_OWNER,
+  });
+  const asRenter = (rating: number) => ({
+    rating,
+    type: ReviewType.OWNER_TO_RENTER,
+  });
+
+  /**
+   * THE REASON THIS FUNCTION EXISTS.
+   *
+   * One mixed average over both directions meant a listing page could print a figure that
+   * contradicted the reviews printed directly beneath it - here, 4.0 over a list averaging 2.0.
+   */
+  it("keeps a strong renter record out of the owner average", () => {
+    const split = ratingAggregatesByDirection([
+      asOwner(2),
+      asOwner(2),
+      asRenter(5),
+      asRenter(5),
+    ]);
+
+    expect(split.asOwner).toEqual({ average: 2, count: 2 });
+    expect(split.asRenter).toEqual({ average: 5, count: 2 });
+  });
+
+  /**
+   * Direction is named from the reviewee's side. A `RENTER_TO_OWNER` review was *written by* a renter
+   * and rates its subject as an owner; reading it the other way would file every rating on the wrong
+   * half of the profile, and every average would still look plausible.
+   */
+  it("files a RENTER_TO_OWNER review under asOwner", () => {
+    const split = ratingAggregatesByDirection([asOwner(3)]);
+
+    expect(split.asOwner.count).toBe(1);
+    expect(split.asRenter.count).toBe(0);
+  });
+
+  it("files an OWNER_TO_RENTER review under asRenter", () => {
+    const split = ratingAggregatesByDirection([asRenter(3)]);
+
+    expect(split.asRenter.count).toBe(1);
+    expect(split.asOwner.count).toBe(0);
+  });
+
+  /** Both halves inherit the empty-set rule, so an unrented owner is not "rated 0" on either side. */
+  it("reports null on a direction with no reviews", () => {
+    const split = ratingAggregatesByDirection([asOwner(4)]);
+
+    expect(split.asRenter).toEqual({ average: null, count: 0 });
+  });
+
+  it("reports null on both sides for someone never reviewed", () => {
+    expect(ratingAggregatesByDirection([])).toEqual({
+      asOwner: { average: null, count: 0 },
+      asRenter: { average: null, count: 0 },
+    });
+  });
+
+  /** Rounding is delegated, so the two halves cannot round differently from each other. */
+  it("rounds each direction to two places independently", () => {
+    const split = ratingAggregatesByDirection([
+      asOwner(4),
+      asOwner(4),
+      asOwner(5),
+      asRenter(1),
+      asRenter(2),
+      asRenter(2),
+    ]);
+
+    expect(split.asOwner.average).toBe(4.33);
+    expect(split.asRenter.average).toBe(1.67);
   });
 });

@@ -100,8 +100,10 @@ export const UserScalarFieldEnum = {
   role: 'role',
   status: 'status',
   isVerified: 'isVerified',
-  ratingAverage: 'ratingAverage',
-  ratingCount: 'ratingCount',
+  ownerRatingAverage: 'ownerRatingAverage',
+  ownerRatingCount: 'ownerRatingCount',
+  renterRatingAverage: 'renterRatingAverage',
+  renterRatingCount: 'renterRatingCount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'

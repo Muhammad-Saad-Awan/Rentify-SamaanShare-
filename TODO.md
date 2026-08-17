@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 12 August 2026 (Phase 5 — Reviews; Stage A6 awaiting production env vars)
+**Last Updated:** 17 August 2026 (Phase 5 — Reviews, directional rating aggregate; Stage A6 awaiting production env vars)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -43,7 +43,7 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Create `.nvmrc` with Node.js version
 - [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar,
       lifecycle, deposit window, notification copy, environment schema, reset
-      tokens, email copy, view keys, nav map, review rules) — 231 tests
+      tokens, email copy, view keys, nav map, review rules) — 237 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
@@ -51,7 +51,8 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
       their own throwaway rows and delete them. `npm run verify:stage-a` does the
       same for the reset-token lifecycle, and `npm run verify:phase5` for the
       review lifecycle - including the assertion that a *withheld* review does
-      not move the rating aggregate. **Not** a substitute for a Vitest
+      not move the rating aggregate, and that the average a listing prints is
+      computed over exactly the reviews listed beneath it. **Not** a substitute for a Vitest
       integration harness: they are scripts with assertions, not a suite, and they
       cannot run without a database.
 
@@ -640,13 +641,16 @@ is withheld until the counterpart submits theirs, or until the 14-day window
 closes — otherwise whoever writes second reads the first and answers it, and
 ratings compress towards 5 because nobody risks going first.
 
-The non-obvious consequence: `User.ratingAverage` counts **released reviews
-only**. If it moved when a review was written, an owner watching their average
-drop would learn the renter left a bad one before being able to read it, and
-could retaliate. That is why `Review.publishedAt` is a column rather than a
-derived flag, and why publishing and recomputing the aggregate are one
-transaction (`src/lib/reviews/publish.ts`). Asserted by
-`npm run verify:phase5`.
+The non-obvious consequence: the stored rating counts **released reviews only**.
+If it moved when a review was written, an owner watching their average drop would
+learn the renter left a bad one before being able to read it, and could retaliate.
+That is why `Review.publishedAt` is a column rather than a derived flag, and why
+publishing and recomputing the aggregate are one transaction
+(`src/lib/reviews/publish.ts`). Asserted by `npm run verify:phase5`.
+
+The aggregate is stored **once per direction** — being a reliable owner and being
+a reliable renter are different claims, and one average over both answers neither.
+See "Directional aggregate" below.
 
 ### Create Review
 
@@ -700,13 +704,22 @@ transaction (`src/lib/reviews/publish.ts`). Asserted by
       the five newest with an honest total rather than adding a second control
       that loses your scroll position
 
-### Known gap
+### Directional aggregate
 
-- [ ] `User.ratingAverage` is a single aggregate over **both** directions, so the
-      average shown on a listing can disagree with the reviews listed beneath it
-      when that person has also rented. Splitting it needs two more columns and a
-      migration; the `[revieweeId, type]` index already exists for when that
-      happens.
+- [x] **Split `User.ratingAverage` by direction** (17 August 2026). It was a
+      single aggregate over **both** directions, so the average printed on a
+      listing could contradict the `RENTER_TO_OWNER` reviews listed directly
+      beneath it as soon as that person had also rented — a figure and its own
+      evidence disagreeing, with nothing to tell a reader which to believe.
+      Now `ownerRating{Average,Count}` and `renterRating{Average,Count}`, fed by
+      the `[revieweeId, type]` index that existed for this from the start.
+      The mixed columns are **dropped**, not kept: derived data with no reader
+      left is data that drifts silently. The migration backfills both pairs from
+      the reviews themselves, so nothing is lost.
+      `recomputeUserRating` writes both pairs on every recompute from one read —
+      refreshing only the triggering direction would knowingly leave a value it
+      already knew was stale. Sort-by-rating and the owner card now read the
+      `asOwner` half, which is the same set of reviews each surface displays.
 
 ### Trust Score
 

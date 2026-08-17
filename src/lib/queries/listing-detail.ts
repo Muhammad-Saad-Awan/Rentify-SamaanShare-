@@ -47,8 +47,14 @@ export interface ListingOwner {
   avatarUrl: string | null;
   city: string | null;
   isVerified: boolean;
-  ratingAverage: number | null;
-  ratingCount: number;
+  /**
+   * The `asOwner` half of the rating, and deliberately not the mixed figure this used to carry: the
+   * reviews rendered further down this same page are `RENTER_TO_OWNER` only, so any other aggregate
+   * would contradict them. Named for the column rather than aliased, because this object is returned
+   * straight out of Prisma and a rename here would be a lie about where the number comes from.
+   */
+  ownerRatingAverage: number | null;
+  ownerRatingCount: number;
   createdAt: Date;
 }
 
@@ -94,8 +100,8 @@ export const getListingDetail = cache(
             avatarUrl: true,
             city: true,
             isVerified: true,
-            ratingAverage: true,
-            ratingCount: true,
+            ownerRatingAverage: true,
+            ownerRatingCount: true,
             createdAt: true,
           },
         },

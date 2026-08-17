@@ -1,11 +1,12 @@
-import { ratingAggregate } from "@/lib/reviews/rules";
+import { ratingAggregatesByDirection } from "@/lib/reviews/rules";
 
 import type { Prisma } from "@/generated/prisma/client";
+import type { DirectionalRatings } from "@/lib/reviews/rules";
 
 /**
  * Releasing reviews and keeping the rating aggregate honest.
  *
- * WHY THESE TWO THINGS LIVE TOGETHER. `User.ratingAverage` counts released reviews only - if it
+ * WHY THESE TWO THINGS LIVE TOGETHER. The stored rating counts released reviews only - if it
  * moved when a review was written, an owner watching their average drop would know the renter left
  * a bad one before being able to read it, and could retaliate in their own. So publishing a review
  * and recomputing the aggregate are one operation, not two, and they must happen in one transaction:
@@ -21,31 +22,38 @@ import type { Prisma } from "@/generated/prisma/client";
 export type ReviewPublisher = Pick<Prisma.TransactionClient, "review" | "user">;
 
 /**
- * Recomputes one user's stored rating from their released reviews.
+ * Recomputes one user's stored rating, in both directions, from their released reviews.
  *
  * Reads the ratings rather than trying to adjust the stored average incrementally. An incremental
  * update is tempting and wrong: it drifts as soon as one write is lost or replayed, and there is no
  * way to notice. A full recount is a single indexed read over one user's reviews - `[revieweeId,
- * publishedAt]` covers it exactly - and it is self-healing, so a bad historical value corrects
- * itself the next time anything about that user is reviewed.
+ * publishedAt]` selects them - and it is self-healing, so a bad historical value corrects itself the
+ * next time anything about that user is reviewed. Splitting by direction happens in memory rather
+ * than as two queries: the rows are already in hand, and one read cannot see a half-written state
+ * that two reads could.
  */
 export async function recomputeUserRating(
   client: ReviewPublisher,
   userId: string
-): Promise<{ average: number | null; count: number }> {
+): Promise<DirectionalRatings> {
   const rows = await client.review.findMany({
     // `publishedAt: { not: null }` is the whole point - a withheld review must not move the number.
     where: { revieweeId: userId, publishedAt: { not: null } },
-    select: { rating: true },
+    select: { rating: true, type: true },
   });
 
-  const aggregate = ratingAggregate(rows.map((row) => row.rating));
+  const aggregate = ratingAggregatesByDirection(rows);
 
+  // BOTH directions are written on every recompute, from the same read. Recomputing only the
+  // direction of the review that triggered this would leave the other pair to be corrected by some
+  // later, unrelated review - so a value known to be stale here would be knowingly left behind.
   await client.user.update({
     where: { id: userId },
     data: {
-      ratingAverage: aggregate.average,
-      ratingCount: aggregate.count,
+      ownerRatingAverage: aggregate.asOwner.average,
+      ownerRatingCount: aggregate.asOwner.count,
+      renterRatingAverage: aggregate.asRenter.average,
+      renterRatingCount: aggregate.asRenter.count,
     },
   });
 
