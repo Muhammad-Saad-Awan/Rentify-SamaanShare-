@@ -10,7 +10,14 @@ import { LISTINGS_PAGE_SIZE } from "@/lib/queries/listings";
 import type { DepositState } from "@/lib/bookings/deposit";
 import type { CancelEligibility } from "@/lib/bookings/lifecycle";
 import type { ReviewEligibility } from "@/lib/reviews/rules";
-import type { PaymentMethod, PaymentStatus } from "@/generated/prisma/enums";
+import { HandoverConfirmation } from "@/generated/prisma/enums";
+
+import type {
+  HandoverCondition,
+  HandoverType,
+  PaymentMethod,
+  PaymentStatus,
+} from "@/generated/prisma/enums";
 import type { PaginatedResult } from "@/types";
 
 /**
@@ -75,6 +82,8 @@ export interface BookingSummary {
    * readable in the RSC payload regardless of what the UI chose to render, and reciprocal
    * withholding would be decorative.
    */
+  /** Pickup and return condition records, oldest first. At most one of each. */
+  handovers: HandoverSnapshot[];
   review: {
     /** Whether this viewer may write one now, and why not if they may not. */
     canWrite: ReviewEligibility;
@@ -99,6 +108,30 @@ export interface ReviewSnapshot {
    * tell that from a bug.
    */
   removedAt: Date | null;
+}
+
+/** One handover condition record, as either party sees it. */
+export interface HandoverSnapshot {
+  id: string;
+  type: HandoverType;
+  condition: HandoverCondition;
+  notes: string | null;
+  recordedAt: Date;
+  /** Whether the viewer wrote this record, which decides whether they may answer it. */
+  isMine: boolean;
+  confirmation: HandoverConfirmation;
+  confirmedAt: Date | null;
+  /** The answering party's own account, when they left one. */
+  confirmationNote: string | null;
+  photos: { id: string; url: string }[];
+  /**
+   * Whether this viewer can still answer it.
+   *
+   * Computed here rather than in the card, so the button and the action agree about who may answer -
+   * the action refuses an author answering their own record, and a card that offered the control
+   * anyway would be a button that always fails.
+   */
+  canConfirm: boolean;
 }
 
 /**
@@ -163,6 +196,32 @@ const bookingSelect = {
       removedAt: true,
     },
   },
+  /**
+   * The condition records for this rental. Both sides see both, in full.
+   *
+   * No withholding here, unlike reviews. A condition record is a statement about the item one party
+   * has already made to the platform, and the other party is being asked to agree or disagree with
+   * it - which they cannot do without reading it. The reciprocal-release argument does not apply,
+   * because there is no second record to be influenced by writing.
+   */
+  handovers: {
+    orderBy: { recordedAt: "asc" },
+    select: {
+      id: true,
+      type: true,
+      condition: true,
+      notes: true,
+      recordedById: true,
+      recordedAt: true,
+      confirmation: true,
+      confirmedAt: true,
+      confirmationNote: true,
+      photos: {
+        orderBy: { order: "asc" },
+        select: { id: true, url: true },
+      },
+    },
+  },
 } as const;
 
 type BookingRow = {
@@ -200,6 +259,18 @@ type BookingRow = {
     createdAt: Date;
     publishedAt: Date | null;
     removedAt: Date | null;
+  }[];
+  handovers: {
+    id: string;
+    type: HandoverType;
+    condition: HandoverCondition;
+    notes: string | null;
+    recordedById: string;
+    recordedAt: Date;
+    confirmation: HandoverConfirmation;
+    confirmedAt: Date | null;
+    confirmationNote: string | null;
+    photos: { id: string; url: string }[];
   }[];
 };
 
@@ -272,6 +343,25 @@ function toSummary(
       renterCanCancel: canRenterCancel({ status: row.status, paymentStatus }),
       ownerCanStart: canStartBooking({ status: row.status, paymentStatus }),
     },
+    handovers: row.handovers.map((handover) => {
+      const isMine = handover.recordedById === viewerId;
+
+      return {
+        id: handover.id,
+        type: handover.type,
+        condition: handover.condition,
+        notes: handover.notes,
+        recordedAt: handover.recordedAt,
+        isMine,
+        confirmation: handover.confirmation,
+        confirmedAt: handover.confirmedAt,
+        confirmationNote: handover.confirmationNote,
+        photos: handover.photos,
+        // Mirrors `canConfirmHandover`: the other party, and only while unanswered.
+        canConfirm:
+          !isMine && handover.confirmation === HandoverConfirmation.PENDING,
+      };
+    }),
     review: {
       canWrite: canReviewBooking({
         status: row.status,

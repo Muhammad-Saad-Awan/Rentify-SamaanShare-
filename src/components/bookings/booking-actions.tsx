@@ -30,11 +30,16 @@ import {
   selectPaymentMethod,
 } from "@/actions/payments";
 import { PaymentInstructions } from "@/components/bookings/payment-instructions";
+import { HandoverForm } from "@/components/handover/handover-form";
 import { BookingReviewSection } from "@/components/reviews/booking-review-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { BookingStatus, PaymentStatus } from "@/generated/prisma/enums";
+import {
+  BookingStatus,
+  HandoverType,
+  PaymentStatus,
+} from "@/generated/prisma/enums";
 import { formatPKR } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import {
@@ -75,6 +80,17 @@ function BookingActions({ booking, side }: BookingActionsProps) {
   const [panel, setPanel] = useState<OpenPanel>(null);
   const [reason, setReason] = useState("");
   const [instructions, setInstructions] = useState("");
+
+  /**
+   * Which handover form is open, if any.
+   *
+   * Separate from `panel`, which drives the decline/cancel/instructions editors. Collapsing the two
+   * would mean a condition record and a decline reason sharing one slot, and only one of them can
+   * ever apply at a given status - but keeping them apart is cheaper than reasoning about that.
+   */
+  const [handoverPanel, setHandoverPanel] = useState<
+    "pickup" | "return" | null
+  >(null);
 
   /**
    * Runs an action and reports the outcome.
@@ -368,26 +384,41 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             in hand.
           </Note>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() =>
+          {/*
+            The condition record is not optional, so the button opens the form rather than
+            submitting. `startBooking` refuses a payload without a condition, and a button that
+            called it directly would simply fail.
+          */}
+          {handoverPanel === "pickup" ? (
+            <HandoverForm
+              type={HandoverType.PICKUP}
+              submitLabel="Mark item as collected"
+              isPending={isPending}
+              onCancel={() => setHandoverPanel(null)}
+              onSubmit={(record) =>
                 run(
-                  () => startBooking({ bookingId: booking.id }),
+                  () => startBooking({ bookingId: booking.id, ...record }),
                   "Marked as collected. The rental is now active."
                 )
               }
-              disabled={isPending || !eligibility.ownerCanStart.allowed}
-              aria-busy={isPending}
-            >
-              {isPending ? (
-                <Loader2Icon className="animate-spin" />
-              ) : (
-                <PackageOpenIcon />
-              )}
-              Mark item as collected
-            </Button>
-          </div>
+            />
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => setHandoverPanel("pickup")}
+                disabled={isPending || !eligibility.ownerCanStart.allowed}
+                aria-busy={isPending}
+              >
+                {isPending ? (
+                  <Loader2Icon className="animate-spin" />
+                ) : (
+                  <PackageOpenIcon />
+                )}
+                Mark item as collected
+              </Button>
+            </div>
+          )}
 
           {instructionsEditor}
           {editInstructionsButton}
@@ -403,26 +434,40 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             once you have the item back and have checked it.
           </Note>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() =>
+          {/*
+            The return record is where the deposit question actually gets answered, so this is the
+            one that most needs the condition and the photographs.
+          */}
+          {handoverPanel === "return" ? (
+            <HandoverForm
+              type={HandoverType.RETURN}
+              submitLabel="Mark item as returned"
+              isPending={isPending}
+              onCancel={() => setHandoverPanel(null)}
+              onSubmit={(record) =>
                 run(
-                  () => completeBooking({ bookingId: booking.id }),
+                  () => completeBooking({ bookingId: booking.id, ...record }),
                   "Rental completed and those dates are free again."
                 )
               }
-              disabled={isPending}
-              aria-busy={isPending}
-            >
-              {isPending ? (
-                <Loader2Icon className="animate-spin" />
-              ) : (
-                <PackageCheckIcon />
-              )}
-              Mark item as returned
-            </Button>
-          </div>
+            />
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => setHandoverPanel("return")}
+                disabled={isPending}
+                aria-busy={isPending}
+              >
+                {isPending ? (
+                  <Loader2Icon className="animate-spin" />
+                ) : (
+                  <PackageCheckIcon />
+                )}
+                Mark item as returned
+              </Button>
+            </div>
+          )}
 
           {instructionsEditor}
           {editInstructionsButton}

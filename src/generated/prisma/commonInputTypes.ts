@@ -416,6 +416,57 @@ export type EnumBookingStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumBookingStatusFilter<$PrismaModel>
 }
 
+export type EnumHandoverTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverType | Prisma.EnumHandoverTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverType[] | Prisma.ListEnumHandoverTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverType[] | Prisma.ListEnumHandoverTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverTypeFilter<$PrismaModel> | $Enums.HandoverType
+}
+
+export type EnumHandoverConditionFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverCondition | Prisma.EnumHandoverConditionFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverCondition[] | Prisma.ListEnumHandoverConditionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverCondition[] | Prisma.ListEnumHandoverConditionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverConditionFilter<$PrismaModel> | $Enums.HandoverCondition
+}
+
+export type EnumHandoverConfirmationFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverConfirmation | Prisma.EnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverConfirmation[] | Prisma.ListEnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverConfirmation[] | Prisma.ListEnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverConfirmationFilter<$PrismaModel> | $Enums.HandoverConfirmation
+}
+
+export type EnumHandoverTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverType | Prisma.EnumHandoverTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverType[] | Prisma.ListEnumHandoverTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverType[] | Prisma.ListEnumHandoverTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverTypeWithAggregatesFilter<$PrismaModel> | $Enums.HandoverType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumHandoverTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumHandoverTypeFilter<$PrismaModel>
+}
+
+export type EnumHandoverConditionWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverCondition | Prisma.EnumHandoverConditionFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverCondition[] | Prisma.ListEnumHandoverConditionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverCondition[] | Prisma.ListEnumHandoverConditionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverConditionWithAggregatesFilter<$PrismaModel> | $Enums.HandoverCondition
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumHandoverConditionFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumHandoverConditionFilter<$PrismaModel>
+}
+
+export type EnumHandoverConfirmationWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverConfirmation | Prisma.EnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverConfirmation[] | Prisma.ListEnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverConfirmation[] | Prisma.ListEnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverConfirmationWithAggregatesFilter<$PrismaModel> | $Enums.HandoverConfirmation
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumHandoverConfirmationFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumHandoverConfirmationFilter<$PrismaModel>
+}
+
 export type EnumReviewTypeFilter<$PrismaModel = never> = {
   equals?: $Enums.ReviewType | Prisma.EnumReviewTypeFieldRefInput<$PrismaModel>
   in?: $Enums.ReviewType[] | Prisma.ListEnumReviewTypeFieldRefInput<$PrismaModel>
@@ -893,6 +944,57 @@ export type NestedEnumBookingStatusWithAggregatesFilter<$PrismaModel = never> = 
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumBookingStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumBookingStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumHandoverTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverType | Prisma.EnumHandoverTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverType[] | Prisma.ListEnumHandoverTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverType[] | Prisma.ListEnumHandoverTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverTypeFilter<$PrismaModel> | $Enums.HandoverType
+}
+
+export type NestedEnumHandoverConditionFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverCondition | Prisma.EnumHandoverConditionFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverCondition[] | Prisma.ListEnumHandoverConditionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverCondition[] | Prisma.ListEnumHandoverConditionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverConditionFilter<$PrismaModel> | $Enums.HandoverCondition
+}
+
+export type NestedEnumHandoverConfirmationFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverConfirmation | Prisma.EnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverConfirmation[] | Prisma.ListEnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverConfirmation[] | Prisma.ListEnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverConfirmationFilter<$PrismaModel> | $Enums.HandoverConfirmation
+}
+
+export type NestedEnumHandoverTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverType | Prisma.EnumHandoverTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverType[] | Prisma.ListEnumHandoverTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverType[] | Prisma.ListEnumHandoverTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverTypeWithAggregatesFilter<$PrismaModel> | $Enums.HandoverType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumHandoverTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumHandoverTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumHandoverConditionWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverCondition | Prisma.EnumHandoverConditionFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverCondition[] | Prisma.ListEnumHandoverConditionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverCondition[] | Prisma.ListEnumHandoverConditionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverConditionWithAggregatesFilter<$PrismaModel> | $Enums.HandoverCondition
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumHandoverConditionFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumHandoverConditionFilter<$PrismaModel>
+}
+
+export type NestedEnumHandoverConfirmationWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.HandoverConfirmation | Prisma.EnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  in?: $Enums.HandoverConfirmation[] | Prisma.ListEnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  notIn?: $Enums.HandoverConfirmation[] | Prisma.ListEnumHandoverConfirmationFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumHandoverConfirmationWithAggregatesFilter<$PrismaModel> | $Enums.HandoverConfirmation
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumHandoverConfirmationFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumHandoverConfirmationFilter<$PrismaModel>
 }
 
 export type NestedEnumReviewTypeFilter<$PrismaModel = never> = {

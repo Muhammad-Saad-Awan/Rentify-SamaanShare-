@@ -387,6 +387,8 @@ export type UserWhereInput = {
   bookingsCancelled?: Prisma.BookingListRelationFilter
   passwordResetTokens?: Prisma.PasswordResetTokenListRelationFilter
   emailVerificationTokens?: Prisma.EmailVerificationTokenListRelationFilter
+  handoversRecorded?: Prisma.HandoverRecordListRelationFilter
+  handoversConfirmed?: Prisma.HandoverRecordListRelationFilter
   verifiedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   verifiedUsers?: Prisma.UserListRelationFilter
 }
@@ -430,6 +432,8 @@ export type UserOrderByWithRelationInput = {
   bookingsCancelled?: Prisma.BookingOrderByRelationAggregateInput
   passwordResetTokens?: Prisma.PasswordResetTokenOrderByRelationAggregateInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenOrderByRelationAggregateInput
+  handoversRecorded?: Prisma.HandoverRecordOrderByRelationAggregateInput
+  handoversConfirmed?: Prisma.HandoverRecordOrderByRelationAggregateInput
   verifiedBy?: Prisma.UserOrderByWithRelationInput
   verifiedUsers?: Prisma.UserOrderByRelationAggregateInput
 }
@@ -476,6 +480,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   bookingsCancelled?: Prisma.BookingListRelationFilter
   passwordResetTokens?: Prisma.PasswordResetTokenListRelationFilter
   emailVerificationTokens?: Prisma.EmailVerificationTokenListRelationFilter
+  handoversRecorded?: Prisma.HandoverRecordListRelationFilter
+  handoversConfirmed?: Prisma.HandoverRecordListRelationFilter
   verifiedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   verifiedUsers?: Prisma.UserListRelationFilter
 }, "id" | "email">
@@ -578,6 +584,8 @@ export type UserCreateInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -621,6 +629,8 @@ export type UserUncheckedCreateInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -662,6 +672,8 @@ export type UserUpdateInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -705,6 +717,8 @@ export type UserUncheckedUpdateInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -1129,6 +1143,36 @@ export type UserUpdateOneRequiredWithoutBookingsAsOwnerNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutBookingsAsOwnerInput, Prisma.UserUpdateWithoutBookingsAsOwnerInput>, Prisma.UserUncheckedUpdateWithoutBookingsAsOwnerInput>
 }
 
+export type UserCreateNestedOneWithoutHandoversRecordedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutHandoversRecordedInput, Prisma.UserUncheckedCreateWithoutHandoversRecordedInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutHandoversRecordedInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutHandoversConfirmedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutHandoversConfirmedInput, Prisma.UserUncheckedCreateWithoutHandoversConfirmedInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutHandoversConfirmedInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutHandoversRecordedNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutHandoversRecordedInput, Prisma.UserUncheckedCreateWithoutHandoversRecordedInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutHandoversRecordedInput
+  upsert?: Prisma.UserUpsertWithoutHandoversRecordedInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutHandoversRecordedInput, Prisma.UserUpdateWithoutHandoversRecordedInput>, Prisma.UserUncheckedUpdateWithoutHandoversRecordedInput>
+}
+
+export type UserUpdateOneWithoutHandoversConfirmedNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutHandoversConfirmedInput, Prisma.UserUncheckedCreateWithoutHandoversConfirmedInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutHandoversConfirmedInput
+  upsert?: Prisma.UserUpsertWithoutHandoversConfirmedInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutHandoversConfirmedInput, Prisma.UserUpdateWithoutHandoversConfirmedInput>, Prisma.UserUncheckedUpdateWithoutHandoversConfirmedInput>
+}
+
 export type UserCreateNestedOneWithoutReviewsGivenInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutReviewsGivenInput, Prisma.UserUncheckedCreateWithoutReviewsGivenInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutReviewsGivenInput
@@ -1253,6 +1297,8 @@ export type UserCreateWithoutVerifiedUsersInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
 }
 
@@ -1295,6 +1341,8 @@ export type UserUncheckedCreateWithoutVerifiedUsersInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type UserCreateOrConnectWithoutVerifiedUsersInput = {
@@ -1340,6 +1388,8 @@ export type UserCreateWithoutVerifiedByInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -1381,6 +1431,8 @@ export type UserUncheckedCreateWithoutVerifiedByInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -1443,6 +1495,8 @@ export type UserUpdateWithoutVerifiedUsersInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
 }
 
@@ -1485,6 +1539,8 @@ export type UserUncheckedUpdateWithoutVerifiedUsersInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type UserUpsertWithWhereUniqueWithoutVerifiedByInput = {
@@ -1569,6 +1625,8 @@ export type UserCreateWithoutAccountsInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -1611,6 +1669,8 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -1667,6 +1727,8 @@ export type UserUpdateWithoutAccountsInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -1709,6 +1771,8 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -1749,6 +1813,8 @@ export type UserCreateWithoutSessionsInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -1791,6 +1857,8 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -1847,6 +1915,8 @@ export type UserUpdateWithoutSessionsInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -1889,6 +1959,8 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -1929,6 +2001,8 @@ export type UserCreateWithoutPasswordResetTokensInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -1971,6 +2045,8 @@ export type UserUncheckedCreateWithoutPasswordResetTokensInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2027,6 +2103,8 @@ export type UserUpdateWithoutPasswordResetTokensInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -2069,6 +2147,8 @@ export type UserUncheckedUpdateWithoutPasswordResetTokensInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -2109,6 +2189,8 @@ export type UserCreateWithoutEmailVerificationTokensInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2151,6 +2233,8 @@ export type UserUncheckedCreateWithoutEmailVerificationTokensInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2207,6 +2291,8 @@ export type UserUpdateWithoutEmailVerificationTokensInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -2249,6 +2335,8 @@ export type UserUncheckedUpdateWithoutEmailVerificationTokensInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -2289,6 +2377,8 @@ export type UserCreateWithoutListingsInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2331,6 +2421,8 @@ export type UserUncheckedCreateWithoutListingsInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2387,6 +2479,8 @@ export type UserUpdateWithoutListingsInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -2429,6 +2523,8 @@ export type UserUncheckedUpdateWithoutListingsInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -2469,6 +2565,8 @@ export type UserCreateWithoutPaymentsConfirmedInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2511,6 +2609,8 @@ export type UserUncheckedCreateWithoutPaymentsConfirmedInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2567,6 +2667,8 @@ export type UserUpdateWithoutPaymentsConfirmedInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -2609,6 +2711,8 @@ export type UserUncheckedUpdateWithoutPaymentsConfirmedInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -2649,6 +2753,8 @@ export type UserCreateWithoutBookingsCancelledInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2691,6 +2797,8 @@ export type UserUncheckedCreateWithoutBookingsCancelledInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2736,6 +2844,8 @@ export type UserCreateWithoutBookingsAsRenterInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2778,6 +2888,8 @@ export type UserUncheckedCreateWithoutBookingsAsRenterInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2823,6 +2935,8 @@ export type UserCreateWithoutBookingsAsOwnerInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2865,6 +2979,8 @@ export type UserUncheckedCreateWithoutBookingsAsOwnerInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2921,6 +3037,8 @@ export type UserUpdateWithoutBookingsCancelledInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -2963,6 +3081,8 @@ export type UserUncheckedUpdateWithoutBookingsCancelledInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3014,6 +3134,8 @@ export type UserUpdateWithoutBookingsAsRenterInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3056,6 +3178,8 @@ export type UserUncheckedUpdateWithoutBookingsAsRenterInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3107,6 +3231,8 @@ export type UserUpdateWithoutBookingsAsOwnerInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3149,6 +3275,384 @@ export type UserUncheckedUpdateWithoutBookingsAsOwnerInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserCreateWithoutHandoversRecordedInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserUncheckedCreateWithoutHandoversRecordedInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingUncheckedCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewUncheckedCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewUncheckedCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingUncheckedCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserCreateOrConnectWithoutHandoversRecordedInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutHandoversRecordedInput, Prisma.UserUncheckedCreateWithoutHandoversRecordedInput>
+}
+
+export type UserCreateWithoutHandoversConfirmedInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserUncheckedCreateWithoutHandoversConfirmedInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingUncheckedCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewUncheckedCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewUncheckedCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingUncheckedCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserCreateOrConnectWithoutHandoversConfirmedInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutHandoversConfirmedInput, Prisma.UserUncheckedCreateWithoutHandoversConfirmedInput>
+}
+
+export type UserUpsertWithoutHandoversRecordedInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutHandoversRecordedInput, Prisma.UserUncheckedUpdateWithoutHandoversRecordedInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutHandoversRecordedInput, Prisma.UserUncheckedCreateWithoutHandoversRecordedInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutHandoversRecordedInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutHandoversRecordedInput, Prisma.UserUncheckedUpdateWithoutHandoversRecordedInput>
+}
+
+export type UserUpdateWithoutHandoversRecordedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutHandoversRecordedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUncheckedUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUncheckedUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUncheckedUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUpsertWithoutHandoversConfirmedInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutHandoversConfirmedInput, Prisma.UserUncheckedUpdateWithoutHandoversConfirmedInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutHandoversConfirmedInput, Prisma.UserUncheckedCreateWithoutHandoversConfirmedInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutHandoversConfirmedInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutHandoversConfirmedInput, Prisma.UserUncheckedUpdateWithoutHandoversConfirmedInput>
+}
+
+export type UserUpdateWithoutHandoversConfirmedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutHandoversConfirmedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUncheckedUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUncheckedUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUncheckedUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3189,6 +3693,8 @@ export type UserCreateWithoutReviewsGivenInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -3231,6 +3737,8 @@ export type UserUncheckedCreateWithoutReviewsGivenInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -3276,6 +3784,8 @@ export type UserCreateWithoutReviewsReceivedInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -3318,6 +3828,8 @@ export type UserUncheckedCreateWithoutReviewsReceivedInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -3374,6 +3886,8 @@ export type UserUpdateWithoutReviewsGivenInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3416,6 +3930,8 @@ export type UserUncheckedUpdateWithoutReviewsGivenInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3467,6 +3983,8 @@ export type UserUpdateWithoutReviewsReceivedInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3509,6 +4027,8 @@ export type UserUncheckedUpdateWithoutReviewsReceivedInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3549,6 +4069,8 @@ export type UserCreateWithoutNotificationsInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -3591,6 +4113,8 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -3647,6 +4171,8 @@ export type UserUpdateWithoutNotificationsInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3689,6 +4215,8 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3729,6 +4257,8 @@ export type UserCreateWithoutSavedListingsInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -3771,6 +4301,8 @@ export type UserUncheckedCreateWithoutSavedListingsInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -3827,6 +4359,8 @@ export type UserUpdateWithoutSavedListingsInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3869,6 +4403,8 @@ export type UserUncheckedUpdateWithoutSavedListingsInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3909,6 +4445,8 @@ export type UserCreateWithoutReportsSubmittedInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -3951,6 +4489,8 @@ export type UserUncheckedCreateWithoutReportsSubmittedInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -3996,6 +4536,8 @@ export type UserCreateWithoutReportsResolvedInput = {
   bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -4038,6 +4580,8 @@ export type UserUncheckedCreateWithoutReportsResolvedInput = {
   bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -4094,6 +4638,8 @@ export type UserUpdateWithoutReportsSubmittedInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -4136,6 +4682,8 @@ export type UserUncheckedUpdateWithoutReportsSubmittedInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -4187,6 +4735,8 @@ export type UserUpdateWithoutReportsResolvedInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -4229,6 +4779,8 @@ export type UserUncheckedUpdateWithoutReportsResolvedInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -4295,6 +4847,8 @@ export type UserUpdateWithoutVerifiedByInput = {
   bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -4336,6 +4890,8 @@ export type UserUncheckedUpdateWithoutVerifiedByInput = {
   bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -4385,6 +4941,8 @@ export type UserCountOutputType = {
   bookingsCancelled: number
   passwordResetTokens: number
   emailVerificationTokens: number
+  handoversRecorded: number
+  handoversConfirmed: number
   verifiedUsers: number
 }
 
@@ -4404,6 +4962,8 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   bookingsCancelled?: boolean | UserCountOutputTypeCountBookingsCancelledArgs
   passwordResetTokens?: boolean | UserCountOutputTypeCountPasswordResetTokensArgs
   emailVerificationTokens?: boolean | UserCountOutputTypeCountEmailVerificationTokensArgs
+  handoversRecorded?: boolean | UserCountOutputTypeCountHandoversRecordedArgs
+  handoversConfirmed?: boolean | UserCountOutputTypeCountHandoversConfirmedArgs
   verifiedUsers?: boolean | UserCountOutputTypeCountVerifiedUsersArgs
 }
 
@@ -4525,6 +5085,20 @@ export type UserCountOutputTypeCountEmailVerificationTokensArgs<ExtArgs extends 
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountHandoversRecordedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.HandoverRecordWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountHandoversConfirmedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.HandoverRecordWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountVerifiedUsersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.UserWhereInput
 }
@@ -4569,6 +5143,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   bookingsCancelled?: boolean | Prisma.User$bookingsCancelledArgs<ExtArgs>
   passwordResetTokens?: boolean | Prisma.User$passwordResetTokensArgs<ExtArgs>
   emailVerificationTokens?: boolean | Prisma.User$emailVerificationTokensArgs<ExtArgs>
+  handoversRecorded?: boolean | Prisma.User$handoversRecordedArgs<ExtArgs>
+  handoversConfirmed?: boolean | Prisma.User$handoversConfirmedArgs<ExtArgs>
   verifiedBy?: boolean | Prisma.User$verifiedByArgs<ExtArgs>
   verifiedUsers?: boolean | Prisma.User$verifiedUsersArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -4671,6 +5247,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   bookingsCancelled?: boolean | Prisma.User$bookingsCancelledArgs<ExtArgs>
   passwordResetTokens?: boolean | Prisma.User$passwordResetTokensArgs<ExtArgs>
   emailVerificationTokens?: boolean | Prisma.User$emailVerificationTokensArgs<ExtArgs>
+  handoversRecorded?: boolean | Prisma.User$handoversRecordedArgs<ExtArgs>
+  handoversConfirmed?: boolean | Prisma.User$handoversConfirmedArgs<ExtArgs>
   verifiedBy?: boolean | Prisma.User$verifiedByArgs<ExtArgs>
   verifiedUsers?: boolean | Prisma.User$verifiedUsersArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -4700,6 +5278,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     bookingsCancelled: Prisma.$BookingPayload<ExtArgs>[]
     passwordResetTokens: Prisma.$PasswordResetTokenPayload<ExtArgs>[]
     emailVerificationTokens: Prisma.$EmailVerificationTokenPayload<ExtArgs>[]
+    handoversRecorded: Prisma.$HandoverRecordPayload<ExtArgs>[]
+    handoversConfirmed: Prisma.$HandoverRecordPayload<ExtArgs>[]
     verifiedBy: Prisma.$UserPayload<ExtArgs> | null
     verifiedUsers: Prisma.$UserPayload<ExtArgs>[]
   }
@@ -5148,6 +5728,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   bookingsCancelled<T extends Prisma.User$bookingsCancelledArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$bookingsCancelledArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   passwordResetTokens<T extends Prisma.User$passwordResetTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$passwordResetTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PasswordResetTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   emailVerificationTokens<T extends Prisma.User$emailVerificationTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$emailVerificationTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailVerificationTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  handoversRecorded<T extends Prisma.User$handoversRecordedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$handoversRecordedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$HandoverRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  handoversConfirmed<T extends Prisma.User$handoversConfirmedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$handoversConfirmedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$HandoverRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   verifiedBy<T extends Prisma.User$verifiedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$verifiedByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   verifiedUsers<T extends Prisma.User$verifiedUsersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$verifiedUsersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -5960,6 +6542,54 @@ export type User$emailVerificationTokensArgs<ExtArgs extends runtime.Types.Exten
   take?: number
   skip?: number
   distinct?: Prisma.EmailVerificationTokenScalarFieldEnum | Prisma.EmailVerificationTokenScalarFieldEnum[]
+}
+
+/**
+ * User.handoversRecorded
+ */
+export type User$handoversRecordedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the HandoverRecord
+   */
+  select?: Prisma.HandoverRecordSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the HandoverRecord
+   */
+  omit?: Prisma.HandoverRecordOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.HandoverRecordInclude<ExtArgs> | null
+  where?: Prisma.HandoverRecordWhereInput
+  orderBy?: Prisma.HandoverRecordOrderByWithRelationInput | Prisma.HandoverRecordOrderByWithRelationInput[]
+  cursor?: Prisma.HandoverRecordWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.HandoverRecordScalarFieldEnum | Prisma.HandoverRecordScalarFieldEnum[]
+}
+
+/**
+ * User.handoversConfirmed
+ */
+export type User$handoversConfirmedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the HandoverRecord
+   */
+  select?: Prisma.HandoverRecordSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the HandoverRecord
+   */
+  omit?: Prisma.HandoverRecordOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.HandoverRecordInclude<ExtArgs> | null
+  where?: Prisma.HandoverRecordWhereInput
+  orderBy?: Prisma.HandoverRecordOrderByWithRelationInput | Prisma.HandoverRecordOrderByWithRelationInput[]
+  cursor?: Prisma.HandoverRecordWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.HandoverRecordScalarFieldEnum | Prisma.HandoverRecordScalarFieldEnum[]
 }
 
 /**

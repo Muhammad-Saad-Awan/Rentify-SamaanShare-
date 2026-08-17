@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { BookingStatus } from "@/generated/prisma/enums";
+import { BookingStatus, HandoverType } from "@/generated/prisma/enums";
 import { getActiveUser } from "@/lib/auth/session";
 import { expireStalePendingBookings } from "@/lib/bookings/expire";
 import {
@@ -16,13 +16,12 @@ import {
   canStartBooking,
   canTransition,
 } from "@/lib/bookings/lifecycle";
+import { prepareHandover, writeHandoverRecord } from "@/lib/handover/write";
 import { emitBookingNotifications } from "@/lib/notifications/create";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
-import {
-  bookingActionSchema,
-  bookingCancelSchema,
-} from "@/lib/validations/booking";
+import { bookingCancelSchema } from "@/lib/validations/booking";
+import { handoverRecordSchema } from "@/lib/validations/handover";
 import { UNAUTHENTICATED_ERROR } from "@/types";
 
 import type { ActionResult } from "@/types";
@@ -41,9 +40,11 @@ import type { ActionResult } from "@/types";
  * renter unable to have the return recorded, with the dates held forever and the deposit
  * obligation never starting. An in-flight rental has to be able to finish.
  *
- * WHERE TRUST & SAFETY ATTACHES. `canStartBooking` and the completion guard below are the two
- * points a sealed handover record will be required. Both already funnel through a single
- * eligibility check, so that becomes an added condition rather than a rewrite.
+ * THE HANDOVER RECORD IS NOW A CONDITION OF BOTH. Neither transition can happen without a sealed
+ * condition record written in the same transaction - see `src/lib/handover/rules.ts`. Requiring it
+ * cannot deadlock, because the party performing the transition is the party writing the record; they
+ * are not waiting on anybody. The counterparty's agreement is recorded separately and is never
+ * required, since blocking on it would let a silent renter freeze an owner's item and calendar.
  */
 
 const UNEXPECTED_ERROR = "Something went wrong. Please try again.";
@@ -61,10 +62,15 @@ const CONCURRENT_CHANGE_ERROR =
 export async function startBooking(
   input: unknown
 ): Promise<ActionResult<{ status: BookingStatus }>> {
-  const parsed = bookingActionSchema.safeParse(input);
+  const parsed = handoverRecordSchema.safeParse(input);
 
   if (!parsed.success) {
-    return { success: false, error: "That booking was not found." };
+    return {
+      success: false,
+      error:
+        parsed.error.issues[0]?.message ??
+        "Please record the item's condition.",
+    };
   }
 
   const owner = await getActiveUser();
@@ -111,6 +117,18 @@ export async function startBooking(
       return { success: false, error: eligibility.reason };
     }
 
+    const handover = await prepareHandover({
+      userId: owner.id,
+      bookingId: booking.id,
+      status: booking.status,
+      type: HandoverType.PICKUP,
+      input: parsed.data,
+    });
+
+    if (!handover.ok) {
+      return { success: false, error: handover.error };
+    }
+
     const applied = await prisma.$transaction(async (tx) => {
       const moved = await transitionBooking(tx, {
         bookingId: booking.id,
@@ -122,6 +140,20 @@ export async function startBooking(
       if (!moved) {
         return false;
       }
+
+      /**
+       * The condition record, in the same transaction as the transition.
+       *
+       * Not before it and not after: a record without the transition would describe a collection
+       * that never happened, and a transition without the record is precisely the evidence-free
+       * state this protocol exists to end. Either both land or neither does.
+       */
+      await writeHandoverRecord(tx, {
+        bookingId: booking.id,
+        type: HandoverType.PICKUP,
+        recordedById: owner.id,
+        ...handover.record,
+      });
 
       /**
        * The dates stay held. `ACTIVE` is in `DATE_HOLDING_STATUSES` because the item is
@@ -166,10 +198,15 @@ export async function startBooking(
 export async function completeBooking(
   input: unknown
 ): Promise<ActionResult<{ status: BookingStatus }>> {
-  const parsed = bookingActionSchema.safeParse(input);
+  const parsed = handoverRecordSchema.safeParse(input);
 
   if (!parsed.success) {
-    return { success: false, error: "That booking was not found." };
+    return {
+      success: false,
+      error:
+        parsed.error.issues[0]?.message ??
+        "Please record the item's condition.",
+    };
   }
 
   const owner = await getActiveUser();
@@ -220,6 +257,18 @@ export async function completeBooking(
       };
     }
 
+    const handover = await prepareHandover({
+      userId: owner.id,
+      bookingId: booking.id,
+      status: booking.status,
+      type: HandoverType.RETURN,
+      input: parsed.data,
+    });
+
+    if (!handover.ok) {
+      return { success: false, error: handover.error };
+    }
+
     const applied = await prisma.$transaction(async (tx) => {
       const moved = await transitionBooking(tx, {
         bookingId: booking.id,
@@ -231,6 +280,20 @@ export async function completeBooking(
       if (!moved) {
         return false;
       }
+
+      /**
+       * The return condition record, in the same transaction as the completion.
+       *
+       * This is the one that matters most: `completedAt` starts the 48-hour deposit clock, and the
+       * question that clock exists to answer - was anything wrong with the item - had until now no
+       * recorded answer at all.
+       */
+      await writeHandoverRecord(tx, {
+        bookingId: booking.id,
+        type: HandoverType.RETURN,
+        recordedById: owner.id,
+        ...handover.record,
+      });
 
       // The item is back, so the days are free. Matched by bookingId, so an owner's own manual
       // block on an overlapping day survives.

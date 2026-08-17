@@ -106,6 +106,32 @@ enum ReviewType {
   RENTER_TO_OWNER
 }
 
+// Trust & Safety: the two moments an item changes hands.
+enum HandoverType {
+  PICKUP
+  RETURN
+}
+
+// The condition an item was in at a handover, as the owner recorded it.
+// Deliberately NOT ItemCondition, which grades an item in the abstract for a
+// listing. This grades it against what was expected at this moment, which is the
+// only question a later damage claim actually asks.
+enum HandoverCondition {
+  AS_EXPECTED
+  MINOR_WEAR
+  DAMAGED
+}
+
+// Whether the other party backed the record up.
+// PENDING is not a failure state and never blocks the rental - see
+// src/lib/handover/rules.ts. It means nobody has answered yet, which is
+// different from disagreeing, and a claim built on a record needs to know which.
+enum HandoverConfirmation {
+  PENDING
+  AGREED
+  DISPUTED
+}
+
 enum ReportType {
   USER
   LISTING
@@ -166,6 +192,11 @@ enum NotificationType {
   REVIEW_RECEIVED
   REVIEW_REMINDER
   REPORT_RESOLVED
+  // Trust & Safety: the counterparty disagreed with a handover condition record.
+  // Only the disagreement notifies. Agreement is the expected path, and a
+  // notification for the expected path is noise - which makes the unread badge
+  // less trustworthy, the one thing a badge has to be.
+  HANDOVER_DISPUTED
   // Stage A: pickup instructions are the only channel between the two parties
   // until profiles carry a verified phone, so an owner correcting a wrong
   // address has to be able to reach a renter who already read the old one.
@@ -267,6 +298,10 @@ model User {
 
   // Trust & Safety: outstanding email confirmation links.
   emailVerificationTokens EmailVerificationToken[]
+
+  // Trust & Safety: handover records this person wrote, and ones they answered.
+  handoversRecorded  HandoverRecord[] @relation("HandoversRecorded")
+  handoversConfirmed HandoverRecord[] @relation("HandoversConfirmed")
 
   // Who granted this account's identity verification, and whose grants they are.
   // A real foreign key rather than a bare id, for the same reason as
@@ -664,6 +699,9 @@ model Booking {
   payment Payment? @relation(fields: [paymentId], references: [id])
   reviews Review[]
 
+  // Trust & Safety: the pickup and return condition records, at most one each.
+  handovers HandoverRecord[]
+
   // D7: replaces the removed BookingDate join. These are the UnavailableDate
   // rows this booking holds.
   heldDates UnavailableDate[]
@@ -678,6 +716,85 @@ model Booking {
   // outstanding, ordered by how overdue they are.
   @@index([ownerId, status, completedAt])
   @@map("bookings")
+}
+
+// ==================== HANDOVER MODELS ====================
+
+/**
+ * What condition an item was in when it changed hands. Trust & Safety.
+ * WHY THIS EXISTS. Payment is offline and there is no escrow, so a deposit
+ * dispute is two people asserting different things about an item neither of them
+ * has any longer. `startBooking` and `completeBooking` were each one party's
+ * unilateral click with nothing recorded, so there was never anything to argue
+ * from. This is the record.
+ * SEALED ON WRITE. There is no update path for condition, notes or photos, and
+ * @@unique([bookingId, type]) means a second attempt at the same handover is
+ * refused rather than replacing the first. A record its author can revise after
+ * the fact is not evidence, it is a claim - and the moment it matters is exactly
+ * the moment they would want to revise it.
+ * THE CONFIRMATION IS SEPARATE AND OPTIONAL. Requiring the counterparty to agree
+ * before the booking could move would let a silent party freeze someone's rental
+ * and deposit indefinitely. So the record is required and the agreement is not;
+ * what IS recorded is which of the two happened.
+ */
+model HandoverRecord {
+  id        String       @id @default(cuid())
+  bookingId String
+  type      HandoverType
+
+  condition HandoverCondition
+  notes     String?           @db.Text
+
+  // Always the owner under the current lifecycle: both transitions are
+  // owner-driven. Stored rather than derived, because who wrote a record is part
+  // of the record and the lifecycle may later let a renter file their own.
+  recordedById String
+  recordedAt   DateTime @default(now())
+
+  confirmation     HandoverConfirmation @default(PENDING)
+  confirmedById    String?
+  confirmedAt      DateTime?
+  // The counterparty's own words. The only place a renter's account of the
+  // condition is captured, so a disagreement is not reduced to a boolean.
+  confirmationNote String?              @db.Text
+
+  createdAt DateTime @default(now())
+
+  booking    Booking         @relation(fields: [bookingId], references: [id])
+  recordedBy User            @relation("HandoversRecorded", fields: [recordedById], references: [id])
+  confirmedBy User?          @relation("HandoversConfirmed", fields: [confirmedById], references: [id])
+  photos     HandoverPhoto[]
+
+  // One record per direction. The database refuses a second pickup or return
+  // rather than the application having to notice.
+  @@unique([bookingId, type])
+  @@index([bookingId])
+  @@index([recordedById])
+  // The queue of records still awaiting an answer from the other party.
+  @@index([confirmation])
+  @@map("handover_records")
+}
+
+/**
+ * Condition photos taken at a handover.
+ * A model rather than a String[] so `publicId` travels with the URL - Cloudinary
+ * deletion needs it, exactly as ListingImage does. `order` keeps the sequence the
+ * uploader chose, since "the third photo" is how people refer to them.
+ */
+model HandoverPhoto {
+  id         String @id @default(cuid())
+  handoverId String
+
+  url      String
+  publicId String @unique
+  order    Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  handover HandoverRecord @relation(fields: [handoverId], references: [id], onDelete: Cascade)
+
+  @@index([handoverId, order])
+  @@map("handover_photos")
 }
 
 // ==================== REVIEW MODELS ====================

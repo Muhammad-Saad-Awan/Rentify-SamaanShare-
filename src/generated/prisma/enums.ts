@@ -107,6 +107,32 @@ export const ReviewType = {
 export type ReviewType = (typeof ReviewType)[keyof typeof ReviewType]
 
 
+export const HandoverType = {
+  PICKUP: 'PICKUP',
+  RETURN: 'RETURN'
+} as const
+
+export type HandoverType = (typeof HandoverType)[keyof typeof HandoverType]
+
+
+export const HandoverCondition = {
+  AS_EXPECTED: 'AS_EXPECTED',
+  MINOR_WEAR: 'MINOR_WEAR',
+  DAMAGED: 'DAMAGED'
+} as const
+
+export type HandoverCondition = (typeof HandoverCondition)[keyof typeof HandoverCondition]
+
+
+export const HandoverConfirmation = {
+  PENDING: 'PENDING',
+  AGREED: 'AGREED',
+  DISPUTED: 'DISPUTED'
+} as const
+
+export type HandoverConfirmation = (typeof HandoverConfirmation)[keyof typeof HandoverConfirmation]
+
+
 export const ReportType = {
   USER: 'USER',
   LISTING: 'LISTING',
@@ -170,6 +196,7 @@ export const NotificationType = {
   REVIEW_RECEIVED: 'REVIEW_RECEIVED',
   REVIEW_REMINDER: 'REVIEW_REMINDER',
   REPORT_RESOLVED: 'REPORT_RESOLVED',
+  HANDOVER_DISPUTED: 'HANDOVER_DISPUTED',
   BOOKING_INSTRUCTIONS_UPDATED: 'BOOKING_INSTRUCTIONS_UPDATED'
 } as const
 

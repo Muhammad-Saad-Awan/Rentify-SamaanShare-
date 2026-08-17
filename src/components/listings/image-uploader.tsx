@@ -33,6 +33,15 @@ interface ImageUploaderProps {
   onChange: (images: ListingImageInput[]) => void;
   /** Rendered beneath the grid by the form, so errors sit with the field. */
   error?: string | undefined;
+  /**
+   * Ceiling on the number of photos. Defaults to a listing's ten.
+   *
+   * A handover passes six: a listing is a shop window and benefits from more, while a handover is
+   * evidence of a moment and is captured by two people standing in a doorway, one of whom wants to
+   * leave. The server enforces its own limit either way - this only stops the form offering more
+   * than the action will accept.
+   */
+  max?: number;
 }
 
 /**
@@ -49,14 +58,19 @@ interface ImageUploaderProps {
  * `XMLHttpRequest`), and a per-file spinner plus a count communicates the same thing
  * for files this size without hand-rolling an XHR wrapper.
  */
-function ImageUploader({ images, onChange, error }: ImageUploaderProps) {
+function ImageUploader({
+  images,
+  onChange,
+  error,
+  max = MAX_IMAGES_PER_LISTING,
+}: ImageUploaderProps) {
   const inputId = useId();
 
   const [pendingCount, setPendingCount] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
   const isBusy = pendingCount > 0;
-  const remaining = MAX_IMAGES_PER_LISTING - images.length;
+  const remaining = max - images.length;
 
   /**
    * Mirror of the latest `images`, read inside the async upload loop.
@@ -82,10 +96,7 @@ function ImageUploader({ images, onChange, error }: ImageUploaderProps) {
      * itself against a stale count and push the total past ten - the server rejects
      * that, but only after the user has waited for every upload.
      */
-    const capacity = Math.max(
-      0,
-      MAX_IMAGES_PER_LISTING - currentImages.current.length
-    );
+    const capacity = Math.max(0, max - currentImages.current.length);
 
     // Trimmed rather than rejected wholesale: someone selecting twelve photos meant to
     // add photos, and taking the first ten is friendlier than discarding all twelve.
@@ -93,7 +104,7 @@ function ImageUploader({ images, onChange, error }: ImageUploaderProps) {
 
     if (accepted.length < selected.length) {
       toast.warning(
-        `Only ${MAX_IMAGES_PER_LISTING} photos are allowed, so ${selected.length - accepted.length} were skipped.`
+        `Only ${max} photos are allowed, so ${selected.length - accepted.length} were skipped.`
       );
     }
 
@@ -131,7 +142,7 @@ function ImageUploader({ images, onChange, error }: ImageUploaderProps) {
       try {
         // Re-checked per file: a concurrent batch may have consumed the last slot
         // between this batch being sized and this iteration running.
-        if (currentImages.current.length >= MAX_IMAGES_PER_LISTING) {
+        if (currentImages.current.length >= max) {
           break;
         }
 
@@ -282,8 +293,7 @@ function ImageUploader({ images, onChange, error }: ImageUploaderProps) {
         </span>
 
         <span className="text-muted-foreground text-xs">
-          JPEG, PNG or WebP up to 15MB. {images.length} of{" "}
-          {MAX_IMAGES_PER_LISTING} added.
+          JPEG, PNG or WebP up to 15MB. {images.length} of {max} added.
         </span>
 
         <input

@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { BookingActions } from "@/components/bookings/booking-actions";
+import { HandoverRecordList } from "@/components/handover/handover-record-list";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { BookingStatus } from "@/generated/prisma/enums";
@@ -130,6 +131,14 @@ function BookingCard({ booking, side }: BookingCardProps) {
               {booking.statusReason}
             </p>
           )}
+
+          {/*
+            The condition records, above the actions rather than inside them.
+            One insertion point for every status: a record written at collection stays visible for
+            the whole rental and afterwards, which is when it matters. Rendering it from inside the
+            status branches would have meant repeating it in six places and forgetting it in one.
+          */}
+          <HandoverRecordList handovers={booking.handovers} />
 
           <BookingActions booking={booking} side={side} />
         </div>

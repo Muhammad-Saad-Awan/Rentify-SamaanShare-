@@ -107,6 +107,35 @@ export type Payment = Prisma.PaymentModel
  */
 export type Booking = Prisma.BookingModel
 /**
+ * Model HandoverRecord
+ * *
+ *  * What condition an item was in when it changed hands. Trust & Safety.
+ *  * WHY THIS EXISTS. Payment is offline and there is no escrow, so a deposit
+ *  * dispute is two people asserting different things about an item neither of them
+ *  * has any longer. `startBooking` and `completeBooking` were each one party's
+ *  * unilateral click with nothing recorded, so there was never anything to argue
+ *  * from. This is the record.
+ *  * SEALED ON WRITE. There is no update path for condition, notes or photos, and
+ *  * @@unique([bookingId, type]) means a second attempt at the same handover is
+ *  * refused rather than replacing the first. A record its author can revise after
+ *  * the fact is not evidence, it is a claim - and the moment it matters is exactly
+ *  * the moment they would want to revise it.
+ *  * THE CONFIRMATION IS SEPARATE AND OPTIONAL. Requiring the counterparty to agree
+ *  * before the booking could move would let a silent party freeze someone's rental
+ *  * and deposit indefinitely. So the record is required and the agreement is not;
+ *  * what IS recorded is which of the two happened.
+ */
+export type HandoverRecord = Prisma.HandoverRecordModel
+/**
+ * Model HandoverPhoto
+ * *
+ *  * Condition photos taken at a handover.
+ *  * A model rather than a String[] so `publicId` travels with the URL - Cloudinary
+ *  * deletion needs it, exactly as ListingImage does. `order` keeps the sequence the
+ *  * uploader chose, since "the third photo" is how people refer to them.
+ */
+export type HandoverPhoto = Prisma.HandoverPhotoModel
+/**
  * Model Review
  * 
  */

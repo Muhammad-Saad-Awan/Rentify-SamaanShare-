@@ -44,8 +44,8 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar,
       lifecycle, deposit window, notification copy, environment schema, reset
       tokens, email copy, view keys, nav map, review rules, report rules,
-      moderation copy, trust score, email verification tokens, access tiers) —
-      323 tests
+      moderation copy, trust score, email verification tokens, access tiers,
+      handover rules, handover copy) — 348 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
@@ -55,7 +55,9 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
       review lifecycle - including the assertion that a *withheld* review does
       not move the rating aggregate, and that the average a listing prints is
       computed over exactly the reviews listed beneath it, and
-      `npm run verify:trust-safety` for reporting and moderation.
+      `npm run verify:trust-safety` for reporting and moderation, and
+      `npm run verify:handover` for the condition records — including that the
+      seal is refused by the database rather than by a check that can lose a race.
       **Not** a substitute for a Vitest
       integration harness: they are scripts with assertions, not a suite, and they
       cannot run without a database.
@@ -559,8 +561,9 @@ no listing, booking, search, review or admin functionality was implemented.
 
 ### Booking Completion
 
-- [x] Create `startBooking` action (pickup done)
-- [x] Create `completeBooking` action (return done)
+- [x] Create `startBooking` action (pickup done) — now also writes the PICKUP
+      condition record in the same transaction (Trust & Safety, 17 August 2026)
+- [x] Create `completeBooking` action (return done) — same, for RETURN
 - [x] Trigger review prompts — `REVIEW_REMINDER` to both parties on completion. The prompt only;
       the review form and the `REVIEWED` transition are Phase 5.
 - [x] Handle deposit return tracking — 48-hour window from `completedAt`, with a countdown and an
@@ -1103,16 +1106,75 @@ schema and entirely unused; this is what connects them.
 
 *Last reviewed: 11 August 2026, against the code — Phase 4 complete, Phase 3 checkboxes corrected.*
 
-**Next:** Trust & Safety continues. Shipped 17 August 2026 — reporting and moderation, public trust
-profiles and the trust score, identity verification, and value-gated access. What remains is the
-**handover protocol** and **damage claims**. Phase 4 was built to receive both: `canStartBooking` and
-the completion guard are the points a sealed handover record becomes a condition rather than a
-rewrite, and no copy anywhere claims SamaanShare holds a deposit — so escrow can be added without
-walking a promise back.
+### Handover Protocol
 
-`ReportReason` already carries `ITEM_DAMAGED` and `ITEM_NOT_RETURNED`, and both are filed against a
-**person** rather than a booking. A damage claim needs the booking attached, which is the gap between
-the report queue as it stands and a claim someone could act on.
+Shipped 17 August 2026. `startBooking` and `completeBooking` were each one party's
+unilateral click, recording that a handover happened and nothing about the state
+of the thing handed over — so when a deposit dispute followed, the platform's
+answer to "it came back damaged" was necessarily "we have no idea".
+
+- [x] `HandoverRecord` + `HandoverPhoto` — one record per booking per direction,
+      with condition, notes and up to six Cloudinary photos
+- [x] **Required at both transitions.** Neither `startBooking` nor
+      `completeBooking` can run without one, written in the **same transaction**
+      as the status change: a record without the transition describes a
+      collection that never happened, and a transition without the record is the
+      evidence-free state this exists to end
+- [x] **Requiring it cannot deadlock** — the party performing the transition is
+      the party writing the record, so they are never waiting on anyone. This is
+      why the gate is on the record and not on the agreement
+- [x] **Sealed on write.** No update path exists, and `@@unique([bookingId, type])`
+      refuses a second attempt — enforced by the *database*, because the
+      application check and the insert are not atomic. A record its author can
+      revise afterwards is a claim, not evidence, and the moment it matters is
+      exactly when they would want to revise it
+- [x] **The counterparty's agreement is recorded but never required.** Blocking
+      on it would let a silent party freeze someone else's rental and deposit
+      indefinitely. What is stored instead is which of **agreed / disputed /
+      unanswered** happened — three distinct facts, and treating silence as
+      disagreement would punish everyone who never opens the app again after
+      returning a drill
+- [x] `confirmHandover` — the other party only, answered once, by compare-and-swap
+      on `PENDING`. An author confirming their own record would read as
+      corroboration while being nothing of the kind
+- [x] Photos are **public ids only**, URLs derived server-side from Cloudinary's
+      Admin API, ids checked against the caller's own pending folder. Same guard
+      as `listingImagePublicIdSchema`, and it matters more here: a handover photo
+      that actually belonged to someone else would be evidence of nothing while
+      looking exactly like proof
+- [x] **Only a dispute notifies** (`HANDOVER_DISPUTED`), and only the record's
+      author. Agreement is the expected path, and notifying the expected path is
+      what makes an unread badge untrustworthy
+- [x] **No automatic consequence.** `DAMAGED` is one person's account written at a
+      door, not a finding. Nothing follows from it, and tests assert the copy
+      states no verdict and no consequence — a withheld deposit on an owner's
+      say-so alone is not a process
+- [x] Integration verification — `npm run verify:handover`, 13 checks, including
+      that the seal is refused by the database, that exactly one of two concurrent
+      answers takes effect, and that a booking cannot be deleted out from under
+      its record
+
+**Known limit, recorded rather than hidden:** both transitions are owner-driven,
+so the owner always writes the record and the renter always answers it. A renter
+who thinks an item arrived scratched can only say so in the dispute note, and
+cannot attach their own photos. Letting either side file an independent record is
+the natural extension; it needs a second record per direction rather than a
+schema change.
+
+---
+
+**Next:** Trust & Safety continues. Shipped 17 August 2026 — reporting and moderation, public trust
+profiles and the trust score, identity verification, value-gated access, and the handover protocol.
+What remains is **damage claims**.
+
+The ground is now prepared for them. A claim needs three things and two are in place: a condition
+record at return (`HandoverRecord`, with the counterparty's answer attached) and a deposit window
+already measured from `completedAt`. What is missing is the claim itself.
+
+`ReportReason` already carries `ITEM_DAMAGED` and `ITEM_NOT_RETURNED`, but reports are filed against
+a **person**, with `targetId` polymorphic and no booking attached. A damage claim needs the booking —
+that is what ties it to a deposit, a date, a counterparty and now a handover record. So it is not a
+new reason on the existing queue; it needs its own relation.
 
 ### Identity Verification
 

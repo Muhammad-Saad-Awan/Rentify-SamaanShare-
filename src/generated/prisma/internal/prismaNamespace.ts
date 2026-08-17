@@ -410,6 +410,8 @@ export const ModelName = {
   UnavailableDate: 'UnavailableDate',
   Payment: 'Payment',
   Booking: 'Booking',
+  HandoverRecord: 'HandoverRecord',
+  HandoverPhoto: 'HandoverPhoto',
   Review: 'Review',
   Notification: 'Notification',
   SavedListing: 'SavedListing',
@@ -429,7 +431,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "verificationToken" | "passwordResetToken" | "emailVerificationToken" | "category" | "subcategory" | "listing" | "listingImage" | "unavailableDate" | "payment" | "booking" | "review" | "notification" | "savedListing" | "report"
+    modelProps: "user" | "account" | "session" | "verificationToken" | "passwordResetToken" | "emailVerificationToken" | "category" | "subcategory" | "listing" | "listingImage" | "unavailableDate" | "payment" | "booking" | "handoverRecord" | "handoverPhoto" | "review" | "notification" | "savedListing" | "report"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1395,6 +1397,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    HandoverRecord: {
+      payload: Prisma.$HandoverRecordPayload<ExtArgs>
+      fields: Prisma.HandoverRecordFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.HandoverRecordFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverRecordPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.HandoverRecordFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverRecordPayload>
+        }
+        findFirst: {
+          args: Prisma.HandoverRecordFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverRecordPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.HandoverRecordFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverRecordPayload>
+        }
+        findMany: {
+          args: Prisma.HandoverRecordFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverRecordPayload>[]
+        }
+        create: {
+          args: Prisma.HandoverRecordCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverRecordPayload>
+        }
+        createMany: {
+          args: Prisma.HandoverRecordCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.HandoverRecordCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverRecordPayload>[]
+        }
+        delete: {
+          args: Prisma.HandoverRecordDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverRecordPayload>
+        }
+        update: {
+          args: Prisma.HandoverRecordUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverRecordPayload>
+        }
+        deleteMany: {
+          args: Prisma.HandoverRecordDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.HandoverRecordUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.HandoverRecordUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverRecordPayload>[]
+        }
+        upsert: {
+          args: Prisma.HandoverRecordUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverRecordPayload>
+        }
+        aggregate: {
+          args: Prisma.HandoverRecordAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateHandoverRecord>
+        }
+        groupBy: {
+          args: Prisma.HandoverRecordGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.HandoverRecordGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.HandoverRecordCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.HandoverRecordCountAggregateOutputType> | number
+        }
+      }
+    }
+    HandoverPhoto: {
+      payload: Prisma.$HandoverPhotoPayload<ExtArgs>
+      fields: Prisma.HandoverPhotoFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.HandoverPhotoFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverPhotoPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.HandoverPhotoFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverPhotoPayload>
+        }
+        findFirst: {
+          args: Prisma.HandoverPhotoFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverPhotoPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.HandoverPhotoFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverPhotoPayload>
+        }
+        findMany: {
+          args: Prisma.HandoverPhotoFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverPhotoPayload>[]
+        }
+        create: {
+          args: Prisma.HandoverPhotoCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverPhotoPayload>
+        }
+        createMany: {
+          args: Prisma.HandoverPhotoCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.HandoverPhotoCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverPhotoPayload>[]
+        }
+        delete: {
+          args: Prisma.HandoverPhotoDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverPhotoPayload>
+        }
+        update: {
+          args: Prisma.HandoverPhotoUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverPhotoPayload>
+        }
+        deleteMany: {
+          args: Prisma.HandoverPhotoDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.HandoverPhotoUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.HandoverPhotoUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverPhotoPayload>[]
+        }
+        upsert: {
+          args: Prisma.HandoverPhotoUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$HandoverPhotoPayload>
+        }
+        aggregate: {
+          args: Prisma.HandoverPhotoAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateHandoverPhoto>
+        }
+        groupBy: {
+          args: Prisma.HandoverPhotoGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.HandoverPhotoGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.HandoverPhotoCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.HandoverPhotoCountAggregateOutputType> | number
+        }
+      }
+    }
     Review: {
       payload: Prisma.$ReviewPayload<ExtArgs>
       fields: Prisma.ReviewFieldRefs
@@ -1940,6 +2090,36 @@ export const BookingScalarFieldEnum = {
 export type BookingScalarFieldEnum = (typeof BookingScalarFieldEnum)[keyof typeof BookingScalarFieldEnum]
 
 
+export const HandoverRecordScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  type: 'type',
+  condition: 'condition',
+  notes: 'notes',
+  recordedById: 'recordedById',
+  recordedAt: 'recordedAt',
+  confirmation: 'confirmation',
+  confirmedById: 'confirmedById',
+  confirmedAt: 'confirmedAt',
+  confirmationNote: 'confirmationNote',
+  createdAt: 'createdAt'
+} as const
+
+export type HandoverRecordScalarFieldEnum = (typeof HandoverRecordScalarFieldEnum)[keyof typeof HandoverRecordScalarFieldEnum]
+
+
+export const HandoverPhotoScalarFieldEnum = {
+  id: 'id',
+  handoverId: 'handoverId',
+  url: 'url',
+  publicId: 'publicId',
+  order: 'order',
+  createdAt: 'createdAt'
+} as const
+
+export type HandoverPhotoScalarFieldEnum = (typeof HandoverPhotoScalarFieldEnum)[keyof typeof HandoverPhotoScalarFieldEnum]
+
+
 export const ReviewScalarFieldEnum = {
   id: 'id',
   bookingId: 'bookingId',
@@ -2237,6 +2417,48 @@ export type ListEnumBookingStatusFieldRefInput<$PrismaModel> = FieldRefInputType
 
 
 /**
+ * Reference to a field of type 'HandoverType'
+ */
+export type EnumHandoverTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HandoverType'>
+    
+
+
+/**
+ * Reference to a field of type 'HandoverType[]'
+ */
+export type ListEnumHandoverTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HandoverType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'HandoverCondition'
+ */
+export type EnumHandoverConditionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HandoverCondition'>
+    
+
+
+/**
+ * Reference to a field of type 'HandoverCondition[]'
+ */
+export type ListEnumHandoverConditionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HandoverCondition[]'>
+    
+
+
+/**
+ * Reference to a field of type 'HandoverConfirmation'
+ */
+export type EnumHandoverConfirmationFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HandoverConfirmation'>
+    
+
+
+/**
+ * Reference to a field of type 'HandoverConfirmation[]'
+ */
+export type ListEnumHandoverConfirmationFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HandoverConfirmation[]'>
+    
+
+
+/**
  * Reference to a field of type 'ReviewType'
  */
 export type EnumReviewTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ReviewType'>
@@ -2483,6 +2705,8 @@ export type GlobalOmitConfig = {
   unavailableDate?: Prisma.UnavailableDateOmit
   payment?: Prisma.PaymentOmit
   booking?: Prisma.BookingOmit
+  handoverRecord?: Prisma.HandoverRecordOmit
+  handoverPhoto?: Prisma.HandoverPhotoOmit
   review?: Prisma.ReviewOmit
   notification?: Prisma.NotificationOmit
   savedListing?: Prisma.SavedListingOmit

@@ -64,6 +64,8 @@ export const ModelName = {
   UnavailableDate: 'UnavailableDate',
   Payment: 'Payment',
   Booking: 'Booking',
+  HandoverRecord: 'HandoverRecord',
+  HandoverPhoto: 'HandoverPhoto',
   Review: 'Review',
   Notification: 'Notification',
   SavedListing: 'SavedListing',
@@ -294,6 +296,36 @@ export const BookingScalarFieldEnum = {
 } as const
 
 export type BookingScalarFieldEnum = (typeof BookingScalarFieldEnum)[keyof typeof BookingScalarFieldEnum]
+
+
+export const HandoverRecordScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  type: 'type',
+  condition: 'condition',
+  notes: 'notes',
+  recordedById: 'recordedById',
+  recordedAt: 'recordedAt',
+  confirmation: 'confirmation',
+  confirmedById: 'confirmedById',
+  confirmedAt: 'confirmedAt',
+  confirmationNote: 'confirmationNote',
+  createdAt: 'createdAt'
+} as const
+
+export type HandoverRecordScalarFieldEnum = (typeof HandoverRecordScalarFieldEnum)[keyof typeof HandoverRecordScalarFieldEnum]
+
+
+export const HandoverPhotoScalarFieldEnum = {
+  id: 'id',
+  handoverId: 'handoverId',
+  url: 'url',
+  publicId: 'publicId',
+  order: 'order',
+  createdAt: 'createdAt'
+} as const
+
+export type HandoverPhotoScalarFieldEnum = (typeof HandoverPhotoScalarFieldEnum)[keyof typeof HandoverPhotoScalarFieldEnum]
 
 
 export const ReviewScalarFieldEnum = {
