@@ -412,6 +412,8 @@ export const ModelName = {
   Booking: 'Booking',
   HandoverRecord: 'HandoverRecord',
   HandoverPhoto: 'HandoverPhoto',
+  DamageClaim: 'DamageClaim',
+  ClaimPhoto: 'ClaimPhoto',
   Review: 'Review',
   Notification: 'Notification',
   SavedListing: 'SavedListing',
@@ -431,7 +433,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "verificationToken" | "passwordResetToken" | "emailVerificationToken" | "category" | "subcategory" | "listing" | "listingImage" | "unavailableDate" | "payment" | "booking" | "handoverRecord" | "handoverPhoto" | "review" | "notification" | "savedListing" | "report"
+    modelProps: "user" | "account" | "session" | "verificationToken" | "passwordResetToken" | "emailVerificationToken" | "category" | "subcategory" | "listing" | "listingImage" | "unavailableDate" | "payment" | "booking" | "handoverRecord" | "handoverPhoto" | "damageClaim" | "claimPhoto" | "review" | "notification" | "savedListing" | "report"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1545,6 +1547,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    DamageClaim: {
+      payload: Prisma.$DamageClaimPayload<ExtArgs>
+      fields: Prisma.DamageClaimFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.DamageClaimFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DamageClaimPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.DamageClaimFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DamageClaimPayload>
+        }
+        findFirst: {
+          args: Prisma.DamageClaimFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DamageClaimPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.DamageClaimFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DamageClaimPayload>
+        }
+        findMany: {
+          args: Prisma.DamageClaimFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DamageClaimPayload>[]
+        }
+        create: {
+          args: Prisma.DamageClaimCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DamageClaimPayload>
+        }
+        createMany: {
+          args: Prisma.DamageClaimCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.DamageClaimCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DamageClaimPayload>[]
+        }
+        delete: {
+          args: Prisma.DamageClaimDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DamageClaimPayload>
+        }
+        update: {
+          args: Prisma.DamageClaimUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DamageClaimPayload>
+        }
+        deleteMany: {
+          args: Prisma.DamageClaimDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.DamageClaimUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.DamageClaimUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DamageClaimPayload>[]
+        }
+        upsert: {
+          args: Prisma.DamageClaimUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$DamageClaimPayload>
+        }
+        aggregate: {
+          args: Prisma.DamageClaimAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDamageClaim>
+        }
+        groupBy: {
+          args: Prisma.DamageClaimGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DamageClaimGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.DamageClaimCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.DamageClaimCountAggregateOutputType> | number
+        }
+      }
+    }
+    ClaimPhoto: {
+      payload: Prisma.$ClaimPhotoPayload<ExtArgs>
+      fields: Prisma.ClaimPhotoFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ClaimPhotoFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPhotoPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ClaimPhotoFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPhotoPayload>
+        }
+        findFirst: {
+          args: Prisma.ClaimPhotoFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPhotoPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ClaimPhotoFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPhotoPayload>
+        }
+        findMany: {
+          args: Prisma.ClaimPhotoFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPhotoPayload>[]
+        }
+        create: {
+          args: Prisma.ClaimPhotoCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPhotoPayload>
+        }
+        createMany: {
+          args: Prisma.ClaimPhotoCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ClaimPhotoCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPhotoPayload>[]
+        }
+        delete: {
+          args: Prisma.ClaimPhotoDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPhotoPayload>
+        }
+        update: {
+          args: Prisma.ClaimPhotoUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPhotoPayload>
+        }
+        deleteMany: {
+          args: Prisma.ClaimPhotoDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ClaimPhotoUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ClaimPhotoUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPhotoPayload>[]
+        }
+        upsert: {
+          args: Prisma.ClaimPhotoUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPhotoPayload>
+        }
+        aggregate: {
+          args: Prisma.ClaimPhotoAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateClaimPhoto>
+        }
+        groupBy: {
+          args: Prisma.ClaimPhotoGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ClaimPhotoGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ClaimPhotoCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ClaimPhotoCountAggregateOutputType> | number
+        }
+      }
+    }
     Review: {
       payload: Prisma.$ReviewPayload<ExtArgs>
       fields: Prisma.ReviewFieldRefs
@@ -2120,6 +2270,42 @@ export const HandoverPhotoScalarFieldEnum = {
 export type HandoverPhotoScalarFieldEnum = (typeof HandoverPhotoScalarFieldEnum)[keyof typeof HandoverPhotoScalarFieldEnum]
 
 
+export const DamageClaimScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  claimantId: 'claimantId',
+  respondentId: 'respondentId',
+  reason: 'reason',
+  description: 'description',
+  amountClaimed: 'amountClaimed',
+  handoverId: 'handoverId',
+  status: 'status',
+  respondedAt: 'respondedAt',
+  responseNote: 'responseNote',
+  resolvedById: 'resolvedById',
+  resolvedAt: 'resolvedAt',
+  resolution: 'resolution',
+  amountUpheld: 'amountUpheld',
+  filedAt: 'filedAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DamageClaimScalarFieldEnum = (typeof DamageClaimScalarFieldEnum)[keyof typeof DamageClaimScalarFieldEnum]
+
+
+export const ClaimPhotoScalarFieldEnum = {
+  id: 'id',
+  claimId: 'claimId',
+  url: 'url',
+  publicId: 'publicId',
+  order: 'order',
+  uploadedById: 'uploadedById',
+  createdAt: 'createdAt'
+} as const
+
+export type ClaimPhotoScalarFieldEnum = (typeof ClaimPhotoScalarFieldEnum)[keyof typeof ClaimPhotoScalarFieldEnum]
+
+
 export const ReviewScalarFieldEnum = {
   id: 'id',
   bookingId: 'bookingId',
@@ -2459,6 +2645,34 @@ export type ListEnumHandoverConfirmationFieldRefInput<$PrismaModel> = FieldRefIn
 
 
 /**
+ * Reference to a field of type 'ClaimReason'
+ */
+export type EnumClaimReasonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ClaimReason'>
+    
+
+
+/**
+ * Reference to a field of type 'ClaimReason[]'
+ */
+export type ListEnumClaimReasonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ClaimReason[]'>
+    
+
+
+/**
+ * Reference to a field of type 'ClaimStatus'
+ */
+export type EnumClaimStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ClaimStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'ClaimStatus[]'
+ */
+export type ListEnumClaimStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ClaimStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'ReviewType'
  */
 export type EnumReviewTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ReviewType'>
@@ -2707,6 +2921,8 @@ export type GlobalOmitConfig = {
   booking?: Prisma.BookingOmit
   handoverRecord?: Prisma.HandoverRecordOmit
   handoverPhoto?: Prisma.HandoverPhotoOmit
+  damageClaim?: Prisma.DamageClaimOmit
+  claimPhoto?: Prisma.ClaimPhotoOmit
   review?: Prisma.ReviewOmit
   notification?: Prisma.NotificationOmit
   savedListing?: Prisma.SavedListingOmit

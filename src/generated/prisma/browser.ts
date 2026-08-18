@@ -136,6 +136,35 @@ export type HandoverRecord = Prisma.HandoverRecordModel
  */
 export type HandoverPhoto = Prisma.HandoverPhotoModel
 /**
+ * Model DamageClaim
+ * *
+ *  * An owner's claim against a rental's security deposit. Trust & Safety.
+ *  * WHAT A CLAIM IS, GIVEN THAT THE PLATFORM HOLDS NOTHING. The deposit passes
+ *  * directly between the two people and SamaanShare never touches it - see the
+ *  * note at the top of src/lib/bookings/deposit.ts. So a claim cannot move money.
+ *  * What it does is change the amount the platform STATES is owed back: settle a
+ *  * claim for 15,000 of a 60,000 deposit and the obligation becomes 45,000. That
+ *  * is the same thing deposit.ts already exists to do, applied to a disagreement.
+ *  * A REAL FOREIGN KEY TO THE BOOKING, deliberately, and this is the whole reason
+ *  * the model exists rather than another ReportReason. A claim is about a specific
+ *  * rental: its deposit, its two parties, its dates, and the condition record
+ *  * written when the item came back. Report.targetId is polymorphic with no
+ *  * foreign key and can reach none of them.
+ *  * ONE PER BOOKING. The owner states everything at once rather than drip-feeding
+ *  * a second claim after the first is answered.
+ */
+export type DamageClaim = Prisma.DamageClaimModel
+/**
+ * Model ClaimPhoto
+ * *
+ *  * Photographs supporting a claim.
+ *  * Separate from HandoverPhoto rather than reused: those are sealed to the moment
+ *  * of handover and must never gain images taken days later, which is exactly what
+ *  * a claim attaches. Keeping them in different tables makes that impossible
+ *  * rather than merely discouraged.
+ */
+export type ClaimPhoto = Prisma.ClaimPhotoModel
+/**
  * Model Review
  * 
  */

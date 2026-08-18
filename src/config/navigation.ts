@@ -7,6 +7,7 @@ import {
   InboxIcon,
   LayoutDashboardIcon,
   PackageIcon,
+  ScaleIcon,
   SettingsIcon,
   ShieldIcon,
   UserIcon,
@@ -124,6 +125,7 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
       { title: "Admin", href: "/admin", icon: ShieldIcon, exact: true },
       { title: "Reports", href: "/admin/reports", icon: FlagIcon },
       { title: "Members", href: "/admin/users", icon: UsersIcon },
+      { title: "Claims", href: "/admin/claims", icon: ScaleIcon },
     ],
   },
 ] as const;
@@ -149,5 +151,6 @@ export const SEGMENT_LABELS: Readonly<Record<string, string>> = {
   admin: "Admin",
   reports: "Reports",
   users: "Members",
+  claims: "Deposit claims",
   "verify-email": "Confirm email",
 };

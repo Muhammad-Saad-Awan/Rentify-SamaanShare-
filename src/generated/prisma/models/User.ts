@@ -389,6 +389,10 @@ export type UserWhereInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenListRelationFilter
   handoversRecorded?: Prisma.HandoverRecordListRelationFilter
   handoversConfirmed?: Prisma.HandoverRecordListRelationFilter
+  claimsFiled?: Prisma.DamageClaimListRelationFilter
+  claimsAgainst?: Prisma.DamageClaimListRelationFilter
+  claimsResolved?: Prisma.DamageClaimListRelationFilter
+  claimPhotos?: Prisma.ClaimPhotoListRelationFilter
   verifiedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   verifiedUsers?: Prisma.UserListRelationFilter
 }
@@ -434,6 +438,10 @@ export type UserOrderByWithRelationInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenOrderByRelationAggregateInput
   handoversRecorded?: Prisma.HandoverRecordOrderByRelationAggregateInput
   handoversConfirmed?: Prisma.HandoverRecordOrderByRelationAggregateInput
+  claimsFiled?: Prisma.DamageClaimOrderByRelationAggregateInput
+  claimsAgainst?: Prisma.DamageClaimOrderByRelationAggregateInput
+  claimsResolved?: Prisma.DamageClaimOrderByRelationAggregateInput
+  claimPhotos?: Prisma.ClaimPhotoOrderByRelationAggregateInput
   verifiedBy?: Prisma.UserOrderByWithRelationInput
   verifiedUsers?: Prisma.UserOrderByRelationAggregateInput
 }
@@ -482,6 +490,10 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   emailVerificationTokens?: Prisma.EmailVerificationTokenListRelationFilter
   handoversRecorded?: Prisma.HandoverRecordListRelationFilter
   handoversConfirmed?: Prisma.HandoverRecordListRelationFilter
+  claimsFiled?: Prisma.DamageClaimListRelationFilter
+  claimsAgainst?: Prisma.DamageClaimListRelationFilter
+  claimsResolved?: Prisma.DamageClaimListRelationFilter
+  claimPhotos?: Prisma.ClaimPhotoListRelationFilter
   verifiedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   verifiedUsers?: Prisma.UserListRelationFilter
 }, "id" | "email">
@@ -586,6 +598,10 @@ export type UserCreateInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -631,6 +647,10 @@ export type UserUncheckedCreateInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -674,6 +694,10 @@ export type UserUpdateInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -719,6 +743,10 @@ export type UserUncheckedUpdateInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -1173,6 +1201,64 @@ export type UserUpdateOneWithoutHandoversConfirmedNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutHandoversConfirmedInput, Prisma.UserUpdateWithoutHandoversConfirmedInput>, Prisma.UserUncheckedUpdateWithoutHandoversConfirmedInput>
 }
 
+export type UserCreateNestedOneWithoutClaimsFiledInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutClaimsFiledInput, Prisma.UserUncheckedCreateWithoutClaimsFiledInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutClaimsFiledInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutClaimsAgainstInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutClaimsAgainstInput, Prisma.UserUncheckedCreateWithoutClaimsAgainstInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutClaimsAgainstInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutClaimsResolvedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutClaimsResolvedInput, Prisma.UserUncheckedCreateWithoutClaimsResolvedInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutClaimsResolvedInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutClaimsFiledNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutClaimsFiledInput, Prisma.UserUncheckedCreateWithoutClaimsFiledInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutClaimsFiledInput
+  upsert?: Prisma.UserUpsertWithoutClaimsFiledInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutClaimsFiledInput, Prisma.UserUpdateWithoutClaimsFiledInput>, Prisma.UserUncheckedUpdateWithoutClaimsFiledInput>
+}
+
+export type UserUpdateOneRequiredWithoutClaimsAgainstNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutClaimsAgainstInput, Prisma.UserUncheckedCreateWithoutClaimsAgainstInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutClaimsAgainstInput
+  upsert?: Prisma.UserUpsertWithoutClaimsAgainstInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutClaimsAgainstInput, Prisma.UserUpdateWithoutClaimsAgainstInput>, Prisma.UserUncheckedUpdateWithoutClaimsAgainstInput>
+}
+
+export type UserUpdateOneWithoutClaimsResolvedNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutClaimsResolvedInput, Prisma.UserUncheckedCreateWithoutClaimsResolvedInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutClaimsResolvedInput
+  upsert?: Prisma.UserUpsertWithoutClaimsResolvedInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutClaimsResolvedInput, Prisma.UserUpdateWithoutClaimsResolvedInput>, Prisma.UserUncheckedUpdateWithoutClaimsResolvedInput>
+}
+
+export type UserCreateNestedOneWithoutClaimPhotosInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutClaimPhotosInput, Prisma.UserUncheckedCreateWithoutClaimPhotosInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutClaimPhotosInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutClaimPhotosNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutClaimPhotosInput, Prisma.UserUncheckedCreateWithoutClaimPhotosInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutClaimPhotosInput
+  upsert?: Prisma.UserUpsertWithoutClaimPhotosInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutClaimPhotosInput, Prisma.UserUpdateWithoutClaimPhotosInput>, Prisma.UserUncheckedUpdateWithoutClaimPhotosInput>
+}
+
 export type UserCreateNestedOneWithoutReviewsGivenInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutReviewsGivenInput, Prisma.UserUncheckedCreateWithoutReviewsGivenInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutReviewsGivenInput
@@ -1299,6 +1385,10 @@ export type UserCreateWithoutVerifiedUsersInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
 }
 
@@ -1343,6 +1433,10 @@ export type UserUncheckedCreateWithoutVerifiedUsersInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
 }
 
 export type UserCreateOrConnectWithoutVerifiedUsersInput = {
@@ -1390,6 +1484,10 @@ export type UserCreateWithoutVerifiedByInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -1433,6 +1531,10 @@ export type UserUncheckedCreateWithoutVerifiedByInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -1497,6 +1599,10 @@ export type UserUpdateWithoutVerifiedUsersInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
 }
 
@@ -1541,6 +1647,10 @@ export type UserUncheckedUpdateWithoutVerifiedUsersInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
 }
 
 export type UserUpsertWithWhereUniqueWithoutVerifiedByInput = {
@@ -1627,6 +1737,10 @@ export type UserCreateWithoutAccountsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -1671,6 +1785,10 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -1729,6 +1847,10 @@ export type UserUpdateWithoutAccountsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -1773,6 +1895,10 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -1815,6 +1941,10 @@ export type UserCreateWithoutSessionsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -1859,6 +1989,10 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -1917,6 +2051,10 @@ export type UserUpdateWithoutSessionsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -1961,6 +2099,10 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -2003,6 +2145,10 @@ export type UserCreateWithoutPasswordResetTokensInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2047,6 +2193,10 @@ export type UserUncheckedCreateWithoutPasswordResetTokensInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2105,6 +2255,10 @@ export type UserUpdateWithoutPasswordResetTokensInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -2149,6 +2303,10 @@ export type UserUncheckedUpdateWithoutPasswordResetTokensInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -2191,6 +2349,10 @@ export type UserCreateWithoutEmailVerificationTokensInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2235,6 +2397,10 @@ export type UserUncheckedCreateWithoutEmailVerificationTokensInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2293,6 +2459,10 @@ export type UserUpdateWithoutEmailVerificationTokensInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -2337,6 +2507,10 @@ export type UserUncheckedUpdateWithoutEmailVerificationTokensInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -2379,6 +2553,10 @@ export type UserCreateWithoutListingsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2423,6 +2601,10 @@ export type UserUncheckedCreateWithoutListingsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2481,6 +2663,10 @@ export type UserUpdateWithoutListingsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -2525,6 +2711,10 @@ export type UserUncheckedUpdateWithoutListingsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -2567,6 +2757,10 @@ export type UserCreateWithoutPaymentsConfirmedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2611,6 +2805,10 @@ export type UserUncheckedCreateWithoutPaymentsConfirmedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2669,6 +2867,10 @@ export type UserUpdateWithoutPaymentsConfirmedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -2713,6 +2915,10 @@ export type UserUncheckedUpdateWithoutPaymentsConfirmedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -2755,6 +2961,10 @@ export type UserCreateWithoutBookingsCancelledInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2799,6 +3009,10 @@ export type UserUncheckedCreateWithoutBookingsCancelledInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2846,6 +3060,10 @@ export type UserCreateWithoutBookingsAsRenterInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2890,6 +3108,10 @@ export type UserUncheckedCreateWithoutBookingsAsRenterInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -2937,6 +3159,10 @@ export type UserCreateWithoutBookingsAsOwnerInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -2981,6 +3207,10 @@ export type UserUncheckedCreateWithoutBookingsAsOwnerInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -3039,6 +3269,10 @@ export type UserUpdateWithoutBookingsCancelledInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3083,6 +3317,10 @@ export type UserUncheckedUpdateWithoutBookingsCancelledInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3136,6 +3374,10 @@ export type UserUpdateWithoutBookingsAsRenterInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3180,6 +3422,10 @@ export type UserUncheckedUpdateWithoutBookingsAsRenterInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3233,6 +3479,10 @@ export type UserUpdateWithoutBookingsAsOwnerInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3277,6 +3527,10 @@ export type UserUncheckedUpdateWithoutBookingsAsOwnerInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3319,6 +3573,10 @@ export type UserCreateWithoutHandoversRecordedInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -3363,6 +3621,10 @@ export type UserUncheckedCreateWithoutHandoversRecordedInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -3410,6 +3672,10 @@ export type UserCreateWithoutHandoversConfirmedInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -3454,6 +3720,10 @@ export type UserUncheckedCreateWithoutHandoversConfirmedInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -3512,6 +3782,10 @@ export type UserUpdateWithoutHandoversRecordedInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3556,6 +3830,10 @@ export type UserUncheckedUpdateWithoutHandoversRecordedInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3609,6 +3887,10 @@ export type UserUpdateWithoutHandoversConfirmedInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3653,6 +3935,826 @@ export type UserUncheckedUpdateWithoutHandoversConfirmedInput = {
   passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserCreateWithoutClaimsFiledInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserUncheckedCreateWithoutClaimsFiledInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingUncheckedCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewUncheckedCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewUncheckedCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingUncheckedCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserCreateOrConnectWithoutClaimsFiledInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutClaimsFiledInput, Prisma.UserUncheckedCreateWithoutClaimsFiledInput>
+}
+
+export type UserCreateWithoutClaimsAgainstInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserUncheckedCreateWithoutClaimsAgainstInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingUncheckedCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewUncheckedCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewUncheckedCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingUncheckedCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserCreateOrConnectWithoutClaimsAgainstInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutClaimsAgainstInput, Prisma.UserUncheckedCreateWithoutClaimsAgainstInput>
+}
+
+export type UserCreateWithoutClaimsResolvedInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserUncheckedCreateWithoutClaimsResolvedInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingUncheckedCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewUncheckedCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewUncheckedCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingUncheckedCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserCreateOrConnectWithoutClaimsResolvedInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutClaimsResolvedInput, Prisma.UserUncheckedCreateWithoutClaimsResolvedInput>
+}
+
+export type UserUpsertWithoutClaimsFiledInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutClaimsFiledInput, Prisma.UserUncheckedUpdateWithoutClaimsFiledInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutClaimsFiledInput, Prisma.UserUncheckedCreateWithoutClaimsFiledInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutClaimsFiledInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutClaimsFiledInput, Prisma.UserUncheckedUpdateWithoutClaimsFiledInput>
+}
+
+export type UserUpdateWithoutClaimsFiledInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutClaimsFiledInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUncheckedUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUncheckedUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUncheckedUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUpsertWithoutClaimsAgainstInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutClaimsAgainstInput, Prisma.UserUncheckedUpdateWithoutClaimsAgainstInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutClaimsAgainstInput, Prisma.UserUncheckedCreateWithoutClaimsAgainstInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutClaimsAgainstInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutClaimsAgainstInput, Prisma.UserUncheckedUpdateWithoutClaimsAgainstInput>
+}
+
+export type UserUpdateWithoutClaimsAgainstInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutClaimsAgainstInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUncheckedUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUncheckedUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUncheckedUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUpsertWithoutClaimsResolvedInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutClaimsResolvedInput, Prisma.UserUncheckedUpdateWithoutClaimsResolvedInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutClaimsResolvedInput, Prisma.UserUncheckedCreateWithoutClaimsResolvedInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutClaimsResolvedInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutClaimsResolvedInput, Prisma.UserUncheckedUpdateWithoutClaimsResolvedInput>
+}
+
+export type UserUpdateWithoutClaimsResolvedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutClaimsResolvedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUncheckedUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUncheckedUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUncheckedUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
+  verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserCreateWithoutClaimPhotosInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
+  verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserUncheckedCreateWithoutClaimPhotosInput = {
+  id?: string
+  name?: string | null
+  email: string
+  emailVerified?: Date | string | null
+  image?: string | null
+  password?: string | null
+  phone?: string | null
+  phoneVerified?: boolean
+  bio?: string | null
+  city?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  status?: $Enums.UserStatus
+  isVerified?: boolean
+  verifiedAt?: Date | string | null
+  verifiedById?: string | null
+  ownerRatingAverage?: number | null
+  ownerRatingCount?: number
+  renterRatingAverage?: number | null
+  renterRatingCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  listings?: Prisma.ListingUncheckedCreateNestedManyWithoutOwnerInput
+  bookingsAsRenter?: Prisma.BookingUncheckedCreateNestedManyWithoutRenterInput
+  bookingsAsOwner?: Prisma.BookingUncheckedCreateNestedManyWithoutOwnerInput
+  reviewsGiven?: Prisma.ReviewUncheckedCreateNestedManyWithoutReviewerInput
+  reviewsReceived?: Prisma.ReviewUncheckedCreateNestedManyWithoutRevieweeInput
+  savedListings?: Prisma.SavedListingUncheckedCreateNestedManyWithoutUserInput
+  reportsSubmitted?: Prisma.ReportUncheckedCreateNestedManyWithoutReporterInput
+  reportsResolved?: Prisma.ReportUncheckedCreateNestedManyWithoutResolverInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedCreateNestedManyWithoutConfirmedByInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingsCancelled?: Prisma.BookingUncheckedCreateNestedManyWithoutCancelledByInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
+}
+
+export type UserCreateOrConnectWithoutClaimPhotosInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutClaimPhotosInput, Prisma.UserUncheckedCreateWithoutClaimPhotosInput>
+}
+
+export type UserUpsertWithoutClaimPhotosInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutClaimPhotosInput, Prisma.UserUncheckedUpdateWithoutClaimPhotosInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutClaimPhotosInput, Prisma.UserUncheckedCreateWithoutClaimPhotosInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutClaimPhotosInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutClaimPhotosInput, Prisma.UserUncheckedUpdateWithoutClaimPhotosInput>
+}
+
+export type UserUpdateWithoutClaimPhotosInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
+  verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutClaimPhotosInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  isVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verifiedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ownerRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  ownerRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  renterRatingAverage?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  renterRatingCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  listings?: Prisma.ListingUncheckedUpdateManyWithoutOwnerNestedInput
+  bookingsAsRenter?: Prisma.BookingUncheckedUpdateManyWithoutRenterNestedInput
+  bookingsAsOwner?: Prisma.BookingUncheckedUpdateManyWithoutOwnerNestedInput
+  reviewsGiven?: Prisma.ReviewUncheckedUpdateManyWithoutReviewerNestedInput
+  reviewsReceived?: Prisma.ReviewUncheckedUpdateManyWithoutRevieweeNestedInput
+  savedListings?: Prisma.SavedListingUncheckedUpdateManyWithoutUserNestedInput
+  reportsSubmitted?: Prisma.ReportUncheckedUpdateManyWithoutReporterNestedInput
+  reportsResolved?: Prisma.ReportUncheckedUpdateManyWithoutResolverNestedInput
+  paymentsConfirmed?: Prisma.PaymentUncheckedUpdateManyWithoutConfirmedByNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingsCancelled?: Prisma.BookingUncheckedUpdateManyWithoutCancelledByNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
+  handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3695,6 +4797,10 @@ export type UserCreateWithoutReviewsGivenInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -3739,6 +4845,10 @@ export type UserUncheckedCreateWithoutReviewsGivenInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -3786,6 +4896,10 @@ export type UserCreateWithoutReviewsReceivedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -3830,6 +4944,10 @@ export type UserUncheckedCreateWithoutReviewsReceivedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -3888,6 +5006,10 @@ export type UserUpdateWithoutReviewsGivenInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -3932,6 +5054,10 @@ export type UserUncheckedUpdateWithoutReviewsGivenInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -3985,6 +5111,10 @@ export type UserUpdateWithoutReviewsReceivedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -4029,6 +5159,10 @@ export type UserUncheckedUpdateWithoutReviewsReceivedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -4071,6 +5205,10 @@ export type UserCreateWithoutNotificationsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -4115,6 +5253,10 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -4173,6 +5315,10 @@ export type UserUpdateWithoutNotificationsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -4217,6 +5363,10 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -4259,6 +5409,10 @@ export type UserCreateWithoutSavedListingsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -4303,6 +5457,10 @@ export type UserUncheckedCreateWithoutSavedListingsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -4361,6 +5519,10 @@ export type UserUpdateWithoutSavedListingsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -4405,6 +5567,10 @@ export type UserUncheckedUpdateWithoutSavedListingsInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -4447,6 +5613,10 @@ export type UserCreateWithoutReportsSubmittedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -4491,6 +5661,10 @@ export type UserUncheckedCreateWithoutReportsSubmittedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -4538,6 +5712,10 @@ export type UserCreateWithoutReportsResolvedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoCreateNestedManyWithoutUploadedByInput
   verifiedBy?: Prisma.UserCreateNestedOneWithoutVerifiedUsersInput
   verifiedUsers?: Prisma.UserCreateNestedManyWithoutVerifiedByInput
 }
@@ -4582,6 +5760,10 @@ export type UserUncheckedCreateWithoutReportsResolvedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutRecordedByInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedCreateNestedManyWithoutConfirmedByInput
+  claimsFiled?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutClaimantInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutRespondentInput
+  claimsResolved?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutResolvedByInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedCreateNestedManyWithoutUploadedByInput
   verifiedUsers?: Prisma.UserUncheckedCreateNestedManyWithoutVerifiedByInput
 }
 
@@ -4640,6 +5822,10 @@ export type UserUpdateWithoutReportsSubmittedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -4684,6 +5870,10 @@ export type UserUncheckedUpdateWithoutReportsSubmittedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -4737,6 +5927,10 @@ export type UserUpdateWithoutReportsResolvedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedBy?: Prisma.UserUpdateOneWithoutVerifiedUsersNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
@@ -4781,6 +5975,10 @@ export type UserUncheckedUpdateWithoutReportsResolvedInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -4849,6 +6047,10 @@ export type UserUpdateWithoutVerifiedByInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -4892,6 +6094,10 @@ export type UserUncheckedUpdateWithoutVerifiedByInput = {
   emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
   handoversRecorded?: Prisma.HandoverRecordUncheckedUpdateManyWithoutRecordedByNestedInput
   handoversConfirmed?: Prisma.HandoverRecordUncheckedUpdateManyWithoutConfirmedByNestedInput
+  claimsFiled?: Prisma.DamageClaimUncheckedUpdateManyWithoutClaimantNestedInput
+  claimsAgainst?: Prisma.DamageClaimUncheckedUpdateManyWithoutRespondentNestedInput
+  claimsResolved?: Prisma.DamageClaimUncheckedUpdateManyWithoutResolvedByNestedInput
+  claimPhotos?: Prisma.ClaimPhotoUncheckedUpdateManyWithoutUploadedByNestedInput
   verifiedUsers?: Prisma.UserUncheckedUpdateManyWithoutVerifiedByNestedInput
 }
 
@@ -4943,6 +6149,10 @@ export type UserCountOutputType = {
   emailVerificationTokens: number
   handoversRecorded: number
   handoversConfirmed: number
+  claimsFiled: number
+  claimsAgainst: number
+  claimsResolved: number
+  claimPhotos: number
   verifiedUsers: number
 }
 
@@ -4964,6 +6174,10 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   emailVerificationTokens?: boolean | UserCountOutputTypeCountEmailVerificationTokensArgs
   handoversRecorded?: boolean | UserCountOutputTypeCountHandoversRecordedArgs
   handoversConfirmed?: boolean | UserCountOutputTypeCountHandoversConfirmedArgs
+  claimsFiled?: boolean | UserCountOutputTypeCountClaimsFiledArgs
+  claimsAgainst?: boolean | UserCountOutputTypeCountClaimsAgainstArgs
+  claimsResolved?: boolean | UserCountOutputTypeCountClaimsResolvedArgs
+  claimPhotos?: boolean | UserCountOutputTypeCountClaimPhotosArgs
   verifiedUsers?: boolean | UserCountOutputTypeCountVerifiedUsersArgs
 }
 
@@ -5099,6 +6313,34 @@ export type UserCountOutputTypeCountHandoversConfirmedArgs<ExtArgs extends runti
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountClaimsFiledArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DamageClaimWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountClaimsAgainstArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DamageClaimWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountClaimsResolvedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DamageClaimWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountClaimPhotosArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ClaimPhotoWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountVerifiedUsersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.UserWhereInput
 }
@@ -5145,6 +6387,10 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   emailVerificationTokens?: boolean | Prisma.User$emailVerificationTokensArgs<ExtArgs>
   handoversRecorded?: boolean | Prisma.User$handoversRecordedArgs<ExtArgs>
   handoversConfirmed?: boolean | Prisma.User$handoversConfirmedArgs<ExtArgs>
+  claimsFiled?: boolean | Prisma.User$claimsFiledArgs<ExtArgs>
+  claimsAgainst?: boolean | Prisma.User$claimsAgainstArgs<ExtArgs>
+  claimsResolved?: boolean | Prisma.User$claimsResolvedArgs<ExtArgs>
+  claimPhotos?: boolean | Prisma.User$claimPhotosArgs<ExtArgs>
   verifiedBy?: boolean | Prisma.User$verifiedByArgs<ExtArgs>
   verifiedUsers?: boolean | Prisma.User$verifiedUsersArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -5249,6 +6495,10 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   emailVerificationTokens?: boolean | Prisma.User$emailVerificationTokensArgs<ExtArgs>
   handoversRecorded?: boolean | Prisma.User$handoversRecordedArgs<ExtArgs>
   handoversConfirmed?: boolean | Prisma.User$handoversConfirmedArgs<ExtArgs>
+  claimsFiled?: boolean | Prisma.User$claimsFiledArgs<ExtArgs>
+  claimsAgainst?: boolean | Prisma.User$claimsAgainstArgs<ExtArgs>
+  claimsResolved?: boolean | Prisma.User$claimsResolvedArgs<ExtArgs>
+  claimPhotos?: boolean | Prisma.User$claimPhotosArgs<ExtArgs>
   verifiedBy?: boolean | Prisma.User$verifiedByArgs<ExtArgs>
   verifiedUsers?: boolean | Prisma.User$verifiedUsersArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -5280,6 +6530,10 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     emailVerificationTokens: Prisma.$EmailVerificationTokenPayload<ExtArgs>[]
     handoversRecorded: Prisma.$HandoverRecordPayload<ExtArgs>[]
     handoversConfirmed: Prisma.$HandoverRecordPayload<ExtArgs>[]
+    claimsFiled: Prisma.$DamageClaimPayload<ExtArgs>[]
+    claimsAgainst: Prisma.$DamageClaimPayload<ExtArgs>[]
+    claimsResolved: Prisma.$DamageClaimPayload<ExtArgs>[]
+    claimPhotos: Prisma.$ClaimPhotoPayload<ExtArgs>[]
     verifiedBy: Prisma.$UserPayload<ExtArgs> | null
     verifiedUsers: Prisma.$UserPayload<ExtArgs>[]
   }
@@ -5730,6 +6984,10 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   emailVerificationTokens<T extends Prisma.User$emailVerificationTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$emailVerificationTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailVerificationTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   handoversRecorded<T extends Prisma.User$handoversRecordedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$handoversRecordedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$HandoverRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   handoversConfirmed<T extends Prisma.User$handoversConfirmedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$handoversConfirmedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$HandoverRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  claimsFiled<T extends Prisma.User$claimsFiledArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$claimsFiledArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DamageClaimPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  claimsAgainst<T extends Prisma.User$claimsAgainstArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$claimsAgainstArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DamageClaimPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  claimsResolved<T extends Prisma.User$claimsResolvedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$claimsResolvedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DamageClaimPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  claimPhotos<T extends Prisma.User$claimPhotosArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$claimPhotosArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ClaimPhotoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   verifiedBy<T extends Prisma.User$verifiedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$verifiedByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   verifiedUsers<T extends Prisma.User$verifiedUsersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$verifiedUsersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -6590,6 +7848,102 @@ export type User$handoversConfirmedArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.HandoverRecordScalarFieldEnum | Prisma.HandoverRecordScalarFieldEnum[]
+}
+
+/**
+ * User.claimsFiled
+ */
+export type User$claimsFiledArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DamageClaim
+   */
+  select?: Prisma.DamageClaimSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DamageClaim
+   */
+  omit?: Prisma.DamageClaimOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DamageClaimInclude<ExtArgs> | null
+  where?: Prisma.DamageClaimWhereInput
+  orderBy?: Prisma.DamageClaimOrderByWithRelationInput | Prisma.DamageClaimOrderByWithRelationInput[]
+  cursor?: Prisma.DamageClaimWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DamageClaimScalarFieldEnum | Prisma.DamageClaimScalarFieldEnum[]
+}
+
+/**
+ * User.claimsAgainst
+ */
+export type User$claimsAgainstArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DamageClaim
+   */
+  select?: Prisma.DamageClaimSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DamageClaim
+   */
+  omit?: Prisma.DamageClaimOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DamageClaimInclude<ExtArgs> | null
+  where?: Prisma.DamageClaimWhereInput
+  orderBy?: Prisma.DamageClaimOrderByWithRelationInput | Prisma.DamageClaimOrderByWithRelationInput[]
+  cursor?: Prisma.DamageClaimWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DamageClaimScalarFieldEnum | Prisma.DamageClaimScalarFieldEnum[]
+}
+
+/**
+ * User.claimsResolved
+ */
+export type User$claimsResolvedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DamageClaim
+   */
+  select?: Prisma.DamageClaimSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DamageClaim
+   */
+  omit?: Prisma.DamageClaimOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DamageClaimInclude<ExtArgs> | null
+  where?: Prisma.DamageClaimWhereInput
+  orderBy?: Prisma.DamageClaimOrderByWithRelationInput | Prisma.DamageClaimOrderByWithRelationInput[]
+  cursor?: Prisma.DamageClaimWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DamageClaimScalarFieldEnum | Prisma.DamageClaimScalarFieldEnum[]
+}
+
+/**
+ * User.claimPhotos
+ */
+export type User$claimPhotosArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ClaimPhoto
+   */
+  select?: Prisma.ClaimPhotoSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ClaimPhoto
+   */
+  omit?: Prisma.ClaimPhotoOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ClaimPhotoInclude<ExtArgs> | null
+  where?: Prisma.ClaimPhotoWhereInput
+  orderBy?: Prisma.ClaimPhotoOrderByWithRelationInput | Prisma.ClaimPhotoOrderByWithRelationInput[]
+  cursor?: Prisma.ClaimPhotoWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ClaimPhotoScalarFieldEnum | Prisma.ClaimPhotoScalarFieldEnum[]
 }
 
 /**

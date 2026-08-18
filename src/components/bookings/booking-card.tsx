@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { BookingActions } from "@/components/bookings/booking-actions";
+import { ClaimPanel } from "@/components/claims/claim-panel";
 import { HandoverRecordList } from "@/components/handover/handover-record-list";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -139,6 +140,18 @@ function BookingCard({ booking, side }: BookingCardProps) {
             status branches would have meant repeating it in six places and forgetting it in one.
           */}
           <HandoverRecordList handovers={booking.handovers} />
+
+          {/*
+            The claim, above the actions like the handover records and for the same reason: it stays
+            visible for the whole life of the disagreement, on both dashboards, without being
+            repeated in every status branch. Filing one is an action and lives below.
+          */}
+          {booking.claim && (
+            <ClaimPanel
+              claim={booking.claim}
+              securityDeposit={booking.securityDeposit}
+            />
+          )}
 
           <BookingActions booking={booking} side={side} />
         </div>

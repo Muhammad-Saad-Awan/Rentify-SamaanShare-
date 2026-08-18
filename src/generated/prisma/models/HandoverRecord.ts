@@ -257,6 +257,7 @@ export type HandoverRecordWhereInput = {
   recordedBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   confirmedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   photos?: Prisma.HandoverPhotoListRelationFilter
+  claims?: Prisma.DamageClaimListRelationFilter
 }
 
 export type HandoverRecordOrderByWithRelationInput = {
@@ -276,6 +277,7 @@ export type HandoverRecordOrderByWithRelationInput = {
   recordedBy?: Prisma.UserOrderByWithRelationInput
   confirmedBy?: Prisma.UserOrderByWithRelationInput
   photos?: Prisma.HandoverPhotoOrderByRelationAggregateInput
+  claims?: Prisma.DamageClaimOrderByRelationAggregateInput
 }
 
 export type HandoverRecordWhereUniqueInput = Prisma.AtLeast<{
@@ -299,6 +301,7 @@ export type HandoverRecordWhereUniqueInput = Prisma.AtLeast<{
   recordedBy?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   confirmedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   photos?: Prisma.HandoverPhotoListRelationFilter
+  claims?: Prisma.DamageClaimListRelationFilter
 }, "id" | "bookingId_type">
 
 export type HandoverRecordOrderByWithAggregationInput = {
@@ -351,6 +354,7 @@ export type HandoverRecordCreateInput = {
   recordedBy: Prisma.UserCreateNestedOneWithoutHandoversRecordedInput
   confirmedBy?: Prisma.UserCreateNestedOneWithoutHandoversConfirmedInput
   photos?: Prisma.HandoverPhotoCreateNestedManyWithoutHandoverInput
+  claims?: Prisma.DamageClaimCreateNestedManyWithoutHandoverInput
 }
 
 export type HandoverRecordUncheckedCreateInput = {
@@ -367,6 +371,7 @@ export type HandoverRecordUncheckedCreateInput = {
   confirmationNote?: string | null
   createdAt?: Date | string
   photos?: Prisma.HandoverPhotoUncheckedCreateNestedManyWithoutHandoverInput
+  claims?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutHandoverInput
 }
 
 export type HandoverRecordUpdateInput = {
@@ -383,6 +388,7 @@ export type HandoverRecordUpdateInput = {
   recordedBy?: Prisma.UserUpdateOneRequiredWithoutHandoversRecordedNestedInput
   confirmedBy?: Prisma.UserUpdateOneWithoutHandoversConfirmedNestedInput
   photos?: Prisma.HandoverPhotoUpdateManyWithoutHandoverNestedInput
+  claims?: Prisma.DamageClaimUpdateManyWithoutHandoverNestedInput
 }
 
 export type HandoverRecordUncheckedUpdateInput = {
@@ -399,6 +405,7 @@ export type HandoverRecordUncheckedUpdateInput = {
   confirmationNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   photos?: Prisma.HandoverPhotoUncheckedUpdateManyWithoutHandoverNestedInput
+  claims?: Prisma.DamageClaimUncheckedUpdateManyWithoutHandoverNestedInput
 }
 
 export type HandoverRecordCreateManyInput = {
@@ -506,6 +513,11 @@ export type HandoverRecordMinOrderByAggregateInput = {
 export type HandoverRecordScalarRelationFilter = {
   is?: Prisma.HandoverRecordWhereInput
   isNot?: Prisma.HandoverRecordWhereInput
+}
+
+export type HandoverRecordNullableScalarRelationFilter = {
+  is?: Prisma.HandoverRecordWhereInput | null
+  isNot?: Prisma.HandoverRecordWhereInput | null
 }
 
 export type HandoverRecordCreateNestedManyWithoutRecordedByInput = {
@@ -660,6 +672,22 @@ export type HandoverRecordUpdateOneRequiredWithoutPhotosNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.HandoverRecordUpdateToOneWithWhereWithoutPhotosInput, Prisma.HandoverRecordUpdateWithoutPhotosInput>, Prisma.HandoverRecordUncheckedUpdateWithoutPhotosInput>
 }
 
+export type HandoverRecordCreateNestedOneWithoutClaimsInput = {
+  create?: Prisma.XOR<Prisma.HandoverRecordCreateWithoutClaimsInput, Prisma.HandoverRecordUncheckedCreateWithoutClaimsInput>
+  connectOrCreate?: Prisma.HandoverRecordCreateOrConnectWithoutClaimsInput
+  connect?: Prisma.HandoverRecordWhereUniqueInput
+}
+
+export type HandoverRecordUpdateOneWithoutClaimsNestedInput = {
+  create?: Prisma.XOR<Prisma.HandoverRecordCreateWithoutClaimsInput, Prisma.HandoverRecordUncheckedCreateWithoutClaimsInput>
+  connectOrCreate?: Prisma.HandoverRecordCreateOrConnectWithoutClaimsInput
+  upsert?: Prisma.HandoverRecordUpsertWithoutClaimsInput
+  disconnect?: Prisma.HandoverRecordWhereInput | boolean
+  delete?: Prisma.HandoverRecordWhereInput | boolean
+  connect?: Prisma.HandoverRecordWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.HandoverRecordUpdateToOneWithWhereWithoutClaimsInput, Prisma.HandoverRecordUpdateWithoutClaimsInput>, Prisma.HandoverRecordUncheckedUpdateWithoutClaimsInput>
+}
+
 export type HandoverRecordCreateWithoutRecordedByInput = {
   id?: string
   type: $Enums.HandoverType
@@ -673,6 +701,7 @@ export type HandoverRecordCreateWithoutRecordedByInput = {
   booking: Prisma.BookingCreateNestedOneWithoutHandoversInput
   confirmedBy?: Prisma.UserCreateNestedOneWithoutHandoversConfirmedInput
   photos?: Prisma.HandoverPhotoCreateNestedManyWithoutHandoverInput
+  claims?: Prisma.DamageClaimCreateNestedManyWithoutHandoverInput
 }
 
 export type HandoverRecordUncheckedCreateWithoutRecordedByInput = {
@@ -688,6 +717,7 @@ export type HandoverRecordUncheckedCreateWithoutRecordedByInput = {
   confirmationNote?: string | null
   createdAt?: Date | string
   photos?: Prisma.HandoverPhotoUncheckedCreateNestedManyWithoutHandoverInput
+  claims?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutHandoverInput
 }
 
 export type HandoverRecordCreateOrConnectWithoutRecordedByInput = {
@@ -713,6 +743,7 @@ export type HandoverRecordCreateWithoutConfirmedByInput = {
   booking: Prisma.BookingCreateNestedOneWithoutHandoversInput
   recordedBy: Prisma.UserCreateNestedOneWithoutHandoversRecordedInput
   photos?: Prisma.HandoverPhotoCreateNestedManyWithoutHandoverInput
+  claims?: Prisma.DamageClaimCreateNestedManyWithoutHandoverInput
 }
 
 export type HandoverRecordUncheckedCreateWithoutConfirmedByInput = {
@@ -728,6 +759,7 @@ export type HandoverRecordUncheckedCreateWithoutConfirmedByInput = {
   confirmationNote?: string | null
   createdAt?: Date | string
   photos?: Prisma.HandoverPhotoUncheckedCreateNestedManyWithoutHandoverInput
+  claims?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutHandoverInput
 }
 
 export type HandoverRecordCreateOrConnectWithoutConfirmedByInput = {
@@ -803,6 +835,7 @@ export type HandoverRecordCreateWithoutBookingInput = {
   recordedBy: Prisma.UserCreateNestedOneWithoutHandoversRecordedInput
   confirmedBy?: Prisma.UserCreateNestedOneWithoutHandoversConfirmedInput
   photos?: Prisma.HandoverPhotoCreateNestedManyWithoutHandoverInput
+  claims?: Prisma.DamageClaimCreateNestedManyWithoutHandoverInput
 }
 
 export type HandoverRecordUncheckedCreateWithoutBookingInput = {
@@ -818,6 +851,7 @@ export type HandoverRecordUncheckedCreateWithoutBookingInput = {
   confirmationNote?: string | null
   createdAt?: Date | string
   photos?: Prisma.HandoverPhotoUncheckedCreateNestedManyWithoutHandoverInput
+  claims?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutHandoverInput
 }
 
 export type HandoverRecordCreateOrConnectWithoutBookingInput = {
@@ -859,6 +893,7 @@ export type HandoverRecordCreateWithoutPhotosInput = {
   booking: Prisma.BookingCreateNestedOneWithoutHandoversInput
   recordedBy: Prisma.UserCreateNestedOneWithoutHandoversRecordedInput
   confirmedBy?: Prisma.UserCreateNestedOneWithoutHandoversConfirmedInput
+  claims?: Prisma.DamageClaimCreateNestedManyWithoutHandoverInput
 }
 
 export type HandoverRecordUncheckedCreateWithoutPhotosInput = {
@@ -874,6 +909,7 @@ export type HandoverRecordUncheckedCreateWithoutPhotosInput = {
   confirmedAt?: Date | string | null
   confirmationNote?: string | null
   createdAt?: Date | string
+  claims?: Prisma.DamageClaimUncheckedCreateNestedManyWithoutHandoverInput
 }
 
 export type HandoverRecordCreateOrConnectWithoutPhotosInput = {
@@ -905,6 +941,7 @@ export type HandoverRecordUpdateWithoutPhotosInput = {
   booking?: Prisma.BookingUpdateOneRequiredWithoutHandoversNestedInput
   recordedBy?: Prisma.UserUpdateOneRequiredWithoutHandoversRecordedNestedInput
   confirmedBy?: Prisma.UserUpdateOneWithoutHandoversConfirmedNestedInput
+  claims?: Prisma.DamageClaimUpdateManyWithoutHandoverNestedInput
 }
 
 export type HandoverRecordUncheckedUpdateWithoutPhotosInput = {
@@ -920,6 +957,87 @@ export type HandoverRecordUncheckedUpdateWithoutPhotosInput = {
   confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   confirmationNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  claims?: Prisma.DamageClaimUncheckedUpdateManyWithoutHandoverNestedInput
+}
+
+export type HandoverRecordCreateWithoutClaimsInput = {
+  id?: string
+  type: $Enums.HandoverType
+  condition: $Enums.HandoverCondition
+  notes?: string | null
+  recordedAt?: Date | string
+  confirmation?: $Enums.HandoverConfirmation
+  confirmedAt?: Date | string | null
+  confirmationNote?: string | null
+  createdAt?: Date | string
+  booking: Prisma.BookingCreateNestedOneWithoutHandoversInput
+  recordedBy: Prisma.UserCreateNestedOneWithoutHandoversRecordedInput
+  confirmedBy?: Prisma.UserCreateNestedOneWithoutHandoversConfirmedInput
+  photos?: Prisma.HandoverPhotoCreateNestedManyWithoutHandoverInput
+}
+
+export type HandoverRecordUncheckedCreateWithoutClaimsInput = {
+  id?: string
+  bookingId: string
+  type: $Enums.HandoverType
+  condition: $Enums.HandoverCondition
+  notes?: string | null
+  recordedById: string
+  recordedAt?: Date | string
+  confirmation?: $Enums.HandoverConfirmation
+  confirmedById?: string | null
+  confirmedAt?: Date | string | null
+  confirmationNote?: string | null
+  createdAt?: Date | string
+  photos?: Prisma.HandoverPhotoUncheckedCreateNestedManyWithoutHandoverInput
+}
+
+export type HandoverRecordCreateOrConnectWithoutClaimsInput = {
+  where: Prisma.HandoverRecordWhereUniqueInput
+  create: Prisma.XOR<Prisma.HandoverRecordCreateWithoutClaimsInput, Prisma.HandoverRecordUncheckedCreateWithoutClaimsInput>
+}
+
+export type HandoverRecordUpsertWithoutClaimsInput = {
+  update: Prisma.XOR<Prisma.HandoverRecordUpdateWithoutClaimsInput, Prisma.HandoverRecordUncheckedUpdateWithoutClaimsInput>
+  create: Prisma.XOR<Prisma.HandoverRecordCreateWithoutClaimsInput, Prisma.HandoverRecordUncheckedCreateWithoutClaimsInput>
+  where?: Prisma.HandoverRecordWhereInput
+}
+
+export type HandoverRecordUpdateToOneWithWhereWithoutClaimsInput = {
+  where?: Prisma.HandoverRecordWhereInput
+  data: Prisma.XOR<Prisma.HandoverRecordUpdateWithoutClaimsInput, Prisma.HandoverRecordUncheckedUpdateWithoutClaimsInput>
+}
+
+export type HandoverRecordUpdateWithoutClaimsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumHandoverTypeFieldUpdateOperationsInput | $Enums.HandoverType
+  condition?: Prisma.EnumHandoverConditionFieldUpdateOperationsInput | $Enums.HandoverCondition
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmation?: Prisma.EnumHandoverConfirmationFieldUpdateOperationsInput | $Enums.HandoverConfirmation
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmationNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  booking?: Prisma.BookingUpdateOneRequiredWithoutHandoversNestedInput
+  recordedBy?: Prisma.UserUpdateOneRequiredWithoutHandoversRecordedNestedInput
+  confirmedBy?: Prisma.UserUpdateOneWithoutHandoversConfirmedNestedInput
+  photos?: Prisma.HandoverPhotoUpdateManyWithoutHandoverNestedInput
+}
+
+export type HandoverRecordUncheckedUpdateWithoutClaimsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  bookingId?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumHandoverTypeFieldUpdateOperationsInput | $Enums.HandoverType
+  condition?: Prisma.EnumHandoverConditionFieldUpdateOperationsInput | $Enums.HandoverCondition
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  recordedById?: Prisma.StringFieldUpdateOperationsInput | string
+  recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  confirmation?: Prisma.EnumHandoverConfirmationFieldUpdateOperationsInput | $Enums.HandoverConfirmation
+  confirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  confirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmationNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  photos?: Prisma.HandoverPhotoUncheckedUpdateManyWithoutHandoverNestedInput
 }
 
 export type HandoverRecordCreateManyRecordedByInput = {
@@ -963,6 +1081,7 @@ export type HandoverRecordUpdateWithoutRecordedByInput = {
   booking?: Prisma.BookingUpdateOneRequiredWithoutHandoversNestedInput
   confirmedBy?: Prisma.UserUpdateOneWithoutHandoversConfirmedNestedInput
   photos?: Prisma.HandoverPhotoUpdateManyWithoutHandoverNestedInput
+  claims?: Prisma.DamageClaimUpdateManyWithoutHandoverNestedInput
 }
 
 export type HandoverRecordUncheckedUpdateWithoutRecordedByInput = {
@@ -978,6 +1097,7 @@ export type HandoverRecordUncheckedUpdateWithoutRecordedByInput = {
   confirmationNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   photos?: Prisma.HandoverPhotoUncheckedUpdateManyWithoutHandoverNestedInput
+  claims?: Prisma.DamageClaimUncheckedUpdateManyWithoutHandoverNestedInput
 }
 
 export type HandoverRecordUncheckedUpdateManyWithoutRecordedByInput = {
@@ -1007,6 +1127,7 @@ export type HandoverRecordUpdateWithoutConfirmedByInput = {
   booking?: Prisma.BookingUpdateOneRequiredWithoutHandoversNestedInput
   recordedBy?: Prisma.UserUpdateOneRequiredWithoutHandoversRecordedNestedInput
   photos?: Prisma.HandoverPhotoUpdateManyWithoutHandoverNestedInput
+  claims?: Prisma.DamageClaimUpdateManyWithoutHandoverNestedInput
 }
 
 export type HandoverRecordUncheckedUpdateWithoutConfirmedByInput = {
@@ -1022,6 +1143,7 @@ export type HandoverRecordUncheckedUpdateWithoutConfirmedByInput = {
   confirmationNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   photos?: Prisma.HandoverPhotoUncheckedUpdateManyWithoutHandoverNestedInput
+  claims?: Prisma.DamageClaimUncheckedUpdateManyWithoutHandoverNestedInput
 }
 
 export type HandoverRecordUncheckedUpdateManyWithoutConfirmedByInput = {
@@ -1065,6 +1187,7 @@ export type HandoverRecordUpdateWithoutBookingInput = {
   recordedBy?: Prisma.UserUpdateOneRequiredWithoutHandoversRecordedNestedInput
   confirmedBy?: Prisma.UserUpdateOneWithoutHandoversConfirmedNestedInput
   photos?: Prisma.HandoverPhotoUpdateManyWithoutHandoverNestedInput
+  claims?: Prisma.DamageClaimUpdateManyWithoutHandoverNestedInput
 }
 
 export type HandoverRecordUncheckedUpdateWithoutBookingInput = {
@@ -1080,6 +1203,7 @@ export type HandoverRecordUncheckedUpdateWithoutBookingInput = {
   confirmationNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   photos?: Prisma.HandoverPhotoUncheckedUpdateManyWithoutHandoverNestedInput
+  claims?: Prisma.DamageClaimUncheckedUpdateManyWithoutHandoverNestedInput
 }
 
 export type HandoverRecordUncheckedUpdateManyWithoutBookingInput = {
@@ -1103,10 +1227,12 @@ export type HandoverRecordUncheckedUpdateManyWithoutBookingInput = {
 
 export type HandoverRecordCountOutputType = {
   photos: number
+  claims: number
 }
 
 export type HandoverRecordCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   photos?: boolean | HandoverRecordCountOutputTypeCountPhotosArgs
+  claims?: boolean | HandoverRecordCountOutputTypeCountClaimsArgs
 }
 
 /**
@@ -1124,6 +1250,13 @@ export type HandoverRecordCountOutputTypeDefaultArgs<ExtArgs extends runtime.Typ
  */
 export type HandoverRecordCountOutputTypeCountPhotosArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.HandoverPhotoWhereInput
+}
+
+/**
+ * HandoverRecordCountOutputType without action
+ */
+export type HandoverRecordCountOutputTypeCountClaimsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DamageClaimWhereInput
 }
 
 
@@ -1144,6 +1277,7 @@ export type HandoverRecordSelect<ExtArgs extends runtime.Types.Extensions.Intern
   recordedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   confirmedBy?: boolean | Prisma.HandoverRecord$confirmedByArgs<ExtArgs>
   photos?: boolean | Prisma.HandoverRecord$photosArgs<ExtArgs>
+  claims?: boolean | Prisma.HandoverRecord$claimsArgs<ExtArgs>
   _count?: boolean | Prisma.HandoverRecordCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["handoverRecord"]>
 
@@ -1204,6 +1338,7 @@ export type HandoverRecordInclude<ExtArgs extends runtime.Types.Extensions.Inter
   recordedBy?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   confirmedBy?: boolean | Prisma.HandoverRecord$confirmedByArgs<ExtArgs>
   photos?: boolean | Prisma.HandoverRecord$photosArgs<ExtArgs>
+  claims?: boolean | Prisma.HandoverRecord$claimsArgs<ExtArgs>
   _count?: boolean | Prisma.HandoverRecordCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type HandoverRecordIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1224,6 +1359,7 @@ export type $HandoverRecordPayload<ExtArgs extends runtime.Types.Extensions.Inte
     recordedBy: Prisma.$UserPayload<ExtArgs>
     confirmedBy: Prisma.$UserPayload<ExtArgs> | null
     photos: Prisma.$HandoverPhotoPayload<ExtArgs>[]
+    claims: Prisma.$DamageClaimPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1636,6 +1772,7 @@ export interface Prisma__HandoverRecordClient<T, Null = never, ExtArgs extends r
   recordedBy<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   confirmedBy<T extends Prisma.HandoverRecord$confirmedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.HandoverRecord$confirmedByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   photos<T extends Prisma.HandoverRecord$photosArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.HandoverRecord$photosArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$HandoverPhotoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  claims<T extends Prisma.HandoverRecord$claimsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.HandoverRecord$claimsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DamageClaimPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2118,6 +2255,30 @@ export type HandoverRecord$photosArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.HandoverPhotoScalarFieldEnum | Prisma.HandoverPhotoScalarFieldEnum[]
+}
+
+/**
+ * HandoverRecord.claims
+ */
+export type HandoverRecord$claimsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DamageClaim
+   */
+  select?: Prisma.DamageClaimSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DamageClaim
+   */
+  omit?: Prisma.DamageClaimOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DamageClaimInclude<ExtArgs> | null
+  where?: Prisma.DamageClaimWhereInput
+  orderBy?: Prisma.DamageClaimOrderByWithRelationInput | Prisma.DamageClaimOrderByWithRelationInput[]
+  cursor?: Prisma.DamageClaimWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DamageClaimScalarFieldEnum | Prisma.DamageClaimScalarFieldEnum[]
 }
 
 /**

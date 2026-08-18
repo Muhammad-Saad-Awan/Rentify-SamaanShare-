@@ -29,6 +29,8 @@
     "verify:phase5": "tsx --env-file=.env.local scripts/verify-phase5.ts",
     "verify:trust-safety": "tsx --env-file=.env.local scripts/verify-trust-safety.ts",
     "verify:handover": "tsx --env-file=.env.local scripts/verify-handover.ts",
+    "verify:claims": "tsx --env-file=.env.local scripts/verify-claims.ts",
+    "verify:claims:ui": "tsx --env-file=.env.local scripts/verify-claims-ui.ts",
     "db:studio": "prisma studio",
     "db:validate": "prisma validate",
     "db:format": "prisma format"

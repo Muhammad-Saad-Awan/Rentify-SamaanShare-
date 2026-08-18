@@ -1,10 +1,10 @@
 import { canRecordHandover } from "@/lib/handover/rules";
-import { resolveHandoverPhotos } from "@/lib/handover/photos";
+import { resolveOwnedPhotos } from "@/lib/uploads/resolve-photos";
 import { prisma } from "@/lib/prisma";
 
 import type { Prisma } from "@/generated/prisma/client";
 import type { HandoverCondition, HandoverType } from "@/generated/prisma/enums";
-import type { ResolvedHandoverPhoto } from "@/lib/handover/photos";
+import type { ResolvedPhoto } from "@/lib/uploads/resolve-photos";
 import type { HandoverRecordInput } from "@/lib/validations/handover";
 
 /**
@@ -22,7 +22,7 @@ import type { HandoverRecordInput } from "@/lib/validations/handover";
 export interface PreparedHandover {
   condition: HandoverCondition;
   notes?: string | undefined;
-  photos: ResolvedHandoverPhoto[];
+  photos: ResolvedPhoto[];
 }
 
 export type HandoverPreparation =
@@ -73,7 +73,7 @@ export async function prepareHandover({
     return { ok: false, error: eligibility.reason };
   }
 
-  const resolved = await resolveHandoverPhotos(userId, input.photoIds);
+  const resolved = await resolveOwnedPhotos(userId, input.photoIds);
 
   if (!resolved.ok) {
     return { ok: false, error: resolved.error };

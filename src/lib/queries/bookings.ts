@@ -10,9 +10,16 @@ import { LISTINGS_PAGE_SIZE } from "@/lib/queries/listings";
 import type { DepositState } from "@/lib/bookings/deposit";
 import type { CancelEligibility } from "@/lib/bookings/lifecycle";
 import type { ReviewEligibility } from "@/lib/reviews/rules";
-import { HandoverConfirmation } from "@/generated/prisma/enums";
+import { ClaimStatus, HandoverConfirmation } from "@/generated/prisma/enums";
+import { escalateOverdueClaims } from "@/lib/claims/escalate";
+import {
+  claimResponseDueAt,
+  isClaimOpen,
+  upheldAmount,
+} from "@/lib/claims/rules";
 
 import type {
+  ClaimReason,
   HandoverCondition,
   HandoverType,
   PaymentMethod,
@@ -74,6 +81,10 @@ export interface BookingSummary {
     renterCanCancel: CancelEligibility;
     ownerCanStart: CancelEligibility;
   };
+  /** Pickup and return condition records, oldest first. At most one of each. */
+  handovers: HandoverSnapshot[];
+  /** The deposit claim, or `null` - which is the overwhelming majority of rentals. */
+  claim: ClaimSnapshot | null;
   /**
    * Review state for the viewer of this row.
    *
@@ -82,8 +93,6 @@ export interface BookingSummary {
    * readable in the RSC payload regardless of what the UI chose to render, and reciprocal
    * withholding would be decorative.
    */
-  /** Pickup and return condition records, oldest first. At most one of each. */
-  handovers: HandoverSnapshot[];
   review: {
     /** Whether this viewer may write one now, and why not if they may not. */
     canWrite: ReviewEligibility;
@@ -108,6 +117,34 @@ export interface ReviewSnapshot {
    * tell that from a bug.
    */
   removedAt: Date | null;
+}
+
+/** A deposit claim, as either party sees it. */
+export interface ClaimSnapshot {
+  id: string;
+  reason: ClaimReason;
+  description: string;
+  amountClaimed: number;
+  /**
+   * What the platform has settled on, or `null` while nothing is settled.
+   *
+   * Not the same as zero. An undecided claim leaves the full deposit owed; one decided at nothing
+   * also leaves it owed, but the first can still change and the second cannot.
+   */
+  amountUpheld: number | null;
+  status: ClaimStatus;
+  filedAt: Date;
+  respondedAt: Date | null;
+  responseNote: string | null;
+  resolution: string | null;
+  resolvedAt: Date | null;
+  /** Whether the viewer filed it. Decides which controls they are offered. */
+  isMine: boolean;
+  photos: { id: string; url: string; isMine: boolean }[];
+  /** Whether the viewer may answer it now - mirrors `canRespondToClaim`. */
+  canRespond: boolean;
+  /** Whether the viewer may take it back now - mirrors `canWithdrawClaim`. */
+  canWithdraw: boolean;
 }
 
 /** One handover condition record, as either party sees it. */
@@ -197,6 +234,35 @@ const bookingSelect = {
     },
   },
   /**
+   * The deposit claim, if one was ever filed. Both sides see all of it.
+   *
+   * No withholding: the renter is being asked for money and cannot answer what they cannot read,
+   * and the owner needs to see the reply they are waiting on. Photos from both sides come back
+   * together, ordered, with who attached each one.
+   */
+  claim: {
+    select: {
+      id: true,
+      reason: true,
+      description: true,
+      amountClaimed: true,
+      amountUpheld: true,
+      status: true,
+      claimantId: true,
+      respondentId: true,
+      respondedAt: true,
+      responseNote: true,
+      resolution: true,
+      resolvedAt: true,
+      filedAt: true,
+      handoverId: true,
+      photos: {
+        orderBy: { order: "asc" },
+        select: { id: true, url: true, uploadedById: true },
+      },
+    },
+  },
+  /**
    * The condition records for this rental. Both sides see both, in full.
    *
    * No withholding here, unlike reviews. A condition record is a statement about the item one party
@@ -260,6 +326,23 @@ type BookingRow = {
     publishedAt: Date | null;
     removedAt: Date | null;
   }[];
+  claim: {
+    id: string;
+    reason: ClaimReason;
+    description: string;
+    amountClaimed: number;
+    amountUpheld: number | null;
+    status: ClaimStatus;
+    claimantId: string;
+    respondentId: string;
+    respondedAt: Date | null;
+    responseNote: string | null;
+    resolution: string | null;
+    resolvedAt: Date | null;
+    filedAt: Date;
+    handoverId: string | null;
+    photos: { id: string; url: string; uploadedById: string }[];
+  } | null;
   handovers: {
     id: string;
     type: HandoverType;
@@ -337,12 +420,61 @@ function toSummary(
       securityDeposit: row.payment?.securityDeposit ?? row.securityDeposit,
       completedAt: row.completedAt,
       depositReturnedAt: row.payment?.depositReturnedAt ?? null,
+      /**
+       * The claim's effect on what is owed, reduced to the two facts `depositState` needs.
+       *
+       * `upheldAmount` returns null while a claim is live, so an unsettled assertion deducts
+       * nothing - the platform does not act on one party's demand. The pause is only supplied while
+       * the claim is still live AND still inside its window, so a lapsed pause hands back a `null`
+       * and the clock resumes.
+       */
+      claim: row.claim
+        ? {
+            amountUpheld: upheldAmount(
+              row.claim.status,
+              row.claim.amountUpheld
+            ),
+            amountClaimed: row.claim.amountClaimed,
+            pauseEndsAt: isClaimOpen(row.claim.status)
+              ? claimResponseDueAt(row.claim.filedAt)
+              : null,
+          }
+        : null,
       now,
     }),
     eligibility: {
       renterCanCancel: canRenterCancel({ status: row.status, paymentStatus }),
       ownerCanStart: canStartBooking({ status: row.status, paymentStatus }),
     },
+    claim: row.claim
+      ? {
+          id: row.claim.id,
+          reason: row.claim.reason,
+          description: row.claim.description,
+          amountClaimed: row.claim.amountClaimed,
+          // Through `upheldAmount`, so a live claim reports null rather than whatever happens to
+          // be sitting in the column.
+          amountUpheld: upheldAmount(row.claim.status, row.claim.amountUpheld),
+          status: row.claim.status,
+          filedAt: row.claim.filedAt,
+          respondedAt: row.claim.respondedAt,
+          responseNote: row.claim.responseNote,
+          resolution: row.claim.resolution,
+          resolvedAt: row.claim.resolvedAt,
+          isMine: row.claim.claimantId === viewerId,
+          photos: row.claim.photos.map((photo) => ({
+            id: photo.id,
+            url: photo.url,
+            isMine: photo.uploadedById === viewerId,
+          })),
+          // Both mirror the pure rules, so a control is never offered that the action would refuse.
+          canRespond:
+            row.claim.respondentId === viewerId &&
+            row.claim.status === ClaimStatus.OPEN,
+          canWithdraw:
+            row.claim.claimantId === viewerId && isClaimOpen(row.claim.status),
+        }
+      : null,
     handovers: row.handovers.map((handover) => {
       const isMine = handover.recordedById === viewerId;
 
@@ -398,11 +530,18 @@ export async function getRenterBookings({
   page = 1,
   pageSize = LISTINGS_PAGE_SIZE,
 }: PageOptions): Promise<PaginatedResult<BookingSummary>> {
-  // Two lazy sweeps, for the same reason: a list that offers an action, or hides a review, must
-  // tell the truth at the moment it renders. Scoped to this user as reviewee - the reviews that
-  // affect what they see here are the ones written about them.
+  /**
+   * Three lazy sweeps, for the same reason: a list that offers an action, hides a review, or states
+   * what a deposit is owed must tell the truth at the moment it renders.
+   *
+   * The reviews are scoped to this user as reviewee - the ones that affect what they see here are
+   * the ones written about them. The claim sweep is unscoped, because an overdue claim holds a
+   * deposit clock on a booking either party may be looking at, and escalating only the viewer's own
+   * would leave the counterparty's screen reporting a paused clock that had already lapsed.
+   */
   await expireStalePendingBookings();
   await releaseDueReviews(userId);
+  await escalateOverdueClaims();
 
   const currentPage = Math.max(1, Math.trunc(page));
   const where = { renterId: userId };
@@ -447,11 +586,18 @@ export async function getOwnerBookingRequests({
 }: PageOptions): Promise<
   PaginatedResult<BookingSummary> & { pendingCount: number }
 > {
-  // Two lazy sweeps, for the same reason: a list that offers an action, or hides a review, must
-  // tell the truth at the moment it renders. Scoped to this user as reviewee - the reviews that
-  // affect what they see here are the ones written about them.
+  /**
+   * Three lazy sweeps, for the same reason: a list that offers an action, hides a review, or states
+   * what a deposit is owed must tell the truth at the moment it renders.
+   *
+   * The reviews are scoped to this user as reviewee - the ones that affect what they see here are
+   * the ones written about them. The claim sweep is unscoped, because an overdue claim holds a
+   * deposit clock on a booking either party may be looking at, and escalating only the viewer's own
+   * would leave the counterparty's screen reporting a paused clock that had already lapsed.
+   */
   await expireStalePendingBookings();
   await releaseDueReviews(userId);
+  await escalateOverdueClaims();
 
   const currentPage = Math.max(1, Math.trunc(page));
   const where = { ownerId: userId };

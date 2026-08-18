@@ -132,6 +132,37 @@ enum HandoverConfirmation {
   DISPUTED
 }
 
+// Trust & Safety: a claim against a rental's security deposit.
+//
+// WHY NOT A ReportReason. `ITEM_DAMAGED` and `ITEM_NOT_RETURNED` already exist
+// there, and both are filed against a *person* - Report.targetId is polymorphic
+// with no foreign key, so it can reach neither the booking, nor the deposit, nor
+// the return handover record, which are the three things a claim is about.
+enum ClaimReason {
+  DAMAGED
+  MISSING_PARTS
+  NOT_RETURNED
+  LATE_RETURN
+  CLEANING_REQUIRED
+  OTHER
+}
+
+/**
+ * Where a claim stands.
+ * ACCEPTED settles without an administrator: the two parties agree, and there is
+ * nothing left for a third to decide. Only DISPUTED reaches the queue.
+ * Silence is NOT acceptance. An unanswered claim escalates to DISPUTED once its
+ * window closes, so a renter who misses a notification never loses money by
+ * default - unlike a handover record, a claim has a price attached.
+ */
+enum ClaimStatus {
+  OPEN
+  ACCEPTED
+  DISPUTED
+  RESOLVED
+  WITHDRAWN
+}
+
 enum ReportType {
   USER
   LISTING
@@ -197,6 +228,12 @@ enum NotificationType {
   // notification for the expected path is noise - which makes the unread badge
   // less trustworthy, the one thing a badge has to be.
   HANDOVER_DISPUTED
+  // Trust & Safety: deposit claims. All three notify, unlike a handover, because
+  // every one of them changes what the other party is owed or owes - there is no
+  // "expected path" here that a person could safely not hear about.
+  CLAIM_FILED
+  CLAIM_RESPONDED
+  CLAIM_RESOLVED
   // Stage A: pickup instructions are the only channel between the two parties
   // until profiles carry a verified phone, so an owner correcting a wrong
   // address has to be able to reach a renter who already read the old one.
@@ -302,6 +339,12 @@ model User {
   // Trust & Safety: handover records this person wrote, and ones they answered.
   handoversRecorded  HandoverRecord[] @relation("HandoversRecorded")
   handoversConfirmed HandoverRecord[] @relation("HandoversConfirmed")
+
+  // Trust & Safety: deposit claims filed, received, resolved, and photographed.
+  claimsFiled    DamageClaim[] @relation("ClaimsFiled")
+  claimsAgainst  DamageClaim[] @relation("ClaimsAgainst")
+  claimsResolved DamageClaim[] @relation("ClaimsResolved")
+  claimPhotos    ClaimPhoto[]  @relation("ClaimPhotos")
 
   // Who granted this account's identity verification, and whose grants they are.
   // A real foreign key rather than a bare id, for the same reason as
@@ -418,7 +461,9 @@ model EmailVerificationToken {
   id     String @id @default(cuid())
   userId String
 
-  /** SHA-256 of the token from the emailed link. Unique, so lookup is one probe. */
+  /**
+   * SHA-256 of the token from the emailed link. Unique, so lookup is one probe.
+   */
   tokenHash String @unique
 
   /**
@@ -432,7 +477,9 @@ model EmailVerificationToken {
 
   expiresAt DateTime
 
-  /** Set when redeemed. Non-null means the token is spent and cannot be replayed. */
+  /**
+   * Set when redeemed. Non-null means the token is spent and cannot be replayed.
+   */
   usedAt DateTime?
 
   createdAt DateTime @default(now())
@@ -702,6 +749,9 @@ model Booking {
   // Trust & Safety: the pickup and return condition records, at most one each.
   handovers HandoverRecord[]
 
+  // Trust & Safety: the deposit claim, at most one.
+  claim DamageClaim?
+
   // D7: replaces the removed BookingDate join. These are the UnavailableDate
   // rows this booking holds.
   heldDates UnavailableDate[]
@@ -760,10 +810,13 @@ model HandoverRecord {
 
   createdAt DateTime @default(now())
 
-  booking    Booking         @relation(fields: [bookingId], references: [id])
-  recordedBy User            @relation("HandoversRecorded", fields: [recordedById], references: [id])
-  confirmedBy User?          @relation("HandoversConfirmed", fields: [confirmedById], references: [id])
-  photos     HandoverPhoto[]
+  booking     Booking         @relation(fields: [bookingId], references: [id])
+  recordedBy  User            @relation("HandoversRecorded", fields: [recordedById], references: [id])
+  confirmedBy User?           @relation("HandoversConfirmed", fields: [confirmedById], references: [id])
+  photos      HandoverPhoto[]
+
+  // Trust & Safety: the claim resting on this record, if one was ever filed.
+  claims DamageClaim[]
 
   // One record per direction. The database refuses a second pickup or return
   // rather than the application having to notice.
@@ -795,6 +848,127 @@ model HandoverPhoto {
 
   @@index([handoverId, order])
   @@map("handover_photos")
+}
+
+// ==================== DAMAGE CLAIM MODELS ====================
+
+/**
+ * An owner's claim against a rental's security deposit. Trust & Safety.
+ * WHAT A CLAIM IS, GIVEN THAT THE PLATFORM HOLDS NOTHING. The deposit passes
+ * directly between the two people and SamaanShare never touches it - see the
+ * note at the top of src/lib/bookings/deposit.ts. So a claim cannot move money.
+ * What it does is change the amount the platform STATES is owed back: settle a
+ * claim for 15,000 of a 60,000 deposit and the obligation becomes 45,000. That
+ * is the same thing deposit.ts already exists to do, applied to a disagreement.
+ * A REAL FOREIGN KEY TO THE BOOKING, deliberately, and this is the whole reason
+ * the model exists rather than another ReportReason. A claim is about a specific
+ * rental: its deposit, its two parties, its dates, and the condition record
+ * written when the item came back. Report.targetId is polymorphic with no
+ * foreign key and can reach none of them.
+ * ONE PER BOOKING. The owner states everything at once rather than drip-feeding
+ * a second claim after the first is answered.
+ */
+model DamageClaim {
+  id        String @id @default(cuid())
+  bookingId String @unique
+
+  // Both derived from the booking, never accepted from input - the same rule as
+  // a review's direction. A claimant supplied by the client could aim a demand
+  // for money at somebody who was not party to the rental.
+  claimantId   String // the owner
+  respondentId String // the renter
+
+  reason      ClaimReason
+  // Required, unlike a handover note. A handover record can be a grade alone
+  // because two people are standing in a doorway; a claim asks for money and has
+  // to say what for.
+  description String      @db.Text
+
+  /**
+   * PKR, whole rupees, capped at the booking's security deposit.
+   * The cap is not arbitrary. The deposit is the only obligation the platform
+   * has any standing to describe; damage beyond it is a matter between the two
+   * people, and a figure larger than the deposit would imply this platform could
+   * enforce something it cannot.
+   */
+  amountClaimed Int
+
+  /**
+   * The RETURN condition record this claim rests on.
+   * Optional, and the interesting case is when it CONTRADICTS the claim: an
+   * owner who graded the item AS_EXPECTED at the door and then claimed damage is
+   * not blocked, because genuinely hidden faults exist - but the contradiction is
+   * surfaced to whoever resolves it, which is more useful than a refusal.
+   */
+  handoverId String?
+
+  status ClaimStatus @default(OPEN)
+
+  // The renter's answer. `respondedAt` stays null through an escalation, so a
+  // claim that reached DISPUTED by silence is distinguishable from one the
+  // renter actually contested.
+  respondedAt  DateTime?
+  responseNote String?   @db.Text
+
+  // The administrator's determination. Only ever set from DISPUTED.
+  resolvedById String?
+  resolvedAt   DateTime?
+  resolution   String?   @db.Text
+
+  /**
+   * What the platform ends up saying the owner may keep. PKR.
+   * Set to `amountClaimed` when the renter accepts, or to the administrator's
+   * own figure between 0 and `amountClaimed` when they resolve it. Null while
+   * open, because "nothing decided yet" and "decided as nothing" are different
+   * facts and the deposit obligation differs between them.
+   */
+  amountUpheld Int?
+
+  filedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking    Booking         @relation(fields: [bookingId], references: [id])
+  claimant   User            @relation("ClaimsFiled", fields: [claimantId], references: [id])
+  respondent User            @relation("ClaimsAgainst", fields: [respondentId], references: [id])
+  resolvedBy User?           @relation("ClaimsResolved", fields: [resolvedById], references: [id])
+  handover   HandoverRecord? @relation(fields: [handoverId], references: [id])
+  photos     ClaimPhoto[]
+
+  @@index([status]) // the administrator's queue
+  @@index([claimantId])
+  @@index([respondentId])
+  // The lazy escalation sweep: open claims whose response window has closed.
+  @@index([status, filedAt])
+  @@map("damage_claims")
+}
+
+/**
+ * Photographs supporting a claim.
+ * Separate from HandoverPhoto rather than reused: those are sealed to the moment
+ * of handover and must never gain images taken days later, which is exactly what
+ * a claim attaches. Keeping them in different tables makes that impossible
+ * rather than merely discouraged.
+ */
+model ClaimPhoto {
+  id      String @id @default(cuid())
+  claimId String
+
+  url      String
+  publicId String @unique
+  order    Int    @default(0)
+
+  // Who attached it. A claim carries the owner's photos and the renter's reply
+  // may carry their own, and telling them apart is the point of the column.
+  uploadedById String
+
+  createdAt DateTime @default(now())
+
+  claim      DamageClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  uploadedBy User        @relation("ClaimPhotos", fields: [uploadedById], references: [id])
+
+  @@index([claimId, order])
+  @@index([uploadedById])
+  @@map("claim_photos")
 }
 
 // ==================== REVIEW MODELS ====================

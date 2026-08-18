@@ -9,6 +9,7 @@ import {
   MapPinIcon,
   PackageCheckIcon,
   PackageOpenIcon,
+  ScaleIcon,
   XIcon,
 } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -30,6 +31,7 @@ import {
   selectPaymentMethod,
 } from "@/actions/payments";
 import { PaymentInstructions } from "@/components/bookings/payment-instructions";
+import { FileClaimForm } from "@/components/claims/file-claim-form";
 import { HandoverForm } from "@/components/handover/handover-form";
 import { BookingReviewSection } from "@/components/reviews/booking-review-section";
 import { Button } from "@/components/ui/button";
@@ -91,6 +93,9 @@ function BookingActions({ booking, side }: BookingActionsProps) {
   const [handoverPanel, setHandoverPanel] = useState<
     "pickup" | "return" | null
   >(null);
+
+  /** Whether the owner's claim form is open. Separate for the same reason as `handoverPanel`. */
+  const [claimPanelOpen, setClaimPanelOpen] = useState(false);
 
   /**
    * Runs an action and reports the outcome.
@@ -480,14 +485,65 @@ function BookingActions({ booking, side }: BookingActionsProps) {
       booking.status === BookingStatus.COMPLETED ||
       booking.status === BookingStatus.REVIEWED
     ) {
+      /**
+       * A live claim has paused the clock.
+       *
+       * Its own branch rather than a variation of "due", because the honest sentence is different:
+       * not "return 60,000 in 12 hours" but "how much of this comes back is being decided". The
+       * panel above carries the detail; this only explains why no countdown is running.
+       */
+      if (deposit.kind === "claimed") {
+        return (
+          <div className="flex flex-col gap-2">
+            <Note>
+              Your claim is open, so the deposit clock is paused until{" "}
+              {formatDate(deposit.pauseEndsAt)}. Return the rest of the deposit
+              once it is settled.
+            </Note>
+
+            <BookingReviewSection booking={booking} side="owner" />
+          </div>
+        );
+      }
+
       if (deposit.kind === "due" || deposit.kind === "overdue") {
         return (
           <div className="flex flex-col gap-2">
             <Note tone={deposit.kind === "overdue" ? "warning" : "default"}>
               {deposit.kind === "overdue"
-                ? `You still owe the renter their ${formatPKR(booking.securityDeposit)} deposit — ${deposit.hoursLate}h past the 48-hour window.`
-                : `Return the renter's ${formatPKR(booking.securityDeposit)} deposit within ${deposit.hoursRemaining}h.`}
+                ? `You still owe the renter ${formatPKR(deposit.owed)} — ${deposit.hoursLate}h past the 48-hour window.`
+                : `Return ${formatPKR(deposit.owed)} to the renter within ${deposit.hoursRemaining}h.`}
+              {deposit.owed < booking.securityDeposit
+                ? ` The claim settled at ${formatPKR(booking.securityDeposit - deposit.owed)} of the ${formatPKR(booking.securityDeposit)} deposit.`
+                : ""}
             </Note>
+
+            {/*
+              Filing is offered alongside returning the deposit, not instead of it. `canFileClaim`
+              re-checks every condition - a claim is refused once the deposit has gone back, which is
+              what stops "return it, then claim it".
+            */}
+            {!booking.claim &&
+              (claimPanelOpen ? (
+                <FileClaimForm
+                  bookingId={booking.id}
+                  securityDeposit={booking.securityDeposit}
+                  onDone={() => setClaimPanelOpen(false)}
+                  onCancel={() => setClaimPanelOpen(false)}
+                />
+              ) : (
+                <div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setClaimPanelOpen(true)}
+                    disabled={isPending}
+                  >
+                    <ScaleIcon aria-hidden="true" />
+                    Something was wrong with the item
+                  </Button>
+                </div>
+              ))}
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -740,19 +796,36 @@ function BookingActions({ booking, side }: BookingActionsProps) {
           </Note>
         )}
 
+        {/*
+          A live claim has paused the clock. Says so plainly and says nothing is decided - the panel
+          above carries the amount and the renter's controls. Without this the row would simply go
+          quiet about a deposit somebody is asking to keep part of.
+        */}
+        {deposit.kind === "claimed" && (
+          <Note tone="warning">
+            The owner has claimed {formatPKR(deposit.amountClaimed)} of your
+            deposit, so the return clock is paused until{" "}
+            {formatDate(deposit.pauseEndsAt)}. Nothing has been decided yet.
+          </Note>
+        )}
+
+        {/*
+          `deposit.owed` rather than the booking's figure: once a claim settles, what is owed back is
+          the reduced amount, and printing the original here would contradict the determination both
+          parties were just sent.
+        */}
         {deposit.kind === "due" && (
           <Note>
-            The owner should return your {formatPKR(booking.securityDeposit)}{" "}
-            deposit within {deposit.hoursRemaining}h. SamaanShare does not hold
-            it.
+            The owner should return {formatPKR(deposit.owed)} within{" "}
+            {deposit.hoursRemaining}h. SamaanShare does not hold it.
           </Note>
         )}
 
         {deposit.kind === "overdue" && (
           <Note tone="warning">
-            Your {formatPKR(booking.securityDeposit)} deposit is{" "}
-            {deposit.hoursLate}h overdue. Contact the owner — SamaanShare does
-            not hold the deposit and cannot release it.
+            {formatPKR(deposit.owed)} of your deposit is {deposit.hoursLate}h
+            overdue. Contact the owner — SamaanShare does not hold the deposit
+            and cannot release it.
           </Note>
         )}
 

@@ -66,6 +66,8 @@ export const ModelName = {
   Booking: 'Booking',
   HandoverRecord: 'HandoverRecord',
   HandoverPhoto: 'HandoverPhoto',
+  DamageClaim: 'DamageClaim',
+  ClaimPhoto: 'ClaimPhoto',
   Review: 'Review',
   Notification: 'Notification',
   SavedListing: 'SavedListing',
@@ -326,6 +328,42 @@ export const HandoverPhotoScalarFieldEnum = {
 } as const
 
 export type HandoverPhotoScalarFieldEnum = (typeof HandoverPhotoScalarFieldEnum)[keyof typeof HandoverPhotoScalarFieldEnum]
+
+
+export const DamageClaimScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  claimantId: 'claimantId',
+  respondentId: 'respondentId',
+  reason: 'reason',
+  description: 'description',
+  amountClaimed: 'amountClaimed',
+  handoverId: 'handoverId',
+  status: 'status',
+  respondedAt: 'respondedAt',
+  responseNote: 'responseNote',
+  resolvedById: 'resolvedById',
+  resolvedAt: 'resolvedAt',
+  resolution: 'resolution',
+  amountUpheld: 'amountUpheld',
+  filedAt: 'filedAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DamageClaimScalarFieldEnum = (typeof DamageClaimScalarFieldEnum)[keyof typeof DamageClaimScalarFieldEnum]
+
+
+export const ClaimPhotoScalarFieldEnum = {
+  id: 'id',
+  claimId: 'claimId',
+  url: 'url',
+  publicId: 'publicId',
+  order: 'order',
+  uploadedById: 'uploadedById',
+  createdAt: 'createdAt'
+} as const
+
+export type ClaimPhotoScalarFieldEnum = (typeof ClaimPhotoScalarFieldEnum)[keyof typeof ClaimPhotoScalarFieldEnum]
 
 
 export const ReviewScalarFieldEnum = {

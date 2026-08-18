@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 17 August 2026 (Phase 5 — directional rating aggregate; Trust & Safety — reporting and moderation; Stage A6 awaiting production env vars)
+**Last Updated:** 18 August 2026 (Trust & Safety complete — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims; Stage A6 awaiting production env vars)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -45,7 +45,7 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
       lifecycle, deposit window, notification copy, environment schema, reset
       tokens, email copy, view keys, nav map, review rules, report rules,
       moderation copy, trust score, email verification tokens, access tiers,
-      handover rules, handover copy) — 348 tests
+      handover rules, handover copy, claim rules, claim copy) — 406 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
@@ -57,7 +57,9 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
       computed over exactly the reviews listed beneath it, and
       `npm run verify:trust-safety` for reporting and moderation, and
       `npm run verify:handover` for the condition records — including that the
-      seal is refused by the database rather than by a check that can lose a race.
+      seal is refused by the database rather than by a check that can lose a race —
+      and `npm run verify:claims` for deposit claims, including that an unsettled
+      claim leaves the full deposit owed.
       **Not** a substitute for a Vitest
       integration harness: they are scripts with assertions, not a suite, and they
       cannot run without a database.
@@ -1163,18 +1165,91 @@ schema change.
 
 ---
 
-**Next:** Trust & Safety continues. Shipped 17 August 2026 — reporting and moderation, public trust
-profiles and the trust score, identity verification, value-gated access, and the handover protocol.
-What remains is **damage claims**.
+### Damage Claims
 
-The ground is now prepared for them. A claim needs three things and two are in place: a condition
-record at return (`HandoverRecord`, with the counterparty's answer attached) and a deposit window
-already measured from `completedAt`. What is missing is the claim itself.
+Shipped 18 August 2026, and this completes Trust & Safety.
 
-`ReportReason` already carries `ITEM_DAMAGED` and `ITEM_NOT_RETURNED`, but reports are filed against
-a **person**, with `targetId` polymorphic and no booking attached. A damage claim needs the booking —
-that is what ties it to a deposit, a date, a counterparty and now a handover record. So it is not a
-new reason on the existing queue; it needs its own relation.
+**A claim cannot move money.** The deposit passes directly between the two people
+and SamaanShare never holds it — `src/lib/bookings/deposit.ts` says every function
+there is about *stating an obligation, never custody*. So a claim changes the
+amount the platform **states** is owed back: settle one for PKR 15,000 of a
+PKR 60,000 deposit and the obligation becomes PKR 45,000. Same act, applied to a
+disagreement.
+
+- [x] `DamageClaim` + `ClaimPhoto` — a **real foreign key to `Booking`**, which is
+      the whole reason it is not another `ReportReason`. `ITEM_DAMAGED` and
+      `ITEM_NOT_RETURNED` already exist there, but a report targets a *person*
+      through a polymorphic `targetId` with no foreign key: it can reach neither
+      the booking, nor its deposit, nor the return condition record
+- [x] One claim per booking (`@@unique`), so the owner states everything at once
+      rather than filing again after the first is answered
+- [x] Both parties **derived from the booking**, never from input — a
+      client-supplied respondent would aim a demand for money at someone who was
+      not party to the rental
+- [x] **Capped at the deposit.** That is the only obligation the platform has
+      standing to describe; a larger figure would imply an enforcement power that
+      does not exist. Damage beyond it is between the two people
+- [x] `fileDamageClaim`, `respondToDamageClaim`, `withdrawDamageClaim`
+- [x] **Renter acceptance settles it with no administrator** — the parties agree,
+      so there is nothing left for a third to decide. Only a dispute reaches the
+      queue
+- [x] **Silence is never acceptance.** An unanswered claim escalates to a human
+      after 7 days rather than succeeding by default. Unlike a handover record, a
+      claim has a price attached, and letting a missed notification cost someone
+      money is a way of collecting from the inattentive. `respondedAt` stays null
+      through an escalation, so an absence stays distinguishable from a dispute
+- [x] **The deposit clock pauses while a claim is live, with a hard cap** at the
+      same 7 days — one constant used twice, so the pause can never outlast the
+      renter's chance to answer. Without the cap, filing a claim would be the
+      most effective way to hold a deposit indefinitely
+- [x] **An unsettled claim deducts nothing.** `upheldAmount` returns `null` while
+      open or disputed, so the full deposit stays owed — the platform does not act
+      on one party's assertion
+- [x] A claim **cannot be filed once the deposit has gone back**, which stops
+      "return it, then claim it"
+- [x] `resolveDamageClaim` — admin only, `DISPUTED` only, compare-and-swap,
+      bounded at the amount claimed (awarding beyond it would decide something
+      nobody put to the administrator). Resolution note **required**, unlike a
+      report's, because a determination neither party can read the reasoning for
+      is one neither can accept or appeal
+- [x] `/admin/claims` — oldest first, the opposite of the report queue, because a
+      claim holds somebody's money and has a clock on it
+- [x] **The contradiction is the headline.** When the owner's own return record
+      graded the item as fine and they are now claiming damage, the queue flags it
+      first. Not a refusal — hidden faults are real — but it is the strongest
+      evidence available either way
+- [x] Photo resolution moved to `src/lib/uploads/resolve-photos.ts` and shared
+      with handovers. Both checks in it are security boundaries, and a second copy
+      is a second place for one to be dropped
+- [x] Integration verification — `npm run verify:claims`, 13 checks, including
+      that an unsettled claim leaves the full deposit owed, that silence escalates
+      without being recorded as a dispute, and that two administrators cannot
+      decide the same claim twice
+- [x] **End-to-end verification — `npm run verify:claims:ui`, 43 checks.** Drives
+      the real Server Actions over HTTP with real Auth.js session cookies for
+      three parties, then asserts on the HTML each is actually served. Covers
+      what a database script cannot: session authentication, the authorization
+      inside each action, the Server Action pipeline, and what the owner, renter
+      and administrator see on screen.
+      Action ids are **read from the built client chunks at runtime**, never
+      hardcoded — they change on every build, and a pinned id would turn a broken
+      action into a passing test the day someone edited an unrelated file.
+      Requires `npm run build && npm run start`: a turbopack dev server would not
+      answer to production ids.
+
+**Deliberately not wired:** an upheld claim is a strong negative signal about a
+renter, but it does not feed `assessTrust`. Coupling the reputation system to a
+money dispute deserves its own decision rather than arriving as a side effect.
+
+---
+
+**Next:** Trust & Safety is complete — reporting and moderation, public trust profiles and the trust
+score, identity verification, value-gated access, the handover protocol, and damage claims.
+
+What remains before launch sits in **Phase 6** (the rest of admin: user filters, suspension and role
+actions, listing moderation, analytics) and **Phase 7** (error handling, loading states, SEO,
+accessibility, a real test setup, deployment). Stage A6 is still blocked on production
+infrastructure, and `docs/DEPLOYMENT.md` has the full checklist.
 
 ### Identity Verification
 

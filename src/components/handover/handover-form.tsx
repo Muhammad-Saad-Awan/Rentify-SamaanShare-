@@ -43,7 +43,7 @@ interface HandoverFormProps {
  * is anything other than as-expected is where they actually matter.
  *
  * Only public ids are submitted. The browser keeps the URL for previews because it has just uploaded
- * the file, but the server derives every stored URL from Cloudinary - see `resolveHandoverPhotos`.
+ * the file, but the server derives every stored URL from Cloudinary - see `resolveOwnedPhotos`.
  */
 function HandoverForm({
   type,
