@@ -35,6 +35,18 @@ coverage/
 # ----------------
 # Generated Prisma Client (auto-generated, don't commit)
 # Rebuilt by the postinstall hook / `npm run db:generate`
+#
+# NOTHING UNDER HERE IS TRACKED, and it must stay that way. Until 18 Aug 2026
+# twenty-seven of these files were tracked anyway - added before this rule
+# existed, then kept alive by `git add -f` each time a new model appeared. That
+# half-tracked state was worse than either alternative: `models.ts` was committed
+# while two of the files it re-exports (PasswordResetToken,
+# EmailVerificationToken) never were, so a fresh checkout of main carried imports
+# pointing at files that were not in the repo.
+#
+# If you are about to force-add a generated file because something cannot find
+# it, run `npm run db:generate` instead - that is the actual fix, and it is what
+# postinstall already does on every install.
 src/generated/
 # Note: schema.prisma and migrations/ SHOULD be committed
 
