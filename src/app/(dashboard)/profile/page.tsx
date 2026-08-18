@@ -1,12 +1,15 @@
 import { UserIcon } from "lucide-react";
 
+import { EmailVerificationNotice } from "@/components/auth/email-verification-notice";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { PlaceholderCard } from "@/components/dashboard/placeholder-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { isEmailEnabled } from "@/config/env";
 import { UserRole } from "@/generated/prisma/enums";
 import { requireUser } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
 import { getDisplayName, getInitials } from "@/lib/utils/user";
 
 import type { Metadata } from "next";
@@ -17,15 +20,24 @@ export const metadata: Metadata = {
 };
 
 /**
- * Profile page. Read-only in Phase 2.1.
+ * Profile page. Read-only apart from email confirmation.
  *
  * Shows what the session already holds - name, email, role - so the page is not
  * empty, without adding the edit form, the Cloudinary upload or the city and
- * phone fields, all of which are Phase 1's remaining profile work. Nothing here
- * queries the database; every value comes from the JWT.
+ * phone fields, all of which are Phase 1's remaining profile work.
+ *
+ * ONE DATABASE READ, for `emailVerified`. It cannot come from the session: the
+ * JWT is minted at sign-in, so a user who confirms their address would keep
+ * seeing the prompt for up to 24 hours - the same staleness that made
+ * `requireUser` re-read `status`.
  */
 export default async function ProfilePage() {
   const user = await requireUser();
+
+  const current = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { emailVerified: true },
+  });
 
   return (
     <>
@@ -59,6 +71,11 @@ export default async function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      <EmailVerificationNotice
+        isVerified={current?.emailVerified !== null}
+        canSend={isEmailEnabled()}
+      />
 
       <PlaceholderCard
         icon={UserIcon}

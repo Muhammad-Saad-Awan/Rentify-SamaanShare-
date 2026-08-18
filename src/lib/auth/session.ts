@@ -108,6 +108,32 @@ export async function getActiveUser(): Promise<SessionUser | null> {
 }
 
 /**
+ * The signed-in user, database-verified as an active ADMIN, or `null`.
+ *
+ * The non-redirecting counterpart to {@link requireAdmin}, and it exists for the same reason
+ * {@link getActiveUser} does: a moderation action invoked from a button has to return a result its
+ * caller can show, not navigate the page out from under an admin mid-decision. A redirect from a
+ * Server Action would also discard whatever they had typed into the resolution note.
+ *
+ * Re-reads `role` from the database, which is the whole point - the JWT's copy is a snapshot from
+ * sign-in, so a demoted admin carries `role: "ADMIN"` in their cookie for up to 24 hours.
+ */
+export async function getActiveAdmin(): Promise<SessionUser | null> {
+  const user = await getActiveUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const current = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { role: true },
+  });
+
+  return current?.role === UserRole.ADMIN ? user : null;
+}
+
+/**
  * Requires an active ADMIN, verified against the database.
  *
  * The database re-read is not optional here. `role` in the token is a snapshot

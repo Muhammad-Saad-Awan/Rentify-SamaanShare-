@@ -56,6 +56,7 @@ export const ModelName = {
   Session: 'Session',
   VerificationToken: 'VerificationToken',
   PasswordResetToken: 'PasswordResetToken',
+  EmailVerificationToken: 'EmailVerificationToken',
   Category: 'Category',
   Subcategory: 'Subcategory',
   Listing: 'Listing',
@@ -63,6 +64,10 @@ export const ModelName = {
   UnavailableDate: 'UnavailableDate',
   Payment: 'Payment',
   Booking: 'Booking',
+  HandoverRecord: 'HandoverRecord',
+  HandoverPhoto: 'HandoverPhoto',
+  DamageClaim: 'DamageClaim',
+  ClaimPhoto: 'ClaimPhoto',
   Review: 'Review',
   Notification: 'Notification',
   SavedListing: 'SavedListing',
@@ -100,8 +105,12 @@ export const UserScalarFieldEnum = {
   role: 'role',
   status: 'status',
   isVerified: 'isVerified',
-  ratingAverage: 'ratingAverage',
-  ratingCount: 'ratingCount',
+  verifiedAt: 'verifiedAt',
+  verifiedById: 'verifiedById',
+  ownerRatingAverage: 'ownerRatingAverage',
+  ownerRatingCount: 'ownerRatingCount',
+  renterRatingAverage: 'renterRatingAverage',
+  renterRatingCount: 'renterRatingCount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'
@@ -157,6 +166,19 @@ export const PasswordResetTokenScalarFieldEnum = {
 } as const
 
 export type PasswordResetTokenScalarFieldEnum = (typeof PasswordResetTokenScalarFieldEnum)[keyof typeof PasswordResetTokenScalarFieldEnum]
+
+
+export const EmailVerificationTokenScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  tokenHash: 'tokenHash',
+  email: 'email',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type EmailVerificationTokenScalarFieldEnum = (typeof EmailVerificationTokenScalarFieldEnum)[keyof typeof EmailVerificationTokenScalarFieldEnum]
 
 
 export const CategoryScalarFieldEnum = {
@@ -278,6 +300,72 @@ export const BookingScalarFieldEnum = {
 export type BookingScalarFieldEnum = (typeof BookingScalarFieldEnum)[keyof typeof BookingScalarFieldEnum]
 
 
+export const HandoverRecordScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  type: 'type',
+  condition: 'condition',
+  notes: 'notes',
+  recordedById: 'recordedById',
+  recordedAt: 'recordedAt',
+  confirmation: 'confirmation',
+  confirmedById: 'confirmedById',
+  confirmedAt: 'confirmedAt',
+  confirmationNote: 'confirmationNote',
+  createdAt: 'createdAt'
+} as const
+
+export type HandoverRecordScalarFieldEnum = (typeof HandoverRecordScalarFieldEnum)[keyof typeof HandoverRecordScalarFieldEnum]
+
+
+export const HandoverPhotoScalarFieldEnum = {
+  id: 'id',
+  handoverId: 'handoverId',
+  url: 'url',
+  publicId: 'publicId',
+  order: 'order',
+  createdAt: 'createdAt'
+} as const
+
+export type HandoverPhotoScalarFieldEnum = (typeof HandoverPhotoScalarFieldEnum)[keyof typeof HandoverPhotoScalarFieldEnum]
+
+
+export const DamageClaimScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  claimantId: 'claimantId',
+  respondentId: 'respondentId',
+  reason: 'reason',
+  description: 'description',
+  amountClaimed: 'amountClaimed',
+  handoverId: 'handoverId',
+  status: 'status',
+  respondedAt: 'respondedAt',
+  responseNote: 'responseNote',
+  resolvedById: 'resolvedById',
+  resolvedAt: 'resolvedAt',
+  resolution: 'resolution',
+  amountUpheld: 'amountUpheld',
+  filedAt: 'filedAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DamageClaimScalarFieldEnum = (typeof DamageClaimScalarFieldEnum)[keyof typeof DamageClaimScalarFieldEnum]
+
+
+export const ClaimPhotoScalarFieldEnum = {
+  id: 'id',
+  claimId: 'claimId',
+  url: 'url',
+  publicId: 'publicId',
+  order: 'order',
+  uploadedById: 'uploadedById',
+  createdAt: 'createdAt'
+} as const
+
+export type ClaimPhotoScalarFieldEnum = (typeof ClaimPhotoScalarFieldEnum)[keyof typeof ClaimPhotoScalarFieldEnum]
+
+
 export const ReviewScalarFieldEnum = {
   id: 'id',
   bookingId: 'bookingId',
@@ -287,6 +375,7 @@ export const ReviewScalarFieldEnum = {
   rating: 'rating',
   comment: 'comment',
   publishedAt: 'publishedAt',
+  removedAt: 'removedAt',
   createdAt: 'createdAt'
 } as const
 

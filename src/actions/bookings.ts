@@ -20,7 +20,9 @@ import {
 import { emitBookingNotifications } from "@/lib/notifications/create";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getRenterAccessSignals } from "@/lib/queries/renter-access";
 import { VISIBLE_LISTING_WHERE } from "@/lib/queries/visibility";
+import { accessTierFor, checkRenterAccess } from "@/lib/trust/access";
 import { todayInKarachi } from "@/lib/utils/date";
 import {
   bookingDeclineSchema,
@@ -183,6 +185,41 @@ export async function createBookingRequest(
     // calendar through the booking flow rather than the availability one.
     if (listing.ownerId === renter.id) {
       return { success: false, error: "You cannot book your own listing." };
+    }
+
+    /**
+     * Value-gated access, and THIS is the boundary.
+     *
+     * The listing page hides the booking form when a renter cannot clear the gate, but that is a
+     * courtesy - the form is a rendering decision and this is a public endpoint. Checked after
+     * ownership so an owner never sees a gate message about their own item, and before the dates
+     * are examined so nobody picks a range only to be refused for an unrelated reason.
+     *
+     * Signals are re-read here rather than accepted from the client for the obvious reason, and
+     * re-read from the *database* rather than the session for a less obvious one: verification can
+     * be withdrawn, and a JWT minted before that would keep clearing this gate for up to 24 hours.
+     */
+    const tier = accessTierFor(listing.securityDeposit);
+    const access = checkRenterAccess(
+      tier,
+      await getRenterAccessSignals(renter.id)
+    );
+
+    if (!access.allowed) {
+      /**
+       * Every unmet requirement, in one message.
+       *
+       * Naming only the first would have the renter clear it, try again, and be refused for
+       * something else - which is how someone gives up on the second refusal rather than the third.
+       */
+      return {
+        success: false,
+        error: `${access.unmet
+          .map((requirement) => requirement.label)
+          .join(". ")}. ${access.unmet
+          .map((requirement) => requirement.action)
+          .join(" ")}`,
+      };
     }
 
     const wanted = enumerateRentalDays(startDate, endDate);

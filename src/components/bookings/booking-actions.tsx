@@ -9,6 +9,7 @@ import {
   MapPinIcon,
   PackageCheckIcon,
   PackageOpenIcon,
+  ScaleIcon,
   XIcon,
 } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -30,10 +31,17 @@ import {
   selectPaymentMethod,
 } from "@/actions/payments";
 import { PaymentInstructions } from "@/components/bookings/payment-instructions";
+import { FileClaimForm } from "@/components/claims/file-claim-form";
+import { HandoverForm } from "@/components/handover/handover-form";
+import { BookingReviewSection } from "@/components/reviews/booking-review-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { BookingStatus, PaymentStatus } from "@/generated/prisma/enums";
+import {
+  BookingStatus,
+  HandoverType,
+  PaymentStatus,
+} from "@/generated/prisma/enums";
 import { formatPKR } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import {
@@ -74,6 +82,20 @@ function BookingActions({ booking, side }: BookingActionsProps) {
   const [panel, setPanel] = useState<OpenPanel>(null);
   const [reason, setReason] = useState("");
   const [instructions, setInstructions] = useState("");
+
+  /**
+   * Which handover form is open, if any.
+   *
+   * Separate from `panel`, which drives the decline/cancel/instructions editors. Collapsing the two
+   * would mean a condition record and a decline reason sharing one slot, and only one of them can
+   * ever apply at a given status - but keeping them apart is cheaper than reasoning about that.
+   */
+  const [handoverPanel, setHandoverPanel] = useState<
+    "pickup" | "return" | null
+  >(null);
+
+  /** Whether the owner's claim form is open. Separate for the same reason as `handoverPanel`. */
+  const [claimPanelOpen, setClaimPanelOpen] = useState(false);
 
   /**
    * Runs an action and reports the outcome.
@@ -367,26 +389,41 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             in hand.
           </Note>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() =>
+          {/*
+            The condition record is not optional, so the button opens the form rather than
+            submitting. `startBooking` refuses a payload without a condition, and a button that
+            called it directly would simply fail.
+          */}
+          {handoverPanel === "pickup" ? (
+            <HandoverForm
+              type={HandoverType.PICKUP}
+              submitLabel="Mark item as collected"
+              isPending={isPending}
+              onCancel={() => setHandoverPanel(null)}
+              onSubmit={(record) =>
                 run(
-                  () => startBooking({ bookingId: booking.id }),
+                  () => startBooking({ bookingId: booking.id, ...record }),
                   "Marked as collected. The rental is now active."
                 )
               }
-              disabled={isPending || !eligibility.ownerCanStart.allowed}
-              aria-busy={isPending}
-            >
-              {isPending ? (
-                <Loader2Icon className="animate-spin" />
-              ) : (
-                <PackageOpenIcon />
-              )}
-              Mark item as collected
-            </Button>
-          </div>
+            />
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => setHandoverPanel("pickup")}
+                disabled={isPending || !eligibility.ownerCanStart.allowed}
+                aria-busy={isPending}
+              >
+                {isPending ? (
+                  <Loader2Icon className="animate-spin" />
+                ) : (
+                  <PackageOpenIcon />
+                )}
+                Mark item as collected
+              </Button>
+            </div>
+          )}
 
           {instructionsEditor}
           {editInstructionsButton}
@@ -402,26 +439,40 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             once you have the item back and have checked it.
           </Note>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() =>
+          {/*
+            The return record is where the deposit question actually gets answered, so this is the
+            one that most needs the condition and the photographs.
+          */}
+          {handoverPanel === "return" ? (
+            <HandoverForm
+              type={HandoverType.RETURN}
+              submitLabel="Mark item as returned"
+              isPending={isPending}
+              onCancel={() => setHandoverPanel(null)}
+              onSubmit={(record) =>
                 run(
-                  () => completeBooking({ bookingId: booking.id }),
+                  () => completeBooking({ bookingId: booking.id, ...record }),
                   "Rental completed and those dates are free again."
                 )
               }
-              disabled={isPending}
-              aria-busy={isPending}
-            >
-              {isPending ? (
-                <Loader2Icon className="animate-spin" />
-              ) : (
-                <PackageCheckIcon />
-              )}
-              Mark item as returned
-            </Button>
-          </div>
+            />
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => setHandoverPanel("return")}
+                disabled={isPending}
+                aria-busy={isPending}
+              >
+                {isPending ? (
+                  <Loader2Icon className="animate-spin" />
+                ) : (
+                  <PackageCheckIcon />
+                )}
+                Mark item as returned
+              </Button>
+            </div>
+          )}
 
           {instructionsEditor}
           {editInstructionsButton}
@@ -434,14 +485,65 @@ function BookingActions({ booking, side }: BookingActionsProps) {
       booking.status === BookingStatus.COMPLETED ||
       booking.status === BookingStatus.REVIEWED
     ) {
+      /**
+       * A live claim has paused the clock.
+       *
+       * Its own branch rather than a variation of "due", because the honest sentence is different:
+       * not "return 60,000 in 12 hours" but "how much of this comes back is being decided". The
+       * panel above carries the detail; this only explains why no countdown is running.
+       */
+      if (deposit.kind === "claimed") {
+        return (
+          <div className="flex flex-col gap-2">
+            <Note>
+              Your claim is open, so the deposit clock is paused until{" "}
+              {formatDate(deposit.pauseEndsAt)}. Return the rest of the deposit
+              once it is settled.
+            </Note>
+
+            <BookingReviewSection booking={booking} side="owner" />
+          </div>
+        );
+      }
+
       if (deposit.kind === "due" || deposit.kind === "overdue") {
         return (
           <div className="flex flex-col gap-2">
             <Note tone={deposit.kind === "overdue" ? "warning" : "default"}>
               {deposit.kind === "overdue"
-                ? `You still owe the renter their ${formatPKR(booking.securityDeposit)} deposit — ${deposit.hoursLate}h past the 48-hour window.`
-                : `Return the renter's ${formatPKR(booking.securityDeposit)} deposit within ${deposit.hoursRemaining}h.`}
+                ? `You still owe the renter ${formatPKR(deposit.owed)} — ${deposit.hoursLate}h past the 48-hour window.`
+                : `Return ${formatPKR(deposit.owed)} to the renter within ${deposit.hoursRemaining}h.`}
+              {deposit.owed < booking.securityDeposit
+                ? ` The claim settled at ${formatPKR(booking.securityDeposit - deposit.owed)} of the ${formatPKR(booking.securityDeposit)} deposit.`
+                : ""}
             </Note>
+
+            {/*
+              Filing is offered alongside returning the deposit, not instead of it. `canFileClaim`
+              re-checks every condition - a claim is refused once the deposit has gone back, which is
+              what stops "return it, then claim it".
+            */}
+            {!booking.claim &&
+              (claimPanelOpen ? (
+                <FileClaimForm
+                  bookingId={booking.id}
+                  securityDeposit={booking.securityDeposit}
+                  onDone={() => setClaimPanelOpen(false)}
+                  onCancel={() => setClaimPanelOpen(false)}
+                />
+              ) : (
+                <div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setClaimPanelOpen(true)}
+                    disabled={isPending}
+                  >
+                    <ScaleIcon aria-hidden="true" />
+                    Something was wrong with the item
+                  </Button>
+                </div>
+              ))}
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -464,19 +566,30 @@ function BookingActions({ booking, side }: BookingActionsProps) {
                 I have returned the deposit
               </Button>
             </div>
+
+            <BookingReviewSection booking={booking} side="owner" />
           </div>
         );
       }
 
-      if (deposit.kind === "returned") {
-        return (
+      /**
+       * Deposit settled, or none was taken.
+       *
+       * The review block follows either way - it is the last thing left to do on a finished rental,
+       * and it is offered on the deposit-owed branch above too so an owner who has not yet handed the
+       * money back is not blocked from reviewing.
+       */
+      return (
+        <div className="flex flex-col gap-2">
           <Note>
-            Deposit recorded as returned on {formatDate(deposit.returnedAt)}.
+            {deposit.kind === "returned"
+              ? `Deposit recorded as returned on ${formatDate(deposit.returnedAt)}.`
+              : "This rental is complete."}
           </Note>
-        );
-      }
 
-      return <Note>This rental is complete.</Note>;
+          <BookingReviewSection booking={booking} side="owner" />
+        </div>
+      );
     }
 
     return null;
@@ -666,36 +779,61 @@ function BookingActions({ booking, side }: BookingActionsProps) {
     booking.status === BookingStatus.COMPLETED ||
     booking.status === BookingStatus.REVIEWED
   ) {
-    if (deposit.kind === "returned") {
-      return (
-        <Note>
-          The owner recorded your {formatPKR(booking.securityDeposit)} deposit
-          as returned on {formatDate(deposit.returnedAt)}.
-        </Note>
-      );
-    }
+    /**
+     * One note plus the review block, rather than four separate returns.
+     *
+     * The deposit state and the review state are independent: a renter waiting on their money should
+     * still be able to review, and one whose deposit came back still needs to. Restructured so the
+     * review block cannot be forgotten on one branch - which is exactly what happened when these
+     * were four returns.
+     */
+    return (
+      <div className="flex flex-col gap-2">
+        {deposit.kind === "returned" && (
+          <Note>
+            The owner recorded your {formatPKR(booking.securityDeposit)} deposit
+            as returned on {formatDate(deposit.returnedAt)}.
+          </Note>
+        )}
 
-    if (deposit.kind === "due") {
-      return (
-        <Note>
-          The owner should return your {formatPKR(booking.securityDeposit)}{" "}
-          deposit within {deposit.hoursRemaining}h. SamaanShare does not hold
-          it.
-        </Note>
-      );
-    }
+        {/*
+          A live claim has paused the clock. Says so plainly and says nothing is decided - the panel
+          above carries the amount and the renter's controls. Without this the row would simply go
+          quiet about a deposit somebody is asking to keep part of.
+        */}
+        {deposit.kind === "claimed" && (
+          <Note tone="warning">
+            The owner has claimed {formatPKR(deposit.amountClaimed)} of your
+            deposit, so the return clock is paused until{" "}
+            {formatDate(deposit.pauseEndsAt)}. Nothing has been decided yet.
+          </Note>
+        )}
 
-    if (deposit.kind === "overdue") {
-      return (
-        <Note tone="warning">
-          Your {formatPKR(booking.securityDeposit)} deposit is{" "}
-          {deposit.hoursLate}h overdue. Contact the owner — SamaanShare does not
-          hold the deposit and cannot release it.
-        </Note>
-      );
-    }
+        {/*
+          `deposit.owed` rather than the booking's figure: once a claim settles, what is owed back is
+          the reduced amount, and printing the original here would contradict the determination both
+          parties were just sent.
+        */}
+        {deposit.kind === "due" && (
+          <Note>
+            The owner should return {formatPKR(deposit.owed)} within{" "}
+            {deposit.hoursRemaining}h. SamaanShare does not hold it.
+          </Note>
+        )}
 
-    return <Note>This rental is complete.</Note>;
+        {deposit.kind === "overdue" && (
+          <Note tone="warning">
+            {formatPKR(deposit.owed)} of your deposit is {deposit.hoursLate}h
+            overdue. Contact the owner — SamaanShare does not hold the deposit
+            and cannot release it.
+          </Note>
+        )}
+
+        {deposit.kind === "none" && <Note>This rental is complete.</Note>}
+
+        <BookingReviewSection booking={booking} side="renter" />
+      </div>
+    );
   }
 
   return null;

@@ -9,17 +9,26 @@ import { ListingsGrid } from "@/components/marketplace/listings-grid";
 import { OwnerCard } from "@/components/marketplace/owner-card";
 import { SaveListingButton } from "@/components/marketplace/save-listing-button";
 import { SectionHeading } from "@/components/marketplace/section-heading";
+import { ReportButton } from "@/components/reports/report-button";
+import { ListingReviews } from "@/components/reviews/listing-reviews";
 import { ListingViewTracker } from "@/components/marketplace/listing-view-tracker";
 import { ShareListing } from "@/components/marketplace/share-listing";
 import { JsonLd } from "@/components/shared/json-ld";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ReportType } from "@/generated/prisma/enums";
 import { getCurrentUser } from "@/lib/auth/session";
 import { listingJsonLd } from "@/lib/marketplace/structured-data";
+import { getRenterAccessSignals } from "@/lib/queries/renter-access";
+import {
+  accessTierDescription,
+  accessTierFor,
+  checkRenterAccess,
+} from "@/lib/trust/access";
 import {
   getListingDetail,
   getSimilarListings,
 } from "@/lib/queries/listing-detail";
+import { getOwnerReviews } from "@/lib/queries/reviews";
 import { getSavedListingIds } from "@/lib/queries/saved-listings";
 import { formatDate, todayInKarachi } from "@/lib/utils/date";
 import { CONDITION_LABELS, formatCity } from "@/lib/utils/listing";
@@ -88,12 +97,15 @@ export default async function ListingPage({ params }: ListingPageProps) {
     notFound();
   }
 
-  const [similar, user] = await Promise.all([
+  const [similar, user, reviews] = await Promise.all([
     getSimilarListings({
       listingId: listing.id,
       categorySlug: listing.category.slug,
     }),
     getCurrentUser(),
+    // What previous renters said about this owner. Joins the batch because it depends only on the
+    // listing, which is already loaded.
+    getOwnerReviews(listing.owner.id),
   ]);
 
   // Covers this listing and the similar row in one read.
@@ -101,6 +113,22 @@ export default async function ListingPage({ params }: ListingPageProps) {
     listing.id,
     ...similar.map((item) => item.id),
   ]);
+
+  /**
+   * Value-gated access, decided for display only.
+   *
+   * `createBookingRequest` re-checks all of it against the database - this exists so a renter who
+   * cannot request the item learns that while reading it rather than after choosing dates.
+   *
+   * Evaluated only for a signed-in visitor who is not the owner. Signed out there is nobody to
+   * evaluate, and the panel already becomes a login link; naming requirements to an anonymous
+   * visitor would be describing an account that does not exist yet.
+   */
+  const accessTier = accessTierFor(listing.securityDeposit);
+  const access =
+    user && user.id !== listing.owner.id
+      ? checkRenterAccess(accessTier, await getRenterAccessSignals(user.id))
+      : null;
 
   return (
     <>
@@ -174,6 +202,12 @@ export default async function ListingPage({ params }: ListingPageProps) {
                 {listing.description}
               </p>
             </div>
+
+            <ListingReviews
+              reviews={reviews}
+              ownerName={listing.owner.name?.trim() || "this owner"}
+              viewerId={user?.id ?? null}
+            />
           </div>
 
           {/*
@@ -199,7 +233,21 @@ export default async function ListingPage({ params }: ListingPageProps) {
               today={todayInKarachi()}
               isAuthenticated={user !== null}
               isOwnListing={user?.id === listing.owner.id}
+              accessTier={accessTier}
+              access={access}
             />
+
+            {/*
+              The rule, stated to everyone else who can see this listing.
+              Suppressed when the gate panel is already showing, which repeats the same sentence.
+              An owner sees it too, deliberately: setting a large deposit narrows who may ask to rent
+              the item, and that consequence should not be discovered through an empty inbox.
+            */}
+            {accessTier !== "open" && !(access && !access.allowed) && (
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                {accessTierDescription(accessTier)}
+              </p>
+            )}
 
             {/* Save and share sit together beneath the booking panel. */}
             <div className="flex flex-wrap items-center gap-2">
@@ -218,6 +266,23 @@ export default async function ListingPage({ params }: ListingPageProps) {
             </div>
 
             <OwnerCard owner={listing.owner} />
+
+            {/*
+              Reporting the listing, offered only to a signed-in visitor who does not own it.
+              Beneath the owner card rather than beside Save and Share: those are things you do
+              because you like a listing, and putting "Report" among them invites misclicks on the
+              one control with a person on the other end of it.
+            */}
+            {user && user.id !== listing.owner.id && (
+              <div className="flex justify-end">
+                <ReportButton
+                  targetType={ReportType.LISTING}
+                  targetId={listing.id}
+                  label="this listing"
+                  className="text-muted-foreground -mr-2 h-7 px-2 text-xs"
+                />
+              </div>
+            )}
           </aside>
         </div>
 

@@ -14,10 +14,13 @@ import { BookingStatus, ReviewType } from "@/generated/prisma/enums";
  *    carries no information, which makes the whole feature decorative.
  *
  * 3. The stored aggregate counts released reviews ONLY. This is the non-obvious one: if
- *    `User.ratingAverage` moved when a review was written, an owner watching their average drop
+ *    `User.ownerRatingAverage` moved when a review was written, an owner watching their average drop
  *    would know the renter left a bad review before being able to read it - and could retaliate in
  *    their own. That leak would defeat point 2 entirely, which is why release is a stamped event
  *    rather than a predicate.
+ *
+ * 4. The aggregate is stored once per direction, never mixed. See
+ *    {@link ratingAggregatesByDirection}.
  */
 
 /**
@@ -164,10 +167,7 @@ export function shouldReleaseOnWindowClose(
  * badly" rather than "not yet rated", and the sort-by-rating ordering would bury every new owner
  * beneath the worst-reviewed one.
  */
-export function ratingAggregate(ratings: readonly number[]): {
-  average: number | null;
-  count: number;
-} {
+export function ratingAggregate(ratings: readonly number[]): RatingSummary {
   if (ratings.length === 0) {
     return { average: null, count: 0 };
   }
@@ -177,5 +177,48 @@ export function ratingAggregate(ratings: readonly number[]): {
   return {
     average: Math.round((total / ratings.length) * 100) / 100,
     count: ratings.length,
+  };
+}
+
+/** One direction's stored rating. `average` is `null` until the first review lands. */
+export interface RatingSummary {
+  average: number | null;
+  count: number;
+}
+
+/** A person's rating in both directions, kept separate for the reason below. */
+export interface DirectionalRatings {
+  /** From `RENTER_TO_OWNER` reviews - what this person is like to rent *from*. */
+  asOwner: RatingSummary;
+  /** From `OWNER_TO_RENTER` reviews - what they are like as a customer. */
+  asRenter: RatingSummary;
+}
+
+/**
+ * Splits a person's released reviews into the two aggregates actually stored.
+ *
+ * WHY THE SPLIT. Being a reliable owner and being a reliable renter are different claims, and one
+ * average over both answers neither. Concretely: a listing page shows the reviews written *about the
+ * owner*, and a mixed average printed above them could read 4.8 over a list averaging 3.2 the moment
+ * that owner had also rented something. A number contradicting the evidence directly beneath it is
+ * worse than no number, because a reader has no way to tell which one to believe.
+ *
+ * Direction is named from the reviewee's side, not the writer's: a `RENTER_TO_OWNER` review is one a
+ * renter wrote, and it rates its subject *as an owner*. Getting that backwards would put every rating
+ * on the wrong half of the profile, so it is stated here rather than left to be re-derived at each
+ * call site.
+ *
+ * Both halves go through {@link ratingAggregate}, so the empty-set-is-`null` rule and the rounding
+ * cannot diverge between them.
+ */
+export function ratingAggregatesByDirection(
+  reviews: readonly { rating: number; type: ReviewType }[]
+): DirectionalRatings {
+  const ratingsOfType = (type: ReviewType) =>
+    reviews.filter((review) => review.type === type).map((r) => r.rating);
+
+  return {
+    asOwner: ratingAggregate(ratingsOfType(ReviewType.RENTER_TO_OWNER)),
+    asRenter: ratingAggregate(ratingsOfType(ReviewType.OWNER_TO_RENTER)),
   };
 }

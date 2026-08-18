@@ -57,6 +57,21 @@ export type VerificationToken = Prisma.VerificationTokenModel
  */
 export type PasswordResetToken = Prisma.PasswordResetTokenModel
 /**
+ * Model EmailVerificationToken
+ * *
+ *  * Outstanding email confirmation links. Trust & Safety.
+ *  * WHY NOT REUSE PasswordResetToken OR Auth.js's VerificationToken. The same
+ *  * argument Stage A2 made for splitting reset tokens out applies again, in both
+ *  * directions: a single table with no type discriminator lets a token minted for
+ *  * one purpose be redeemed for another, and an email-confirmation link is a far
+ *  * weaker credential than a password reset - handing one the other's powers is a
+ *  * privilege escalation, not a tidy-up.
+ *  * Same mechanics as the reset token, and for the same reasons: the token is 256
+ *  * bits of CSPRNG output, stored only as a SHA-256 digest, single-use by
+ *  * compare-and-swap on usedAt.
+ */
+export type EmailVerificationToken = Prisma.EmailVerificationTokenModel
+/**
  * Model Category
  * 
  */
@@ -91,6 +106,64 @@ export type Payment = Prisma.PaymentModel
  * 
  */
 export type Booking = Prisma.BookingModel
+/**
+ * Model HandoverRecord
+ * *
+ *  * What condition an item was in when it changed hands. Trust & Safety.
+ *  * WHY THIS EXISTS. Payment is offline and there is no escrow, so a deposit
+ *  * dispute is two people asserting different things about an item neither of them
+ *  * has any longer. `startBooking` and `completeBooking` were each one party's
+ *  * unilateral click with nothing recorded, so there was never anything to argue
+ *  * from. This is the record.
+ *  * SEALED ON WRITE. There is no update path for condition, notes or photos, and
+ *  * @@unique([bookingId, type]) means a second attempt at the same handover is
+ *  * refused rather than replacing the first. A record its author can revise after
+ *  * the fact is not evidence, it is a claim - and the moment it matters is exactly
+ *  * the moment they would want to revise it.
+ *  * THE CONFIRMATION IS SEPARATE AND OPTIONAL. Requiring the counterparty to agree
+ *  * before the booking could move would let a silent party freeze someone's rental
+ *  * and deposit indefinitely. So the record is required and the agreement is not;
+ *  * what IS recorded is which of the two happened.
+ */
+export type HandoverRecord = Prisma.HandoverRecordModel
+/**
+ * Model HandoverPhoto
+ * *
+ *  * Condition photos taken at a handover.
+ *  * A model rather than a String[] so `publicId` travels with the URL - Cloudinary
+ *  * deletion needs it, exactly as ListingImage does. `order` keeps the sequence the
+ *  * uploader chose, since "the third photo" is how people refer to them.
+ */
+export type HandoverPhoto = Prisma.HandoverPhotoModel
+/**
+ * Model DamageClaim
+ * *
+ *  * An owner's claim against a rental's security deposit. Trust & Safety.
+ *  * WHAT A CLAIM IS, GIVEN THAT THE PLATFORM HOLDS NOTHING. The deposit passes
+ *  * directly between the two people and SamaanShare never touches it - see the
+ *  * note at the top of src/lib/bookings/deposit.ts. So a claim cannot move money.
+ *  * What it does is change the amount the platform STATES is owed back: settle a
+ *  * claim for 15,000 of a 60,000 deposit and the obligation becomes 45,000. That
+ *  * is the same thing deposit.ts already exists to do, applied to a disagreement.
+ *  * A REAL FOREIGN KEY TO THE BOOKING, deliberately, and this is the whole reason
+ *  * the model exists rather than another ReportReason. A claim is about a specific
+ *  * rental: its deposit, its two parties, its dates, and the condition record
+ *  * written when the item came back. Report.targetId is polymorphic with no
+ *  * foreign key and can reach none of them.
+ *  * ONE PER BOOKING. The owner states everything at once rather than drip-feeding
+ *  * a second claim after the first is answered.
+ */
+export type DamageClaim = Prisma.DamageClaimModel
+/**
+ * Model ClaimPhoto
+ * *
+ *  * Photographs supporting a claim.
+ *  * Separate from HandoverPhoto rather than reused: those are sealed to the moment
+ *  * of handover and must never gain images taken days later, which is exactly what
+ *  * a claim attaches. Keeping them in different tables makes that impossible
+ *  * rather than merely discouraged.
+ */
+export type ClaimPhoto = Prisma.ClaimPhotoModel
 /**
  * Model Review
  * 

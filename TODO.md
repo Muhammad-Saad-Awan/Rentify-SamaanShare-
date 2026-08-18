@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 12 August 2026 (Stage A — A1–A5 done; A6 prepared, blocked on staging infrastructure)
+**Last Updated:** 18 August 2026 (Trust & Safety complete — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims; Stage A6 awaiting production env vars)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -43,13 +43,24 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Create `.nvmrc` with Node.js version
 - [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar,
       lifecycle, deposit window, notification copy, environment schema, reset
-      tokens, email copy, view keys) — 193 tests
+      tokens, email copy, view keys, nav map, review rules, report rules,
+      moderation copy, trust score, email verification tokens, access tiers,
+      handover rules, handover copy, claim rules, claim copy) — 406 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
       renders both dashboards at every status behind a real session. Both create
       their own throwaway rows and delete them. `npm run verify:stage-a` does the
-      same for the reset-token lifecycle. **Not** a substitute for a Vitest
+      same for the reset-token lifecycle, and `npm run verify:phase5` for the
+      review lifecycle - including the assertion that a *withheld* review does
+      not move the rating aggregate, and that the average a listing prints is
+      computed over exactly the reviews listed beneath it, and
+      `npm run verify:trust-safety` for reporting and moderation, and
+      `npm run verify:handover` for the condition records — including that the
+      seal is refused by the database rather than by a check that can lose a race —
+      and `npm run verify:claims` for deposit claims, including that an unsettled
+      claim leaves the full deposit owed.
+      **Not** a substitute for a Vitest
       integration harness: they are scripts with assertions, not a suite, and they
       cannot run without a database.
 
@@ -172,11 +183,42 @@ Completed in Stage A2 — see that section for the security reasoning.
 
 ### Email Verification
 
-- [ ] Create verification page (`/verify-email`)
-- [ ] Generate verification tokens
-- [ ] Create `verifyEmail` action
-- [ ] Handle verification success/failure
-- [ ] Resend verification option
+Shipped 17 August 2026 with the Identity Verification slice. Uses the Resend
+integration Stage A2 added, so no new dependency.
+
+- [x] Create verification page (`/verify-email`) — renders a **button**, not an
+      effect on render. Redeeming is a write, and a write triggered by loading a
+      page fires on every link preview, mail scanner and prefetch; a scanner
+      spending the token would leave the person who actually clicked staring at
+      "no longer valid". Same call as `viewCount` and `/reset-password`
+- [x] Generate verification tokens — own `EmailVerificationToken` table. Sharing
+      `PasswordResetToken` or Auth.js's `VerificationToken` would let a token
+      minted to confirm an address be redeemed to reset a password: a privilege
+      escalation between two credentials of very different strength
+- [x] Create `verifyEmail` action — single-use by compare-and-swap on `usedAt`,
+      and **requires the session to belong to the token's owner**, so a link
+      forwarded or scraped from a mailbox cannot confirm the address on its own
+- [x] **The token carries the address it was minted for.** Without it, changing
+      an email to one you do not control and clicking an older link would mark
+      the new address confirmed. Checked at redemption *and* enforced in the
+      `updateMany` predicate, closing both ends of the race
+- [x] Handle verification success/failure — expired, spent, stale and
+      never-existed all report one identical message; distinguishing them would
+      tell someone holding a leaked link whether it was ever real
+- [x] Resend verification option — on `/profile`, and takes **no address
+      parameter**. One would let any signed-in account send SamaanShare-branded
+      mail to anyone, which is a spam relay with a login form in front of it
+- [x] Sent on registration, best-effort — a Resend outage must not turn a
+      completed signup into an error the user answers by registering again,
+      straight into the "already exists" branch
+- [x] 24-hour TTL, against the reset token's one hour. The threat is different:
+      the worst a stale confirmation link can do is confirm an address that
+      receiving it already confirmed, while a one-hour window would punish anyone
+      who registers in the evening and reads their email next morning
+- [x] **No enumeration rule here**, unlike password reset. That flow takes an
+      address from an anonymous visitor, so any difference in its response leaks
+      who has an account. This one only acts on the caller's own session, so the
+      messages can be specific and useful
 
 ### User Profile
 
@@ -191,11 +233,29 @@ Completed in Stage A2 — see that section for the security reasoning.
 
 ### Public Profile
 
-- [ ] Create public profile page (`/users/[id]`)
-- [ ] Display user info (name, bio, city)
-- [ ] Display user's listings
-- [ ] Display user's reviews
-- [ ] Calculate and show trust score
+Shipped 17 August 2026 as the Trust Profile & Reputation slice. This is what the
+directional rating split was for: a reader here may be asking either question.
+
+- [x] Create public profile page (`/users/[id]`) — the id is validated in
+      `layout.tsx`, **not** the page, per the invariant in AGENTS.md. Verified
+      with `curl -w '%{http_code}'`: unknown 404, suspended 404, soft-deleted
+      404, active 200 — real statuses, not soft 404s
+- [x] Display user info (name, bio, city) — never `email` or `phone`. The column
+      is not even selected, so `getDisplayName`'s email fallback cannot fire
+- [x] Display user's listings — through `VISIBLE_LISTING_WHERE`, composed rather
+      than hand-written even though the owner is already known to be active
+- [x] Display user's reviews — **both directions, as separate sections with their
+      own averages**, which closes the Phase 5 item that was blocked on this page
+- [x] Calculate and show trust score — `src/lib/trust/score.ts`, pure, 20 tests
+- [x] `getUserReviewStats` — specced at `docs/API.md:691` with `asOwner`/`asRenter`
+      from the start and unanswerable until the split. Deviates from that doc in
+      one way: the averages are `number | null`, because an unrated person is not
+      rated zero
+- [x] **noindex.** Every fact here is already public on the member's listings, so
+      this is not secrecy — it is aggregation. A listing page is about an item;
+      this collects one person's whole history, location and reviews into a
+      single document, and indexing that turns a marketplace profile into a
+      searchable dossier on a named individual
 
 ### Session Management
 
@@ -453,9 +513,10 @@ no listing, booking, search, review or admin functionality was implemented.
 - [x] Implement ACTIVE status — `startBooking`, owner-driven, gated on a *confirmed* payment
 - [x] Implement COMPLETED status — `completeBooking`, releases the held dates and stamps
       `completedAt`, which the deposit window is measured from
-- [ ] Implement REVIEWED status — Phase 5. The `COMPLETED -> REVIEWED` edge exists in the
-      transition table but nothing drives it; writing a `Review` and recalculating
-      `User.ratingAverage` belongs with reviews.
+- [x] Implement REVIEWED status — driven by `createReview` when the second review lands, in the
+      same transaction that publishes both. Tolerant of failure by design: if the booking has moved
+      on, the reviews are still correctly published - the status is a convenience for the
+      dashboards, not the source of truth for whether reviews exist.
 - [x] Implement DECLINED status
 - [x] Implement CANCELLED status — renter-driven, and refused once the owner has confirmed
       receiving payment. Payment is offline, so the platform cannot refund what it never held;
@@ -502,8 +563,9 @@ no listing, booking, search, review or admin functionality was implemented.
 
 ### Booking Completion
 
-- [x] Create `startBooking` action (pickup done)
-- [x] Create `completeBooking` action (return done)
+- [x] Create `startBooking` action (pickup done) — now also writes the PICKUP
+      condition record in the same transaction (Trust & Safety, 17 August 2026)
+- [x] Create `completeBooking` action (return done) — same, for RETURN
 - [x] Trigger review prompts — `REVIEW_REMINDER` to both parties on completion. The prompt only;
       the review form and the `REVIEWED` transition are Phase 5.
 - [x] Handle deposit return tracking — 48-hour window from `completedAt`, with a countdown and an
@@ -632,41 +694,146 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
 
 ## Phase 5 – Reviews & Trust
 
+Reciprocal release is the design decision everything else follows from. A review
+is withheld until the counterpart submits theirs, or until the 14-day window
+closes — otherwise whoever writes second reads the first and answers it, and
+ratings compress towards 5 because nobody risks going first.
+
+The non-obvious consequence: the stored rating counts **released reviews only**.
+If it moved when a review was written, an owner watching their average drop would
+learn the renter left a bad one before being able to read it, and could retaliate.
+That is why `Review.publishedAt` is a column rather than a derived flag, and why
+publishing and recomputing the aggregate are one transaction
+(`src/lib/reviews/publish.ts`). Asserted by `npm run verify:phase5`.
+
+The aggregate is stored **once per direction** — being a reliable owner and being
+a reliable renter are different claims, and one average over both answers neither.
+See "Directional aggregate" below.
+
 ### Create Review
 
-- [ ] Create review form component
-- [ ] Add star rating (1-5)
-- [ ] Add review comment
-- [ ] Create `createReview` action
-- [ ] Enforce one review per booking
-- [ ] Only allow after COMPLETED status
+- [x] Create review form component — stars are real radio buttons in a
+      `radiogroup`, and **no rating is preselected**: a default of 5 would be
+      answered by inertia and the average would be manufactured by the form
+- [x] Add star rating (1-5)
+- [x] Add review comment — optional; an empty string is normalised away rather
+      than stored, so it cannot render as an empty quote
+- [x] Create `createReview` action
+- [x] Enforce one review per booking — `@@unique([bookingId, reviewerId])` plus
+      the `alreadyReviewed` guard
+- [x] Only allow after COMPLETED status — and refused on every non-finished
+      status, so a cancelled or declined request can never be used as a free
+      shot at someone's rating
 
 ### Two-Way Reviews
 
-- [ ] Owner reviews renter
-- [ ] Renter reviews owner
-- [ ] Create `markBookingReviewed` action
-- [ ] Show review status in booking
+- [x] Owner reviews renter
+- [x] Renter reviews owner — direction is **derived from the caller's role**,
+      never accepted from input. A client-supplied `type` would let a renter file
+      an owner-to-renter review: their words on the owner's record, the rating
+      aimed at themselves.
+- [x] Create `markBookingReviewed` action — folded into `createReview` rather
+      than a separate action: `COMPLETED -> REVIEWED` happens in the same
+      transaction as the second review, guarded by the usual compare-and-swap
+- [x] Show review status in booking — four states on both dashboards: offered,
+      refused-with-reason, written-but-withheld, and released
+- [x] Lazy release sweep (`releaseDueReviews`) — publishes reviews whose window
+      closed unanswered, swept on the read paths that care. Not a cron, for the
+      same reason as booking expiry: one that stopped running would leave reviews
+      invisible forever with nothing noticing.
+- [x] `REVIEW_RECEIVED` notification — fired on **release**, never on submission.
+      Telling someone a review exists the moment it is written hands them the one
+      fact withholding exists to withhold.
+- [x] Closed the dead-end `REVIEW_REMINDER` — it now points at screens that can
+      actually take a review
 
 ### Display Reviews
 
-- [ ] Show reviews on listing detail
-- [ ] Show reviews on user profile
-- [ ] Calculate average rating
-- [ ] Sort reviews by date
-- [ ] Add pagination for reviews
+- [x] Show reviews on listing detail — filtered to `RENTER_TO_OWNER`, because a
+      browser wants to know what renting *from* this person is like, not what
+      they are like as a customer
+- [x] Show reviews on user profile — unblocked and shipped 17 August 2026.
+      `/users/[id]` renders **both** directions as separate sections, each with
+      the aggregate for its own direction
+- [x] Calculate average rating — `ratingAggregate`; an empty set yields `null`
+      not `0`, or a brand-new owner would sort below the worst-reviewed one on
+      the sort-by-rating filter
+- [x] Sort reviews by date — newest first
+- [ ] Add pagination for reviews — the query supports it; the listing page shows
+      the five newest with an honest total rather than adding a second control
+      that loses your scroll position
+
+### Directional aggregate
+
+- [x] **Split `User.ratingAverage` by direction** (17 August 2026). It was a
+      single aggregate over **both** directions, so the average printed on a
+      listing could contradict the `RENTER_TO_OWNER` reviews listed directly
+      beneath it as soon as that person had also rented — a figure and its own
+      evidence disagreeing, with nothing to tell a reader which to believe.
+      Now `ownerRating{Average,Count}` and `renterRating{Average,Count}`, fed by
+      the `[revieweeId, type]` index that existed for this from the start.
+      The mixed columns are **dropped**, not kept: derived data with no reader
+      left is data that drifts silently. The migration backfills both pairs from
+      the reviews themselves, so nothing is lost.
+      `recomputeUserRating` writes both pairs on every recompute from one read —
+      refreshing only the triggering direction would knowingly leave a value it
+      already knew was stale. Sort-by-rating and the owner card now read the
+      `asOwner` half, which is the same set of reviews each surface displays.
 
 ### Trust Score
 
-- [ ] Calculate trust score algorithm
-- [ ] Display trust badges
-- [ ] Show verification status
+- [x] Calculate trust score algorithm — `src/lib/trust/score.ts`. Four weighted
+      components: reputation (0.45), experience (0.25), reliability (0.20),
+      verification (0.10).
+      **A trust score that is mostly the star average adds nothing but false
+      authority**, so this deliberately carries what a rating cannot: how much
+      evidence there is, whether the person finishes what they start, and whether
+      the account is anchored to a real identity.
+      Ratings are **shrunk towards a 3.5 prior by their own count**, so a perfect
+      average from one rental does not outrank a strong one from fifty.
+      Experience **saturates** at ten rentals — on a marketplace where an owner
+      can list ten cheap items, linear growth would make trust purchasable.
+      Reliability counts only cancellations *they* made; being cancelled on is
+      not evidence about you, and counting it would let one party damage the
+      other's standing by cancelling.
+- [x] Display trust badges — **only positive bands exist**. A "low trust" badge
+      is a published accusation assembled from proxies, and falling short earns
+      no badge rather than a negative one. The score itself is **never printed**:
+      "73 out of 100" implies a precision four weighted proxies cannot support,
+      so the panel shows the checkable evidence instead
+- [x] **A new account scores `null`, not zero** — the same argument as
+      `ratingAggregate` returning null. "Not yet established" and "established as
+      unreliable" are opposite claims, and a number cannot say the first
+- [x] Show verification status — stated either way, since omitting it would let a
+      reader assume the badge above covers it
+- [x] **The top band requires a verified identity**, as an explicit gate rather
+      than as arithmetic. Weighting verification at 0.1 does not achieve it: the
+      other three carry 0.9 between them, so a flawless unverified record reaches
+      ~0.94 and clears any threshold worth setting. Everything else feeding the
+      score is behaviour reported by other users, which a determined person can
+      manufacture; the strongest claim the platform makes should rest on
+      something outside the reputation system.
+      **Currently unreachable** — nothing writes `isVerified` yet. Identity
+      verification is what makes it attainable
 
 ### Review Moderation
 
-- [ ] Create `reportReview` action
-- [ ] Add report reasons
-- [ ] Show in admin dashboard
+Shipped with the Trust & Safety reporting slice below — see Phase 6 "User
+Reporting" and "Reports Management".
+
+- [x] Create `reportReview` action — the subject is the review's **author**, not
+      the person it is about. A suspension arising from this report has to land
+      on whoever wrote it; the obvious mistake would suspend the person the
+      review was already unfair to.
+- [x] Add report reasons — `FAKE_REVIEW`, harassment, offensive language,
+      inappropriate content, spam and other. Reasons are scoped per target type
+      (`REPORT_REASONS_BY_TYPE`); offering all fifteen everywhere would make the
+      queue untriageable by reason, which is what `@@index([reason])` is for.
+- [x] Show in admin dashboard — `/admin/reports`
+- [x] `Review.removedAt` — soft removal, **distinct from `publishedAt: null`**.
+      Unpublishing to hide a review would have it republished by the release
+      sweep a fortnight later. A removed review also leaves both rating
+      aggregates, or the score would keep reflecting words nobody may read.
 
 ---
 
@@ -674,28 +841,64 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
 
 ### User Reporting
 
-- [ ] Create report listing component
-- [ ] Create report user component
-- [ ] Create `reportListing` action
-- [ ] Create `reportUser` action
-- [ ] Add report reasons (predefined)
-- [ ] Add report description (optional)
+Shipped 17 August 2026 as the first Trust & Safety slice. The `Report` model,
+`ReportReason`, `ReportStatus` and `ReportAction` were fully designed in the
+schema and entirely unused; this is what connects them.
+
+- [x] Create report listing component — one `ReportButton` serves all three
+      targets, built from the same `REPORT_REASONS_BY_TYPE` map the server
+      validates against, so the form cannot offer a reason the action rejects
+- [x] Create report user component — same component
+- [x] Create `reportListing` action
+- [x] Create `reportUser` action
+- [x] Add report reasons (predefined) — scoped per target type
+- [x] Add report description (optional) — empty is normalised away rather than
+      stored, so it cannot render as a blank quote in the queue
+- [x] **The type is fixed by which action you call**, never accepted as input.
+      `Report.targetId` is polymorphic with no foreign key, so a client able to
+      pair `type: LISTING` with a review's id would be choosing which table a
+      moderator's later `REMOVE_LISTING` runs against
+- [x] **You can only report what you can see** — each target is looked up through
+      the same predicate that governs reading it. Otherwise the form is an oracle
+      for probing ids: file a report, read the error, learn whether a hidden
+      listing exists
+- [x] **Nothing is notified on filing** — not the reported account, which would
+      hand them the warning and the motive to retaliate against whoever could
+      plausibly have filed it; and not moderators, whose queue would then be
+      floodable. Same reasoning as withholding a review until its counterpart lands
 
 ### Admin Layout
 
-- [ ] Create admin layout (`/admin/layout.tsx`)
-- [ ] Add admin sidebar navigation
-- [ ] Add admin header
-- [ ] Implement admin route protection
-- [ ] Create admin dashboard home
+- [x] Create admin layout (`/admin/layout.tsx`) — shipped in Phase 2.1 as the
+      boundary new admin routes inherit automatically; `/admin/reports` is the
+      first route to rely on that
+- [x] Add admin sidebar navigation — an `Administration` section in the shared
+      dashboard nav map, filtered by `requiredRole`. Hiding a link is not
+      authorization; the real gate is `requireAdmin()` plus `ADMIN_PREFIXES`
+- [ ] Add admin header — the dashboard header is shared; a distinct admin one is
+      still open
+- [x] Implement admin route protection — `requireAdmin()` re-reads role from the
+      database, because middleware sees only the JWT and a demoted admin carries
+      `role: "ADMIN"` in their cookie for up to 24h
+- [ ] Create admin dashboard home — still the Phase 6 placeholder
 
 ### User Management
 
-- [ ] Create users list page (`/admin/users`)
-- [ ] Add user search
+- [x] Create users list page (`/admin/users`) — **scoped to identity
+      verification only.** Suspension, banning and role changes are deliberately
+      not on it: they are the platform's most consequential controls, and
+      attaching them to a search box built for a different task is how one gets
+      used by accident
+- [x] Add user search — **search-first, never browse-first.** Nothing renders
+      until a query is entered, so this cannot be left open as a directory of the
+      user base with email addresses attached. `email` is selected here and
+      nowhere public, because it is the only reliable way to tell two members
+      with the same display name apart
 - [ ] Add user filters (status, role)
 - [ ] Create user detail view
-- [ ] Create `suspendUser` action
+- [ ] Create `suspendUser` action — note `resolveReport` can already suspend
+      through the moderation queue, with a report attached as the reason. A
+      standalone action still needs one
 - [ ] Create `banUser` action
 - [ ] Create `changeUserRole` action
 
@@ -717,12 +920,41 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
 
 ### Reports Management
 
-- [ ] Create reports page (`/admin/reports`)
-- [ ] Show reported listings
-- [ ] Show reported users
-- [ ] Create `resolveReport` action
-- [ ] Create `dismissReport` action
-- [ ] Add resolution notes
+- [x] Create reports page (`/admin/reports`) — pending / resolved / dismissed as
+      links rather than a client filter, so a report can be linked to a colleague
+- [x] Show reported listings
+- [x] Show reported users — and reported reviews. The polymorphic `targetId`
+      cannot be joined, so targets are hydrated in one query per kind for the
+      page. A card that showed only "LISTING, id abc123" would make every
+      decision start in another tab, and a moderator working that way decides
+      from the reason alone — which is the reporter's opinion, not evidence
+- [x] Create `resolveReport` action — the decision and its consequence are **one
+      transaction**. Split apart, the failure modes are a suspension nobody is
+      accountable for and an audit trail describing something that never
+      happened, and neither would ever be detected
+- [x] Create `dismissReport` action — kept separate from resolving with `NONE`,
+      because the two say different things: nothing-warranted versus the
+      complaint did not hold. A target with ten dismissals reads very differently
+      from one with ten investigated-no-action decisions
+- [x] Add resolution notes — and an **absent** note is shown as absent rather
+      than hidden, since a suspension with no reasoning recorded is exactly the
+      decision someone will need to review later
+- [x] **The action must fit the report type** (`REPORT_ACTIONS_BY_TYPE`).
+      `REMOVE_LISTING` on a review report would run against whatever row shares
+      that id; the database has no opinion, so this is caught here or not at all
+- [x] **Resolved once**, by compare-and-swap on `status`. Two moderators on one
+      queue is the normal case, and without it a report resolves twice and
+      suspends an account twice for a single complaint
+- [x] **Admins cannot be suspended through the queue**, and nobody can suspend
+      themselves. A report queue that can disable an administrator is a way to
+      take the platform's own controls away from it
+- [x] `getActiveAdmin()` — the non-redirecting counterpart to `requireAdmin()`.
+      A redirect from a Server Action would discard whatever the moderator had
+      typed into the resolution note
+- [x] Integration verification — `npm run verify:trust-safety`, 16 checks,
+      including that a removed review leaves the public list **and** both rating
+      aggregates together, that the release sweep will not resurrect one, and
+      that a report whose target was deleted still renders and can still be closed
 
 ### Analytics Dashboard
 
@@ -876,7 +1108,226 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
 
 *Last reviewed: 11 August 2026, against the code — Phase 4 complete, Phase 3 checkboxes corrected.*
 
-**Next:** Trust & Safety (identity verification, value-gated access, handover protocol, damage
-claims). Phase 4 was built to receive it: `canStartBooking` and the completion guard are the two
-points a sealed handover record becomes a condition rather than a rewrite, and no copy anywhere
-claims SamaanShare holds a deposit — so escrow can be added without walking a promise back.
+### Handover Protocol
+
+Shipped 17 August 2026. `startBooking` and `completeBooking` were each one party's
+unilateral click, recording that a handover happened and nothing about the state
+of the thing handed over — so when a deposit dispute followed, the platform's
+answer to "it came back damaged" was necessarily "we have no idea".
+
+- [x] `HandoverRecord` + `HandoverPhoto` — one record per booking per direction,
+      with condition, notes and up to six Cloudinary photos
+- [x] **Required at both transitions.** Neither `startBooking` nor
+      `completeBooking` can run without one, written in the **same transaction**
+      as the status change: a record without the transition describes a
+      collection that never happened, and a transition without the record is the
+      evidence-free state this exists to end
+- [x] **Requiring it cannot deadlock** — the party performing the transition is
+      the party writing the record, so they are never waiting on anyone. This is
+      why the gate is on the record and not on the agreement
+- [x] **Sealed on write.** No update path exists, and `@@unique([bookingId, type])`
+      refuses a second attempt — enforced by the *database*, because the
+      application check and the insert are not atomic. A record its author can
+      revise afterwards is a claim, not evidence, and the moment it matters is
+      exactly when they would want to revise it
+- [x] **The counterparty's agreement is recorded but never required.** Blocking
+      on it would let a silent party freeze someone else's rental and deposit
+      indefinitely. What is stored instead is which of **agreed / disputed /
+      unanswered** happened — three distinct facts, and treating silence as
+      disagreement would punish everyone who never opens the app again after
+      returning a drill
+- [x] `confirmHandover` — the other party only, answered once, by compare-and-swap
+      on `PENDING`. An author confirming their own record would read as
+      corroboration while being nothing of the kind
+- [x] Photos are **public ids only**, URLs derived server-side from Cloudinary's
+      Admin API, ids checked against the caller's own pending folder. Same guard
+      as `listingImagePublicIdSchema`, and it matters more here: a handover photo
+      that actually belonged to someone else would be evidence of nothing while
+      looking exactly like proof
+- [x] **Only a dispute notifies** (`HANDOVER_DISPUTED`), and only the record's
+      author. Agreement is the expected path, and notifying the expected path is
+      what makes an unread badge untrustworthy
+- [x] **No automatic consequence.** `DAMAGED` is one person's account written at a
+      door, not a finding. Nothing follows from it, and tests assert the copy
+      states no verdict and no consequence — a withheld deposit on an owner's
+      say-so alone is not a process
+- [x] Integration verification — `npm run verify:handover`, 13 checks, including
+      that the seal is refused by the database, that exactly one of two concurrent
+      answers takes effect, and that a booking cannot be deleted out from under
+      its record
+
+**Known limit, recorded rather than hidden:** both transitions are owner-driven,
+so the owner always writes the record and the renter always answers it. A renter
+who thinks an item arrived scratched can only say so in the dispute note, and
+cannot attach their own photos. Letting either side file an independent record is
+the natural extension; it needs a second record per direction rather than a
+schema change.
+
+---
+
+### Damage Claims
+
+Shipped 18 August 2026, and this completes Trust & Safety.
+
+**A claim cannot move money.** The deposit passes directly between the two people
+and SamaanShare never holds it — `src/lib/bookings/deposit.ts` says every function
+there is about *stating an obligation, never custody*. So a claim changes the
+amount the platform **states** is owed back: settle one for PKR 15,000 of a
+PKR 60,000 deposit and the obligation becomes PKR 45,000. Same act, applied to a
+disagreement.
+
+- [x] `DamageClaim` + `ClaimPhoto` — a **real foreign key to `Booking`**, which is
+      the whole reason it is not another `ReportReason`. `ITEM_DAMAGED` and
+      `ITEM_NOT_RETURNED` already exist there, but a report targets a *person*
+      through a polymorphic `targetId` with no foreign key: it can reach neither
+      the booking, nor its deposit, nor the return condition record
+- [x] One claim per booking (`@@unique`), so the owner states everything at once
+      rather than filing again after the first is answered
+- [x] Both parties **derived from the booking**, never from input — a
+      client-supplied respondent would aim a demand for money at someone who was
+      not party to the rental
+- [x] **Capped at the deposit.** That is the only obligation the platform has
+      standing to describe; a larger figure would imply an enforcement power that
+      does not exist. Damage beyond it is between the two people
+- [x] `fileDamageClaim`, `respondToDamageClaim`, `withdrawDamageClaim`
+- [x] **Renter acceptance settles it with no administrator** — the parties agree,
+      so there is nothing left for a third to decide. Only a dispute reaches the
+      queue
+- [x] **Silence is never acceptance.** An unanswered claim escalates to a human
+      after 7 days rather than succeeding by default. Unlike a handover record, a
+      claim has a price attached, and letting a missed notification cost someone
+      money is a way of collecting from the inattentive. `respondedAt` stays null
+      through an escalation, so an absence stays distinguishable from a dispute
+- [x] **The deposit clock pauses while a claim is live, with a hard cap** at the
+      same 7 days — one constant used twice, so the pause can never outlast the
+      renter's chance to answer. Without the cap, filing a claim would be the
+      most effective way to hold a deposit indefinitely
+- [x] **An unsettled claim deducts nothing.** `upheldAmount` returns `null` while
+      open or disputed, so the full deposit stays owed — the platform does not act
+      on one party's assertion
+- [x] A claim **cannot be filed once the deposit has gone back**, which stops
+      "return it, then claim it"
+- [x] `resolveDamageClaim` — admin only, `DISPUTED` only, compare-and-swap,
+      bounded at the amount claimed (awarding beyond it would decide something
+      nobody put to the administrator). Resolution note **required**, unlike a
+      report's, because a determination neither party can read the reasoning for
+      is one neither can accept or appeal
+- [x] `/admin/claims` — oldest first, the opposite of the report queue, because a
+      claim holds somebody's money and has a clock on it
+- [x] **The contradiction is the headline.** When the owner's own return record
+      graded the item as fine and they are now claiming damage, the queue flags it
+      first. Not a refusal — hidden faults are real — but it is the strongest
+      evidence available either way
+- [x] Photo resolution moved to `src/lib/uploads/resolve-photos.ts` and shared
+      with handovers. Both checks in it are security boundaries, and a second copy
+      is a second place for one to be dropped
+- [x] Integration verification — `npm run verify:claims`, 13 checks, including
+      that an unsettled claim leaves the full deposit owed, that silence escalates
+      without being recorded as a dispute, and that two administrators cannot
+      decide the same claim twice
+- [x] **End-to-end verification — `npm run verify:claims:ui`, 43 checks.** Drives
+      the real Server Actions over HTTP with real Auth.js session cookies for
+      three parties, then asserts on the HTML each is actually served. Covers
+      what a database script cannot: session authentication, the authorization
+      inside each action, the Server Action pipeline, and what the owner, renter
+      and administrator see on screen.
+      Action ids are **read from the built client chunks at runtime**, never
+      hardcoded — they change on every build, and a pinned id would turn a broken
+      action into a passing test the day someone edited an unrelated file.
+      Requires `npm run build && npm run start`: a turbopack dev server would not
+      answer to production ids.
+
+**Deliberately not wired:** an upheld claim is a strong negative signal about a
+renter, but it does not feed `assessTrust`. Coupling the reputation system to a
+money dispute deserves its own decision rather than arriving as a side effect.
+
+---
+
+**Next:** Trust & Safety is complete — reporting and moderation, public trust profiles and the trust
+score, identity verification, value-gated access, the handover protocol, and damage claims.
+
+What remains before launch sits in **Phase 6** (the rest of admin: user filters, suspension and role
+actions, listing moderation, analytics) and **Phase 7** (error handling, loading states, SEO,
+accessibility, a real test setup, deployment). Stage A6 is still blocked on production
+infrastructure, and `docs/DEPLOYMENT.md` has the full checklist.
+
+### Identity Verification
+
+Shipped 17 August 2026. Closes the gap recorded here previously: `User.isVerified`
+rendered a "Verified" badge on `OwnerCard` and **nothing ever wrote it**, so the
+badge was unreachable and the trust score's top band was gated on a flag that
+could never be true.
+
+- [x] **Two claims, kept apart.** `emailVerified` proves an inbox was reachable —
+      minutes of work for anyone with a mail account. `isVerified` is meant to
+      mean a human checked a document against a person. The trust score weights
+      them 1.0 against 0.4 and gates its top band on the second, so nothing in
+      the email-confirmation path may set the first. A test greps the
+      confirmation email copy for "identity", "verified" and "badge" to keep the
+      wording from blurring them
+- [x] `setIdentityVerified` — one action for grant and withdrawal. Reversal is
+      not exceptional (a forged document, an account changing hands), and
+      splitting it would give the reversal its own untested path
+- [x] **Recorded, not just set** — `verifiedAt` and `verifiedById`, the same way
+      `Payment.confirmedById` records who vouched for money arriving. A claim
+      this strong, made by the platform about a person, has to be attributable
+- [x] **An admin cannot verify themselves.** The whole value of the flag is that
+      someone other than its subject decided it, and a self-grant is the first
+      thing a compromised admin account would reach for
+- [x] A suspended account cannot be granted verification — publishing the
+      platform's strongest endorsement about someone moderation just acted
+      against. Withdrawal from a suspended account stays permitted, which is the
+      direction that case actually needs
+- [x] Withdrawal clears the timestamp too. A `verifiedAt` left on an unverified
+      account reads as a current grant to anything querying the column
+- [ ] Phone OTP verification (+92) — **blocked on an SMS provider**, which this
+      deployment does not have. `User.phoneVerified` stays honestly `false`; no
+      fake OTP was built. Listed under Phase 2 below
+- [ ] CNIC verification (NADRA) — Phase 2. Until it exists, verification is an
+      administrator confirming a document out of band, which is a perfectly
+      ordinary way to run this **provided the decision is attributable** — which
+      is what the two columns above are for
+
+### Value-Gated Access
+
+Shipped 17 August 2026. What a stranger has to have shown before they can ask to
+rent something, scaled to what is at stake.
+
+Payment is offline and there is no escrow, so when an owner hands over a
+generator the platform is holding nothing that could make them whole. On a
+PKR 800 drill that is fine. On something worth six figures it is not.
+
+- [x] `src/lib/trust/access.ts` — pure, 20 tests. Three tiers on
+      `Listing.securityDeposit`: open below PKR 25,000, **elevated** to
+      PKR 100,000, **high-value** above it
+- [x] **Gated on what the owner said is at risk**, not a number the platform
+      invented. An owner wanting fewer hurdles can ask for a smaller deposit and
+      carries that risk themselves, so the incentive points the right way with no
+      extra machinery. A listing with no deposit gates nothing — that is the
+      owner's call
+- [x] Elevated requires a confirmed email address — one click, and it is the
+      difference between an account with a reachable person behind it and one
+      made in ten seconds with a throwaway address
+- [x] High-value requires a confirmed address **and** either a verified identity
+      **or** 3 completed rentals. **The "or" is load-bearing**: identity
+      verification is granted by an administrator out of band, so requiring it
+      alone would make every high-value listing unbookable by everyone at launch.
+      A rule so strict it stops the feature working is an outage, not a safety
+      measure. Completed rentals are different evidence for the same thing — an
+      account with a history it would lose
+- [x] **Every gate is clearable, and every refusal says how.** Asserted across
+      all tiers: a gate that cannot be passed is a dead end wearing the costume
+      of a safety feature. All unmet requirements are reported at once, because
+      naming one at a time is how someone gives up on the second refusal
+- [x] Enforced in `createBookingRequest`, which is the boundary. The listing page
+      shows the gate instead of the date fields, but that is a courtesy — the
+      form is a rendering decision and the action is a public endpoint
+- [x] Signals read from the **database, never the session**. A withdrawn
+      verification would otherwise keep clearing high-value gates for up to 24h
+      while the JWT went stale — the same reasoning that made `requireUser`
+      re-read `status`
+- [x] The rule is stated on the listing to everyone who can see it, **including
+      the owner**: setting a large deposit narrows who may ask to rent the item,
+      and that consequence should not be discovered through an empty inbox
+- [x] Nothing promises safety. Asserted — clearing a gate does not make a rental
+      safe, and the copy never implies SamaanShare stands behind it

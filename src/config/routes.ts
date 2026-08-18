@@ -41,6 +41,19 @@ export const PROTECTED_PREFIXES = [
   "/profile",
   "/settings",
   "/admin",
+  /**
+   * Email confirmation. Listed so a signed-out visitor clicking the link is sent
+   * to login with a `callbackUrl` that keeps `?token=` intact - middleware
+   * preserves the query string - and lands back here afterwards.
+   *
+   * Deliberately NOT in {@link AUTH_ROUTES}, for the same reason as
+   * `/reset-password`: a signed-in visitor holding a valid link has to be able to
+   * redeem it, and bouncing them to the dashboard would strand a live token.
+   *
+   * `verifyEmail` requires the session to belong to the token's owner, so a link
+   * forwarded or scraped from a mailbox cannot confirm the address on its own.
+   */
+  "/verify-email",
 ] as const;
 
 /**

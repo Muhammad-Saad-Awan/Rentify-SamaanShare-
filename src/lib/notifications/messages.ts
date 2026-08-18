@@ -39,11 +39,20 @@ export interface NotificationDraft {
    * owner's is at `/dashboard/requests`. Storing which one avoids having to re-derive the
    * reader's role in the booking at render time.
    */
-  entityType: BookingEntityType;
+  entityType: NotificationEntityType;
   entityId: string;
 }
 
 export type BookingEntityType = "booking" | "booking-request";
+
+/**
+ * Every deep-link discriminator in use.
+ *
+ * Widened past bookings for Trust & Safety. `"report"` has no screen to point at yet - a person
+ * has no page listing the reports they filed - so {@link notificationHref} deliberately returns
+ * `null` for it and the row renders unclickable rather than linking somewhere unrelated.
+ */
+export type NotificationEntityType = BookingEntityType | "report";
 
 /** Who the booking belongs to, so a draft can be addressed without another query. */
 export interface BookingParties {
@@ -78,7 +87,15 @@ export type BookingNotificationEvent =
   | { event: "review-reminder" }
   | { event: "deposit-returned"; amount: number }
   | { event: "cancelled"; by: "renter" | "owner"; reason?: string | null }
-  | { event: "instructions-updated" };
+  | { event: "instructions-updated" }
+  /**
+   * Both reviews have been released and are now readable.
+   *
+   * Sent on RELEASE, never on submission. Telling someone "you have a review" the moment it is
+   * written would hand them the one fact reciprocal withholding exists to withhold - that the other
+   * side has already committed - and re-open exactly the retaliation window the design closes.
+   */
+  | { event: "reviews-published" };
 
 export type BookingNotificationInput = BookingNotificationBase &
   BookingNotificationEvent;
@@ -260,6 +277,27 @@ export function buildBookingNotifications(
         ),
       ];
 
+    /**
+     * Both sides, because release is mutual.
+     *
+     * The copy says the reviews are readable rather than what they say. A notification that leaked
+     * the rating would make the feed a way to learn the outcome without opening it, and a bad rating
+     * delivered as a push line is a worse experience than one read in context.
+     */
+    case "reviews-published":
+      return [
+        toRenter(
+          NotificationType.REVIEW_RECEIVED,
+          `Your review of ${item} is now public`,
+          "The owner's review of you has been published too - both are visible now that you have each written one."
+        ),
+        toOwner(
+          NotificationType.REVIEW_RECEIVED,
+          `Your review of the renter for ${item} is now public`,
+          "Their review of you has been published too - both are visible now that you have each written one."
+        ),
+      ];
+
     case "review-reminder":
       return [
         toRenter(
@@ -359,6 +397,16 @@ export function notificationHref(
       return "/dashboard/bookings";
     case "booking-request":
       return "/dashboard/requests";
+    /**
+     * Reports have no reader-facing screen.
+     *
+     * Not an oversight and not a stub: there is nowhere for a reporter to go, and linking to
+     * `/dashboard/notifications` - the page they are already on - or to the reported listing would
+     * be worse than not linking. The `entityId` is still stored, so the row can become a link the
+     * day a "reports you filed" page exists.
+     */
+    case "report":
+      return null;
     default:
       return null;
   }

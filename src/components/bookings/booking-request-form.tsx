@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarPlusIcon, Loader2Icon } from "lucide-react";
+import { CalendarPlusIcon, Loader2Icon, ShieldAlertIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
@@ -17,9 +17,12 @@ import {
   countRentalDays,
   MAX_BOOKING_DAYS,
 } from "@/lib/bookings/pricing";
+import { accessTierDescription } from "@/lib/trust/access";
 import { formatPKR } from "@/lib/utils/currency";
 import { NOTES_MAX } from "@/lib/validations/booking";
 import { UNAUTHENTICATED_ERROR } from "@/types";
+
+import type { AccessDecision, AccessTier } from "@/lib/trust/access";
 
 interface BookingRequestFormProps {
   listingId: string;
@@ -32,6 +35,15 @@ interface BookingRequestFormProps {
   isAuthenticated: boolean;
   /** True when the viewer owns this listing; renting from yourself is refused. */
   isOwnListing: boolean;
+  /** Which value tier this listing sits in, from its deposit. */
+  accessTier: AccessTier;
+  /**
+   * Whether the signed-in viewer clears the gate, or `null` when signed out.
+   *
+   * Signed out there is nothing to evaluate - the panel already becomes a login link - and
+   * computing it would mean naming requirements to someone who has not told us who they are.
+   */
+  access: AccessDecision | null;
 }
 
 /**
@@ -55,6 +67,8 @@ function BookingRequestForm({
   today,
   isAuthenticated,
   isOwnListing,
+  accessTier,
+  access,
 }: BookingRequestFormProps) {
   const router = useRouter();
   const startId = useId();
@@ -97,6 +111,61 @@ function BookingRequestForm({
           </Link>{" "}
           to review bookings.
         </p>
+      </Card>
+    );
+  }
+
+  /**
+   * The gate, shown instead of the form.
+   *
+   * Rendered before the date fields rather than as an error after submitting: someone who cannot
+   * request this item should learn that while they are reading it, not after choosing dates. Every
+   * requirement is listed at once, with what to do about it - naming one at a time is how a person
+   * gives up on the second refusal.
+   *
+   * NOT THE SECURITY BOUNDARY. `createBookingRequest` re-checks all of this against the database;
+   * this only avoids walking someone into a refusal.
+   */
+  if (access && !access.allowed) {
+    return (
+      <Card>
+        <div className="flex flex-col gap-3 px-(--card-spacing)">
+          <p className="flex items-center gap-2 text-sm font-medium">
+            <ShieldAlertIcon className="size-4 shrink-0" aria-hidden="true" />A
+            few things first
+          </p>
+
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {accessTierDescription(accessTier)}
+          </p>
+
+          <ul className="flex flex-col gap-2.5">
+            {access.unmet.map((requirement) => (
+              <li key={requirement.key} className="text-sm">
+                <span className="font-medium">{requirement.label}</span>
+                <span className="text-muted-foreground block leading-relaxed">
+                  {requirement.action}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          {/*
+            A link straight to the fix for the one requirement that has one. The other is cleared by
+            renting, which is not a button.
+          */}
+          {access.unmet.some((requirement) => requirement.key === "email") && (
+            <div>
+              <Button
+                size="sm"
+                variant="outline"
+                render={<Link href="/profile" />}
+              >
+                Confirm my email
+              </Button>
+            </div>
+          )}
+        </div>
       </Card>
     );
   }

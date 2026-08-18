@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { Prisma } from "@/generated/prisma/client";
 import { hashPassword } from "@/lib/auth/password";
+import { sendVerificationEmailTo } from "@/lib/auth/send-verification";
 import { prisma } from "@/lib/prisma";
 import {
   normalizeEmail,
@@ -66,10 +67,13 @@ export async function registerUser(
   const name = normalizeName(parsed.data.name);
   const password = await hashPassword(parsed.data.password);
 
+  // Declared out here because it is assigned inside the try below and read after it.
+  let created: { id: string; name: string | null; email: string };
+
   try {
-    await prisma.user.create({
+    created = await prisma.user.create({
       data: { name, email, password },
-      select: { id: true },
+      select: { id: true, name: true, email: true },
     });
   } catch (error) {
     /**
@@ -97,6 +101,24 @@ export async function registerUser(
 
     throw error;
   }
+
+  /**
+   * The confirmation email, and why a failure here does not fail the signup.
+   *
+   * The account exists and is usable without a confirmed address - nothing is gated on it - so a
+   * Resend outage must not turn a completed registration into an error the user would answer by
+   * registering again, straight into the "already exists" branch above. It is sent best-effort and
+   * the failure is logged; `/profile` offers a resend, which is the recovery path.
+   *
+   * Silently does nothing when email is unconfigured, which is the state on any deployment without
+   * `RESEND_API_KEY` - `sendEmail` reports that rather than throwing.
+   */
+  await sendVerificationEmailTo(created).catch((error: unknown) => {
+    console.error("registration verification email failed", {
+      userId: created.id,
+      error,
+    });
+  });
 
   return { success: true, data: { email } };
 }

@@ -278,16 +278,21 @@ function buildListingOrderBy(
       return [{ pricePerDay: "desc" }, { createdAt: "desc" }];
 
     case "rating":
-      // Sorts on the owner's denormalised `ratingAverage`, which is what the
-      // schema's P8 note exists for - a listing has no rating of its own, and
-      // averaging reviews inline is not expressible in a paginated query.
+      // Sorts on the owner's denormalised `ownerRatingAverage`, which is what
+      // the schema's P8 note exists for - a listing has no rating of its own,
+      // and averaging reviews inline is not expressible in a paginated query.
+      //
+      // The `asOwner` half, not a mixed figure: someone browsing listings is
+      // ranking people by what they are like to rent *from*, and a strong record
+      // as a borrower is no evidence about that. It also keeps this ordering
+      // consistent with the number each listing's own page prints.
       //
       // `nulls: "last"` is essential rather than cosmetic: the column is null
       // until an owner's first review, and Postgres places nulls *first* on a
       // DESC sort by default. Without this, "sort by rating" would lead with
       // every unrated owner - the exact opposite of the request.
       return [
-        { owner: { ratingAverage: { sort: "desc", nulls: "last" } } },
+        { owner: { ownerRatingAverage: { sort: "desc", nulls: "last" } } },
         { createdAt: "desc" },
       ];
 
