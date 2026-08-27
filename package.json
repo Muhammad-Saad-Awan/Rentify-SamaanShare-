@@ -33,6 +33,10 @@
     "verify:claims": "tsx --env-file=.env.local scripts/verify-claims.ts",
     "verify:claims:ui": "tsx --env-file=.env.local scripts/verify-claims-ui.ts",
     "verify:admin-users": "tsx --env-file=.env.local scripts/verify-admin-users.ts",
+    "verify:admin-listings": "tsx --env-file=.env.local scripts/verify-admin-listings.ts",
+    "verify:admin-bookings": "tsx --env-file=.env.local scripts/verify-admin-bookings.ts",
+    "verify:admin-analytics": "tsx --env-file=.env.local scripts/verify-admin-analytics.ts",
+    "verify:member-overview": "tsx --env-file=.env.local scripts/verify-member-overview.ts",
     "db:studio": "prisma studio",
     "db:validate": "prisma validate",
     "db:format": "prisma format"

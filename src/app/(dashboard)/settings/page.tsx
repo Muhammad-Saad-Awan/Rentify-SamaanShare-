@@ -33,7 +33,7 @@ export default async function SettingsPage() {
         <PlaceholderCard
           icon={ShieldIcon}
           title="Security"
-          description="Password change, email verification and connected accounts. Depends on the password reset and email verification flows still open in Phase 1."
+          description="Changing your password from inside the app, and managing connected accounts. Resetting a forgotten password and confirming your email address both work already — from the sign-in page and your profile."
           phase="Phase 1"
         />
         <PlaceholderCard

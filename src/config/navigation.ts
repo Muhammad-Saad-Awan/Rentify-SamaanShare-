@@ -1,12 +1,15 @@
 import {
+  BarChart3Icon,
   BellIcon,
   CalendarCheckIcon,
+  CalendarSearchIcon,
   FlagIcon,
   HeartIcon,
   HomeIcon,
   InboxIcon,
   LayoutDashboardIcon,
   PackageIcon,
+  PackageSearchIcon,
   ScaleIcon,
   SettingsIcon,
   ShieldIcon,
@@ -125,7 +128,27 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
       { title: "Admin", href: "/admin", icon: ShieldIcon, exact: true },
       { title: "Reports", href: "/admin/reports", icon: FlagIcon },
       { title: "Members", href: "/admin/users", icon: UsersIcon },
+      /**
+       * Listing moderation. `/admin/listings` rather than a section of `/dashboard/listings`,
+       * which is the owner's own inventory - the two look similar and answer opposite questions:
+       * what am I renting out, versus what is on this platform.
+       */
+      { title: "Listings", href: "/admin/listings", icon: PackageSearchIcon },
+      /**
+       * Booking oversight. Read-only - every step of a booking belongs to one of the two parties,
+       * so this answers "what happened" and cannot change it. See `queries/admin-bookings.ts`.
+       */
+      {
+        title: "Bookings",
+        href: "/admin/bookings",
+        icon: CalendarSearchIcon,
+      },
       { title: "Claims", href: "/admin/claims", icon: ScaleIcon },
+      /**
+       * Platform totals. Last in the section deliberately: the queues above it are where somebody
+       * is waiting on a decision, and analytics is where nobody is.
+       */
+      { title: "Analytics", href: "/admin/analytics", icon: BarChart3Icon },
     ],
   },
 ] as const;
@@ -139,6 +162,21 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
  * title-cased segment, so an unmapped route degrades to "New" rather than
  * breaking the trail.
  */
+/**
+ * Labels for whole paths, checked before {@link SEGMENT_LABELS}.
+ *
+ * Exists because segment names collide across sections: `/dashboard/listings` is the owner's own
+ * inventory ("My Listings") and `/admin/listings` is every listing on the platform, and a single
+ * `listings` entry cannot be right for both. Keyed by the full path so the more specific answer
+ * wins, with the segment map as the fallback.
+ */
+export const PATH_LABELS: Readonly<Record<string, string>> = {
+  "/admin/listings": "Listings",
+  "/admin/bookings": "Bookings",
+  "/admin/analytics": "Analytics",
+  "/admin/users": "Members",
+};
+
 export const SEGMENT_LABELS: Readonly<Record<string, string>> = {
   dashboard: "Dashboard",
   listings: "My Listings",
