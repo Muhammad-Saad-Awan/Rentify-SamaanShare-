@@ -3,13 +3,15 @@
 import { revalidatePath } from "next/cache";
 
 import {
+  AdminActionType,
   ListingStatus,
   ReportAction,
   ReportStatus,
   ReportType,
-  UserRole,
   UserStatus,
 } from "@/generated/prisma/enums";
+import { writeAdminAction } from "@/lib/admin/log";
+import { canSuspendUser } from "@/lib/admin/rules";
 import { getActiveAdmin } from "@/lib/auth/session";
 import { createNotifications } from "@/lib/notifications/create";
 import { buildReportNotifications } from "@/lib/notifications/report-messages";
@@ -175,6 +177,8 @@ async function closeReport({
         targetId: report.targetId,
         action,
         adminId: admin.id,
+        reportId: report.id,
+        ...(resolution ? { resolution } : {}),
       });
 
       await createNotifications(
@@ -217,6 +221,10 @@ interface ApplyActionInput {
   targetId: string;
   action: ReportAction;
   adminId: string;
+  /** The report being resolved, so a suspension it causes can point back at it. */
+  reportId: string;
+  /** The moderator's note, reused as the audit reason - the only one this path has. */
+  resolution?: string | undefined;
 }
 
 /**
@@ -229,7 +237,7 @@ interface ApplyActionInput {
  */
 async function applyReportAction(
   tx: Prisma.TransactionClient,
-  { type, targetId, action, adminId }: ApplyActionInput
+  { type, targetId, action, adminId, reportId, resolution }: ApplyActionInput
 ): Promise<{ error?: string }> {
   switch (action) {
     case ReportAction.NONE:
@@ -283,33 +291,63 @@ async function applyReportAction(
         return { error: "The account behind that report could not be found." };
       }
 
+      const subject = await tx.user.findUnique({
+        where: { id: subjectId },
+        select: { id: true, role: true, status: true, deletedAt: true },
+      });
+
+      if (!subject) {
+        return { error: "The account behind that report could not be found." };
+      }
+
       /**
-       * An admin cannot be suspended through the report queue, and cannot suspend themselves.
+       * The SAME predicate the members screen uses - see `src/lib/admin/rules.ts`.
        *
-       * Self-suspension would lock the actor out mid-decision. The admin exclusion is the more
-       * important one: moderation is not the place to settle a dispute between staff, and a report
-       * queue that can disable an administrator is a way to take the platform's own controls away
-       * from it. Demoting or suspending an admin belongs in user management, under a human decision.
+       * These rules used to be written out here: not yourself, not an administrator, not deleted,
+       * must be ACTIVE. Adding a standalone suspension meant a second copy, and two copies of an
+       * authorization rule is how one of them ends up missing the clause that mattered. The
+       * reasoning behind each clause now lives with the predicate rather than here.
        */
-      if (subjectId === adminId) {
-        return { error: "You cannot suspend your own account." };
+      const eligibility = canSuspendUser(adminId, {
+        id: subject.id,
+        role: subject.role,
+        status: subject.status,
+        isDeleted: subject.deletedAt !== null,
+      });
+
+      if (!eligibility.allowed) {
+        return { error: eligibility.reason };
       }
 
       const suspended = await tx.user.updateMany({
-        where: {
-          id: subjectId,
-          role: { not: UserRole.ADMIN },
-          deletedAt: null,
-          // Not already suspended or banned: re-stamping adds nothing and would overwrite the
-          // standing of an account a stricter decision has already dealt with.
-          status: UserStatus.ACTIVE,
-        },
+        // Guarded on the status just read, so a concurrent change is refused rather than overwritten.
+        where: { id: subject.id, status: subject.status, deletedAt: null },
         data: { status: UserStatus.SUSPENDED },
       });
 
-      return suspended.count > 0
-        ? {}
-        : { error: "That account could not be suspended." };
+      if (suspended.count === 0) {
+        return { error: "That account could not be suspended." };
+      }
+
+      /**
+       * The same audit row a suspension from the members screen writes, with the report attached.
+       *
+       * That link is what keeps the two paths from producing different kinds of evidence: before
+       * this, a suspension through the queue left the Report as its only trace and the User row said
+       * nothing but SUSPENDED. The reason recorded is the moderator's own resolution note, which is
+       * the closest thing this path has to one.
+       */
+      await writeAdminAction(tx, {
+        actorId: adminId,
+        subjectId: subject.id,
+        type: AdminActionType.SUSPEND_USER,
+        reason: resolution ?? "Suspended while resolving a report.",
+        previousValue: subject.status,
+        newValue: UserStatus.SUSPENDED,
+        reportId,
+      });
+
+      return {};
     }
   }
 }

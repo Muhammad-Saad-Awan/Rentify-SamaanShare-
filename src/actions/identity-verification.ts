@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { UserStatus } from "@/generated/prisma/enums";
+import { AdminActionType, UserStatus } from "@/generated/prisma/enums";
+import { writeAdminAction } from "@/lib/admin/log";
 import { getActiveAdmin } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { listingIdSchema } from "@/lib/validations/listing";
@@ -112,21 +113,46 @@ export async function setIdentityVerified(
       };
     }
 
-    await prisma.user.update({
-      where: { id: target.id },
-      data: verified
-        ? {
-            isVerified: true,
-            verifiedAt: new Date(),
-            verifiedById: admin.id,
-          }
-        : {
-            isVerified: false,
-            // Cleared together. A `verifiedAt` left behind on an unverified account would read as a
-            // current grant to anything querying the column rather than the flag.
-            verifiedAt: null,
-            verifiedById: null,
-          },
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: target.id },
+        data: verified
+          ? {
+              isVerified: true,
+              verifiedAt: new Date(),
+              verifiedById: admin.id,
+            }
+          : {
+              isVerified: false,
+              // Cleared together. A `verifiedAt` left behind on an unverified account would read as
+              // a current grant to anything querying the column rather than the flag.
+              verifiedAt: null,
+              verifiedById: null,
+            },
+      });
+
+      /**
+       * The same audit row every other administrator action writes.
+       *
+       * `verifiedAt`/`verifiedById` stay - the trust score reads them, and they are the current
+       * state rather than a history. This adds the history: a verification granted, withdrawn and
+       * granted again leaves three rows here where the columns would show only the last one.
+       *
+       * No reason is collected for this action, unlike suspension, so the record says which way it
+       * went rather than inventing an explanation nobody typed.
+       */
+      await writeAdminAction(tx, {
+        actorId: admin.id,
+        subjectId: target.id,
+        type: verified
+          ? AdminActionType.VERIFY_IDENTITY
+          : AdminActionType.WITHDRAW_VERIFICATION,
+        reason: verified
+          ? "Identity verified by an administrator."
+          : "Identity verification withdrawn by an administrator.",
+        previousValue: String(target.isVerified),
+        newValue: String(verified),
+      });
     });
 
     /**

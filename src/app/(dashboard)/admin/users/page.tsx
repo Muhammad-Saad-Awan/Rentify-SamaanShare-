@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { UserRole, UserStatus } from "@/generated/prisma/enums";
 import { requireAdmin } from "@/lib/auth/session";
 import { searchUsers } from "@/lib/queries/admin-users";
 import { parsePageParam } from "@/lib/utils/pagination";
@@ -24,6 +25,9 @@ export const metadata: Metadata = {
 interface AdminUsersPageProps {
   searchParams: Promise<{
     q?: string | string[];
+    status?: string | string[];
+    role?: string | string[];
+    verified?: string | string[];
     page?: string | string[];
   }>;
 }
@@ -42,15 +46,27 @@ interface AdminUsersPageProps {
 export default async function AdminUsersPage({
   searchParams,
 }: AdminUsersPageProps) {
-  const { q: rawQuery, page: rawPage } = await searchParams;
+  const {
+    q: rawQuery,
+    page: rawPage,
+    status: rawStatus,
+    role: rawRole,
+    verified: rawVerified,
+  } = await searchParams;
 
   return (
     // In-page Suspense rather than a route-level loading.tsx - see the invariant in AGENTS.md.
     <Suspense
-      key={`${String(rawQuery ?? "")}:${String(rawPage ?? 1)}`}
+      key={`${String(rawQuery ?? "")}:${String(rawStatus ?? "")}:${String(rawRole ?? "")}:${String(rawVerified ?? "")}:${String(rawPage ?? 1)}`}
       fallback={<DashboardPageSkeleton cards={3} />}
     >
-      <MemberSearch rawQuery={rawQuery} rawPage={rawPage} />
+      <MemberSearch
+        rawQuery={rawQuery}
+        rawPage={rawPage}
+        rawStatus={rawStatus}
+        rawRole={rawRole}
+        rawVerified={rawVerified}
+      />
     </Suspense>
   );
 }
@@ -58,18 +74,69 @@ export default async function AdminUsersPage({
 interface MemberSearchProps {
   rawQuery: string | string[] | undefined;
   rawPage: string | string[] | undefined;
+  rawStatus: string | string[] | undefined;
+  rawRole: string | string[] | undefined;
+  rawVerified: string | string[] | undefined;
 }
 
-async function MemberSearch({ rawQuery, rawPage }: MemberSearchProps) {
+async function MemberSearch({
+  rawQuery,
+  rawPage,
+  rawStatus,
+  rawRole,
+  rawVerified,
+}: MemberSearchProps) {
   const admin = await requireAdmin();
 
   const query =
     (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery)?.trim() ?? "";
 
+  const status = parseEnumParam(rawStatus, UserStatus);
+  const role = parseEnumParam(rawRole, UserRole);
+  const verified = parseBoolParam(rawVerified);
+
   const { items, total, page, totalPages } = await searchUsers({
     query,
+    ...(status ? { status } : {}),
+    ...(role ? { role } : {}),
+    ...(verified !== undefined ? { verified } : {}),
     page: parsePageParam(rawPage),
   });
+
+  /**
+   * The filters, as links carrying the current query.
+   *
+   * Links rather than a client-side control, matching the reports and claims queues: a filtered view
+   * stays shareable and survives the back button, which for a moderation screen means one
+   * administrator can hand a view to another.
+   */
+  const filterHref = (patch: Record<string, string | undefined>): string => {
+    const next = new URLSearchParams();
+
+    if (query) next.set("q", query);
+    if (status) next.set("status", status.toLowerCase());
+    if (role) next.set("role", role.toLowerCase());
+    if (verified !== undefined) next.set("verified", String(verified));
+
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined) {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+    }
+
+    // Page is deliberately dropped: changing a filter changes the result set, and staying on page
+    // four of a different list is how someone concludes the filter returned nothing.
+    next.delete("page");
+
+    const qs = next.toString();
+
+    return qs ? `/admin/users?${qs}` : "/admin/users";
+  };
+
+  const anyFilter =
+    status !== undefined || role !== undefined || verified !== undefined;
 
   return (
     <>
@@ -96,6 +163,54 @@ async function MemberSearch({ rawQuery, rawPage }: MemberSearchProps) {
           Search
         </Button>
       </form>
+
+      {/*
+        Filters. A listing is allowed when one is applied even with no search term - see the note in
+        `searchUsers`. "Show me the suspended accounts" is an operational question with a bounded
+        answer; "show me everyone" is a dossier, and that is what the search-first rule refuses.
+      */}
+      <nav aria-label="Filter members" className="flex flex-wrap gap-2">
+        <FilterLink
+          href={filterHref({
+            status: undefined,
+            role: undefined,
+            verified: undefined,
+          })}
+          active={!anyFilter}
+        >
+          All
+        </FilterLink>
+        <FilterLink
+          href={filterHref({ status: "suspended" })}
+          active={status === UserStatus.SUSPENDED}
+        >
+          Suspended
+        </FilterLink>
+        <FilterLink
+          href={filterHref({ status: "banned" })}
+          active={status === UserStatus.BANNED}
+        >
+          Banned
+        </FilterLink>
+        <FilterLink
+          href={filterHref({ role: "admin" })}
+          active={role === UserRole.ADMIN}
+        >
+          Administrators
+        </FilterLink>
+        <FilterLink
+          href={filterHref({ verified: "true" })}
+          active={verified === true}
+        >
+          Verified
+        </FilterLink>
+        <FilterLink
+          href={filterHref({ verified: "false" })}
+          active={verified === false}
+        >
+          Unverified
+        </FilterLink>
+      </nav>
 
       {items.length > 0 && (
         <ul className="flex flex-col gap-4">
@@ -155,4 +270,53 @@ async function MemberSearch({ rawQuery, rawPage }: MemberSearchProps) {
       />
     </>
   );
+}
+
+/** One filter as a link, so every view stays shareable and survives the back button. */
+function FilterLink({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      size="sm"
+      variant={active ? "default" : "outline"}
+      render={<Link href={href} />}
+      {...(active ? { "aria-current": "page" as const } : {})}
+    >
+      {children}
+    </Button>
+  );
+}
+
+/**
+ * One enum value from a query parameter, or `undefined`.
+ *
+ * Falls back rather than 404s on an unrecognised value: these are filters on a list, not
+ * identifiers, and a mistyped one should show the unfiltered view rather than an error page.
+ */
+function parseEnumParam<T extends Record<string, string>>(
+  raw: string | string[] | undefined,
+  values: T
+): T[keyof T] | undefined {
+  const value = (Array.isArray(raw) ? raw[0] : raw)?.toUpperCase();
+
+  return value && value in values ? (values[value] as T[keyof T]) : undefined;
+}
+
+/** `verified=true` / `verified=false`. Anything else means "do not filter on it". */
+function parseBoolParam(
+  raw: string | string[] | undefined
+): boolean | undefined {
+  const value = (Array.isArray(raw) ? raw[0] : raw)?.toLowerCase();
+
+  if (value === "true") return true;
+  if (value === "false") return false;
+
+  return undefined;
 }

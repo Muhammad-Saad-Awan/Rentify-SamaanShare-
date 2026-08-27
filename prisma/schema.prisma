@@ -163,6 +163,24 @@ enum ClaimStatus {
   WITHDRAWN
 }
 
+/**
+ * What an administrator did to an account. Phase 6.
+ * WHY A LOG AND NOT COLUMNS ON User. `verifiedAt`/`verifiedById` record the
+ * CURRENT state of one flag, which is all the trust score needs. Suspension is
+ * different: "was this account ever suspended" stays a real question after it has
+ * been reinstated, and a column pair would have the second suspension overwrite
+ * the first. One row per action keeps the history, and one shape covers
+ * suspension, ban, reinstatement and role changes rather than three columns each.
+ */
+enum AdminActionType {
+  SUSPEND_USER
+  BAN_USER
+  REINSTATE_USER
+  CHANGE_ROLE
+  VERIFY_IDENTITY
+  WITHDRAW_VERIFICATION
+}
+
 enum ReportType {
   USER
   LISTING
@@ -339,6 +357,10 @@ model User {
   // Trust & Safety: handover records this person wrote, and ones they answered.
   handoversRecorded  HandoverRecord[] @relation("HandoversRecorded")
   handoversConfirmed HandoverRecord[] @relation("HandoversConfirmed")
+
+  // Phase 6: admin actions this person took, and ones taken against them.
+  adminActionsTaken    AdminAction[] @relation("AdminActionsTaken")
+  adminActionsReceived AdminAction[] @relation("AdminActionsReceived")
 
   // Trust & Safety: deposit claims filed, received, resolved, and photographed.
   claimsFiled    DamageClaim[] @relation("ClaimsFiled")
@@ -1084,6 +1106,67 @@ model SavedListing {
   @@map("saved_listings")
 }
 
+// ==================== ADMIN AUDIT ====================
+
+/**
+ * One thing an administrator did to one account. Phase 6.
+ * EVERY ADMIN ACTION AGAINST A USER WRITES ONE, whether it came from the
+ * moderation queue or from the members screen. Before this, suspending someone
+ * through `resolveReport` left the Report row as the only evidence and the User
+ * row said nothing but SUSPENDED - so an account suspended by hand would have
+ * left no trace at all of who decided it or why.
+ * `reportId` is what keeps the two paths from diverging: a suspension prompted by
+ * a report carries it, a standalone one does not, and both produce the same
+ * record either way.
+ * NOTHING HERE IS EVER UPDATED OR DELETED. It is an append-only account of what
+ * staff have done, and a log its author can revise is not one.
+ */
+model AdminAction {
+  id String @id @default(cuid())
+
+  /**
+   * The administrator responsible. NULL only for the bootstrap grant.
+   * There is no administrator to attribute the first one to - that is the whole
+   * problem it solves - and recording a fiction would be worse than recording the
+   * gap. `scripts/grant-admin.ts` is the only thing that writes a null actor.
+   */
+  actorId   String?
+  subjectId String
+
+  type AdminActionType
+
+  /**
+   * Why. Required, unlike a report's resolution note.
+   * A report can close unexplained and simply read as unexplained. This changes
+   * somebody's access to the platform, and a decision nobody can read the
+   * reasoning for is one nobody can review or appeal.
+   */
+  reason String @db.Text
+
+  // What changed, as plain strings rather than typed columns: this one model
+  // covers a UserStatus change and a UserRole change, and two typed pairs would
+  // leave half of them null on every row.
+  previousValue String?
+  newValue      String?
+
+  /**
+   * The report this action answered, when it came from the moderation queue.
+   */
+  reportId String?
+
+  createdAt DateTime @default(now())
+
+  actor   User?   @relation("AdminActionsTaken", fields: [actorId], references: [id])
+  subject User    @relation("AdminActionsReceived", fields: [subjectId], references: [id])
+  report  Report? @relation(fields: [reportId], references: [id])
+
+  // The history shown on one account's detail screen, newest first.
+  @@index([subjectId, createdAt])
+  @@index([actorId])
+  @@index([reportId])
+  @@map("admin_actions")
+}
+
 // ==================== REPORTING/MODERATION ====================
 
 model Report {
@@ -1109,6 +1192,9 @@ model Report {
 
   reporter User  @relation("ReportsSubmitted", fields: [reporterId], references: [id])
   resolver User? @relation("ReportsResolved", fields: [resolvedBy], references: [id])
+
+  // Phase 6: the admin actions this report prompted.
+  adminActions AdminAction[]
 
   @@index([status])
   @@index([type])
