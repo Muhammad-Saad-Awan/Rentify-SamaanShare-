@@ -64,8 +64,14 @@ function UserVerificationCard({ user, adminId }: UserVerificationCardProps) {
     <Card>
       <div className="flex flex-col gap-3 px-(--card-spacing)">
         <div className="flex flex-wrap items-center gap-2">
+          {/*
+            Links to the ADMIN detail screen, not the public profile.
+            A suspended or deleted account has no public profile at all - `getPublicProfile` filters
+            them out and the route 404s - so from a moderation list the public link is exactly the
+            one that breaks for the accounts most likely to be clicked.
+          */}
           <Link
-            href={`/users/${user.id}`}
+            href={`/admin/users/${user.id}`}
             className="font-heading text-sm font-medium underline-offset-4 hover:underline"
           >
             {user.name?.trim() || "Unnamed member"}

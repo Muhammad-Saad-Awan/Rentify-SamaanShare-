@@ -45,7 +45,8 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
       lifecycle, deposit window, notification copy, environment schema, reset
       tokens, email copy, view keys, nav map, review rules, report rules,
       moderation copy, trust score, email verification tokens, access tiers,
-      handover rules, handover copy, claim rules, claim copy) — 406 tests
+      handover rules, handover copy, claim rules, claim copy, admin rules) —
+      431 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
@@ -884,23 +885,84 @@ schema and entirely unused; this is what connects them.
 
 ### User Management
 
-- [x] Create users list page (`/admin/users`) — **scoped to identity
-      verification only.** Suspension, banning and role changes are deliberately
-      not on it: they are the platform's most consequential controls, and
-      attaching them to a search box built for a different task is how one gets
-      used by accident
-- [x] Add user search — **search-first, never browse-first.** Nothing renders
-      until a query is entered, so this cannot be left open as a directory of the
-      user base with email addresses attached. `email` is selected here and
-      nowhere public, because it is the only reliable way to tell two members
-      with the same display name apart
-- [ ] Add user filters (status, role)
-- [ ] Create user detail view
-- [ ] Create `suspendUser` action — note `resolveReport` can already suspend
-      through the moderation queue, with a report attached as the reason. A
-      standalone action still needs one
-- [ ] Create `banUser` action
-- [ ] Create `changeUserRole` action
+Completed 18 August 2026.
+
+- [x] Create users list page (`/admin/users`)
+- [x] Add user search — **search-first, never browse-first.** `email` is selected
+      here and nowhere public, because it is the only reliable way to tell two
+      members with the same display name apart
+- [x] Add user filters (status, role, verified) — as URL links, matching the
+      reports and claims queues, so a filtered view stays shareable.
+      **A filter opens the listing that an empty search does not.** "Show me the
+      suspended accounts" is an operational question with a bounded answer;
+      "show me everyone" is a dossier, and that is what search-first refuses
+- [x] Create user detail view (`/admin/users/[id]`) — profile, counts, reports
+      against them, and the full administrator history. The id is validated in
+      `layout.tsx`, per the AGENTS.md invariant
+- [x] Create `suspendUser` action — reversible hold
+- [x] Create `banUser` action — **terminal.** This is what finally gives `BANNED`
+      a meaning: both statuses blocked sign-in identically and always have, and
+      the difference is that reinstatement is offered from one and not the other.
+      Permitted from `SUSPENDED` as well as `ACTIVE`, so a hold can be escalated
+      without briefly restoring access to an account being removed for cause
+- [x] Create `reinstateUser` action — `SUSPENDED` only
+- [x] Create `changeUserRole` action — with the **last-administrator guard**, the
+      only mistake here with no in-app recovery: demote the final active admin and
+      nobody can reach the admin area, including to undo it. The count is read
+      *inside* the transaction, or two concurrent demotions would each see two
+      admins and leave none
+
+### The audit record
+
+- [x] `AdminAction` — one append-only row per administrator action: actor,
+      subject, type, **required** reason, previous and new value, and an optional
+      link to the report that prompted it.
+      **A log rather than columns on `User`.** `verifiedAt`/`verifiedById` record
+      the current state of one flag, which is all the trust score needs.
+      Suspension is different: "was this account ever suspended" stays a real
+      question after reinstatement, and a column pair would have the second
+      suspension overwrite the first
+- [x] **`resolveReport` now writes the same row**, with `reportId` set. Before
+      this, a suspension through the queue left the Report as its only evidence
+      and the User row said nothing but `SUSPENDED`; a suspension by hand would
+      have left nothing at all. The link is what stops the two paths producing
+      different kinds of evidence
+- [x] `setIdentityVerified` writes one too, so the whole admin surface produces
+      one shape of record
+- [x] `actorId` is **nullable, for the bootstrap grant alone** — there is no
+      administrator to attribute the first one to, and recording a fiction would
+      be worse than recording the gap
+
+### Shared authorization
+
+- [x] `src/lib/admin/rules.ts` — `canSuspendUser`, `canBanUser`,
+      `canReinstateUser`, `canChangeRole`, pure and tested (25 tests).
+      **Extracted rather than copied.** These rules already existed inline in
+      `applyReportAction`; a standalone suspension would have meant a second copy,
+      and two copies of an authorization rule is how one ends up missing the
+      clause that mattered. `resolveReport` now calls them, and the moderation
+      panel imports the same predicates to decide which controls to show — a
+      button the action would refuse is a button that only produces an error
+
+### Bootstrap
+
+- [x] `npm run admin:grant -- someone@example.com [--confirm]`.
+      **There were zero active administrators**, so every route under `/admin` was
+      unreachable by anyone — including the control that would have fixed it.
+      Deliberately a script and not a page: the alternative is shipping a web path
+      that grants administrator rights based on a row count, a condition that is
+      wrong once, briefly, and catastrophically. Dry run by default
+
+### Fixed along the way
+
+- [x] **`admin/loading.tsx` was breaking the new detail route's 404.** A
+      route-level `loading.tsx` covers its own segment *and everything nested
+      under it*, so `admin/users/[id]/layout.tsx` rendered inside that boundary
+      and Next had already flushed a 200 by the time it called `notFound()` — an
+      unknown member id returned 200 with a 404 page painted over it. Exactly the
+      failure AGENTS.md records from three earlier routes, found by asserting on
+      the status code rather than looking at the page. The skeleton moved to an
+      in-page `<Suspense>` in `/admin/page.tsx`
 
 ### Listing Moderation
 
