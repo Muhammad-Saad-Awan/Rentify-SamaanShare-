@@ -19,6 +19,8 @@
  * Pure, with `now` injected, so the states are unit-testable at any point in the window.
  */
 
+import { formatPKR } from "@/lib/utils/currency";
+
 /**
  * How long the owner has to return the deposit after the item comes back.
  *
@@ -159,4 +161,33 @@ export function depositState({
     hoursLate: Math.ceil(-remainingMs / HOUR_MS),
     owed,
   };
+}
+
+/**
+ * One line describing where a deposit stands, for a screen that only reports.
+ *
+ * WHY THIS IS HERE RATHER THAN IN A COMPONENT. Both admin booking surfaces - the queue row and the
+ * detail page - need the same sentence, and the states carry different fields, so a `switch` written
+ * twice is a switch that will disagree with itself the next time a state is added. Total over the
+ * union, so a new state fails `tsc` here.
+ *
+ * STATES AN OBLIGATION, NEVER CUSTODY, per the note at the top of this module: "the owner should
+ * return", not "your deposit is held". An administrator reading this screen is the person most
+ * likely to repeat the wording back to a renter, so it has to stay on the right side of that line.
+ */
+export function describeDepositState(state: DepositState): string {
+  switch (state.kind) {
+    case "none":
+      return "No deposit was agreed.";
+    case "not-due":
+      return "Not due back yet - the rental has not finished.";
+    case "returned":
+      return "Returned by the owner.";
+    case "claimed":
+      return `A claim for ${formatPKR(state.amountClaimed)} is live, so the return clock is paused.`;
+    case "due":
+      return `Owed back: ${formatPKR(state.owed)}. ${state.hoursRemaining}h left in the window.`;
+    case "overdue":
+      return `Owed back: ${formatPKR(state.owed)}. Overdue by ${state.hoursLate}h.`;
+  }
 }

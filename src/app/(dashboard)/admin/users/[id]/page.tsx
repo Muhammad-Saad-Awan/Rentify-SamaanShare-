@@ -1,4 +1,10 @@
-import { BadgeCheckIcon, MailCheckIcon, ScaleIcon } from "lucide-react";
+import {
+  BadgeCheckIcon,
+  CalendarSearchIcon,
+  MailCheckIcon,
+  PackageSearchIcon,
+  ScaleIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -173,6 +179,31 @@ export default async function AdminUserPage({ params }: AdminUserPageProps) {
             >
               View public profile
             </Button>
+            {/*
+              This member's listings and bookings. The counts above say how many there are; without
+              these the only way to reach them was a search by name, which is ambiguous for exactly
+              the accounts a support question is about.
+            */}
+            {user.listingCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                render={<Link href={`/admin/listings?owner=${user.id}`} />}
+              >
+                <PackageSearchIcon aria-hidden="true" />
+                Their listings
+              </Button>
+            )}
+            {user.bookingsAsRenter + user.bookingsAsOwner > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                render={<Link href={`/admin/bookings?user=${user.id}`} />}
+              >
+                <CalendarSearchIcon aria-hidden="true" />
+                Their bookings
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"

@@ -168,6 +168,13 @@ export interface AdminActionEntry {
   actor: { name: string | null } | null;
   /** Set when the action answered a report, so the queue and this screen agree. */
   reportId: string | null;
+  /**
+   * Set for the listing actions, so an entry on an account's history can be opened.
+   *
+   * The subject of a listing removal is the owner - which is what makes a pattern visible here - so
+   * without this the account history would say "Listing removed" and give no way to find out which.
+   */
+  listingId: string | null;
 }
 
 export interface AdminUserDetail extends AdminUserSummary {
@@ -227,6 +234,7 @@ export async function getAdminUserDetail(
           newValue: true,
           createdAt: true,
           reportId: true,
+          listingId: true,
           actor: { select: { name: true } },
         },
       },

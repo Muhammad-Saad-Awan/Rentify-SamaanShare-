@@ -179,6 +179,12 @@ enum AdminActionType {
   CHANGE_ROLE
   VERIFY_IDENTITY
   WITHDRAW_VERIFICATION
+  // Listing moderation. The subject of these is still the OWNER, not the listing:
+  // "this account had a listing taken down" is what a moderator needs to see when
+  // deciding about the person, and `AdminAction.listingId` records which one.
+  REMOVE_LISTING
+  RESTORE_LISTING
+  EDIT_LISTING
 }
 
 enum ReportType {
@@ -598,6 +604,8 @@ model Listing {
   unavailableDates UnavailableDate[]
   bookings         Booking[]
   savedBy          SavedListing[]
+  // Moderation history for this listing - removals, restorations and edits.
+  adminActions     AdminAction[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -1154,16 +1162,30 @@ model AdminAction {
    */
   reportId String?
 
+  /**
+   * The listing this action was about, for REMOVE_LISTING/RESTORE_LISTING/EDIT_LISTING.
+   * NULL for every action on an account itself.
+   *
+   * A real foreign key, unlike `Report.targetId`. A report is polymorphic across
+   * three kinds of target and cannot have one (D4); this column is only ever a
+   * listing, so there is no reason to give up the join - and the listing detail
+   * screen reads its own history through it.
+   */
+  listingId String?
+
   createdAt DateTime @default(now())
 
-  actor   User?   @relation("AdminActionsTaken", fields: [actorId], references: [id])
-  subject User    @relation("AdminActionsReceived", fields: [subjectId], references: [id])
-  report  Report? @relation(fields: [reportId], references: [id])
+  actor   User?    @relation("AdminActionsTaken", fields: [actorId], references: [id])
+  subject User     @relation("AdminActionsReceived", fields: [subjectId], references: [id])
+  report  Report?  @relation(fields: [reportId], references: [id])
+  listing Listing? @relation(fields: [listingId], references: [id])
 
   // The history shown on one account's detail screen, newest first.
   @@index([subjectId, createdAt])
   @@index([actorId])
   @@index([reportId])
+  // The same, for one listing's detail screen.
+  @@index([listingId, createdAt])
   @@map("admin_actions")
 }
 

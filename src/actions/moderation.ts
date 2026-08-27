@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import {
   AdminActionType,
-  ListingStatus,
   ReportAction,
   ReportStatus,
   ReportType,
   UserStatus,
 } from "@/generated/prisma/enums";
+import { removeListing } from "@/lib/admin/listing-moderation";
 import { writeAdminAction } from "@/lib/admin/log";
 import { canSuspendUser } from "@/lib/admin/rules";
 import { getActiveAdmin } from "@/lib/auth/session";
@@ -243,18 +243,25 @@ async function applyReportAction(
     case ReportAction.NONE:
       return {};
 
-    case ReportAction.REMOVE_LISTING: {
-      const removed = await tx.listing.updateMany({
-        // Guarded on `deletedAt: null` so a listing the owner already removed is not re-stamped
-        // with a later timestamp, which would misdate when it actually came down.
-        where: { id: targetId, deletedAt: null },
-        data: { status: ListingStatus.DELETED, deletedAt: new Date() },
+    case ReportAction.REMOVE_LISTING:
+      /**
+       * THE SAME REMOVAL THE LISTINGS SCREEN USES - see `src/lib/admin/listing-moderation.ts`.
+       *
+       * This branch used to write the soft delete inline and record nothing else, which left a
+       * listing removed through the queue with the Report as its only evidence: the listing row said
+       * nothing but DELETED, and the owner's history said nothing at all. Exactly the gap
+       * `admin_actions` closed for suspensions, and it closes the same way - one function, called
+       * from both paths, writing one shape of record.
+       *
+       * The moderator's resolution note becomes the audit reason, as it does for SUSPEND_USER; the
+       * fallback covers a resolution left blank, which the schema allows.
+       */
+      return removeListing(tx, {
+        listingId: targetId,
+        adminId,
+        reason: resolution ?? "Removed while resolving a report.",
+        reportId,
       });
-
-      return removed.count > 0
-        ? {}
-        : { error: "That listing had already been removed." };
-    }
 
     case ReportAction.REMOVE_REVIEW: {
       const review = await tx.review.findUnique({

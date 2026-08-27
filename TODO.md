@@ -876,12 +876,47 @@ schema and entirely unused; this is what connects them.
 - [x] Add admin sidebar navigation — an `Administration` section in the shared
       dashboard nav map, filtered by `requiredRole`. Hiding a link is not
       authorization; the real gate is `requireAdmin()` plus `ADMIN_PREFIXES`
-- [ ] Add admin header — the dashboard header is shared; a distinct admin one is
-      still open
+- [x] Add admin header — shipped 27 August 2026. **The boundary made visible.**
+      The admin area rendered inside the member dashboard with no visual
+      difference whatsoever — same shell, same top bar — so the only signal that
+      a click suspends somebody's account rather than pausing your own listing
+      was the URL. `AdminHeader` carries the Restricted marker, one line naming
+      the consequences ("affect other people's accounts, listings and money, and
+      are recorded against your name"), and a horizontally scrolling tab row.
+      Rendered from `admin/layout.tsx`, so a new route under that folder inherits
+      it the way it inherits the gate
+- [x] **Its links come from `DASHBOARD_NAV`**, through `adminNavItems()`, which
+      matches sections by `requiredRole` rather than by title — the heading is
+      copy and will be reworded, the role is what actually makes a section
+      administrative. A second hand-written list would drift from the sidebar, and
+      the failure mode is a queue that exists but is unreachable from one of the
+      two navigations. Pinned by four tests, including that `/admin` stays `exact`
+      so it does not light up alongside every child route
+- [x] **No counts in it, deliberately.** A badge on a persistent header must be
+      either always-true — which means counting reports and claims on every admin
+      page load, and `getOpenClaimCount` escalates overdue claims, so a *layout*
+      would be writing to the database on every navigation — or possibly-stale,
+      which is a number that lies in the one place it is always on screen. "What
+      is waiting" lives on `/admin`, the first tab in the row. The home's own
+      duplicate Restricted badge came off
 - [x] Implement admin route protection — `requireAdmin()` re-reads role from the
       database, because middleware sees only the JWT and a demoted admin carries
       `role: "ADMIN"` in their cookie for up to 24h
-- [ ] Create admin dashboard home — still the Phase 6 placeholder
+- [x] Create admin dashboard home — **what needs a decision, not what the
+      numbers are.** Completed 27 August 2026. The two are different jobs and the
+      landing page is only the first: a home that opens with a growth chart
+      buries the two reports waiting for somebody. Reports and claims are counted
+      as work; bookings awaiting a party are shown as **context**, with an outline
+      badge rather than a destructive one, because nobody here can act on them —
+      a badge that looks identical for "two reports await your decision" and "two
+      rentals are between two other people" trains an administrator to ignore
+      both. Every admin surface is listed with what it is for
+- [x] **The claims count keeps its sweep, and that is not a contradiction.**
+      `getOpenClaimCount` escalates overdue claims before counting. Expiring a
+      stale booking is the parties' business — it releases their calendar and
+      notifies them, so an administrator's lookup must not do it. Escalating a
+      lapsed claim moves it into *this* queue, and a count taken without it hides
+      claims nobody will decide because nobody was told they were ready
 
 ### User Management
 
@@ -966,19 +1001,208 @@ Completed 18 August 2026.
 
 ### Listing Moderation
 
-- [ ] Create listings list page (`/admin/listings`)
-- [ ] Add listing search
-- [ ] Add listing filters
-- [ ] Create listing detail view
-- [ ] Create `adminRemoveListing` action
-- [ ] Create `adminEditListing` action
+Completed 27 August 2026.
+
+- [x] Create listings list page (`/admin/listings`) — **browse-first, unlike the
+      members screen.** Search-first exists there because a default listing of
+      every account is a directory of the user base with email addresses
+      attached; a listing is public by construction, so there is nothing for
+      that rule to protect here, and triage means looking at what was posted
+      rather than looking up something already known by name
+- [x] Add listing search — title only. A moderator working from a report has the
+      title; matching 5,000-character descriptions with a leading wildcard is a
+      sequential scan of every listing on the platform for mostly noise
+- [x] Add listing filters — status, city, reported-only and one owner's
+      inventory, as URL links like every other queue. **Removed listings are in
+      the default view**, flagged rather than filtered out: somebody who has just
+      taken down the wrong listing will search for its title, not think to apply
+      a status filter first. The `Removed` filter matches **either** the DELETED
+      status or a non-null `deletedAt` — D3 pairs them, and matching only the
+      status would leave a half-written row out of the removed view while also
+      showing it under Active
+- [x] Create listing detail view (`/admin/listings/[id]`) — the listing, its
+      owner with their standing, the reports against it, and its own moderation
+      history. The id is validated in `layout.tsx`, per the AGENTS.md invariant,
+      and the list page uses an in-page `<Suspense>` so no boundary sits above it
+- [x] **The screen says whether the public can actually see it**, which the
+      status badge cannot answer on its own: `VISIBLE_LISTING_WHERE` also
+      requires the owner to be active, so an ACTIVE listing owned by a suspended
+      account is already invisible. A moderator removing something that is
+      already gone from the marketplace is deciding on a false premise
+- [x] Create `adminRemoveListing` action — soft delete, status and timestamp
+      together, and **reversible**
+- [x] Create `adminRestoreListing` action — not in the original list, and the
+      reason it was added is that without it a misapplied `REMOVE_LISTING` was
+      permanent: the owner's own screens exclude soft-deleted rows, so nobody on
+      either side could reach the listing again. **Restores to PAUSED, never
+      ACTIVE** — republishing on the owner's behalf makes a commercial decision
+      for them, and a listing removed while ACTIVE would otherwise go straight
+      back onto the market the instant a removal is reversed, including when the
+      reversal is itself the mistake
+- [x] Create `adminEditListing` action — **title and description only.** The
+      moderation need is a legitimate listing whose copy says something it must
+      not: a phone number in the description, an inflated claim in the title.
+      Prices, photos, city and category are absent deliberately — a booking is a
+      contract over the price, the photos are the owner's evidence of the item's
+      condition at handover, and a listing wrong in those ways is one that comes
+      down rather than one that gets silently rewritten. It enforces the **same
+      length limits the owner's own form does**, imported rather than restated:
+      a three-character title written by moderation would make the owner's edit
+      form refuse to save their own listing
+- [x] **The old text goes in the audit row.** This is the one administrator
+      action that destroys information rather than changing a flag — a status is
+      recoverable from the enum, a sentence is not — so `previousValue` holds the
+      title and description verbatim and that row is the only remaining copy. A
+      no-op edit is refused rather than recorded, since saving an untouched form
+      would otherwise assert permanently that moderation rewrote a listing
+- [x] **One removal path, shared with the report queue**
+      (`src/lib/admin/listing-moderation.ts`). `applyReportAction`'s
+      `REMOVE_LISTING` branch got there first and wrote **no audit row at all**:
+      the Report was the only evidence and the listing said nothing but DELETED.
+      Both paths now call `removeListing`, so a removal by hand and one through
+      the queue are the same row, distinguished only by `reportId`. Same
+      reasoning as extracting `src/lib/admin/rules.ts` for accounts
+- [x] **The audit subject is the OWNER, with `AdminAction.listingId` recording
+      which listing.** "This account has had three listings taken down" is the
+      question somebody deciding about a person actually has, and it is only
+      answerable if the rows land on the account. A real foreign key, unlike
+      `Report.targetId`: a report is polymorphic across three kinds of target
+      and cannot have one, this column is only ever a listing
+- [x] **A live booking does not block a removal**, and is stated loudly instead.
+      An unsafe item has to be able to come down while it is out on rent — that
+      is when it matters most — but removing the listing does not cancel the
+      booking, release the dates or return the deposit, and somebody still has
+      to deal with the rental itself
+- [x] Pure rules in `src/lib/admin/listing-rules.ts` (17 tests), imported by the
+      moderation panel so a control the action would refuse is never shown.
+      **No self-action guard and no administrator exemption**, unlike the account
+      rules: exempting a listing because of who owns it would make an
+      administrator's listing the only unmoderatable listing on the platform
+- [x] Integration verification — `npm run verify:admin-listings`, 27 checks,
+      including that a second removal writes no second row, that a removed
+      listing stays inspectable while invisible to the public, that a restore
+      does not repost, that an edit preserves what it overwrote, and that a
+      suspended owner cannot hide their inventory from moderation
+
+#### Fixed along the way
+
+- [x] **The breadcrumb said "My Listings" under Admin.** `SEGMENT_LABELS` is
+      keyed by segment name, and `listings` means the owner's own inventory under
+      `/dashboard` and every listing on the platform under `/admin`. Added
+      `PATH_LABELS`, checked first and keyed by the full path, so the more
+      specific answer wins
+- [x] **`verify:admin-users` had started failing on a rule that was fine.** Its
+      last-administrator check read `activeAdminCount` from the database, so it
+      only held while the environment contained no administrators besides the two
+      the script creates — granting a real one made it report the guard as broken.
+      The count is the *input* being tested, so it is now stated as 1
+- [x] **The audit log rendered an edit's before/after inline.** Fine for
+      `ACTIVE → SUSPENDED`; an EDIT_LISTING row carries a whole title and
+      description, which turned one entry into a wall of somebody else's listing
+      copy on the account history. Long or multi-line values now collapse into a
+      `<details>`, chosen by the shape of the value rather than by action type
+
+#### Left open, deliberately
+
+- [ ] **The owner is not notified when their listing is removed or edited.** Not
+      an oversight: the only moderation notification that exists goes to the
+      *reporter*, once a decision is made, and nothing in this codebase has ever
+      told the subject of a moderation action about it — see the reasoning in
+      `notifications/report-messages.ts`. Telling an owner is defensible and
+      probably right, but it is a product decision about a new class of
+      notification rather than part of this slice, and it would change what the
+      already-shipped report queue does
 
 ### Booking Management
 
-- [ ] Create bookings list page (`/admin/bookings`)
-- [ ] Add booking filters (status, date)
-- [ ] Create booking detail view
-- [ ] View booking history
+Completed 27 August 2026.
+
+- [x] Create bookings list page (`/admin/bookings`) — every booking, newest
+      request first, with both parties named. `BookingCard` shows "the
+      counterparty" because a renter already knows which side they are; an
+      administrator knows neither, and "who is the owner here" is usually the
+      first question
+- [x] **Read-only, and that is a decision rather than a scope cut.** Every step
+      of a booking is one of the two parties asserting something about their own
+      rental, and an administrator doing it for them would write that assertion
+      under the wrong name — `Booking` has no actor column on most transitions
+      (`cancelledById` is the exception, and exists precisely because "who did
+      this" could not otherwise be answered), so an admin-driven transition would
+      be indistinguishable from the owner's own. The platform's real levers are
+      elsewhere and all audited: the claims queue settles a disputed deposit, the
+      reports queue takes a listing down, the members screen suspends an account.
+      All three are linked from the detail view
+- [x] **Nothing here sweeps.** `getRenterBookings` and
+      `getOwnerBookingRequests` run `expireStalePendingBookings`,
+      `releaseDueReviews` and `escalateOverdueClaims` before reading, because a
+      list that offers an action has to tell the truth as it renders. This one
+      offers no actions, and an oversight screen that mutates what it reports on
+      cannot be read as evidence — an administrator would change a booking's
+      history by looking at it. A stale request is flagged **past the 48h
+      window** instead, with a sentence saying it will expire on the next read by
+      either party and that nothing on this screen triggers that
+- [x] Add booking filters (status, date) — plus **Awaiting a party**, which is
+      three statuses rather than one: PENDING, APPROVED and PAYMENT_PENDING are
+      all a booking waiting on a person, and asking "what is stuck" one status at
+      a time misses two thirds of it. ACTIVE is deliberately excluded — an item
+      out on rent is the system working, which is the distinction between
+      `AWAITING_ACTION_STATUSES` and `holdsDates`
+- [x] **The date filter matches the rental period, not `createdAt`.** The support
+      question is "the rental of the 12th"; a booking made in June for an August
+      rental would be missing from a June search of creation dates. Overlap, not
+      containment, so a single day inside a week-long rental finds it. Parsed
+      through `calendarDateSchema` and built as UTC midnight, matching the
+      `@db.Date` columns — a local-time `new Date("2026-08-12")` would shift the
+      boundary by the server's offset and quietly drop a day's rentals
+- [x] Search by booking id, listing title, or either party's name **or email**.
+      The id matches exactly rather than by fragment — a cuid fragment collides
+      with unrelated bookings, and a ticket quotes the whole thing. Email is a
+      lookup key here and is not rendered as a column
+- [x] Create booking detail view (`/admin/bookings/[id]`) — the rental, both
+      parties with addresses, the payment record, what each side wrote, the
+      condition records with photographs, the claim, and the timeline. The id is
+      validated in `layout.tsx` per the AGENTS.md invariant, with the list page's
+      skeleton as an in-page `<Suspense>`
+- [x] **Both condition records, including the pickup baseline.** The claims queue
+      shows only the return handover; a defence of "it was already cracked when I
+      collected it" is only checkable against the pickup record, and the photos
+      are the whole reason it is on screen rather than summarised
+- [x] **A withheld review is visible to an administrator.** Reciprocal
+      withholding is a rule between the two parties — neither can write in
+      response to what the other said — not a secret from the platform, and the
+      moderation queue already hydrates unpublished reviews for the same reason.
+      In a dispute the review is often the evidence
+- [x] **The payment section says what the record is not.** Payment is offline: a
+      confirmation is the owner's assertion, the platform never saw the money and
+      never held it. An administrator is the person most likely to repeat "our
+      records show you were paid" back to a renter, so the caveat sits next to the
+      figures
+- [x] View booking history — `src/lib/bookings/timeline.ts`, pure, 12 tests.
+      Oldest first, unlike every queue here: this is one story, and a story told
+      backwards has to be reversed in the reader's head. Handover, claim and
+      review milestones fold in chronologically, each carrying the fact a dispute
+      turns on rather than just that something happened
+- [x] **A transition with no timestamp is marked approximate, not guessed.**
+      There is no `approvedAt`, `declinedAt` or `expiredAt` column. A decline
+      shows the row's `updatedAt` labelled "as last changed, not a recorded
+      time", and approval simply does not appear. Inventing a precise moment from
+      `updatedAt` would be worse than admitting the gap — a deposit dispute is
+      exactly where a confidently wrong time does damage
+- [x] Cross-links both ways: a member's screen reaches their listings and their
+      bookings **on both sides**, and a listing's screen reaches the bookings on
+      it — which is what the live-booking warning on a removal decision refers to
+- [x] Integration verification — `npm run verify:admin-bookings`, 27 checks,
+      including that reading a stale request leaves it PENDING with its dates
+      still held and nobody notified, that a partial booking id finds nothing,
+      that an explicit status beats the awaiting filter rather than being silently
+      overwritten, and that a suspended party does not hide the rental
+
+#### Left open, deliberately
+
+- [ ] **No `approvedAt` column.** Adding one would make the timeline complete for
+      bookings approved from then on, and it is the obvious follow-up — but it is
+      a schema change for a nice-to-have, and backfilling it for existing rows is
+      impossible, so the screen is honest about the gap instead
 
 ### Reports Management
 
@@ -1020,13 +1244,127 @@ Completed 18 August 2026.
 
 ### Analytics Dashboard
 
-- [ ] Create analytics page (`/admin/analytics`)
-- [ ] Total users count
-- [ ] Total listings count
-- [ ] Total bookings count
-- [ ] GMV tracking (PKR)
-- [ ] City distribution chart
-- [ ] Recent activity feed
+Completed 27 August 2026. **Phase 6 is finished.**
+
+- [x] Create analytics page (`/admin/analytics`) — totals, money, breakdowns, two
+      city charts and the activity feed. Read-only, and it runs **no sweeps**: a
+      screen whose numbers are used to judge the platform must not change the
+      platform by being opened, or the figures describe a state the act of reading
+      them created
+- [x] Total users count — with the standing breakdown, because "1,200 members" and
+      "1,200 members, 340 of them banned" are different platforms. Soft-deleted
+      accounts are excluded from the total and counted separately (D3: they are
+      never removed)
+- [x] Total listings count — and separately, **what the public can actually
+      see**, through `VISIBLE_LISTING_WHERE`. Per the AGENTS.md invariant, a count
+      computed with a looser predicate than the page it describes advertises items
+      that are not there — and worse here than on a category tile, because
+      somebody would use this number to decide whether supply is sufficient. The
+      gap between `ACTIVE` and `live` is named on screen: it is exactly the supply
+      moderation has taken out of the market, since a suspended owner keeps their
+      listings
+- [x] Total bookings count — split by lifecycle state, plus the share of requests
+      that **ended without a rental**. A marketplace where most requests expire
+      unanswered is a specific, fixable problem and it is invisible in a total
+- [x] GMV tracking (PKR) — **and the definition matters more than the number.**
+      Payment is offline: the money moves directly between two people,
+      SamaanShare charges nothing, holds nothing and cannot verify that any of it
+      moved. So this is rent *recorded on bookings*, never revenue:
+        - only ACTIVE, COMPLETED and REVIEWED count — a PENDING request is a hope
+          and APPROVED is a commitment that has not started, both reported
+          separately as pipeline and never added in;
+        - **deposits are excluded**, because they are returned — on a high-value
+          item the deposit dwarfs the rent, so including it would inflate every
+          figure several times over;
+        - failed bookings contribute nothing and are counted, so the ratio shows.
+      The paragraph saying all of this sits next to the figures rather than in a
+      comment, because a number on a dashboard gets quoted — to an investor, or
+      to a renter asking whether the platform has their deposit
+- [x] City distribution chart — two charts, not two axes on one: listings and
+      rupees are different scales, and a second y-scale lets whoever set the
+      ranges decide where the lines cross. Single-hue bars from the app's own
+      `--primary` token (a single series has no identity to encode, so there is
+      nothing for a palette to distinguish and no legend to explain), every bar
+      **directly labelled** so the chart reads identically to a screen reader with
+      no tooltip and no client JavaScript, and a non-zero value floored at 2%
+      width so "a little" never renders as "none"
+- [x] **The city list comes from the data, not from `PAKISTANI_CITIES`.** Reading
+      the configured launch cities would silently drop a city that exists in the
+      database ahead of the config — which is what a launch looks like from the
+      inside, and the screen reporting the expansion is the last place that should
+      be blind to it
+- [x] Recent activity feed — six sources merged, newest first, every row linking
+      somewhere an administrator can act. **There is no global event log** (the
+      models were never given one, and adding it would mean writing to it from
+      every action), so this reads the newest few of each kind and merges: honest
+      for recency, wrong for completeness. So it **says when a source filled its
+      window** rather than looking complete while truncating
+- [x] **No email addresses in the feed**, unlike the members and bookings screens.
+      Those are lookups an administrator arrived at with a person in mind; this is
+      a window that opens itself. It is bounded, unpaginated and unsearchable, so
+      it cannot be walked to enumerate the user base — the distinction that makes
+      `searchUsers` search-first
+- [x] Integration verification — `npm run verify:admin-analytics`, 24 checks,
+      asserting **deltas rather than totals** so it runs against a database with
+      real rows in it. Includes that a deposit four times the rent does not leak
+      into GMV, that suspending an owner moves their listing out of `live` but not
+      out of `active`, that an unconfigured city still appears, that the feed
+      admits truncation, and that three analytics reads leave a stale request
+      PENDING. The last check re-reads the totals after cleanup and asserts they
+      are back where they started — a verification script that leaves rows behind
+      poisons every later reading of the numbers it checks
+
+---
+
+## Phase 2.1 revisited – the dashboard overview
+
+Fixed 27 August 2026, found while finishing Phase 6.
+
+- [x] **The member dashboard was still advertising unbuilt features that had
+      shipped.** Four stat tiles reading `—` with hints "Available in Phase 3",
+      "Available in Phase 4", "Available in Phase 2.2", and two placeholder cards
+      promising listings and activity — all of it landed months ago. A
+      placeholder that outlives its phase is worse than an empty state: it tells
+      a member a working feature does not exist, and they stop looking for it
+- [x] `getMemberOverview` — live listings, requests to answer, rentals in
+      progress and saved items, in five concurrent counts
+- [x] **"Live listings" goes through `VISIBLE_LISTING_WHERE`**, which also
+      requires the owner to be active — so a suspended member is told zero rather
+      than shown a count of listings nobody can reach. The AGENTS.md invariant
+      applied to somebody's own dashboard, which is where being wrong about it is
+      least forgivable. The hint names the gap when the two numbers differ
+- [x] **The wishlist count uses the same relation predicate as
+      `getSavedListings`**, so an item whose owner was suspended leaves the tile
+      and the page together. Counted more loosely, the tile would promise a
+      wishlist that renders empty
+- [x] **The unread-notifications tile is gone**, replaced by requests awaiting an
+      answer. The unread count is already in the header bell on every page, and
+      two surfaces showing one number are two surfaces that can disagree. What
+      was missing was the only tile that is actually a task
+- [x] **This screen sweeps, unlike the admin queues.** `expireStalePendingBookings`
+      runs first, because the tile links to the requests screen and that screen
+      sweeps on read — without it the tile would count a request the page it links
+      to expires on arrival. Expiry belongs to the two parties, and this is one of
+      them; `searchAdminBookings` reports a stale request and leaves it alone for
+      exactly the same reason
+- [x] The two placeholder cards became real: the newest three listings (read-only
+      rows, not `OwnerListingCard` — a destructive control beside a glanceable row
+      is a control pressed by accident), and the newest five notifications, which
+      *are* the member's activity record since every booking transition writes one
+- [x] Integration verification — `npm run verify:member-overview`, 10 checks:
+      that another member's inventory cannot leak in, that a suspension drops the
+      live count to zero while the rows stay, that a request the member *made* is
+      not one they answer, that reading the overview expires a stale request, and
+      that a paused or suspended-owner wishlist item leaves the count
+
+### Still genuinely placeholders
+
+- [ ] `/profile` — profile editing (name, bio, city, phone, photo). Not built, so
+      the placeholder is honest
+- [ ] `/settings` — in-app password change and connected accounts. Not built
+      either, but its description **claimed a dependency on flows that shipped**
+      ("the password reset and email verification flows still open in Phase 1"),
+      which was corrected: both work, from the sign-in page and the profile
 
 ---
 

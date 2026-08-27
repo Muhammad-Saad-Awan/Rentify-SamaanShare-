@@ -1,3 +1,4 @@
+import { AdminHeader } from "@/components/admin/admin-header";
 import { requireAdmin } from "@/lib/auth/session";
 
 import type { ReactNode } from "react";
@@ -19,11 +20,21 @@ interface AdminLayoutProps {
  * an admin demoted since sign-in still carries `role: "ADMIN"` in their cookie
  * and would sail past it. This is the check that actually holds.
  *
- * Renders no chrome of its own; the admin sidebar and sub-navigation belong to
- * Phase 6.
+ * `AdminHeader` is the one piece of chrome it adds, and it belongs in the layout rather than on each
+ * page for the same reason the gate does: a route added under this folder inherits it. It carries no
+ * counts, deliberately - see the note in the component on why a badge in a persistent header would
+ * mean a layout writing to the database on every navigation.
+ *
+ * The header is rendered as a sibling of `children` inside the shell's own flex column, so its
+ * spacing comes from that column's gap rather than from a wrapper this layout would have to own.
  */
 export default async function AdminLayout({ children }: AdminLayoutProps) {
   await requireAdmin();
 
-  return children;
+  return (
+    <>
+      <AdminHeader />
+      {children}
+    </>
+  );
 }

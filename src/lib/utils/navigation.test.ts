@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { DASHBOARD_NAV } from "@/config/navigation";
-import { buildBreadcrumbs, isNavItemActive } from "@/lib/utils/navigation";
+import { UserRole } from "@/generated/prisma/enums";
+import {
+  adminNavItems,
+  buildBreadcrumbs,
+  isNavItemActive,
+} from "@/lib/utils/navigation";
 
 import type { NavItem } from "@/config/navigation";
 
@@ -109,5 +114,51 @@ describe("buildBreadcrumbs is unaffected by the Home entry", () => {
       { label: "Dashboard", href: "/dashboard", isCurrent: false },
       { label: "My Listings", href: "/dashboard/listings", isCurrent: true },
     ]);
+  });
+});
+
+describe("adminNavItems", () => {
+  const items = adminNavItems();
+
+  /**
+   * The admin sub-header renders from this rather than from a list of its own. Pinned because the
+   * drift it prevents is invisible: a queue reachable from the sidebar and not from the header, or
+   * the reverse, looks correct on whichever screen you happen to be on.
+   */
+  it("returns exactly the ADMIN-gated section's items", () => {
+    const gated = DASHBOARD_NAV.filter(
+      (section) => section.requiredRole === UserRole.ADMIN
+    ).flatMap((section) => section.items);
+
+    expect(items).toEqual(gated);
+  });
+
+  it("includes every admin surface", () => {
+    expect(items.map((item) => item.href)).toEqual([
+      "/admin",
+      "/admin/reports",
+      "/admin/users",
+      "/admin/listings",
+      "/admin/bookings",
+      "/admin/claims",
+      "/admin/analytics",
+    ]);
+  });
+
+  /**
+   * `/admin` is a prefix of every other entry, so without `exact` it would highlight alongside the
+   * real current section - the header would show two active tabs on every page but its own.
+   */
+  it("marks the index route exact so it does not match its children", () => {
+    const index = items.find((item) => item.href === "/admin");
+
+    expect(index?.exact).toBe(true);
+    expect(isNavItemActive("/admin/reports", index!)).toBe(false);
+  });
+
+  it("keeps a section link active on its own detail routes", () => {
+    const listings = items.find((item) => item.href === "/admin/listings");
+
+    expect(isNavItemActive("/admin/listings/abc123", listings!)).toBe(true);
   });
 });

@@ -218,7 +218,14 @@ async function main() {
     actorId: secondAdmin.id,
     subject: await subjectOf(admin.id),
     newRole: UserRole.USER,
-    activeAdminCount: await countAdmins(),
+    /**
+     * ONE, STATED RATHER THAN COUNTED. Read from the database, this check passes only while the
+     * environment happens to contain no administrators besides the two this script creates - and it
+     * started failing the moment a real administrator was granted, reporting a rule as broken when
+     * nothing about it had changed. The rule under test is "refuse when this is the last one", so
+     * the count is the input being tested, not something to discover.
+     */
+    activeAdminCount: 1,
   });
 
   check(

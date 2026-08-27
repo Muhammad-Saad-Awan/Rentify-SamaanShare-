@@ -1,8 +1,13 @@
-import { DASHBOARD_NAV, SEGMENT_LABELS } from "@/config/navigation";
+import {
+  DASHBOARD_NAV,
+  PATH_LABELS,
+  SEGMENT_LABELS,
+} from "@/config/navigation";
 import { DEFAULT_LOGIN_REDIRECT } from "@/config/routes";
+// A value import, not a type one: `adminNavItems` matches sections by role rather than by title.
+import { UserRole } from "@/generated/prisma/enums";
 
 import type { NavItem, NavSection } from "@/config/navigation";
-import type { UserRole } from "@/generated/prisma/enums";
 
 /**
  * Pure helpers behind the dashboard shell.
@@ -38,6 +43,22 @@ export function visibleNavSections(
   );
 }
 
+/**
+ * The admin surfaces, as the admin sub-header renders them.
+ *
+ * DERIVED FROM THE SAME MAP THE SIDEBAR USES, never a second list. A header and a sidebar showing
+ * different sets is the kind of drift nobody notices until a queue is unreachable from one of them -
+ * and this map is already the single source of truth for three other consumers.
+ *
+ * Matched by `requiredRole` rather than by section title: the heading is copy and will be reworded
+ * eventually, while the role is the thing that actually makes a section administrative.
+ */
+export function adminNavItems(): readonly NavItem[] {
+  return DASHBOARD_NAV.filter(
+    (section) => section.requiredRole === UserRole.ADMIN
+  ).flatMap((section) => section.items);
+}
+
 export interface BreadcrumbEntry {
   label: string;
   href: string;
@@ -69,7 +90,9 @@ export function buildBreadcrumbs(pathname: string): BreadcrumbEntry[] {
     href += `/${segment}`;
 
     return {
-      label: labelForSegment(segment),
+      // The accumulated href, not just the segment: `listings` means two different things under
+      // `/dashboard` and under `/admin` - see `PATH_LABELS`.
+      label: labelForPath(href, segment),
       href,
       isCurrent: index === segments.length - 1,
     };
@@ -87,14 +110,20 @@ export function buildBreadcrumbs(pathname: string): BreadcrumbEntry[] {
 }
 
 /**
- * A display label for one URL segment.
+ * A display label for one crumb.
  *
- * Falls back to title-casing so an unmapped route still produces a readable
- * crumb. Note this means a dynamic segment renders its raw value - once
- * `/dashboard/listings/[id]` exists it should pass a real title down rather
- * than rely on this fallback showing a cuid.
+ * Most specific answer first: an exact path, then the segment name, then title-casing so an
+ * unmapped route still produces a readable crumb. Note the fallback means a dynamic segment renders
+ * its raw value - once `/dashboard/listings/[id]` exists it should pass a real title down rather
+ * than rely on this showing a cuid.
  */
-function labelForSegment(segment: string): string {
+function labelForPath(path: string, segment: string): string {
+  const byPath = PATH_LABELS[path];
+
+  if (byPath) {
+    return byPath;
+  }
+
   const mapped = SEGMENT_LABELS[segment];
 
   if (mapped) {

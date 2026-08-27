@@ -2,7 +2,13 @@ import { z } from "zod";
 
 import { UserRole } from "@/generated/prisma/enums";
 import { ADMIN_REASON_MAX, ADMIN_REASON_MIN } from "@/lib/admin/rules";
-import { listingIdSchema } from "@/lib/validations/listing";
+import {
+  DESCRIPTION_MAX,
+  DESCRIPTION_MIN,
+  listingIdSchema,
+  TITLE_MAX,
+  TITLE_MIN,
+} from "@/lib/validations/listing";
 
 /**
  * Administrator action input rules.
@@ -47,3 +53,49 @@ export const changeRoleSchema = z.object({
 });
 
 export type ChangeRoleInput = z.infer<typeof changeRoleSchema>;
+
+/** Removing and restoring a listing take the same shape - only the action differs. */
+export const moderateListingSchema = z.object({
+  listingId: listingIdSchema,
+  reason: adminReason,
+});
+
+export type ModerateListingInput = z.infer<typeof moderateListingSchema>;
+
+/**
+ * A moderator's edit to a listing's copy.
+ *
+ * TITLE AND DESCRIPTION ONLY. Everything else on a listing is the owner's commercial decision - see
+ * `ADMIN_EDITABLE_LISTING_FIELDS`. Note in particular that `images` is absent: an administrator who
+ * could replace the photos could change what the owner's evidence of the item's condition at
+ * handover shows.
+ *
+ * THE SAME LIMITS THE OWNER'S OWN FORM ENFORCES, imported rather than restated. If moderation could
+ * write a three-character title, the owner's edit form would refuse to save the listing afterwards -
+ * their own listing would be uneditable until somebody worked out why, and the error would name a
+ * field they did not touch.
+ */
+export const adminEditListingSchema = z.object({
+  listingId: listingIdSchema,
+  title: z
+    .string()
+    .trim()
+    .min(TITLE_MIN, {
+      error: `Title must be at least ${TITLE_MIN} characters.`,
+    })
+    .max(TITLE_MAX, {
+      error: `Title must be ${TITLE_MAX} characters or fewer.`,
+    }),
+  description: z
+    .string()
+    .trim()
+    .min(DESCRIPTION_MIN, {
+      error: `Description must be at least ${DESCRIPTION_MIN} characters.`,
+    })
+    .max(DESCRIPTION_MAX, {
+      error: `Description must be ${DESCRIPTION_MAX} characters or fewer.`,
+    }),
+  reason: adminReason,
+});
+
+export type AdminEditListingInput = z.infer<typeof adminEditListingSchema>;

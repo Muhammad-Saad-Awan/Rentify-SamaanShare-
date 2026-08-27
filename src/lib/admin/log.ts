@@ -36,6 +36,14 @@ export interface AdminActionInput {
   newValue?: string | undefined;
   /** The report this answered, when it came from the moderation queue. */
   reportId?: string | undefined;
+  /**
+   * The listing this was about, for the listing actions only.
+   *
+   * The subject stays the OWNER even then - see the note on `AdminActionType` in the schema. This
+   * records *which* listing, which is what lets the listing's own detail screen show its history
+   * without the owner's unrelated actions mixed in.
+   */
+  listingId?: string | undefined;
 }
 
 export async function writeAdminAction(
@@ -48,6 +56,7 @@ export async function writeAdminAction(
     previousValue,
     newValue,
     reportId,
+    listingId,
   }: AdminActionInput
 ): Promise<void> {
   await client.adminAction.create({
@@ -59,6 +68,7 @@ export async function writeAdminAction(
       ...(previousValue ? { previousValue } : {}),
       ...(newValue ? { newValue } : {}),
       ...(reportId ? { reportId } : {}),
+      ...(listingId ? { listingId } : {}),
     },
     select: { id: true },
   });

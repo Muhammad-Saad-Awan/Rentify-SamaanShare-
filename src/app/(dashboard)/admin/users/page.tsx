@@ -142,7 +142,7 @@ async function MemberSearch({
     <>
       <PageHeader
         title="Members"
-        description="Find a member to grant or withdraw identity verification. Suspension and roles remain Phase 6."
+        description="Find a member to verify, suspend, ban or change the role of. Open one to act on it."
       />
 
       {/*
