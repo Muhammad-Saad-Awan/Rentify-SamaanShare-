@@ -63,7 +63,15 @@ export async function requireUser(): Promise<SessionUser> {
 
   const current = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { status: true, deletedAt: true },
+    // `name`, `image` and `avatarUrl` ride along on a query this function was making
+    // anyway - see the note below on why they are read at all.
+    select: {
+      status: true,
+      deletedAt: true,
+      name: true,
+      image: true,
+      avatarUrl: true,
+    },
   });
 
   if (!current || current.deletedAt || current.status !== UserStatus.ACTIVE) {
@@ -74,7 +82,27 @@ export async function requireUser(): Promise<SessionUser> {
     redirect(`${LOGIN_ROUTE}?error=AccountSuspended`);
   }
 
-  return session.user;
+  /**
+   * IDENTITY COMES FROM THE DATABASE, not the token, for the same reason `status` does.
+   *
+   * `session.user.name` and `session.user.image` are whatever Auth.js wrote into the JWT
+   * at sign-in, and nothing refreshes them until the token does - up to 24h. That was
+   * invisible while the profile was read-only; once a member can edit their own name and
+   * upload a photo it is the first thing they notice, because `DashboardHeader` renders
+   * both in the corner of every authenticated screen. Saving a new photo and continuing
+   * to see the old one reads as the save having failed.
+   *
+   * Free, in query terms: the row is already being fetched to check `status`.
+   *
+   * `avatarUrl ?? image` is the precedence `auth.ts` and the public profile already use -
+   * the SamaanShare photo wins, and the provider's picture is the fallback that makes
+   * removing one leave something behind.
+   */
+  return {
+    ...session.user,
+    name: current.name,
+    image: current.avatarUrl ?? current.image,
+  };
 }
 
 /**

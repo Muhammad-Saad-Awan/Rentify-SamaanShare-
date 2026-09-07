@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 18 August 2026 (Trust & Safety complete — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims; Stage A6 awaiting production env vars)
+**Last Updated:** 7 September 2026 (Phase 1 profile editing complete - name, bio, city, phone and photo upload; earlier: Trust & Safety complete — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims; Stage A6 awaiting production env vars)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -223,14 +223,40 @@ integration Stage A2 added, so no new dependency.
 
 ### User Profile
 
-- [ ] Create profile page (`/profile`)
-- [ ] Create profile view component
-- [ ] Create edit profile form
-- [ ] Create `updateProfile` action
-- [ ] Add profile image upload (Cloudinary)
-- [ ] Create `updateProfileImage` action
-- [ ] Add Pakistani city selector
-- [ ] Add phone number field (+92 format)
+Shipped 7 September 2026. The placeholder card is gone.
+
+- [x] Create profile page (`/profile`)
+- [x] Create profile view component — folded into the page rather than built
+      separately. Once the fields are editable there is nothing left for a
+      read-only view to show that the form does not, and two components rendering
+      one identity is two places for them to disagree
+- [x] Create edit profile form — `ProfileForm`, four fields, seeded from the
+      DATABASE and not the session. The JWT's copy of `name` is up to 24h old, so
+      a form defaulted from it could re-save a stale name over a newer one
+- [x] Create `updateProfile` action — takes the whole profile, not a patch, for
+      the reason `updateListingSchema` gives: a patch cannot express "clear my
+      bio". Changing the number clears `phoneVerified`, which nothing sets yet
+      (phone OTP is Phase 2) but which must hold from the first write or whatever
+      does set it inherits a verified flag on a number nobody verified
+- [x] Add profile image upload (Cloudinary) — `AvatarUploader`, same signed
+      browser->Cloudinary path as listings. **Its own folder**,
+      `samaanshare/avatars/{userId}`: `cleanup-pending-uploads.ts` keeps only what
+      a `ListingImage` references, so an avatar parked in the pending tree would
+      have been destroyed 24h after it was set
+- [x] Create `updateProfileImage` action — writes `avatarUrl`, never `image`, so
+      removing a SamaanShare photo falls back to the Google picture rather than to
+      a blank circle. URL derived from the Admin API, id checked against the
+      caller's own folder
+- [x] Add Pakistani city selector — `CITY_VALUES` moved to `@/config/cities` and
+      is now shared with the listing form, rather than copied
+- [x] Add phone number field (+92 format) — accepts every spelling people type
+      and stores one E.164 value. Mobile only: the number exists so a counterparty
+      can reach a person mid-booking, and a landline reaches a building
+- [x] **`requireUser()` now returns identity from the database**, not the token.
+      It was already reading the row to check `status`, so `name` and
+      `avatarUrl ?? image` ride along free. Without it a member saves a new photo
+      and goes on seeing the old one in the header of every screen for 24h, which
+      reads as the save having failed
 
 ### Public Profile
 
@@ -305,7 +331,7 @@ no listing, booking, search, review or admin functionality was implemented.
       specified `/saved`. Moved under `/dashboard` so it inherits the existing
       `PROTECTED_PREFIXES` guard and matches the other dashboard sections.
 - [x] Notifications (`/dashboard/notifications`)
-- [x] Profile (`/profile`) — read-only session summary; editing still open
+- [x] Profile (`/profile`) — editable: name, bio, city, phone and photo
 - [x] Settings (`/settings`)
 - [x] Admin (`/admin`) — gated by `requireAdmin()` in `admin/layout.tsx`
 
@@ -1359,12 +1385,11 @@ Fixed 27 August 2026, found while finishing Phase 6.
 
 ### Still genuinely placeholders
 
-- [ ] `/profile` — profile editing (name, bio, city, phone, photo). Not built, so
-      the placeholder is honest
 - [ ] `/settings` — in-app password change and connected accounts. Not built
       either, but its description **claimed a dependency on flows that shipped**
       ("the password reset and email verification flows still open in Phase 1"),
       which was corrected: both work, from the sign-in page and the profile
+
 
 ---
 
