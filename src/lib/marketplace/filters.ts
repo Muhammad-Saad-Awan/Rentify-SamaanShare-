@@ -34,6 +34,20 @@ export const FILTER_PARAM = {
   page: "page",
 } as const;
 
+/**
+ * The value of `?city=` that means "everywhere, and I mean it".
+ *
+ * Needed because a member can have a default city, and a bare `/listings` redirects them
+ * to it - see `User.defaultCity`. Without a way to SAY "everywhere" in the URL, removing
+ * the city chip would produce the bare URL and bounce straight back to their default, so
+ * the one control for browsing the whole country would be the one control that did
+ * nothing.
+ *
+ * Not a real city, and deliberately not a slug any city could ever take: cities come from
+ * `PAKISTANI_CITIES`, which this is checked against before it is treated as a filter.
+ */
+export const CITY_ANYWHERE = "all";
+
 export const LISTING_SORTS = [
   "newest",
   "price-asc",
@@ -84,6 +98,15 @@ export interface ListingFilters {
   category: string | null;
   subcategory: string | null;
   city: string | null;
+  /**
+   * True when the URL said `?city=all`, i.e. the member has explicitly asked to see every
+   * city rather than simply not mentioned one.
+   *
+   * The distinction only matters to a member who has a `defaultCity`: "no city in the URL"
+   * means "use my default", and this means "override it this time". It is NOT a filter -
+   * `hasActiveFilters` ignores it - because it narrows nothing.
+   */
+  cityAnywhere: boolean;
   minPrice: number | null;
   maxPrice: number | null;
   /** Empty means any condition. Order is normalised to the enum's order. */
@@ -152,7 +175,8 @@ export function parseListingFilters(params: RawSearchParams): ListingFilters {
     q: parseQuery(first(params[FILTER_PARAM.q])),
     category: parseSlug(first(params[FILTER_PARAM.category])),
     subcategory: parseSlug(first(params[FILTER_PARAM.subcategory])),
-    city: parseSlug(first(params[FILTER_PARAM.city])),
+    city: parseCity(first(params[FILTER_PARAM.city])),
+    cityAnywhere: first(params[FILTER_PARAM.city]) === CITY_ANYWHERE,
     minPrice,
     maxPrice,
     conditions: parseConditions(params[FILTER_PARAM.condition]),
@@ -250,6 +274,11 @@ export function listingFilterEntries(
   }
   if (filters.city) {
     entries.push([FILTER_PARAM.city, filters.city]);
+  } else if (filters.cityAnywhere) {
+    // Kept in the URL rather than dropped as a default would be. It is the difference
+    // between "did not say" and "said everywhere", and only the second survives the
+    // redirect a member with a default city gets on the bare URL.
+    entries.push([FILTER_PARAM.city, CITY_ANYWHERE]);
   }
   if (filters.minPrice !== null) {
     entries.push([FILTER_PARAM.minPrice, String(filters.minPrice)]);
@@ -285,6 +314,13 @@ export function listingFilterEntries(
  * three places need it - the sidebar's "Clear all", the filter chip row, and the
  * no-results empty state - and a missed field in any copy would leave a filter
  * stuck on with no visible way to remove it.
+ *
+ * Keeps `cityAnywhere` too, and for a related reason. From an explicit "everywhere" view,
+ * clearing the other filters should not quietly put a member back in their default city -
+ * they already said everywhere. From a view that never said it, clearing produces the bare
+ * URL, which for a member with a default means "back to my city" - a reset restoring a
+ * default, which is what a reset is. The city chip's own remove link is the way to say
+ * everywhere; this is not trying to be.
  */
 export function clearListingFiltersHref(filters: ListingFilters): string {
   return buildListingsHref(filters, {
@@ -340,6 +376,17 @@ export function activeFilterCount(filters: ListingFilters): number {
     count += 1;
 
   return count + filters.conditions.length;
+}
+
+/**
+ * A city slug, or null for unfiltered.
+ *
+ * `all` is not a city - it is the explicit "everywhere" marker, which narrows nothing and
+ * so parses to the same `null` any unrecognised value would. `cityAnywhere` is what
+ * remembers that it was said.
+ */
+function parseCity(value: string | undefined): string | null {
+  return value === CITY_ANYWHERE ? null : parseSlug(value);
 }
 
 /** Repeated parameters arrive as an array; the first entry wins. */

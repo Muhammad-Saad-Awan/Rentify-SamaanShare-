@@ -35,6 +35,16 @@ const ERROR_MESSAGES: Record<string, string> = {
   AccountSuspended:
     "This account has been suspended. Contact support if you think this is a mistake.",
   AccountUnavailable: "This account is no longer available.",
+
+  /**
+   * The session was revoked - almost always because the account's password was
+   * changed from somewhere else. Says so plainly rather than "session expired": if
+   * this is the attacker's browser the wording costs nothing, and if it is the
+   * member's own second device, "your password was changed" is the one sentence that
+   * tells them whether to worry.
+   */
+  SessionRevoked:
+    "You were signed out because this account's password was changed. Sign in again with the new password.",
   MissingEmail:
     "That provider did not share an email address, which SamaanShare needs. Try signing up with an email and password instead.",
 

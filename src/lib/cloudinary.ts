@@ -58,6 +58,27 @@ export function pendingUploadFolder(userId: string): string {
   return `samaanshare/pending/${userId}`;
 }
 
+/**
+ * Where a member's profile photo lives.
+ *
+ * NOT under `pendingUploadFolder`, and the difference is load-bearing. Everything in
+ * the pending tree is garbage-collectable: `scripts/cleanup-pending-uploads.ts` keeps
+ * only what a `ListingImage` row references and destroys the rest after a grace period.
+ * An avatar is referenced by `User.avatarUrl` and by nothing that script looks at, so
+ * parking it there would have it silently deleted a day after it was set.
+ *
+ * A folder per user, for the same reason the pending tree has one: the prefix is the
+ * only proof of ownership at the moment of upload, and it is what lets
+ * `updateProfileImage` refuse a public id that is not the caller's own.
+ *
+ * One live asset per folder by convention, not by enforcement - replacing a photo
+ * destroys whatever else is in here, which also reclaims anything left behind by an
+ * upload whose form was never submitted.
+ */
+export function avatarUploadFolder(userId: string): string {
+  return `samaanshare/avatars/${userId}`;
+}
+
 export interface SignedUploadParams {
   cloudName: string;
   apiKey: string;

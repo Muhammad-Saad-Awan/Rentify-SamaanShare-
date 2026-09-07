@@ -40,15 +40,58 @@ const buttonVariants = cva(
   }
 );
 
+/**
+ * Whether a `render` prop will produce a real `<button>`.
+ *
+ * Base UI needs to be told. Its `nativeButton` defaults to `true`, and when that is
+ * wrong it keeps the native button behaviour it cannot actually have - so it warns, once
+ * per element, on every render. That warning was firing ten-plus times on the public
+ * pages, because the header, the CTA and the pagination all render Buttons as links.
+ *
+ * Absent `render` means the primitive renders its own `<button>`. Otherwise the answer is
+ * the element's own type: `"button"` is a real one; `<Link>`, `<a>` and `<label>` are not.
+ * A component type (`Link`) can never be a native button, so anything that is not the
+ * literal string `"button"` is treated as not one - which is the safe direction, since
+ * `nativeButton={false}` makes Base UI supply the keyboard and ARIA behaviour a
+ * non-button needs rather than assume it is already there.
+ */
+function rendersNativeButton(render: ButtonPrimitive.Props["render"]): boolean {
+  if (render === undefined) {
+    return true;
+  }
+
+  // A function render could return anything, so its author has to say. Defaulting such a
+  // case to `false` would be a guess in the other direction; there are none in this
+  // codebase, and an explicit `nativeButton` still overrides whatever this returns.
+  if (typeof render === "function") {
+    return true;
+  }
+
+  return render.type === "button";
+}
+
+/**
+ * The project's button.
+ *
+ * `nativeButton` IS DERIVED, NOT LEFT TO CALL SITES. Every `render={<Link />}` would
+ * otherwise have to remember to pass `nativeButton={false}`, and forgetting is invisible
+ * until someone opens a browser console - which is exactly how eleven of them accumulated.
+ * Deriving it here means the rule is applied once, and an explicit prop still wins for the
+ * cases this cannot know about.
+ */
 function Button({
   className,
   variant = "default",
   size = "default",
+  nativeButton,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
+      // `??` rather than a default parameter: an explicitly passed `false` must survive,
+      // and under `exactOptionalPropertyTypes` an explicit `undefined` is not assignable.
+      nativeButton={nativeButton ?? rendersNativeButton(props.render)}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

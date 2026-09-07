@@ -28,6 +28,19 @@ declare module "next-auth" {
       id: string;
       role: UserRole;
       status: UserStatus;
+
+      /**
+       * The session generation this token was minted at - see `User.tokenVersion`.
+       *
+       * ON THE SESSION, not only in the token, because the code that has to compare it
+       * (`requireUser` and friends) is handed a `Session` by `auth()` and never sees the
+       * raw JWT. Optional: a cookie issued before this field existed carries no version,
+       * and the helpers read a missing one as 0 rather than signing that person out.
+       *
+       * Not a secret. It reveals only how many times the account's sessions have been
+       * revoked, and the value is meaningless without the signed cookie it came from.
+       */
+      tokenVersion?: number;
     } & DefaultSession["user"];
   }
 
@@ -42,6 +55,9 @@ declare module "next-auth" {
   interface User {
     role?: UserRole;
     status?: UserStatus;
+
+    /** Copied into the token at sign-in. See `User.tokenVersion` in the schema. */
+    tokenVersion?: number;
 
     /**
      * Present so a provider's `profile()` may return it - see the Google
@@ -73,5 +89,13 @@ declare module "@auth/core/jwt" {
   interface JWT {
     role: UserRole;
     status: UserStatus;
+
+    /**
+     * Optional, unlike the two above, and deliberately so. Those are set by the `jwt`
+     * callback on every sign-in, so a token without them cannot exist. This one arrived
+     * later: cookies minted before it shipped are still valid and carry nothing here.
+     * Every reader treats `undefined` as 0.
+     */
+    tokenVersion?: number;
   }
 }

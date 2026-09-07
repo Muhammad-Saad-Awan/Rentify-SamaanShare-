@@ -288,6 +288,62 @@ model User {
   status UserStatus @default(ACTIVE)
 
   /**
+   * Generation counter for this account's sessions. Incremented to invalidate
+   * every session issued before now.
+   * WHY A COUNTER AND NOT A TIMESTAMP. Sessions are JWTs (see the note on
+   * `session.strategy` in src/auth.config.ts), so there is no row to delete: a
+   * stolen cookie stays valid until it expires, up to 30 days. The token carries
+   * the value this column had when it was minted, and the session helpers - which
+   * already read this row to check `status` - refuse any token whose copy has
+   * fallen behind. A password change therefore takes effect on the attacker's very
+   * next request rather than at token expiry.
+   * A counter rather than `passwordChangedAt` compared against the token's `iat`
+   * because `iat` moves on its own: `updateAge` re-issues a token every 24h, so a
+   * timestamp comparison would keep resurrecting a session that had been revoked.
+   * An explicit generation is only ever changed by us.
+   * Incremented by `changePassword` and by `resetPassword`. NOT by `setPassword` -
+   * an account that never had one has no password-authenticated session to revoke.
+   * Both of those flows re-authenticate the member afterwards, which is what stops
+   * the person who just changed their password being signed out along with everyone
+   * else.
+   */
+  tokenVersion Int @default(0)
+
+  // ==================== PREFERENCES (Phase 2.2) ====================
+
+  /**
+   * Where this member is shown listings when they have not asked for anywhere
+   * in particular. A lowercase slug, like `city` (decision D1), or null for no
+   * preference.
+   * NOT A HIDDEN FILTER. `/listings` documents that its whole state lives in the
+   * query string and nowhere else, so that any view is shareable and reachable
+   * with the back button. Applying this behind the URL would break exactly that -
+   * two people would see different results at the same address. So it is applied
+   * by REDIRECTING a bare `/listings` to `?city=<slug>`: the preference chooses
+   * the starting URL, and from there the URL is still the only state. `?city=all`
+   * is how "everywhere" is said out loud, which is what the city chip's remove
+   * link points at - without it, clearing the city would land back on the bare
+   * URL and bounce straight back here.
+   */
+  defaultCity String?
+
+  /**
+   * WHICH NOTIFICATIONS MAY BE TURNED OFF, AND WHY SO FEW.
+   * Notifications are written inside the same transaction as the booking change
+   * they describe - see src/lib/notifications/create.ts - precisely so a member
+   * cannot fail to learn that a booking moved, a payment was confirmed, or a
+   * claim was filed against their deposit. Letting those be switched off would
+   * turn a deliberate guarantee into a setting, and the failure mode is someone
+   * silently not hearing that they owe money.
+   * What is left is the genuinely advisory: a nudge to write a review, and the
+   * notice that a review went public. Neither carries an obligation and neither
+   * is the only record of anything. Those are real preferences, so they are real
+   * switches; everything else is not offered rather than offered and ignored.
+   */
+  notifyReviewReminders Boolean @default(true)
+  notifyReviewPublished Boolean @default(true)
+
+  /**
    * Identity verified by SamaanShare. Trust & Safety.
    * NOT the same claim as `emailVerified`, and the gap is the whole point.
    * Confirming an inbox takes a minute and proves control of an email address;
@@ -1165,7 +1221,6 @@ model AdminAction {
   /**
    * The listing this action was about, for REMOVE_LISTING/RESTORE_LISTING/EDIT_LISTING.
    * NULL for every action on an account itself.
-   *
    * A real foreign key, unlike `Report.targetId`. A report is polymorphic across
    * three kinds of target and cannot have one (D4); this column is only ever a
    * listing, so there is no reason to give up the join - and the listing detail
@@ -1178,7 +1233,18 @@ model AdminAction {
   actor   User?    @relation("AdminActionsTaken", fields: [actorId], references: [id])
   subject User     @relation("AdminActionsReceived", fields: [subjectId], references: [id])
   report  Report?  @relation(fields: [reportId], references: [id])
-  listing Listing? @relation(fields: [listingId], references: [id])
+  /**
+   * RESTRICT, matching `subjectId` rather than `reportId`'s SET NULL, and stated
+   * explicitly because the default for an optional relation is SET NULL - which is
+   * what this said for a while. The database was correct (the
+   * `20260827090000_admin_listing_moderation` migration wrote RESTRICT by hand and
+   * explained why); it was this line that had drifted, and the next generated
+   * migration would have quietly reverted the database to match it.
+   * Which listing was taken down is the substance of an audit entry, not a
+   * cross-reference that can be dropped. Listings are soft-deleted (D3) and never
+   * removed, so this never fires in normal operation.
+   */
+  listing Listing? @relation(fields: [listingId], references: [id], onDelete: Restrict)
 
   // The history shown on one account's detail screen, newest first.
   @@index([subjectId, createdAt])

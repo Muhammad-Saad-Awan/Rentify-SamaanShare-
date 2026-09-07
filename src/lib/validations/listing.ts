@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { PAKISTANI_CITIES } from "@/config/cities";
+import { CITY_VALUES } from "@/config/cities";
 import { ItemCondition, ListingStatus } from "@/generated/prisma/enums";
 
 /**
@@ -68,14 +68,6 @@ export const ACCEPTED_IMAGE_TYPES = [
  * which one is returned depends on how the file was encoded.
  */
 export const ACCEPTED_IMAGE_FORMATS = ["jpg", "jpeg", "png", "webp"] as const;
-
-/** Cities a listing may be placed in, as stored: lowercase slugs (decision D1). */
-// Widened to `string[]`: `PAKISTANI_CITIES` is `as const`, so the mapped array would
-// be a union of literals and `.includes()` would refuse an arbitrary string - which is
-// exactly what this needs to test.
-const CITY_VALUES: readonly string[] = PAKISTANI_CITIES.map(
-  (city) => city.value
-);
 
 /** A category or subcategory slug, matching what the taxonomy seed writes. */
 const slug = z

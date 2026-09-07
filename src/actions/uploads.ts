@@ -2,6 +2,7 @@
 
 import { getActiveUser } from "@/lib/auth/session";
 import {
+  avatarUploadFolder,
   destroyImage,
   pendingUploadFolder,
   signUpload,
@@ -44,6 +45,15 @@ const DELETE_RATE_LIMIT = {
   windowMs: 60_000,
 };
 
+/**
+ * Avatar signatures per user per minute.
+ *
+ * One photo, not ten, so the budget is small - but not one: a failed upload, a retry
+ * and a change of mind are all normal within a minute, and being told to wait after
+ * choosing the wrong file would be absurd.
+ */
+const AVATAR_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
+
 const CONFIG_ERROR =
   "Image uploads are not configured on this server. Please contact support.";
 
@@ -84,6 +94,50 @@ export async function createImageUploadSignature(): Promise<
     // Thrown when the credentials are missing, which is a deployment problem rather
     // than something the user can act on.
     console.error("createImageUploadSignature failed", error);
+
+    return { success: false, error: CONFIG_ERROR };
+  }
+}
+
+/**
+ * Issues a signature for one upload into the caller's avatar folder.
+ *
+ * Separate from {@link createImageUploadSignature} only because the folder differs, and
+ * that difference is the point: `avatarUploadFolder` sits outside the pending tree the
+ * cleanup job sweeps, so a profile photo is not destroyed a day after it is set.
+ *
+ * Its own rate budget too. A profile photo is chosen once and then rarely, so a limit
+ * measured in listing photos would be far looser than this needs - and the two counters
+ * being separate means an afternoon spent photographing inventory cannot lock someone
+ * out of changing their own picture.
+ */
+export async function createAvatarUploadSignature(): Promise<
+  ActionResult<SignedUploadParams>
+> {
+  const user = await getActiveUser();
+
+  if (!user) {
+    return { success: false, error: UNAUTHENTICATED_ERROR };
+  }
+
+  const rate = checkRateLimit(`avatar-sign:${user.id}`, AVATAR_RATE_LIMIT);
+
+  if (!rate.allowed) {
+    return {
+      success: false,
+      error: `Too many uploads at once. Try again in ${rate.retryAfterSeconds}s.`,
+    };
+  }
+
+  try {
+    // As above: the folder comes from the session, so this action takes no parameters
+    // and there is nothing for a caller to point elsewhere.
+    return {
+      success: true,
+      data: signUpload(avatarUploadFolder(user.id)),
+    };
+  } catch (error) {
+    console.error("createAvatarUploadSignature failed", error);
 
     return { success: false, error: CONFIG_ERROR };
   }

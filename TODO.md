@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 18 August 2026 (Trust & Safety complete — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims; Stage A6 awaiting production env vars)
+**Last Updated:** 7 September 2026 (Phase 1 + 2.2 leftovers complete - profile editing, in-app password change, connected accounts, session invalidation, member preferences; earlier: Trust & Safety complete — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims; Stage A6 awaiting production env vars)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -223,14 +223,40 @@ integration Stage A2 added, so no new dependency.
 
 ### User Profile
 
-- [ ] Create profile page (`/profile`)
-- [ ] Create profile view component
-- [ ] Create edit profile form
-- [ ] Create `updateProfile` action
-- [ ] Add profile image upload (Cloudinary)
-- [ ] Create `updateProfileImage` action
-- [ ] Add Pakistani city selector
-- [ ] Add phone number field (+92 format)
+Shipped 7 September 2026. The placeholder card is gone.
+
+- [x] Create profile page (`/profile`)
+- [x] Create profile view component — folded into the page rather than built
+      separately. Once the fields are editable there is nothing left for a
+      read-only view to show that the form does not, and two components rendering
+      one identity is two places for them to disagree
+- [x] Create edit profile form — `ProfileForm`, four fields, seeded from the
+      DATABASE and not the session. The JWT's copy of `name` is up to 24h old, so
+      a form defaulted from it could re-save a stale name over a newer one
+- [x] Create `updateProfile` action — takes the whole profile, not a patch, for
+      the reason `updateListingSchema` gives: a patch cannot express "clear my
+      bio". Changing the number clears `phoneVerified`, which nothing sets yet
+      (phone OTP is Phase 2) but which must hold from the first write or whatever
+      does set it inherits a verified flag on a number nobody verified
+- [x] Add profile image upload (Cloudinary) — `AvatarUploader`, same signed
+      browser->Cloudinary path as listings. **Its own folder**,
+      `samaanshare/avatars/{userId}`: `cleanup-pending-uploads.ts` keeps only what
+      a `ListingImage` references, so an avatar parked in the pending tree would
+      have been destroyed 24h after it was set
+- [x] Create `updateProfileImage` action — writes `avatarUrl`, never `image`, so
+      removing a SamaanShare photo falls back to the Google picture rather than to
+      a blank circle. URL derived from the Admin API, id checked against the
+      caller's own folder
+- [x] Add Pakistani city selector — `CITY_VALUES` moved to `@/config/cities` and
+      is now shared with the listing form, rather than copied
+- [x] Add phone number field (+92 format) — accepts every spelling people type
+      and stores one E.164 value. Mobile only: the number exists so a counterparty
+      can reach a person mid-booking, and a landline reaches a building
+- [x] **`requireUser()` now returns identity from the database**, not the token.
+      It was already reading the row to check `status`, so `name` and
+      `avatarUrl ?? image` ride along free. Without it a member saves a new photo
+      and goes on seeing the old one in the header of every screen for 24h, which
+      reads as the save having failed
 
 ### Public Profile
 
@@ -305,7 +331,7 @@ no listing, booking, search, review or admin functionality was implemented.
       specified `/saved`. Moved under `/dashboard` so it inherits the existing
       `PROTECTED_PREFIXES` guard and matches the other dashboard sections.
 - [x] Notifications (`/dashboard/notifications`)
-- [x] Profile (`/profile`) — read-only session summary; editing still open
+- [x] Profile (`/profile`) — editable: name, bio, city, phone and photo
 - [x] Settings (`/settings`)
 - [x] Admin (`/admin`) — gated by `requireAdmin()` in `admin/layout.tsx`
 
@@ -629,11 +655,27 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
       - [ ] **Verified sending domain still needed.** `EMAIL_FROM` defaults to
             `onboarding@resend.dev`, which only delivers to the Resend account
             owner's own address. Set a verified domain before staging.
-      - [ ] **Session invalidation on password change** — known gap. Under the
-            JWT strategy a session is a signed cookie with no server-side record,
-            so a stolen session survives a reset until the token expires. Needs a
-            token version on `User` checked in the `jwt` callback. Worth doing
-            before launch.
+      - [x] **Session invalidation on password change** — closed 7 September 2026,
+            alongside in-app password change. `User.tokenVersion`, incremented by
+            `changePassword` and by `resetPassword`, compared against the token in
+            the database read `requireUser` / `getActiveUser` already make for
+            `status` — so it costs no extra query and lands on the next request
+            rather than at token expiry.
+            **Not** checked in the `jwt` callback as this note originally proposed:
+            `updateAge` re-issues a token every 24h, so a check there would have
+            handed the revoked session a fresh token instead of refusing it. The
+            comparison has to happen where the token is *read*, not where it is
+            minted.
+            A counter and not `passwordChangedAt` vs the token's `iat`, for the same
+            reason — `iat` moves on its own.
+            Mismatch, not "less than": a token claiming a version *ahead* of the
+            column is not a newer session.
+            `DEFAULT 0` and `token.tokenVersion ?? 0`, so cookies minted before the
+            column existed stay valid — signing out the whole userbase on deploy
+            would be a worse bug than the one being fixed. `npm run verify:security`
+            asserts exactly that, in both directions.
+            Both flows re-authenticate afterwards, which is what stops the person who
+            just changed their password being signed out with everybody else.
 - [x] **A3. Zod environment validation** — three modules, and the split is
       load-bearing: `env.schema.ts` is pure (so the rules are testable without a
       valid secret-bearing environment), `env.ts` parses `process.env` at import
@@ -1357,14 +1399,137 @@ Fixed 27 August 2026, found while finishing Phase 6.
       not one they answer, that reading the overview expires a stale request, and
       that a paused or suspended-owner wishlist item leaves the count
 
+### Account security - shipped 7 September 2026
+
+- [x] **In-app password change** (`/settings`) — the current password is re-checked
+      even though the caller is signed in, because a live session is not proof that
+      the person at the keyboard is the account holder; an unattended laptop is
+      exactly what this form defends against
+- [x] **Setting a first password** on a Google-only account — no current password to
+      ask for, so the session is the proof of control, the same standing a reset link
+      has. Its `password: null` predicate is an authorization check, not a
+      convenience: without it this action would be the way to overwrite a password
+      without knowing it, which is the thing `changePassword` demands one to prevent.
+      A compare-and-swap, so two concurrent calls cannot both write
+- [x] **Changing a password spends every outstanding reset token.** An attacker can
+      mint one at any time - `requestPasswordReset` needs only an email address - so a
+      password changed while a live link sits in their inbox is not changed at all.
+      `resetPassword` already spent its siblings; this is the same rule from the other
+      direction, and both are in one transaction with the password write
+- [x] **Session invalidation** — see A2 above, now closed
+- [x] **Connected accounts** — Google connect and disconnect. Connecting is an OAuth
+      round trip rather than an action, because only Google can authorise a link;
+      `signIn("google")` with a live session makes Auth.js link to the current user
+      (`handleLoginOrRegister` takes that branch when it can decode the cookie)
+- [x] **An account can never be left with no way in.** Disconnecting the last sign-in
+      method is refused by `disconnectAccount`, not merely hidden by the UI - a member
+      who removed their only credential would be locked out of an account they were
+      still looking at, and could not recover it
+- [x] Password policy parity is now a test. Four routes reach `User.password` -
+      registration, a reset link, a change from settings, a first password on a Google
+      account - and the moment one accepts what the others refuse, that one *is* the
+      policy
+- [x] Integration verification — `npm run verify:security`, against a real session:
+      that a revoked cookie is locked out, that a versionless one is not, that a token
+      claiming a version ahead is refused, that the bounce says `SessionRevoked` rather
+      than `AccountSuspended`, and that `/settings` offers the right form for each
+      account shape. Needs the dev server, like `verify:phase4:ui`
+
+### Preferences (Phase 2.2) - shipped 7 September 2026
+
+The last placeholder on `/settings` is gone.
+
+- [x] **Default city for browsing.** Applied by REDIRECTING a bare `/listings` to
+      `?city=<slug>`, never by quietly adding the city to the parsed filters. That
+      page documents that its whole state lives in the query string so any view is
+      shareable and reachable with the back button - a hidden filter would mean two
+      people seeing different listings at the same address, and a shared link not
+      showing what the sender saw
+- [x] **`?city=all`, the way to say "everywhere" out loud.** Without it, removing the
+      city chip produces the bare URL, which redirects straight back - the one control
+      for browsing the whole country would be the one control that did nothing. The
+      chip's remove link and the filter form's "All cities" option both emit it, and
+      the page leaves it alone
+- [x] The redirect fires **only on a completely bare URL** and only for a signed-in
+      member. Any parameter at all means they are already somewhere specific.
+      Anonymous visitors and crawlers never redirect, so `/listings` stays the single
+      indexable canonical browse URL
+- [x] "Clear all" deliberately does *not* emit `city=all`: from an explicit everywhere
+      view it keeps it, and from anywhere else it returns to the bare URL, which for a
+      member with a default means back to their city. A reset restoring a default is
+      what a reset is
+- [x] **Notification preferences - two switches, and that is the whole set.** Every
+      other notification is written inside the transaction that moves the booking,
+      payment or deposit claim it describes, precisely so a member cannot fail to hear
+      about it, and there is no email channel for bookings to fall back on. Making
+      those switchable would turn a deliberate guarantee into a setting whose failure
+      mode is somebody silently not learning they owe money. What is left is the
+      genuinely advisory: the review nudge, and the notice that a review went public
+- [x] `MUTABLE_NOTIFICATION_TYPES` is the only place that decides, and `isMuted`
+      returns false for anything absent from it - so a column-name collision or a
+      preferences row from some other feature still cannot suppress a booking
+      notification
+- [x] The preference lookup is **skipped** unless a draft could actually be muted, so
+      the guarantee that notifications are written inside the booking transaction does
+      not start costing an extra round trip on every status change
+- [x] Added `ui/switch.tsx`, the first switch primitive in the project - the same way
+      `Textarea` arrived in Stage A1
+- [x] Tests: 40 new, including an **exhaustive** one that walks the entire
+      `NotificationType` enum and fails if a transactional type ever becomes mutable
+- [x] Integration verification — `npm run verify:preferences`, 10 checks against a real
+      database and the running app: that one event notifies the member who wants it and
+      not the one who does not, that an approval, a claim and a payment all still arrive
+      for a member who muted everything they are allowed to, that the two switches are
+      independent, and that the redirect fires on a bare URL and on nothing else
+
+### Browser console errors - fixed 7 September 2026
+
+- [x] **`Button` never told Base UI when it was not rendering a button.** Base UI's
+      `nativeButton` defaults to `true`; every `render={<Link />}` produces an `<a>`,
+      so the primitive warned once per element on every render - eleven times on the
+      public pages alone, with the stack pointing at `SiteHeader`. Fixed in the shared
+      `ui/button.tsx` by deriving `nativeButton` from the `render` element's type,
+      rather than at ~30 call sites that would each have to remember it. An explicit
+      prop still wins
+- [x] **That was also a hydration mismatch**, not only a warning. With the flag wrong,
+      the server emitted `type="button"` and the client emitted `role="button"` on the
+      same element - React reported "some attributes of the server rendered HTML didn't
+      match" on `/profile` and `/dashboard/listings`. One cause, two symptoms; the
+      second is the one that would have survived into production, where the warning
+      does not print
+- [x] Verified with a CDP console capture across 15 routes, public and authenticated,
+      signed in and signed out: **zero console errors or warnings**. The remaining
+      `[auth][warn][debug-enabled]` line is Auth.js announcing its own debug mode and is
+      dev-only - `src/auth.ts:326` gates it on `NODE_ENV`
+- [x] `npm run verify:security` now honours `VERIFY_BASE_URL`. Next moves to 3002 when
+      3000 is held by a dev server that has not fully exited, and a hard-coded port
+      reports every check as failing against a server that is running fine
+
+### Upload retention - fixed 7 September 2026
+
+- [x] **`cleanup-pending-uploads.ts` knew only about listings.** It lists everything
+      under `samaanshare/pending/` and destroys whatever the database does not
+      reference, but it only ever queried `ListingImage` - which was correct when
+      listings were the only feature with photos. Handover condition photos and
+      damage-claim evidence arrived later, stored their ids under the same prefix
+      via `resolveOwnedPhotos`, and inherited a sweeper that did not know they
+      existed: every one of them was eligible for deletion 24h after upload. They
+      are evidence in disputes over deposits, and they would have gone quietly
+- [x] The reference lookup now lives in `src/lib/uploads/referenced-ids.ts`, next to
+      `resolveOwnedPhotos` rather than inside the script - a fourth feature that
+      accepts photos is adding a fourth table there, and the directory is where
+      someone will actually see that
+- [x] **`npm run cleanup:uploads` could not run at all.** The script called
+      `dotenv.config()` in its body, but its imports reach `@/config/env`, which
+      validates at module load - and ES imports are hoisted above the call, so env
+      validation threw before dotenv ran. Now passes `--env-file=.env.local` like
+      every other script in `package.json`. Verified against the real database and
+      Cloudinary: 1 pending asset, correctly reported as in use
+
 ### Still genuinely placeholders
 
-- [ ] `/profile` — profile editing (name, bio, city, phone, photo). Not built, so
-      the placeholder is honest
-- [ ] `/settings` — in-app password change and connected accounts. Not built
-      either, but its description **claimed a dependency on flows that shipped**
-      ("the password reset and email verification flows still open in Phase 1"),
-      which was corrected: both work, from the sign-in page and the profile
+Nothing. Every card on `/profile` and `/settings` is now a working control.
+
 
 ---
 

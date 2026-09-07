@@ -89,6 +89,20 @@ export const authConfig = {
 
         token.role = user.role ?? UserRole.USER;
         token.status = user.status ?? UserStatus.ACTIVE;
+
+        /**
+         * The session generation this token is being minted at.
+         *
+         * `?? 0` matches the column default, and covers the case where a provider's
+         * `profile()` did not supply it - the Google mapping in `auth.ts` does not,
+         * because a first-ever Google sign-in has no row yet.
+         *
+         * Only ever written here, on sign-in. A token whose version has fallen behind
+         * is not refreshed, it is refused: see `requireUser`. Refreshing it in this
+         * callback would defeat the entire mechanism, since `updateAge` re-issues a
+         * token every 24h and would silently hand the revoked session a new one.
+         */
+        token.tokenVersion = user.tokenVersion ?? 0;
       }
 
       return token;
@@ -106,6 +120,10 @@ export const authConfig = {
 
       session.user.role = token.role;
       session.user.status = token.status;
+
+      // Carried through so the session helpers can compare it against the database.
+      // `?? 0` for cookies minted before the field existed - see the note on `JWT`.
+      session.user.tokenVersion = token.tokenVersion ?? 0;
 
       return session;
     },
