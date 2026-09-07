@@ -1456,6 +1456,29 @@ Fixed 27 August 2026, found while finishing Phase 6.
       than `AccountSuspended`, and that `/settings` offers the right form for each
       account shape. Needs the dev server, like `verify:phase4:ui`
 
+### Browser console errors - fixed 7 September 2026
+
+- [x] **`Button` never told Base UI when it was not rendering a button.** Base UI's
+      `nativeButton` defaults to `true`; every `render={<Link />}` produces an `<a>`,
+      so the primitive warned once per element on every render - eleven times on the
+      public pages alone, with the stack pointing at `SiteHeader`. Fixed in the shared
+      `ui/button.tsx` by deriving `nativeButton` from the `render` element's type,
+      rather than at ~30 call sites that would each have to remember it. An explicit
+      prop still wins
+- [x] **That was also a hydration mismatch**, not only a warning. With the flag wrong,
+      the server emitted `type="button"` and the client emitted `role="button"` on the
+      same element - React reported "some attributes of the server rendered HTML didn't
+      match" on `/profile` and `/dashboard/listings`. One cause, two symptoms; the
+      second is the one that would have survived into production, where the warning
+      does not print
+- [x] Verified with a CDP console capture across 15 routes, public and authenticated,
+      signed in and signed out: **zero console errors or warnings**. The remaining
+      `[auth][warn][debug-enabled]` line is Auth.js announcing its own debug mode and is
+      dev-only - `src/auth.ts:326` gates it on `NODE_ENV`
+- [x] `npm run verify:security` now honours `VERIFY_BASE_URL`. Next moves to 3002 when
+      3000 is held by a dev server that has not fully exited, and a hard-coded port
+      reports every check as failing against a server that is running fine
+
 ### Still genuinely placeholders
 
 - [ ] `/settings` — the **Preferences** card only: notification preferences and a
