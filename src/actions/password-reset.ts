@@ -285,7 +285,22 @@ export async function resetPassword(
 
       await tx.user.update({
         where: { id: stored.userId },
-        data: { password: hashed },
+        data: {
+          password: hashed,
+          /**
+           * Revokes every session issued before now - see `User.tokenVersion`.
+           *
+           * The same reasoning as spending the sibling tokens just below, applied to
+           * sessions rather than links: someone reaching this flow has lost control of
+           * their password, and an attacker who used it to sign in holds a JWT cookie
+           * that no password change can otherwise touch for up to 30 days. Recovering
+           * the account has to mean recovering it from them too.
+           *
+           * `increment` rather than read-then-write, so two concurrent redemptions
+           * cannot leave one of the revocations undone.
+           */
+          tokenVersion: { increment: 1 },
+        },
       });
 
       /**

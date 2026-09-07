@@ -106,6 +106,7 @@ const providers: Provider[] = [
           role: true,
           status: true,
           deletedAt: true,
+          tokenVersion: true,
         },
       });
 
@@ -131,6 +132,10 @@ const providers: Provider[] = [
         image: user.avatarUrl ?? user.image,
         role: user.role,
         status: user.status,
+        // Stamps the token with the generation current at sign-in. Read straight from
+        // the row that was just fetched, so a password changed a moment ago is already
+        // reflected - this sign-in is very often the one that follows such a change.
+        tokenVersion: user.tokenVersion,
       };
     },
   }),

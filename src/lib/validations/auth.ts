@@ -128,10 +128,68 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
+/**
+ * Changing a password from inside the app.
+ *
+ * REUSES `newPasswordField`, like the reset flow, so no route into the account can set a
+ * password that registration would have refused - otherwise whichever route is laxest
+ * becomes the policy.
+ *
+ * The current password is only checked for presence here, for the reason
+ * {@link loginSchema} gives: applying the policy to it would reject a legacy password
+ * that predates the current rules, and would tell anyone probing the form what those
+ * rules are. Whether it is *correct* is the server's business, and cannot be the
+ * browser's.
+ *
+ * The "must differ" rule is not security theatre in this one case: someone reaches this
+ * form because they believe the old password is known to somebody else, and re-entering
+ * it would leave them believing they had fixed that.
+ */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, {
+      error: "Enter your current password.",
+    }),
+    newPassword: newPasswordField,
+    confirmPassword: z.string().min(1, { error: "Confirm your new password." }),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    error: "Passwords do not match.",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    error: "Choose a password different from your current one.",
+    path: ["newPassword"],
+  });
+
+/**
+ * Adding a password to an account that has never had one.
+ *
+ * A Google-only account has `User.password` of `null`, so there is no current password to
+ * ask for and the live session is the proof of control - the same standing the reset link
+ * has, arrived at differently. Setting one is what lets that member sign in when Google is
+ * unavailable, and it is the precondition for disconnecting Google at all: see
+ * `disconnectAccount`, which refuses to leave an account with no way in.
+ *
+ * Deliberately NOT `changePasswordSchema.partial()`. That would make `currentPassword`
+ * optional on the change path too, and an optional check is not a check.
+ */
+export const setPasswordSchema = z
+  .object({
+    newPassword: newPasswordField,
+    confirmPassword: z.string().min(1, { error: "Confirm your password." }),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    error: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type SetPasswordInput = z.infer<typeof setPasswordSchema>;
 
 /**
  * Canonical form of an email for storage and lookup.

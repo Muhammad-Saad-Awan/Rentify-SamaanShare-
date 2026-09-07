@@ -288,6 +288,28 @@ model User {
   status UserStatus @default(ACTIVE)
 
   /**
+   * Generation counter for this account's sessions. Incremented to invalidate
+   * every session issued before now.
+   * WHY A COUNTER AND NOT A TIMESTAMP. Sessions are JWTs (see the note on
+   * `session.strategy` in src/auth.config.ts), so there is no row to delete: a
+   * stolen cookie stays valid until it expires, up to 30 days. The token carries
+   * the value this column had when it was minted, and the session helpers - which
+   * already read this row to check `status` - refuse any token whose copy has
+   * fallen behind. A password change therefore takes effect on the attacker's very
+   * next request rather than at token expiry.
+   * A counter rather than `passwordChangedAt` compared against the token's `iat`
+   * because `iat` moves on its own: `updateAge` re-issues a token every 24h, so a
+   * timestamp comparison would keep resurrecting a session that had been revoked.
+   * An explicit generation is only ever changed by us.
+   * Incremented by `changePassword` and by `resetPassword`. NOT by `setPassword` -
+   * an account that never had one has no password-authenticated session to revoke.
+   * Both of those flows re-authenticate the member afterwards, which is what stops
+   * the person who just changed their password being signed out along with everyone
+   * else.
+   */
+  tokenVersion Int @default(0)
+
+  /**
    * Identity verified by SamaanShare. Trust & Safety.
    * NOT the same claim as `emailVerified`, and the gap is the whole point.
    * Confirming an inbox takes a minute and proves control of an email address;
@@ -1165,7 +1187,6 @@ model AdminAction {
   /**
    * The listing this action was about, for REMOVE_LISTING/RESTORE_LISTING/EDIT_LISTING.
    * NULL for every action on an account itself.
-   *
    * A real foreign key, unlike `Report.targetId`. A report is polymorphic across
    * three kinds of target and cannot have one (D4); this column is only ever a
    * listing, so there is no reason to give up the join - and the listing detail
@@ -1178,7 +1199,18 @@ model AdminAction {
   actor   User?    @relation("AdminActionsTaken", fields: [actorId], references: [id])
   subject User     @relation("AdminActionsReceived", fields: [subjectId], references: [id])
   report  Report?  @relation(fields: [reportId], references: [id])
-  listing Listing? @relation(fields: [listingId], references: [id])
+  /**
+   * RESTRICT, matching `subjectId` rather than `reportId`'s SET NULL, and stated
+   * explicitly because the default for an optional relation is SET NULL - which is
+   * what this said for a while. The database was correct (the
+   * `20260827090000_admin_listing_moderation` migration wrote RESTRICT by hand and
+   * explained why); it was this line that had drifted, and the next generated
+   * migration would have quietly reverted the database to match it.
+   * Which listing was taken down is the substance of an audit entry, not a
+   * cross-reference that can be dropped. Listings are soft-deleted (D3) and never
+   * removed, so this never fires in normal operation.
+   */
+  listing Listing? @relation(fields: [listingId], references: [id], onDelete: Restrict)
 
   // The history shown on one account's detail screen, newest first.
   @@index([subjectId, createdAt])

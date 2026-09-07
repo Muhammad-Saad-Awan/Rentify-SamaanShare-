@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 7 September 2026 (Phase 1 profile editing complete - name, bio, city, phone and photo upload; earlier: Trust & Safety complete — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims; Stage A6 awaiting production env vars)
+**Last Updated:** 7 September 2026 (Phase 1 complete - profile editing, in-app password change, connected accounts, session invalidation; earlier: Trust & Safety complete — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims; Stage A6 awaiting production env vars)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -655,11 +655,27 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
       - [ ] **Verified sending domain still needed.** `EMAIL_FROM` defaults to
             `onboarding@resend.dev`, which only delivers to the Resend account
             owner's own address. Set a verified domain before staging.
-      - [ ] **Session invalidation on password change** — known gap. Under the
-            JWT strategy a session is a signed cookie with no server-side record,
-            so a stolen session survives a reset until the token expires. Needs a
-            token version on `User` checked in the `jwt` callback. Worth doing
-            before launch.
+      - [x] **Session invalidation on password change** — closed 7 September 2026,
+            alongside in-app password change. `User.tokenVersion`, incremented by
+            `changePassword` and by `resetPassword`, compared against the token in
+            the database read `requireUser` / `getActiveUser` already make for
+            `status` — so it costs no extra query and lands on the next request
+            rather than at token expiry.
+            **Not** checked in the `jwt` callback as this note originally proposed:
+            `updateAge` re-issues a token every 24h, so a check there would have
+            handed the revoked session a fresh token instead of refusing it. The
+            comparison has to happen where the token is *read*, not where it is
+            minted.
+            A counter and not `passwordChangedAt` vs the token's `iat`, for the same
+            reason — `iat` moves on its own.
+            Mismatch, not "less than": a token claiming a version *ahead* of the
+            column is not a newer session.
+            `DEFAULT 0` and `token.tokenVersion ?? 0`, so cookies minted before the
+            column existed stay valid — signing out the whole userbase on deploy
+            would be a worse bug than the one being fixed. `npm run verify:security`
+            asserts exactly that, in both directions.
+            Both flows re-authenticate afterwards, which is what stops the person who
+            just changed their password being signed out with everybody else.
 - [x] **A3. Zod environment validation** — three modules, and the split is
       load-bearing: `env.schema.ts` is pure (so the rules are testable without a
       valid secret-bearing environment), `env.ts` parses `process.env` at import
@@ -1404,12 +1420,46 @@ Fixed 27 August 2026, found while finishing Phase 6.
       every other script in `package.json`. Verified against the real database and
       Cloudinary: 1 pending asset, correctly reported as in use
 
+### Account security - shipped 7 September 2026
+
+- [x] **In-app password change** (`/settings`) — the current password is re-checked
+      even though the caller is signed in, because a live session is not proof that
+      the person at the keyboard is the account holder; an unattended laptop is
+      exactly what this form defends against
+- [x] **Setting a first password** on a Google-only account — no current password to
+      ask for, so the session is the proof of control, the same standing a reset link
+      has. Its `password: null` predicate is an authorization check, not a
+      convenience: without it this action would be the way to overwrite a password
+      without knowing it, which is the thing `changePassword` demands one to prevent.
+      A compare-and-swap, so two concurrent calls cannot both write
+- [x] **Changing a password spends every outstanding reset token.** An attacker can
+      mint one at any time - `requestPasswordReset` needs only an email address - so a
+      password changed while a live link sits in their inbox is not changed at all.
+      `resetPassword` already spent its siblings; this is the same rule from the other
+      direction, and both are in one transaction with the password write
+- [x] **Session invalidation** — see A2 above, now closed
+- [x] **Connected accounts** — Google connect and disconnect. Connecting is an OAuth
+      round trip rather than an action, because only Google can authorise a link;
+      `signIn("google")` with a live session makes Auth.js link to the current user
+      (`handleLoginOrRegister` takes that branch when it can decode the cookie)
+- [x] **An account can never be left with no way in.** Disconnecting the last sign-in
+      method is refused by `disconnectAccount`, not merely hidden by the UI - a member
+      who removed their only credential would be locked out of an account they were
+      still looking at, and could not recover it
+- [x] Password policy parity is now a test. Four routes reach `User.password` -
+      registration, a reset link, a change from settings, a first password on a Google
+      account - and the moment one accepts what the others refuse, that one *is* the
+      policy
+- [x] Integration verification — `npm run verify:security`, against a real session:
+      that a revoked cookie is locked out, that a versionless one is not, that a token
+      claiming a version ahead is refused, that the bounce says `SessionRevoked` rather
+      than `AccountSuspended`, and that `/settings` offers the right form for each
+      account shape. Needs the dev server, like `verify:phase4:ui`
+
 ### Still genuinely placeholders
 
-- [ ] `/settings` — in-app password change and connected accounts. Not built
-      either, but its description **claimed a dependency on flows that shipped**
-      ("the password reset and email verification flows still open in Phase 1"),
-      which was corrected: both work, from the sign-in page and the profile
+- [ ] `/settings` — the **Preferences** card only: notification preferences and a
+      default city for browsing. Phase 2.2. Security is built
 
 
 ---

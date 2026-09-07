@@ -18,6 +18,31 @@ import type { Session } from "next-auth";
 
 type SessionUser = Session["user"];
 
+/**
+ * Whether this cookie belongs to a generation that has since been revoked.
+ *
+ * THE OTHER HALF OF THE JWT TRADE-OFF, and the counterpart to the `status` check beside
+ * every call to it. `status` closes the window on a banned account; this closes it on a
+ * *stolen* one. There is no session row to delete under the JWT strategy, so a cookie
+ * captured today keeps working until it expires - up to 30 days - and changing the
+ * password does nothing to it. Comparing the generation the token was minted at against
+ * the column makes a password change take effect on the thief's next request.
+ *
+ * MISMATCH, NOT "LESS THAN". A token claiming a version *ahead* of the database is not a
+ * newer session, it is a token that does not correspond to this account's history; the
+ * only honest response is the same one.
+ *
+ * `?? 0` on the token side, because cookies minted before this field existed carry no
+ * version at all and the column defaults to 0. Reading a missing version as revoked would
+ * have signed out every existing member on deploy - a worse bug than the one being fixed.
+ */
+function isRevoked(
+  tokenVersion: number | undefined,
+  currentVersion: number
+): boolean {
+  return (tokenVersion ?? 0) !== currentVersion;
+}
+
 /** The raw session, or `null`. Never throws or redirects. */
 export async function getSession(): Promise<Session | null> {
   return auth();
@@ -71,6 +96,7 @@ export async function requireUser(): Promise<SessionUser> {
       name: true,
       image: true,
       avatarUrl: true,
+      tokenVersion: true,
     },
   });
 
@@ -80,6 +106,13 @@ export async function requireUser(): Promise<SessionUser> {
     // stale-but-ACTIVE token would be sent straight back to the dashboard, which would
     // land here again.
     redirect(`${LOGIN_ROUTE}?error=AccountSuspended`);
+  }
+
+  if (isRevoked(session.user.tokenVersion, current.tokenVersion)) {
+    // Its own code, not `AccountSuspended`. This person's account is fine - their
+    // session is not - and telling them they have been suspended would send them to
+    // support over a password they, or someone claiming to be them, just changed.
+    redirect(`${LOGIN_ROUTE}?error=SessionRevoked`);
   }
 
   /**
@@ -125,10 +158,15 @@ export async function getActiveUser(): Promise<SessionUser | null> {
 
   const current = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { status: true, deletedAt: true },
+    select: { status: true, deletedAt: true, tokenVersion: true },
   });
 
-  if (!current || current.deletedAt || current.status !== UserStatus.ACTIVE) {
+  if (
+    !current ||
+    current.deletedAt ||
+    current.status !== UserStatus.ACTIVE ||
+    isRevoked(session.user.tokenVersion, current.tokenVersion)
+  ) {
     return null;
   }
 
