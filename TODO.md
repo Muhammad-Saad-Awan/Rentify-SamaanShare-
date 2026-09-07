@@ -1383,6 +1383,27 @@ Fixed 27 August 2026, found while finishing Phase 6.
       not one they answer, that reading the overview expires a stale request, and
       that a paused or suspended-owner wishlist item leaves the count
 
+### Upload retention - fixed 7 September 2026
+
+- [x] **`cleanup-pending-uploads.ts` knew only about listings.** It lists everything
+      under `samaanshare/pending/` and destroys whatever the database does not
+      reference, but it only ever queried `ListingImage` - which was correct when
+      listings were the only feature with photos. Handover condition photos and
+      damage-claim evidence arrived later, stored their ids under the same prefix
+      via `resolveOwnedPhotos`, and inherited a sweeper that did not know they
+      existed: every one of them was eligible for deletion 24h after upload. They
+      are evidence in disputes over deposits, and they would have gone quietly
+- [x] The reference lookup now lives in `src/lib/uploads/referenced-ids.ts`, next to
+      `resolveOwnedPhotos` rather than inside the script - a fourth feature that
+      accepts photos is adding a fourth table there, and the directory is where
+      someone will actually see that
+- [x] **`npm run cleanup:uploads` could not run at all.** The script called
+      `dotenv.config()` in its body, but its imports reach `@/config/env`, which
+      validates at module load - and ES imports are hoisted above the call, so env
+      validation threw before dotenv ran. Now passes `--env-file=.env.local` like
+      every other script in `package.json`. Verified against the real database and
+      Cloudinary: 1 pending asset, correctly reported as in use
+
 ### Still genuinely placeholders
 
 - [ ] `/settings` — in-app password change and connected accounts. Not built

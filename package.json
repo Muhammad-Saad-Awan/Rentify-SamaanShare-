@@ -21,7 +21,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:reset": "prisma migrate reset",
     "db:seed": "prisma db seed",
-    "cleanup:uploads": "tsx scripts/cleanup-pending-uploads.ts",
+    "cleanup:uploads": "tsx --env-file=.env.local scripts/cleanup-pending-uploads.ts",
     "clean:demo": "tsx --env-file=.env.local scripts/clean-demo-data.ts",
     "admin:grant": "tsx --env-file=.env.local scripts/grant-admin.ts",
     "verify:phase4": "tsx --env-file=.env.local scripts/verify-phase4.ts",

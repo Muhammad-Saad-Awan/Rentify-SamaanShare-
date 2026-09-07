@@ -1,5 +1,5 @@
 // ============================================================================
-// SamaanShare - Reclaim abandoned listing photos
+// SamaanShare - Reclaim abandoned uploads
 // ============================================================================
 // The create-listing form uploads photos to Cloudinary BEFORE the listing exists,
 // because a signed direct upload is the only way ten files avoid the Server Action
@@ -8,9 +8,13 @@
 // no database row pointing at them. Nothing in a request/response cycle can clean
 // those up - the user is gone.
 //
-// So this runs out of band. It lists the pending tree, keeps anything a ListingImage
-// references, keeps anything newer than the cutoff (a form open in another tab is
+// So this runs out of band. It lists the pending tree, keeps anything the database
+// still references - a listing photo, a handover record's condition photo, or a damage
+// claim's evidence - keeps anything newer than the cutoff (a form open in another tab is
 // still in progress), and deletes the rest.
+//
+// WHAT IT MUST KNOW ABOUT is the whole of `findReferencedPublicIds`. A feature that
+// stores a pending public id and is not listed there has its photos deleted 24h later.
 //
 // DRY RUN BY DEFAULT. Pass --delete to actually destroy, and --hours=N to change the
 // cutoff. Deleting is irreversible, so the default is the safe one.
@@ -28,7 +32,16 @@ import {
   listUploadsByPrefix,
   PENDING_UPLOAD_ROOT,
 } from "../src/lib/cloudinary";
+import { findReferencedPublicIds } from "../src/lib/uploads/referenced-ids";
 
+/**
+ * Fallback only. The npm script passes `--env-file=.env.local`, and it has to: this
+ * module's own imports reach `@/config/env`, which validates at module load, and ES
+ * imports are hoisted above this call - so by the time `dotenv` runs, the validation
+ * has already thrown. Running `tsx scripts/cleanup-pending-uploads.ts` directly, without
+ * the flag, fails for exactly that reason. Kept for the `.env` case, which
+ * `--env-file` does not cover.
+ */
 dotenv.config({ path: [".env.local", ".env"], quiet: true });
 
 /**
@@ -70,7 +83,7 @@ async function main() {
   const prisma = createClient();
 
   console.log(
-    `Scanning ${PENDING_UPLOAD_ROOT}/ for assets older than ${hours}h with no listing...`
+    `Scanning ${PENDING_UPLOAD_ROOT}/ for assets older than ${hours}h that nothing references...`
   );
   console.log(shouldDelete ? "Mode: DELETE" : "Mode: dry run (pass --delete)");
 
@@ -95,18 +108,15 @@ async function main() {
   /**
    * Which of these the database still needs.
    *
-   * Queried by the exact id set rather than by scanning ListingImage, so the cost
-   * tracks the number of pending assets and not the size of the table. Attached photos
-   * legitimately stay in the pending folder - they are moved by nothing - so the
-   * database, never the folder name, decides what is garbage.
+   * EVERY table that stores a pending public id, not just `ListingImage`. That list is
+   * kept in `findReferencedPublicIds`, next to the function that mints these ids, because
+   * this job destroys anything it is not told about: for a period this script knew only
+   * about listings, and handover and damage-claim photos - evidence in disputes over
+   * deposits - were eligible for deletion a day after they were uploaded.
    */
-  const referenced = new Set(
-    (
-      await prisma.listingImage.findMany({
-        where: { publicId: { in: uploads.map((upload) => upload.publicId) } },
-        select: { publicId: true },
-      })
-    ).map((row) => row.publicId)
+  const referenced = await findReferencedPublicIds(
+    prisma,
+    uploads.map((upload) => upload.publicId)
   );
 
   const orphans = uploads.filter(
@@ -117,7 +127,7 @@ async function main() {
     (upload) => !referenced.has(upload.publicId) && upload.createdAt >= cutoff
   ).length;
 
-  console.log(`  in use by a listing: ${referenced.size}`);
+  console.log(`  in use by a listing, handover or claim: ${referenced.size}`);
   console.log(`  unattached but too recent to touch: ${keptRecent}`);
   console.log(`  orphaned: ${orphans.length}`);
 
