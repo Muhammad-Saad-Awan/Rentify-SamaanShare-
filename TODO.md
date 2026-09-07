@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 7 September 2026 (Phase 1 complete - profile editing, in-app password change, connected accounts, session invalidation; earlier: Trust & Safety complete — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims; Stage A6 awaiting production env vars)
+**Last Updated:** 7 September 2026 (Phase 1 + 2.2 leftovers complete - profile editing, in-app password change, connected accounts, session invalidation, member preferences; earlier: Trust & Safety complete — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims; Stage A6 awaiting production env vars)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -1399,27 +1399,6 @@ Fixed 27 August 2026, found while finishing Phase 6.
       not one they answer, that reading the overview expires a stale request, and
       that a paused or suspended-owner wishlist item leaves the count
 
-### Upload retention - fixed 7 September 2026
-
-- [x] **`cleanup-pending-uploads.ts` knew only about listings.** It lists everything
-      under `samaanshare/pending/` and destroys whatever the database does not
-      reference, but it only ever queried `ListingImage` - which was correct when
-      listings were the only feature with photos. Handover condition photos and
-      damage-claim evidence arrived later, stored their ids under the same prefix
-      via `resolveOwnedPhotos`, and inherited a sweeper that did not know they
-      existed: every one of them was eligible for deletion 24h after upload. They
-      are evidence in disputes over deposits, and they would have gone quietly
-- [x] The reference lookup now lives in `src/lib/uploads/referenced-ids.ts`, next to
-      `resolveOwnedPhotos` rather than inside the script - a fourth feature that
-      accepts photos is adding a fourth table there, and the directory is where
-      someone will actually see that
-- [x] **`npm run cleanup:uploads` could not run at all.** The script called
-      `dotenv.config()` in its body, but its imports reach `@/config/env`, which
-      validates at module load - and ES imports are hoisted above the call, so env
-      validation threw before dotenv ran. Now passes `--env-file=.env.local` like
-      every other script in `package.json`. Verified against the real database and
-      Cloudinary: 1 pending asset, correctly reported as in use
-
 ### Account security - shipped 7 September 2026
 
 - [x] **In-app password change** (`/settings`) — the current password is re-checked
@@ -1456,6 +1435,53 @@ Fixed 27 August 2026, found while finishing Phase 6.
       than `AccountSuspended`, and that `/settings` offers the right form for each
       account shape. Needs the dev server, like `verify:phase4:ui`
 
+### Preferences (Phase 2.2) - shipped 7 September 2026
+
+The last placeholder on `/settings` is gone.
+
+- [x] **Default city for browsing.** Applied by REDIRECTING a bare `/listings` to
+      `?city=<slug>`, never by quietly adding the city to the parsed filters. That
+      page documents that its whole state lives in the query string so any view is
+      shareable and reachable with the back button - a hidden filter would mean two
+      people seeing different listings at the same address, and a shared link not
+      showing what the sender saw
+- [x] **`?city=all`, the way to say "everywhere" out loud.** Without it, removing the
+      city chip produces the bare URL, which redirects straight back - the one control
+      for browsing the whole country would be the one control that did nothing. The
+      chip's remove link and the filter form's "All cities" option both emit it, and
+      the page leaves it alone
+- [x] The redirect fires **only on a completely bare URL** and only for a signed-in
+      member. Any parameter at all means they are already somewhere specific.
+      Anonymous visitors and crawlers never redirect, so `/listings` stays the single
+      indexable canonical browse URL
+- [x] "Clear all" deliberately does *not* emit `city=all`: from an explicit everywhere
+      view it keeps it, and from anywhere else it returns to the bare URL, which for a
+      member with a default means back to their city. A reset restoring a default is
+      what a reset is
+- [x] **Notification preferences - two switches, and that is the whole set.** Every
+      other notification is written inside the transaction that moves the booking,
+      payment or deposit claim it describes, precisely so a member cannot fail to hear
+      about it, and there is no email channel for bookings to fall back on. Making
+      those switchable would turn a deliberate guarantee into a setting whose failure
+      mode is somebody silently not learning they owe money. What is left is the
+      genuinely advisory: the review nudge, and the notice that a review went public
+- [x] `MUTABLE_NOTIFICATION_TYPES` is the only place that decides, and `isMuted`
+      returns false for anything absent from it - so a column-name collision or a
+      preferences row from some other feature still cannot suppress a booking
+      notification
+- [x] The preference lookup is **skipped** unless a draft could actually be muted, so
+      the guarantee that notifications are written inside the booking transaction does
+      not start costing an extra round trip on every status change
+- [x] Added `ui/switch.tsx`, the first switch primitive in the project - the same way
+      `Textarea` arrived in Stage A1
+- [x] Tests: 40 new, including an **exhaustive** one that walks the entire
+      `NotificationType` enum and fails if a transactional type ever becomes mutable
+- [x] Integration verification — `npm run verify:preferences`, 10 checks against a real
+      database and the running app: that one event notifies the member who wants it and
+      not the one who does not, that an approval, a claim and a payment all still arrive
+      for a member who muted everything they are allowed to, that the two switches are
+      independent, and that the redirect fires on a bare URL and on nothing else
+
 ### Browser console errors - fixed 7 September 2026
 
 - [x] **`Button` never told Base UI when it was not rendering a button.** Base UI's
@@ -1479,10 +1505,30 @@ Fixed 27 August 2026, found while finishing Phase 6.
       3000 is held by a dev server that has not fully exited, and a hard-coded port
       reports every check as failing against a server that is running fine
 
+### Upload retention - fixed 7 September 2026
+
+- [x] **`cleanup-pending-uploads.ts` knew only about listings.** It lists everything
+      under `samaanshare/pending/` and destroys whatever the database does not
+      reference, but it only ever queried `ListingImage` - which was correct when
+      listings were the only feature with photos. Handover condition photos and
+      damage-claim evidence arrived later, stored their ids under the same prefix
+      via `resolveOwnedPhotos`, and inherited a sweeper that did not know they
+      existed: every one of them was eligible for deletion 24h after upload. They
+      are evidence in disputes over deposits, and they would have gone quietly
+- [x] The reference lookup now lives in `src/lib/uploads/referenced-ids.ts`, next to
+      `resolveOwnedPhotos` rather than inside the script - a fourth feature that
+      accepts photos is adding a fourth table there, and the directory is where
+      someone will actually see that
+- [x] **`npm run cleanup:uploads` could not run at all.** The script called
+      `dotenv.config()` in its body, but its imports reach `@/config/env`, which
+      validates at module load - and ES imports are hoisted above the call, so env
+      validation threw before dotenv ran. Now passes `--env-file=.env.local` like
+      every other script in `package.json`. Verified against the real database and
+      Cloudinary: 1 pending asset, correctly reported as in use
+
 ### Still genuinely placeholders
 
-- [ ] `/settings` — the **Preferences** card only: notification preferences and a
-      default city for browsing. Phase 2.2. Security is built
+Nothing. Every card on `/profile` and `/settings` is now a working control.
 
 
 ---

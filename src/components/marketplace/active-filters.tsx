@@ -124,7 +124,21 @@ function buildChips(
     chips.push({
       key: "city",
       label: formatCity(filters.city),
-      href: buildListingsHref(filters, { city: null, page: 1 }),
+      /**
+       * `cityAnywhere` so this chip actually removes the city.
+       *
+       * Dropping the parameter would produce the bare `/listings`, and a member with a
+       * `defaultCity` is redirected from there straight back to the city they just
+       * removed - the one control for browsing every city would be the one that did
+       * nothing. `?city=all` says "everywhere" out loud, which nothing redirects away
+       * from. For everyone else it is the same result set, one parameter longer, and the
+       * page canonicalises to `/listings` either way.
+       */
+      href: buildListingsHref(filters, {
+        city: null,
+        cityAnywhere: true,
+        page: 1,
+      }),
     });
   }
 

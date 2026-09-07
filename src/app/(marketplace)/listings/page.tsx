@@ -1,5 +1,6 @@
 import { PackageSearchIcon, SearchXIcon } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { BrowseSkeleton } from "@/components/marketplace/browse-skeleton";
@@ -24,6 +25,7 @@ import {
   parseListingFilters,
 } from "@/lib/marketplace/filters";
 import { getCurrentUser } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
 import { getCategoryOptions } from "@/lib/queries/categories";
 import { getActiveListings } from "@/lib/queries/listings";
 import { getSavedListingIds } from "@/lib/queries/saved-listings";
@@ -90,7 +92,38 @@ export async function generateMetadata({
 export default async function BrowseListingsPage({
   searchParams,
 }: BrowseListingsPageProps) {
-  const filters = parseListingFilters(await searchParams);
+  const raw = await searchParams;
+
+  /**
+   * A member's default city chooses the STARTING URL, never the results behind one.
+   *
+   * The alternative - quietly adding the city to `filters` - would break the invariant
+   * this page is built on: two people would see different listings at the same address,
+   * and a shared link would not show what the sender saw. Redirecting keeps the query
+   * string the only state, and the city then appears as a removable chip like any other.
+   *
+   * ONLY ON A COMPLETELY BARE URL. Any parameter at all - even `?page=2` - means the
+   * member is already somewhere specific, and moving them would discard it. `?city=all`
+   * is how the city chip says "everywhere", and it is a parameter, so it lands here and
+   * is left alone.
+   *
+   * Anonymous visitors and crawlers never redirect, so `/listings` stays the one
+   * indexable, canonical browse URL.
+   */
+  if (Object.keys(raw).length === 0) {
+    const defaultCity = await getDefaultCity();
+
+    if (defaultCity) {
+      // Built through the serialiser rather than as a string, so the parameter name
+      // comes from `FILTER_PARAM` and cannot drift from what the parser reads back.
+      // `raw` is empty here, so this is the default state with one city applied.
+      redirect(
+        buildListingsHref(parseListingFilters(raw), { city: defaultCity })
+      );
+    }
+  }
+
+  const filters = parseListingFilters(raw);
 
   return (
     // The skeleton is wired up here rather than as a route-level `loading.tsx` -
@@ -374,4 +407,30 @@ function resultSummary(
   }
 
   return `${total} ${total === 1 ? "item" : "items"} available to rent.`;
+}
+
+/**
+ * This member's default browse city, or null.
+ *
+ * Costs one primary-key read, and only on a bare `/listings` for a signed-in member - the
+ * one request where the answer can change anything. Every filtered view skips it entirely.
+ *
+ * Read from the database rather than the session for the reason the profile page gives:
+ * the JWT is minted at sign-in, so a preference changed in Settings would not take effect
+ * until the token refreshed, up to 24 hours later. A setting that appears to save and then
+ * does nothing is worse than no setting.
+ */
+async function getDefaultCity(): Promise<string | null> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const current = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { defaultCity: true },
+  });
+
+  return current?.defaultCity ?? null;
 }

@@ -1,12 +1,12 @@
-import { KeyRoundIcon, SettingsIcon } from "lucide-react";
+import { KeyRoundIcon } from "lucide-react";
 
 import { PageHeader } from "@/components/dashboard/page-header";
-import { PlaceholderCard } from "@/components/dashboard/placeholder-card";
 import { ConnectedAccounts } from "@/components/settings/connected-accounts";
 import {
   ChangePasswordForm,
   SetPasswordForm,
 } from "@/components/settings/password-form";
+import { PreferencesForm } from "@/components/settings/preferences-form";
 import {
   Card,
   CardContent,
@@ -19,6 +19,7 @@ import { isLastSignInMethod } from "@/lib/auth/sign-in-methods";
 import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
+import type { PreferencesFormValues } from "@/lib/validations/preferences";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Account settings: security now, preferences still to come.
+ * Account settings: security and preferences.
  *
  * WHICH FORM IS SHOWN DEPENDS ON WHETHER THERE IS A PASSWORD, and the page decides rather
  * than the browser: `User.password` never crosses to the client, so only its presence
@@ -48,6 +49,9 @@ export default async function SettingsPage() {
       // null, never the hash itself.
       password: true,
       accounts: { select: { provider: true } },
+      defaultCity: true,
+      notifyReviewReminders: true,
+      notifyReviewPublished: true,
     },
   });
 
@@ -73,6 +77,14 @@ export default async function SettingsPage() {
     hasPassword,
     current.accounts.length
   );
+
+  // `""` rather than null: a `<select>` has no null, and React warns the first time a
+  // value arrives at an input it had treated as uncontrolled.
+  const preferenceDefaults: PreferencesFormValues = {
+    defaultCity: current.defaultCity ?? "",
+    notifyReviewReminders: current.notifyReviewReminders,
+    notifyReviewPublished: current.notifyReviewPublished,
+  };
 
   return (
     <>
@@ -114,12 +126,17 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <PlaceholderCard
-        icon={SettingsIcon}
-        title="Preferences"
-        description="Notification preferences and your default city for browsing listings."
-        phase="Phase 2.2"
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle>Preferences</CardTitle>
+          <CardDescription>
+            Where browsing starts, and which optional notifications you get.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PreferencesForm defaults={preferenceDefaults} />
+        </CardContent>
+      </Card>
     </>
   );
 }

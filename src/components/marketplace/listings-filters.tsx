@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { PAKISTANI_CITIES } from "@/config/cities";
 import { ItemCondition } from "@/generated/prisma/enums";
 import {
+  CITY_ANYWHERE,
   clearListingFiltersHref,
   FILTER_PARAM,
   hasActiveFilters,
@@ -150,10 +151,17 @@ function ListingsFilters({
         <select
           id={`${idPrefix}-city`}
           name={FILTER_PARAM.city}
-          defaultValue={filters.city ?? ""}
+          defaultValue={filters.city ?? CITY_ANYWHERE}
           className={SELECT_CLASS}
         >
-          <option value="">All cities</option>
+          {/*
+            `all`, not an empty value. A member with a `defaultCity` is redirected from a
+            bare `/listings` to their own city, so submitting an empty city would send
+            them straight back to it - "All cities" would visibly not apply. The explicit
+            value says everywhere in the URL, which nothing redirects away from, and for
+            everyone else it selects exactly the same listings.
+          */}
+          <option value={CITY_ANYWHERE}>All cities</option>
           {PAKISTANI_CITIES.map((city) => (
             <option key={city.value} value={city.value}>
               {city.label}

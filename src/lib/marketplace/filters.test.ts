@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildListingsHref,
+  CITY_ANYWHERE,
   clearListingFiltersHref,
   hasActiveFilters,
   activeFilterCount,
@@ -179,6 +180,81 @@ describe("clearListingFiltersHref", () => {
     });
 
     expect(href).toBe("/listings?sort=price-asc");
+  });
+});
+
+describe('the explicit "everywhere" city', () => {
+  /**
+   * `?city=all` exists for one reason: a member with a `defaultCity` is redirected from a
+   * bare `/listings` to their own city, so the URL needs a way to SAY everywhere. Without
+   * it, removing the city chip produces the bare URL and bounces straight back - the one
+   * control for browsing the whole country would be the one control that did nothing.
+   *
+   * The pair of assertions that matter are that it narrows nothing, and that it survives
+   * a round trip through the serialiser. A value that parsed correctly but was dropped on
+   * the way back out would reintroduce the bounce.
+   */
+  it("is not a city, and filters nothing", () => {
+    const filters = parseListingFilters({ city: CITY_ANYWHERE });
+
+    expect(filters.city).toBeNull();
+    expect(hasActiveFilters(filters)).toBe(false);
+    expect(activeFilterCount(filters)).toBe(0);
+  });
+
+  it("is remembered as an explicit choice, unlike an absent city", () => {
+    expect(parseListingFilters({ city: CITY_ANYWHERE }).cityAnywhere).toBe(
+      true
+    );
+    expect(parseListingFilters({}).cityAnywhere).toBe(false);
+    expect(parseListingFilters({ city: "karachi" }).cityAnywhere).toBe(false);
+  });
+
+  it("survives the round trip back into a URL", () => {
+    // The bounce comes back the moment this is dropped as a default would be.
+    expect(
+      buildListingsHref(parseListingFilters({ city: CITY_ANYWHERE }))
+    ).toBe(`/listings?city=${CITY_ANYWHERE}`);
+  });
+
+  it("gives way to a real city rather than doubling up", () => {
+    const href = buildListingsHref({
+      ...NONE,
+      city: "lahore",
+      cityAnywhere: true,
+    });
+
+    expect(href).toBe("/listings?city=lahore");
+  });
+
+  it("is what removing the city chip produces", () => {
+    // Exactly the href `ActiveFilters` builds for the city chip's remove link.
+    const href = buildListingsHref(
+      { ...NONE, city: "karachi", q: "drill" },
+      { city: null, cityAnywhere: true, page: 1 }
+    );
+
+    expect(href).toBe(`/listings?q=drill&city=${CITY_ANYWHERE}`);
+  });
+
+  it('is kept by "clear all", so clearing does not restore a default city', () => {
+    // Someone already looking at every city has said everywhere; clearing the other
+    // filters must not quietly put them back in their own city.
+    const href = clearListingFiltersHref({
+      ...NONE,
+      cityAnywhere: true,
+      q: "drone",
+    });
+
+    expect(href).toBe(`/listings?city=${CITY_ANYWHERE}`);
+  });
+
+  it("is not produced by clearing a view that never asked for it", () => {
+    // From here the bare URL is right: for a member with a default it means "back to my
+    // city", which is what a reset should do.
+    expect(clearListingFiltersHref({ ...NONE, city: "lahore" })).toBe(
+      "/listings"
+    );
   });
 });
 

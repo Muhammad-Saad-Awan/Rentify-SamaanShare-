@@ -309,6 +309,40 @@ model User {
    */
   tokenVersion Int @default(0)
 
+  // ==================== PREFERENCES (Phase 2.2) ====================
+
+  /**
+   * Where this member is shown listings when they have not asked for anywhere
+   * in particular. A lowercase slug, like `city` (decision D1), or null for no
+   * preference.
+   * NOT A HIDDEN FILTER. `/listings` documents that its whole state lives in the
+   * query string and nowhere else, so that any view is shareable and reachable
+   * with the back button. Applying this behind the URL would break exactly that -
+   * two people would see different results at the same address. So it is applied
+   * by REDIRECTING a bare `/listings` to `?city=<slug>`: the preference chooses
+   * the starting URL, and from there the URL is still the only state. `?city=all`
+   * is how "everywhere" is said out loud, which is what the city chip's remove
+   * link points at - without it, clearing the city would land back on the bare
+   * URL and bounce straight back here.
+   */
+  defaultCity String?
+
+  /**
+   * WHICH NOTIFICATIONS MAY BE TURNED OFF, AND WHY SO FEW.
+   * Notifications are written inside the same transaction as the booking change
+   * they describe - see src/lib/notifications/create.ts - precisely so a member
+   * cannot fail to learn that a booking moved, a payment was confirmed, or a
+   * claim was filed against their deposit. Letting those be switched off would
+   * turn a deliberate guarantee into a setting, and the failure mode is someone
+   * silently not hearing that they owe money.
+   * What is left is the genuinely advisory: a nudge to write a review, and the
+   * notice that a review went public. Neither carries an obligation and neither
+   * is the only record of anything. Those are real preferences, so they are real
+   * switches; everything else is not offered rather than offered and ignored.
+   */
+  notifyReviewReminders Boolean @default(true)
+  notifyReviewPublished Boolean @default(true)
+
   /**
    * Identity verified by SamaanShare. Trust & Safety.
    * NOT the same claim as `emailVerified`, and the gap is the whole point.
