@@ -1,8 +1,9 @@
 # Staging deployment (Stage A6)
 
-**Status: not deployed.** Everything in this document is prepared and waiting on
-infrastructure only you can create. Nothing here has been run against a real
-staging environment.
+**Status: deployed on Vercel, against the Neon project `ep-falling-hall-azf5bl71`
+(ap-southeast-1).** The database is migrated to all 15 migrations and the taxonomy
+is seeded (7 categories, 30 subcategories). It holds **1 user and 0 listings**, so
+an empty marketplace is currently the correct output, not a fault.
 
 Why this matters more than a normal deploy: five phases of code have never run on
 serverless. Several behaviours in this codebase are documented as _differing_
@@ -10,6 +11,14 @@ between one long-lived process and many short-lived ones, and staging is the onl
 place to find out whether those documented trade-offs are acceptable. See
 [What to verify once it is up](#5-what-to-verify-once-it-is-up) — that section is
 the actual point of A6, not the deploy itself.
+
+## What has already gone wrong once (9 Sep 2026)
+
+Read §3 before deploying again. **Migrations were not part of the deploy**, so the
+schema sat two migrations behind the code for as long as it took someone to notice,
+and the whole authenticated half of the app was down. The deploy itself was green
+throughout — a build passing tells you nothing about whether the database it will
+talk to has the columns the code selects.
 
 ---
 
@@ -50,7 +59,7 @@ time rather than as a mystery 500.
 |---|---|---|
 | `AUTH_URL` | `https://<staging-host>` | Optional on Vercel (derived from `VERCEL_URL`), but set it explicitly for a stable preview host. Without a correct value in production mode, Auth.js rejects the `Host` header and **every** `/api/auth/*` request fails with `UntrustedHost` — which presents as sign-in being completely broken rather than as a config error. |
 | `NEXT_PUBLIC_APP_URL` | `https://<staging-host>` | Used for canonical URLs, the sitemap, and **the password-reset link**. Deliberately read from config and never from the request's `Host` header, because a reset link must never point at a host an attacker chose. Trailing slashes are stripped for you. |
-| `DIRECT_URL` | Staging Neon **direct** endpoint (no `-pooler`) | Only needed if you run migrations from CI; PgBouncer cannot serve the session-level statements `prisma migrate` uses. |
+| `DIRECT_URL` | Staging Neon **direct** endpoint (no `-pooler`) | **Now genuinely required, not optional.** The build runs `prisma migrate deploy` (§3), and PgBouncer cannot serve the session-level statements `prisma migrate` uses — advisory locks and DDL. `prisma.config.ts` falls back to `DATABASE_URL` when this is unset, which on Neon means pointing migrations at the pooler and failing the build. |
 
 ### Optional — each degrades honestly when absent
 
@@ -78,22 +87,58 @@ credential.
 
 ## 3. Migrations
 
-Four migrations exist. The last three are Stage 4 / Stage A and have only ever
-been applied to the dev database.
+**Fifteen migrations exist, and they are applied by the build.** `vercel.json` sets:
 
-```
-20260728105436_20260728_init
-20260803120000_listing_image_public_id_unique
-20260811161224_phase4_booking_lifecycle          # Booking timestamps + cancelledBy FK
-20260811190342_stage_a_instructions_notification # NotificationType enum value
-20260812101707_stage_a2_password_reset_tokens    # PasswordResetToken table
+```json
+{ "buildCommand": "npm run db:migrate:deploy && npm run build" }
 ```
 
-**Against a fresh staging database, in order:**
+### Why this is in the build command, and why it must stay there
+
+It was not, and that is the bug that took the site down on 9 Sep 2026.
+
+`build` was bare `next build` and `postinstall` was only `prisma generate`, so
+nothing in the deploy path ever touched the database — `db:migrate:deploy` existed
+in `package.json` and no caller invoked it. The schema therefore stayed wherever
+the last manual run had left it, while `git push` kept shipping code that needed
+more. Two migrations behind was enough:
+
+- `20260907162640_stage_a2_session_invalidation` adds `users.tokenVersion`.
+- `requireUser()` and `getActiveUser()` (`src/lib/auth/session.ts`) **select that
+  column on every protected page render and every write action.**
+- Postgres answered `column users.tokenVersion does not exist` (42703), the throw
+  escaped the page, and `src/app/(dashboard)/error.tsx` rendered
+  "Something went wrong" on `/dashboard`, `/saved`, `/profile`, `/settings` and
+  `/listings/new`.
+
+Note the shape of the failure, because it is the reason this belongs in the build
+rather than in a runbook step: **the deployment was green.** `next build` compiles
+against the generated Prisma client, which is regenerated from `schema.prisma` on
+every install and therefore always knows about `tokenVersion`. Nothing at build
+time compares the schema to the database. A migration that is merely *documented*
+as a deploy step is a migration that gets skipped, and skipping it produces a
+healthy-looking deploy serving 500s.
+
+Consequences of coupling them that are worth knowing rather than discovering:
+
+- **A failed migration now fails the deploy**, before the new code is promoted.
+  That is the intended trade: a red deploy on the old, working code beats a green
+  deploy on a schema that cannot serve it.
+- **Preview deployments migrate too.** Any preview pointed at this database will
+  apply a feature branch's migrations to it before merge. `deploy` only ever moves
+  forward, so this cannot roll anything back, but a branch's migration will
+  outlive the branch. Give a preview its own Neon branch if that matters.
+- `prisma generate` still runs in `postinstall`, before the build command, so the
+  client is in place by the time either half of this runs.
+
+### Applying them by hand
+
+Only needed for a database the deploy does not reach, or to recover one that has
+drifted:
 
 ```bash
-# 1. Point at staging (use the DIRECT endpoint for migrations)
-export DATABASE_URL="<staging-direct-url>"
+# 1. Point at the target (the DIRECT endpoint — the pooler cannot run migrations)
+export DIRECT_URL="<staging-direct-url>"
 
 # 2. Apply schema. `deploy`, never `dev` — `dev` can decide to reset the database.
 npx prisma migrate deploy
@@ -101,15 +146,21 @@ npx prisma migrate deploy
 # 3. Seed the taxonomy. Required: listings cannot be created without it.
 npm run db:seed        # 7 categories, 30 subcategories
 
-# 4. Confirm
+# 4. Confirm. Read-only, and the fastest way to check a live database's real state.
 npx prisma migrate status
 ```
 
+`prisma migrate status` is the diagnostic to reach for first whenever a deployed
+page 500s and the build was clean. It names exactly which migrations the target is
+missing.
+
 There is no demo seed to avoid any more — it was removed in §4.
 
-All Stage A migrations are additive (new nullable columns, one new table, one
-appended enum value), so there is no destructive step and no rollback plan is
-needed beyond restoring the branch.
+Every migration to date is additive (new nullable columns, new tables, one appended
+enum value, and defaults on the non-nullable ones), so there is no destructive step
+and no rollback plan is needed beyond restoring the branch. The two applied on
+9 Sep were deliberately defaulted — `tokenVersion INTEGER NOT NULL DEFAULT 0`,
+matching the `?? 0` on the token side — so applying them signed nobody out.
 
 ---
 
@@ -256,26 +307,34 @@ production.
 
 | Gap | Severity | Notes |
 |---|---|---|
-| **Password change does not invalidate sessions** | Blocks production | Under the JWT strategy a session is a signed cookie with no server-side record, so a stolen session survives a reset until it expires. Needs a token version on `User` checked in the `jwt` callback. |
+| ~~**Password change does not invalidate sessions**~~ | **Closed** | `users.tokenVersion` plus the `isRevoked()` check in `src/lib/auth/session.ts`. `changePassword` and `resetPassword` increment it and re-authenticate the caller, so the person who changed the password keeps their session and everyone else holding one loses it. Migration `20260907162640_stage_a2_session_invalidation`. |
 | **No CSP** | Should block production | `next.config.ts` explains why: Next injects inline scripts for hydration, so a useful policy needs per-request nonces threaded through middleware. A policy loose enough to work without them provides almost nothing while looking like it does. |
 | Rate limiting is in-process | Measure in staging | See 5a. |
 | Email verification absent | Not blocking | `emailVerified` exists and is unused; nothing gates on it. Stage C. |
 | `registerUser` leaks account existence | Not blocking | Its unique-constraint message confirms a registered email. The fix needs the email transport that now exists — worth doing alongside email verification. |
 | Reset-request timing side channel | Accept | The registered path mints a token and waits on Resend; the unregistered path returns immediately. Equalising needs a queue. |
-| No error tracking | Should block production | Nothing reports a 500. Everything currently goes to `console.error`. |
+| No error tracking | **Should block production — now demonstrated, not theoretical** | Nothing reports a 500; everything goes to `console.error`. The 9 Sep outage (§3) was found because someone clicked `/dashboard`, not because anything alerted. The digest that `(dashboard)/error.tsx` logs is the only trace, and it is only in Vercel's function logs. |
+| Functions run far from the database | Measure | Neon is in `ap-southeast-1` (Singapore); Vercel functions default to `iad1` (US East). Every query crosses the Pacific twice, on top of §5b's cold start. `regions: ["sin1"]` in `vercel.json` is the lever — deliberately not set yet, because it should be measured first rather than guessed at. |
 | `/forgot-password` is statically prerendered | Cosmetic | The `isEmailEnabled()` gate is therefore evaluated at build time, so adding or removing `RESEND_API_KEY` needs a redeploy to take effect. On Vercel an env change requires a redeploy anyway. |
 
 ---
 
 ## 7. Order of operations
 
-1. You: create the staging Neon project and the Vercel project (§1).
-2. You: start Resend domain verification — longest lead time (§1 item 3).
+1. ~~You: create the staging Neon project and the Vercel project (§1).~~ — done.
+2. You: start Resend domain verification — longest lead time (§1 item 3). **Still
+   outstanding**, and §5c cannot be checked until it lands.
 3. ~~Me: remove `picsum.photos`~~ — done (§4).
-4. You: set environment variables in Vercel (§2).
-5. Either: run `migrate deploy` + `db:seed` against staging (§3).
-6. Deploy.
-7. Both: work through §5. Report anything that fails and I will fix it.
-8. Me: create a few real listings with real uploads to exercise Cloudinary.
+4. You: set environment variables in Vercel (§2). Two to re-check now:
+   **`DIRECT_URL`**, which the build command needs (§2, §3), and the three
+   **`CLOUDINARY_*`** vars, without which §8 cannot be done at all.
+5. ~~Either: run `migrate deploy` + `db:seed` against staging (§3).~~ — done, and
+   now automatic on every deploy (§3).
+6. ~~Deploy.~~ — done.
+7. Both: work through §5. **Not started.** Report anything that fails and I will fix it.
+8. **You or me: create a few real listings with real uploads to exercise Cloudinary.**
+   This is the next thing to do. The database has 0 listings, so §5d (viewCount),
+   §5e (10-image submit) and §5f (the 404 on a real listing id) are all blocked on
+   it, and the marketplace has nothing to show a visitor.
 
 Once §5 is clean, Stage A is genuinely done and Phase 5 (Reviews) starts.
