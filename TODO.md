@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 7 September 2026 (Phase 1 + 2.2 leftovers complete - profile editing, in-app password change, connected accounts, session invalidation, member preferences; earlier: Trust & Safety complete — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims; Stage A6 awaiting production env vars)
+**Last Updated:** 15 September 2026 (backlog reconciled against the code — Phase 7 boxes corrected, staging deployed 9 September, A6 now blocked on verification rather than infrastructure; earlier: Phase 1 + 2.2 leftovers — profile editing, in-app password change, connected accounts, session invalidation, member preferences; Trust & Safety — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -111,12 +111,17 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Create root layout (`app/layout.tsx`)
 - [x] Create metadata configuration
 - [x] Set up fonts (Inter or similar)
-- [x] Create header component — the *dashboard* header exists
-      (`DashboardHeader`, Phase 2.1). This item is the **public/marketing**
-      header, still outstanding.
+- [x] Create header component — both exist: `DashboardHeader` (Phase 2.1) and
+      the public `SiteHeader` / `SiteFooter` in `src/components/layout/`. The
+      public one reads the session with `getCurrentUser()` rather than
+      `requireUser()`, since every page beneath it is public and a missing
+      session is the normal case
 - [x] Create footer component
-- [x] Create mobile navigation — the *dashboard* drawer exists
-      (`DashboardMobileNav`, Phase 2.1). Public mobile nav still outstanding.
+- [x] Create mobile navigation — the dashboard drawer (`DashboardMobileNav`,
+      Phase 2.1), and on the public header a **deliberate non-drawer**: below
+      `sm` a 14-unit bar cannot hold a wordmark, a search field and two account
+      actions without crushing all three, so small screens get a search icon
+      linking to browse, which carries the same field full-width plus the filters
 - [x] Add theme provider (light/dark mode ready)
 
 ### Utilities
@@ -125,16 +130,21 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Create date utilities (Asia/Karachi timezone)
 - [x] Create validation schemas (Zod)
 - [x] Create action result types
-- [ ] Create error handling utilities
+- [x] Create error handling utilities — `ActionResult` and the
+      `UNAUTHENTICATED_ERROR` sentinel in `src/types/index.ts`, plus the Auth.js
+      code-to-message map in `src/lib/auth/errors.ts`. No error-class hierarchy,
+      deliberately: actions **return** failures rather than throw them, so there
+      is nothing for a base class to carry
 
 ### Verification
 
 - [x] Verify development server runs
 - [x] Verify database connection
-- [ ] Verify Prisma Studio works
+- [ ] Verify Prisma Studio works — `npm run db:studio` is wired; only a manual run is outstanding
 - [x] Verify TypeScript compilation
 - [x] Verify ESLint passes
-- [ ] Deploy to Vercel (staging) — prepared, see `docs/DEPLOYMENT.md` (A6)
+- [x] Deploy to Vercel (staging) — live since 9 September 2026. See A6 below for
+      what is still outstanding on it
 
 ---
 
@@ -147,7 +157,11 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Add form validation (Zod + React Hook Form)
 - [x] Create `registerUser` server action
 - [x] Hash passwords with bcrypt (bcryptjs, cost 12)
-- [ ] Send verification email (placeholder for MVP)
+- [x] Send verification email — no longer a placeholder. `registerUser` calls
+      `sendVerificationEmailTo` (`src/actions/auth.ts`), shipped 17 August 2026
+      with the Email Verification slice below. The send is awaited but its
+      rejection is caught and logged: a mail provider that is down must not fail
+      a registration that has already been written
 - [x] Handle registration errors
 - [x] Add success redirect
 
@@ -290,7 +304,11 @@ directional rating split was for: a reader here may be asking either question.
 - [x] Add session to client context
 - [ ] Create `useSession` hook — `next-auth/react` already exports one; only
       needed if we want a project-specific wrapper
-- [ ] Handle session expiration
+- [x] Handle session expiration — 30-day `maxAge` with a 24h `updateAge`
+      (`src/auth.config.ts`), and an expired *or revoked* token is caught where the
+      token is **read**, not where it is minted: `requireUser` redirects,
+      `getActiveUser` returns null, and both compare `tokenVersion` against the
+      database so a password change ends live sessions (Stage A2)
 - [x] Add logout functionality (`UserMenu` in the dashboard header, Phase 2.1)
 
 ### Protected Routes
@@ -506,9 +524,15 @@ no listing, booking, search, review or admin functionality was implemented.
 ### Categories
 
 - [x] Seed all categories from PRD (7 categories, 30 subcategories)
-- [ ] Create category management (admin) — belongs with Phase 6 admin work
+- [ ] Create category management (admin) — Phase 6 shipped without it; the admin
+      area covers users, listings, bookings, reports, claims and analytics, and
+      categories are still changed only by `prisma/seed.ts`. Fine while the
+      taxonomy is fixed, and the first thing to hurt when it is not
 - [x] Add category icons (`Category.icon` + `categoryIcon()`)
-- [ ] Create category tree structure
+- [x] Create category tree structure — two levels, `Category` → `Subcategory`
+      in the schema, surfaced by `subcategory-nav` on the category pages. Deeper
+      nesting was not built and is not wanted: it makes every breadcrumb, filter
+      and sitemap entry recursive for a taxonomy this size
 
 ---
 
@@ -713,14 +737,25 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
       Dedupe is best-effort by construction — the rate limiter is in-process, so
       across instances the same viewer can be counted more than once. Acceptable
       for a view counter; would not be for anything a decision hangs on.
-- [ ] **A6. Staging deployment** — **fully prepared, blocked on infrastructure.**
-      See `docs/DEPLOYMENT.md` for the complete checklist: what is needed from
-      you, every environment variable and what happens when each is absent, the
-      migration sequence, and the eight things to verify once it is up. The
-      `picsum.photos` pattern and the demo seed are now removed. The
-      verification section is the actual point of A6: rate limiting is
-      in-process by design and its real behaviour across instances has never
-      been measured.
+- 🚧 **A6. Staging deployment** — **deployed 9 September 2026; the verification
+      pass is what remains.** No longer blocked on infrastructure. `vercel.json`
+      applies migrations *during the build* (`db:migrate:deploy && build`), so a
+      deploy can no longer serve a build against a schema it does not match. The
+      demo seed was restored the same day **without images**; `picsum.photos`
+      stays out of `next.config.ts`, because that list is every host
+      `next/image` will fetch and proxy on request.
+      `docs/DEPLOYMENT.md` holds the full checklist — every environment variable
+      and what happens when each is absent, the migration sequence, and the eight
+      post-deploy checks. Those checks are the actual point of A6:
+
+      - [ ] **Measure rate limiting across instances.** It is in-process by
+            design, so on more than one instance the limit is per-instance, and
+            that behaviour has still never been observed rather than reasoned
+            about. This is the one check that can change code
+      - [ ] Walk the eight post-deploy verifications in `docs/DEPLOYMENT.md` —
+            two of them (password reset, email verification) cannot pass until
+            A2's verified sending domain is set, since `onboarding@resend.dev`
+            delivers only to the Resend account owner
 
 ### Left open in Phase 4, deliberately
 
@@ -729,7 +764,10 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
       `by: "owner"`. Only the action and the button are missing. Left out because the brief scoped
       renter cancellation, and an owner cancelling an approved booking needs a reliability
       consequence attached or it becomes free to do.
-- [ ] Pickup-instructions input for the owner — see Owner Actions above
+- [x] Pickup-instructions input for the owner — **closed by Stage A1**, which
+      added the approve-with-details panel and `updateBookingInstructions`. Left
+      here rather than deleted because this list is the record of what Phase 4
+      knowingly deferred
 - [ ] Owner bank/wallet details for transfer instructions — a payments concern, and putting an
       unverified stranger's account number on a page needs more thought than a column
 
@@ -1535,82 +1573,163 @@ Nothing. Every card on `/profile` and `/settings` is now a working control.
 
 ## Phase 7 – Polish & Deployment
 
+*Reviewed against the code 15 September 2026. Most of this section had been built
+inside earlier phases and never ticked here, which made the backlog read as though
+a shipped product still had no 404 pages and no sitemap. The boxes below now match
+`src/`; the notes say where the evidence is, and what stays unchecked is the
+genuine remainder.*
+
 ### Error Handling
 
-- [ ] Create error boundary components
-- [ ] Create 404 page
-- [ ] Create 500 page
-- [ ] Add toast notifications
-- [ ] Improve error messages
+- [x] Create error boundary components — `src/app/global-error.tsx` plus one per
+      route group (`(marketplace)/error.tsx`, `(dashboard)/error.tsx`), so a crash
+      inside the dashboard does not take the public marketplace down with it
+- [x] Create 404 page — a `not-found.tsx` for every segment that can 404:
+      listings, categories, users, and the admin and owner detail routes. Each
+      sits **one level above** the layout that throws, because a `notFound()`
+      thrown from a layout bubbles past its own segment
+- [ ] Add a root `src/app/not-found.tsx` — the segment files cover every known
+      route, but a URL matching no segment at all still falls through to Next's
+      built-in page, which carries none of the site chrome
+- [x] Create 500 page — `global-error.tsx`, the only boundary that can replace
+      the root layout when the root layout is what failed
+- [x] Add toast notifications — `sonner`, mounted once in the root layout and
+      used by 28 modules
+- [x] Improve error messages — actions return `ActionResult` carrying copy the
+      caller can render; auth codes go through `src/lib/auth/errors.ts`, which
+      collapses every credentials failure to one message so the login form is not
+      an account-enumeration oracle
 
 ### Loading States
 
-- [ ] Add skeleton loaders
-- [ ] Add page transitions
-- [ ] Add loading indicators
-- [ ] Implement optimistic updates
+- [x] Add skeleton loaders — `src/components/ui/skeleton.tsx` across 24 modules,
+      plus dedicated `browse-skeleton` and `listing-card-skeleton`. `loading.tsx`
+      is used **only** where nothing beneath it can 404 (see the invariant in
+      `AGENTS.md`); elsewhere the skeleton comes from an in-page `<Suspense>`
+- [x] Add loading indicators — `useTransition` / `isPending` across 13 modules
+- [x] Implement optimistic updates — saved listings, availability and the owner
+      listing card, each rolling back when the action returns `success: false`,
+      which is the reason actions return results rather than redirect
+- [ ] Add page transitions — nothing uses the View Transitions API. Purely
+      cosmetic, and it should not jump ahead of the accessibility audit below
 
 ### Performance
 
-- [ ] Optimize images (Next.js Image) — `remotePatterns` is Cloudinary-only as of
-      Stage A6; `next/image` throws on an unlisted host rather than degrading, so
-      that list is a security boundary
-- [ ] Add lazy loading
-- [ ] Implement pagination
-- [ ] Add infinite scroll (where appropriate)
-- [ ] Analyze and optimize bundle size
-- [ ] Add caching strategies
+- [x] Optimize images (Next.js Image) — `next/image` across 12 modules.
+      `remotePatterns` is Cloudinary-only as of Stage A6; `next/image` throws on
+      an unlisted host rather than degrading, so that list is a security boundary
+      and not a convenience
+- [x] Add lazy loading — `next/image` lazy-loads below the fold by default.
+      `next/dynamic` appears nowhere, deliberately: no route pulls a heavy
+      client-only dependency worth splitting out, and most of the tree is Server
+      Components that never reach the client bundle at all
+- [x] Implement pagination — `src/components/shared/pagination.tsx`, used by
+      browse, the notification feed, listing reviews and the admin tables
+- [ ] Add infinite scroll (where appropriate) — **not wanted; keep as a decision.**
+      Browse URLs have to stay linkable and crawlable, and both the sitemap and
+      the canonical-tag strategy depend on the page living in the URL
+- [ ] Analyze and optimize bundle size — no analyzer configured, no measurement
+      ever taken. Genuinely open
+- [x] Add caching strategies — `unstable_cache` for category options (shared
+      across requests, unlike React's `cache()`), route-level `revalidate` where
+      the data allows it, and `revalidatePath` on the mutating actions. The
+      listing detail page deliberately **never** revalidates on view: doing so
+      would uncache the popular pages fastest (Stage A5)
 
 ### SEO
 
-- [ ] Add metadata to all pages
-- [ ] Create sitemap.xml
-- [ ] Create robots.txt
-- [ ] Add Open Graph tags
-- [ ] Add Twitter cards
-- [ ] Implement structured data
+- [x] Add metadata to all pages — 42 modules export `metadata` or
+      `generateMetadata`, with `metadataBase` set in the root layout
+- [x] Create sitemap.xml — `src/app/sitemap.ts`, regenerated hourly, capped at
+      5,000 listing entries, and filtered through `VISIBLE_LISTING_WHERE` so it
+      can never advertise a URL that answers 404
+- [x] Create robots.txt — `src/app/robots.ts`, disallow list **derived** from
+      `PROTECTED_PREFIXES` so a newly protected route cannot be left crawlable by
+      omission. Filtered browse URLs are handled with `robots: { index: false }`
+      in page metadata instead, since a `Disallow` would stop the crawler ever
+      seeing the canonical tag that consolidates them
+- [x] Add Open Graph tags — homepage, listing detail and category pages
+- [ ] Add Twitter cards — no `twitter` key in any metadata export. Genuinely open
+- [x] Implement structured data — `src/lib/marketplace/structured-data.ts`
+      rendered through `src/components/shared/json-ld.tsx`
 
 ### Accessibility
 
+Nothing in this section has been done. `aria-*` attributes appear in 92 modules,
+`sr-only` in 18, and `src/components/shared/skip-to-content.tsx` exists — but most
+of that is inherited from the Base UI and shadcn primitives. It is a starting
+position, not an audit, and it is the largest untouched risk before launch.
+
 - [ ] Audit with axe-core
 - [ ] Fix accessibility issues
-- [ ] Add keyboard navigation
+- [ ] Add keyboard navigation — the primitives handle focus and roving tabindex;
+      what has never been driven from a keyboard is the bespoke composites:
+      `listing-gallery`, `availability-calendar`, `image-uploader`, and the photo
+      grid in `handover-form`
 - [ ] Test with screen reader
-- [ ] Ensure color contrast
+- [ ] Ensure color contrast — in **both** themes; the app ships light and dark
 
 ### Testing
 
-- [ ] Set up Jest
-- [ ] Set up React Testing Library
-- [ ] Write unit tests for utilities
-- [ ] Write integration tests for actions
-- [ ] Set up Playwright for E2E
-- [ ] Write critical path E2E tests
+- [x] Set up a unit test runner — **Vitest, not Jest.** Native ESM and TypeScript
+      with no extra transform step, and it resolves the same `tsconfig` path
+      aliases the app does
+- [ ] Set up React Testing Library — not installed, and not obviously wanted: the
+      tested surface is the pure modules, and the components carrying the logic
+      are Server Components, which RTL cannot render
+- [x] Write unit tests for utilities — 31 test files co-located beside the modules
+      they cover in `src/`, ~431 tests
+- [x] Write integration tests for actions — 15 `verify:*` scripts exercising the
+      transactional paths against a **real database**: `verify:phase4`,
+      `verify:stage-a`, `verify:security`, `verify:phase5`, `verify:trust-safety`,
+      `verify:handover`, `verify:claims`, `verify:preferences` and the admin set
+- [ ] Set up Playwright for E2E — `tests/e2e/` holds nothing but a `.gitkeep`
+- [ ] Write critical path E2E tests — register → list → book → hand over →
+      review is covered only in pieces, and never through a browser
 
 ### Documentation
 
-- [ ] Update README with final instructions
-- [ ] Document environment variables
-- [ ] Create API documentation
-- [ ] Add JSDoc comments
+- [x] Document environment variables — `.env.example` plus the table in
+      `docs/DEPLOYMENT.md` giving every variable *and what happens when it is
+      absent*, which is the half that matters for the optional ones
+- [x] Add JSDoc comments — throughout, following this codebase's convention of
+      recording **why** at the point the decision lives
+- [ ] Update README with final instructions — the Development Status and Roadmap
+      sections still describe the planning-phase project
+- [ ] Refresh `docs/API.md` — written at v1.0.0 as a *design* document and never
+      revised against the code. It specifies message actions that do not exist,
+      and omits claims, handover, identity verification, moderation,
+      notifications, preferences and security entirely
+- [ ] Update `CHANGELOG.md` — still shows only the 27 July 2026 documentation
+      release, with every phase since sitting unrecorded
 
 ### Deployment
 
-- [ ] Set up Vercel project
-- [ ] Configure environment variables
-- [ ] Set up PostgreSQL (Vercel Postgres or external)
-- [ ] Configure Cloudinary
+Staging landed 9 September 2026 (see A6). Everything below concerns **production**
+unless the note says otherwise.
+
+- [x] Set up Vercel project — `vercel.json` runs `db:migrate:deploy` ahead of the
+      build, so the schema cannot trail the code deployed against it
+- [x] Set up PostgreSQL — Neon, with `DIRECT_URL` alongside `DATABASE_URL` for
+      migrations. Its cold-start behaviour is what Stage A4 was about
+- 🚧 Configure environment variables — done for staging; the production set,
+      including a verified `EMAIL_FROM` domain, is not
+- [ ] Configure Cloudinary — works in development; never confirmed on a deploy
 - [ ] Set up custom domain
 - [ ] Configure SSL
 - [ ] Run production build
 - [ ] Deploy to production
 - [ ] Verify production deployment
 - [ ] Set up monitoring (Vercel Analytics)
+- [ ] Set up error tracking — no Sentry or equivalent is installed. A server-side
+      failure in production would currently be visible only in platform logs
 
 ### Launch Checklist
 
-- [ ] Seed production categories
-- [ ] Create admin account
+- [ ] Seed production categories — `npm run db:seed`. The demo seed
+      (`db:seed:demo`) must **not** be run there; `clean:demo` exists to undo it
+      if it is
+- [ ] Create admin account — `npm run admin:grant`
 - [ ] Test all critical flows
 - [ ] Verify mobile responsiveness
 - [ ] Check all environment variables
