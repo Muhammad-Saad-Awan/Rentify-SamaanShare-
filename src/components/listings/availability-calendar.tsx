@@ -1,11 +1,11 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { toggleListingAvailability } from "@/actions/availability";
 import { cn } from "@/lib/utils/cn";
-import { WEEKDAY_LABELS } from "@/lib/utils/calendar";
+import { WEEKDAY_FULL_LABELS, WEEKDAY_LABELS } from "@/lib/utils/calendar";
 
 import type { MonthGrid } from "@/lib/utils/calendar";
 
@@ -62,7 +62,17 @@ function AvailabilityCalendar({
 
   const held = new Set(bookingHeld);
 
+  /**
+   * Which day is mid-write, so `aria-busy` lands on that day alone.
+   *
+   * `isPending` is true for the whole transition, and applying it to every button announced all
+   * thirty days as busy because one was.
+   */
+  const [pendingDate, setPendingDate] = useState<string | null>(null);
+
   function toggle(date: string, blocked: boolean) {
+    setPendingDate(date);
+
     startTransition(async () => {
       applyOptimistic({ date, blocked });
 
@@ -75,6 +85,8 @@ function AvailabilityCalendar({
       if (!result.success) {
         toast.error(result.error);
       }
+
+      setPendingDate(null);
     });
   }
 
@@ -92,15 +104,19 @@ function AvailabilityCalendar({
 
         <thead>
           <tr>
-            {WEEKDAY_LABELS.map((label) => (
+            {WEEKDAY_LABELS.map((label, index) => (
               <th
                 key={label}
                 scope="col"
                 className="text-muted-foreground pb-1 text-xs font-medium"
               >
-                {/* Full name for assistive tech, abbreviation on screen. */}
+                {/*
+                  Full name for assistive tech, abbreviation on screen. Both spans rendered the
+                  *same* abbreviation until this was fixed, so the sr-only half was duplicated
+                  dead weight and the promise in this comment was never kept.
+                */}
                 <span aria-hidden="true">{label}</span>
-                <span className="sr-only">{label}</span>
+                <span className="sr-only">{WEEKDAY_FULL_LABELS[index]}</span>
               </th>
             ))}
           </tr>
@@ -123,7 +139,7 @@ function AvailabilityCalendar({
                       isHeldByBooking={held.has(cell.date)}
                       isPast={cell.date < today}
                       isToday={cell.date === today}
-                      isPending={isPending}
+                      isPending={isPending && pendingDate === cell.date}
                       onToggle={toggle}
                     />
                   </td>
@@ -170,10 +186,16 @@ function DayButton({
   isPending,
   onToggle,
 }: DayButtonProps) {
-  // A booked day is not the owner's to release - only cancelling the booking frees it - and
-  // a past day cannot usefully be blocked. Both are disabled rather than hidden, so the
-  // month still reads as a calendar.
-  const disabled = isHeldByBooking || isPast;
+  /**
+   * A booked day is not the owner's to release - only cancelling the booking frees it - and a
+   * past day cannot usefully be blocked. Both stay in the month so it still reads as a calendar.
+   *
+   * `aria-disabled` RATHER THAN `disabled`. The label on these buttons is the only place the
+   * calendar says *why* a day cannot be toggled - "Booked", or "in the past" - and `disabled`
+   * takes the button out of the tab order, so a keyboard user could never reach the one
+   * explanation on offer. The click handler guards instead.
+   */
+  const unavailable = isHeldByBooking || isPast;
 
   const state = isHeldByBooking
     ? "Booked"
@@ -184,13 +206,19 @@ function DayButton({
   return (
     <button
       type="button"
-      disabled={disabled}
+      aria-disabled={unavailable}
       // `aria-pressed` rather than a colour: it is what tells a screen reader the day is
       // currently blocked, and it flips with the optimistic state.
       aria-pressed={isBlocked}
       aria-label={`${date} - ${state}${isPast ? ", in the past" : ""}`}
       aria-busy={isPending}
-      onClick={() => onToggle(date, !isBlocked)}
+      onClick={() => {
+        if (unavailable) {
+          return;
+        }
+
+        onToggle(date, !isBlocked);
+      }}
       className={cn(
         "focus-visible:ring-ring flex aspect-square w-full items-center justify-center rounded-md text-sm transition-colors outline-none focus-visible:ring-2",
         isHeldByBooking && "bg-muted text-muted-foreground ring-border ring-1",
@@ -203,7 +231,9 @@ function DayButton({
         isPast && "opacity-40",
         // Today gets a ring in the brand colour so the month has an anchor.
         isToday && "ring-primary ring-2",
-        disabled && "cursor-not-allowed"
+        // Not `pointer-events-none`: that would suppress the cursor itself, and this is the
+        // only signal a pointer user gets that the day is not theirs to change.
+        unavailable && "cursor-not-allowed"
       )}
     >
       {dayOfMonth}

@@ -31,7 +31,7 @@ export interface MonthGrid {
   cells: MonthCell[];
 }
 
-/** Weekday headings, Monday first. */
+/** Weekday headings as shown on screen, Monday first. */
 export const WEEKDAY_LABELS = [
   "Mon",
   "Tue",
@@ -40,6 +40,24 @@ export const WEEKDAY_LABELS = [
   "Fri",
   "Sat",
   "Sun",
+] as const;
+
+/**
+ * The same headings unabbreviated, for assistive technology.
+ *
+ * A column header is read out for every cell in its column, so across a month a screen reader
+ * user hears the weekday thirty-odd times. "Mon" is a guess at a word; "Monday" is the word.
+ * Kept parallel to `WEEKDAY_LABELS` by index - the test asserts they stay aligned, because
+ * nothing else would notice if one list gained an entry and the other did not.
+ */
+export const WEEKDAY_FULL_LABELS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
 ] as const;
 
 /**

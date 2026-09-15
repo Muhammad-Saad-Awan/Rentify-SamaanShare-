@@ -5,6 +5,8 @@ import {
   monthBounds,
   parseMonthParam,
   shiftMonth,
+  WEEKDAY_FULL_LABELS,
+  WEEKDAY_LABELS,
 } from "@/lib/utils/calendar";
 
 /**
@@ -14,6 +16,28 @@ import {
  * - a local-time constructor would shift the whole grid for anyone west of UTC and produce
  * off-by-one blocks. February and the December rollover are the cases that catch mistakes.
  */
+
+describe("weekday labels", () => {
+  /**
+   * The calendar renders the abbreviation visually and the full name to screen readers, picking
+   * the second list *by index*. Nothing else would notice if the two drifted - a missing entry
+   * reads as `undefined` to assistive tech and looks perfectly fine on screen, which is the
+   * kind of defect that survives review indefinitely.
+   */
+  it("keeps the abbreviated and full lists aligned", () => {
+    expect(WEEKDAY_FULL_LABELS).toHaveLength(WEEKDAY_LABELS.length);
+
+    WEEKDAY_LABELS.forEach((abbreviation, index) => {
+      expect(WEEKDAY_FULL_LABELS[index]).toBeDefined();
+      expect(WEEKDAY_FULL_LABELS[index]?.startsWith(abbreviation)).toBe(true);
+    });
+  });
+
+  it("starts on Monday, matching the grid's leading blanks", () => {
+    expect(WEEKDAY_LABELS[0]).toBe("Mon");
+    expect(WEEKDAY_FULL_LABELS[0]).toBe("Monday");
+  });
+});
 
 describe("buildMonthGrid", () => {
   it("gets February right in and out of leap years", () => {

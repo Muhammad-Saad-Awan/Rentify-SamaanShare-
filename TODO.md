@@ -1655,19 +1655,52 @@ genuine remainder.*
 
 ### Accessibility
 
-Nothing in this section has been done. `aria-*` attributes appear in 92 modules,
-`sr-only` in 18, and `src/components/shared/skip-to-content.tsx` exists — but most
-of that is inherited from the Base UI and shadcn primitives. It is a starting
-position, not an audit, and it is the largest untouched risk before launch.
+A **static** audit ran 15 September 2026 over the four bespoke composites and the
+shared primitives, and its findings are fixed. It corrected the note that used to
+stand here: the components carry real, argued accessibility work — `aria-current`
+against `aria-pressed` reasoned out in the gallery, the calendar built as a
+`<table>` because the data is tabular, reordering done with arrow buttons
+*because* drag-and-drop locks out keyboard users. The gap was narrower and sharper
+than "nothing has been done", and in two places a comment described the right
+behaviour while the code did the opposite.
 
-- [ ] Audit with axe-core
-- [ ] Fix accessibility issues
-- [ ] Add keyboard navigation — the primitives handle focus and roving tabindex;
-      what has never been driven from a keyboard is the bespoke composites:
-      `listing-gallery`, `availability-calendar`, `image-uploader`, and the photo
-      grid in `handover-form`
+What could not be checked without a browser — the computed half — is still open
+below.
+
+- [x] Audit the bespoke composites — `listing-gallery`, `availability-calendar`,
+      `image-uploader` and `handover-form`, plus `pagination` and `Button`
+- [x] **Focus management, which did not exist anywhere.** `autoFocus`, `.focus()`
+      and `useRef<HTML` returned nothing across `src/`. Panels here *replace*
+      their trigger, so opening and closing one left focus on `<body>`. Fixed with
+      `useFocusReturn` (a callback ref claims focus when the trigger remounts —
+      stashing `document.activeElement` cannot work when the node it captured is
+      gone) and `useFocusOnMount`
+- [x] **`disabled` → `aria-disabled` where a control must stay reachable.** A
+      `disabled` element cannot hold focus, so disabling the control someone just
+      operated drops them to `<body`>. Applied to the uploader's reorder arrows,
+      the calendar's booked and past days — whose label is the only place the
+      reason is given — the pagination edges, and the handover submit. **Whatever
+      the `disabled` was protecting against moves into the handler**, since an
+      `aria-disabled` button still fires; the handover double-submit guard is that
+- [x] Announce what changes silently — upload progress, and the gallery swapping
+      its main image
+- [x] The two comment/code contradictions: pagination rendering `disabled` while
+      its note promised `aria-disabled`, and the calendar's weekday header
+      rendering the abbreviation into both spans. `WEEKDAY_FULL_LABELS` now exists,
+      with a test asserting the two lists stay aligned by index — nothing else
+      would notice, since a missing entry reads as `undefined` to a screen reader
+      and looks perfectly normal on screen
+- [ ] **Verify the above in a browser.** None of it has been driven from a
+      keyboard or a screen reader; `tsc`, ESLint and 552 unit tests confirm only
+      that nothing broke. This is the first thing the Playwright work below should
+      cover
+- [ ] Audit with axe-core — wants a headless browser, so it waits for Playwright
+      and `@axe-core/playwright` rather than installing a second browser stack
 - [ ] Test with screen reader
-- [ ] Ensure color contrast — in **both** themes; the app ships light and dark
+- [ ] Ensure color contrast — in **both** themes; the app ships light and dark.
+      `opacity-40` on past calendar days and `opacity-50` on the exhausted drop
+      zone are the likely failures, and `text-muted-foreground` at `text-xs` wants
+      measuring
 
 ### Testing
 
