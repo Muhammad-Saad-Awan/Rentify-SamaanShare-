@@ -42,6 +42,7 @@ import {
   HandoverType,
   PaymentStatus,
 } from "@/generated/prisma/enums";
+import { useFocusReturn } from "@/hooks/use-focus-return";
 import { formatPKR } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import {
@@ -61,6 +62,16 @@ interface BookingActionsProps {
 type OpenPanel = "approve" | "decline" | "cancel" | "instructions" | null;
 
 /**
+ * The controls a dismissed panel can hand focus back to.
+ *
+ * Wider than `OpenPanel` because the handover and claim panels are held in their own state, and
+ * the two handovers are different buttons in different branches. Several buttons may share a key
+ * where only one of them can exist at a time - the three "Cancel booking" triggers do.
+ */
+type FocusKey =
+  Exclude<OpenPanel, null> | "handover-pickup" | "handover-return" | "claim";
+
+/**
  * Everything either party can do to a booking, for the state it is in.
  *
  * ONE COMPONENT FOR BOTH SIDES, because the two halves interlock: the renter arranges payment,
@@ -78,6 +89,13 @@ type OpenPanel = "approve" | "decline" | "cancel" | "instructions" | null;
  */
 function BookingActions({ booking, side }: BookingActionsProps) {
   const [isPending, startTransition] = useTransition();
+
+  /**
+   * Every panel below replaces its trigger rather than sitting beside it, so closing one leaves
+   * focus on a node that no longer exists. See `useFocusReturn` for why this cannot be done by
+   * stashing `document.activeElement`.
+   */
+  const { registerTrigger, returnFocusTo } = useFocusReturn<FocusKey>();
 
   const [panel, setPanel] = useState<OpenPanel>(null);
   const [reason, setReason] = useState("");
@@ -128,6 +146,19 @@ function BookingActions({ booking, side }: BookingActionsProps) {
     setInstructions("");
   }
 
+  /**
+   * Backing out of a panel, as distinct from completing one.
+   *
+   * Only the dismissal path returns focus. After a successful action the booking has changed
+   * status and this whole row is replaced, so the trigger is gone for good and there is no
+   * mechanically correct target to return to - picking one would be a design decision made here
+   * by accident.
+   */
+  function dismiss(trigger: FocusKey) {
+    returnFocusTo(trigger);
+    close();
+  }
+
   /** Opens the pickup-details editor seeded with whatever is already there. */
   function openInstructions() {
     setInstructions(booking.pickupInstructions ?? "");
@@ -149,7 +180,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
       confirmVariant="destructive"
       cancelLabel="Keep it"
       isPending={isPending}
-      onCancel={close}
+      onCancel={() => dismiss("cancel")}
       onConfirm={() =>
         run(
           () =>
@@ -180,7 +211,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             confirmVariant="destructive"
             cancelLabel="Keep it"
             isPending={isPending}
-            onCancel={close}
+            onCancel={() => dismiss("decline")}
             onConfirm={() =>
               run(
                 () =>
@@ -217,7 +248,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             confirmLabel="Approve and send"
             cancelLabel="Back"
             isPending={isPending}
-            onCancel={close}
+            onCancel={() => dismiss("approve")}
             onConfirm={() =>
               run(
                 () =>
@@ -246,6 +277,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
+            ref={registerTrigger("approve")}
             onClick={() => {
               setInstructions(booking.pickupInstructions ?? "");
               setPanel("approve");
@@ -259,6 +291,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
           <Button
             variant="outline"
             size="sm"
+            ref={registerTrigger("decline")}
             onClick={() => setPanel("decline")}
             disabled={isPending}
           >
@@ -289,7 +322,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
         confirmLabel="Save details"
         cancelLabel="Cancel"
         isPending={isPending}
-        onCancel={close}
+        onCancel={() => dismiss("instructions")}
         onConfirm={() =>
           run(
             () =>
@@ -308,6 +341,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
         variant="ghost"
         size="sm"
         className="self-start"
+        ref={registerTrigger("instructions")}
         onClick={openInstructions}
         disabled={isPending}
       >
@@ -399,7 +433,10 @@ function BookingActions({ booking, side }: BookingActionsProps) {
               type={HandoverType.PICKUP}
               submitLabel="Mark item as collected"
               isPending={isPending}
-              onCancel={() => setHandoverPanel(null)}
+              onCancel={() => {
+                returnFocusTo("handover-pickup");
+                setHandoverPanel(null);
+              }}
               onSubmit={(record) =>
                 run(
                   () => startBooking({ bookingId: booking.id, ...record }),
@@ -411,6 +448,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
+                ref={registerTrigger("handover-pickup")}
                 onClick={() => setHandoverPanel("pickup")}
                 disabled={isPending || !eligibility.ownerCanStart.allowed}
                 aria-busy={isPending}
@@ -448,7 +486,10 @@ function BookingActions({ booking, side }: BookingActionsProps) {
               type={HandoverType.RETURN}
               submitLabel="Mark item as returned"
               isPending={isPending}
-              onCancel={() => setHandoverPanel(null)}
+              onCancel={() => {
+                returnFocusTo("handover-return");
+                setHandoverPanel(null);
+              }}
               onSubmit={(record) =>
                 run(
                   () => completeBooking({ bookingId: booking.id, ...record }),
@@ -460,6 +501,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
+                ref={registerTrigger("handover-return")}
                 onClick={() => setHandoverPanel("return")}
                 disabled={isPending}
                 aria-busy={isPending}
@@ -528,14 +570,20 @@ function BookingActions({ booking, side }: BookingActionsProps) {
                 <FileClaimForm
                   bookingId={booking.id}
                   securityDeposit={booking.securityDeposit}
+                  // `onDone` files the claim, which changes what this section shows - a
+                  // completion, so no focus is returned. `onCancel` backs out.
                   onDone={() => setClaimPanelOpen(false)}
-                  onCancel={() => setClaimPanelOpen(false)}
+                  onCancel={() => {
+                    returnFocusTo("claim");
+                    setClaimPanelOpen(false);
+                  }}
                 />
               ) : (
                 <div>
                   <Button
                     size="sm"
                     variant="ghost"
+                    ref={registerTrigger("claim")}
                     onClick={() => setClaimPanelOpen(true)}
                     disabled={isPending}
                   >
@@ -612,6 +660,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
           <Button
             variant="outline"
             size="sm"
+            ref={registerTrigger("cancel")}
             onClick={() => setPanel("cancel")}
             disabled={isPending}
           >
@@ -691,6 +740,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             variant="ghost"
             size="sm"
             className="self-start"
+            ref={registerTrigger("cancel")}
             onClick={() => setPanel("cancel")}
             disabled={isPending}
           >
@@ -747,6 +797,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
                     variant="ghost"
                     size="sm"
                     className="self-start"
+                    ref={registerTrigger("cancel")}
                     onClick={() => setPanel("cancel")}
                     disabled={isPending}
                   >
@@ -900,8 +951,15 @@ function EditPanel({
         <p className="text-muted-foreground text-xs">{description}</p>
       )}
 
+      {/*
+        The panel stands where the trigger was, so focus has to be moved into it or it is left on
+        an element that has just been unmounted. React's own `autoFocus` is enough here - unlike
+        the handover form, the first control is a free-text field, so landing on it commits
+        nothing.
+      */}
       <Field
         id={id}
+        autoFocus
         value={value}
         onChange={(event) => onChange(event.target.value)}
         maxLength={maxLength}
