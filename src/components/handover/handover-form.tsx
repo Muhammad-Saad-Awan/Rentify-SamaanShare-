@@ -1,12 +1,13 @@
 "use client";
 
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { ImageUploader } from "@/components/listings/image-uploader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { HandoverCondition, HandoverType } from "@/generated/prisma/enums";
+import { useFocusOnMount } from "@/hooks/use-focus-on-mount";
 import {
   HANDOVER_CONDITION_DESCRIPTIONS,
   HANDOVER_CONDITION_LABELS,
@@ -52,6 +53,16 @@ function HandoverForm({
   onSubmit,
   onCancel,
 }: HandoverFormProps) {
+  const promptId = useId();
+
+  /**
+   * This panel replaces the button that opened it, so without moving focus the person who opened
+   * it is left focused on nothing. The container takes it rather than the first radio: focusing a
+   * radio inside a group arms the arrow keys, and one keystroke would then commit a condition to
+   * a record that cannot be edited afterwards.
+   */
+  const panel = useFocusOnMount<HTMLDivElement>();
+
   const [condition, setCondition] = useState<HandoverCondition | null>(null);
   const [notes, setNotes] = useState("");
   const [photos, setPhotos] = useState<ListingImageInput[]>([]);
@@ -74,8 +85,17 @@ function HandoverForm({
   }
 
   return (
-    <div className="bg-muted/50 flex flex-col gap-3 rounded-lg px-3 py-3">
-      <p className="text-xs font-medium">{HANDOVER_PROMPTS[type]}</p>
+    <div
+      ref={panel}
+      // Focusable only programmatically: it is a destination for focus, never a tab stop.
+      tabIndex={-1}
+      role="group"
+      aria-labelledby={promptId}
+      className="bg-muted/50 flex flex-col gap-3 rounded-lg px-3 py-3"
+    >
+      <p id={promptId} className="text-xs font-medium">
+        {HANDOVER_PROMPTS[type]}
+      </p>
 
       <div
         role="radiogroup"

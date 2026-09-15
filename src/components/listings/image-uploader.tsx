@@ -9,7 +9,7 @@ import {
   XIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -27,6 +27,9 @@ import {
 
 import type { ListingImageInput } from "@/lib/validations/listing";
 import type { DragEvent } from "react";
+
+/** Where focus is owed once a removal has rendered. */
+type FocusTarget = { kind: "photo"; publicId: string } | { kind: "input" };
 
 interface ImageUploaderProps {
   images: ListingImageInput[];
@@ -81,6 +84,41 @@ function ImageUploader({
    */
   const currentImages = useRef(images);
   currentImages.current = images;
+
+  /**
+   * Where focus goes after a photo is deleted.
+   *
+   * Removing a photo unmounts the `<li>` containing the button that was just pressed, and a
+   * focused element that leaves the document takes focus to `<body>` with it. A keyboard user
+   * clearing three photos is thrown back to the top of the page three times, with no indication
+   * that anything happened. So the successor is chosen *before* the list changes, and claimed
+   * once the removal has rendered.
+   */
+  const removeButtons = useRef(new Map<string, HTMLButtonElement>());
+  const focusAfterRemove = useRef<FocusTarget | null>(null);
+
+  /** Focused when the last photo goes and there is no neighbour left to receive it. */
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const target = focusAfterRemove.current;
+
+    if (!target) {
+      return;
+    }
+
+    focusAfterRemove.current = null;
+
+    if (target.kind === "input") {
+      fileInput.current?.focus();
+
+      return;
+    }
+
+    // The neighbour can be gone too, if a second removal landed before this ran. The input is
+    // the fallback because it is the one control on this component that always exists.
+    (removeButtons.current.get(target.publicId) ?? fileInput.current)?.focus();
+  }, [images]);
 
   async function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) {
@@ -219,6 +257,19 @@ function ImageUploader({
       return;
     }
 
+    /**
+     * Decided here, against the list as it stands, not in the effect that applies it.
+     *
+     * The photo after this one slides into the vacated position, so focus lands where the eye
+     * already is. Removing the last photo has no successor, so it steps back instead; removing
+     * the only photo has neither, and the drop zone is the sensible home.
+     */
+    const successor = images[index + 1] ?? images[index - 1];
+
+    focusAfterRemove.current = successor
+      ? { kind: "photo", publicId: successor.publicId }
+      : { kind: "input" };
+
     // Removed from the form first, so the UI responds immediately. The asset is then
     // deleted from Cloudinary; if that fails the photo is still gone from the listing,
     // which is what the user asked for - the orphan is our problem, not theirs.
@@ -298,6 +349,7 @@ function ImageUploader({
 
         <input
           id={inputId}
+          ref={fileInput}
           type="file"
           multiple
           accept={ACCEPTED_IMAGE_TYPES.join(",")}
@@ -359,7 +411,16 @@ function ImageUploader({
                     type="button"
                     variant="outline"
                     size="icon-xs"
-                    disabled={index === 0}
+                    /**
+                     * `aria-disabled`, not `disabled` - see the note in `Button`.
+                     *
+                     * Moving a photo to the front disables this very button, and a disabled
+                     * element cannot keep focus, so `disabled` would drop the user to
+                     * `<body>` the instant the move they asked for succeeded. `move()`
+                     * already refuses to run past either end, so the click that still fires
+                     * does nothing.
+                     */
+                    aria-disabled={index === 0}
                     onClick={() => move(index, -1)}
                     aria-label={`Move photo ${index + 1} earlier`}
                   >
@@ -369,7 +430,7 @@ function ImageUploader({
                     type="button"
                     variant="outline"
                     size="icon-xs"
-                    disabled={index === images.length - 1}
+                    aria-disabled={index === images.length - 1}
                     onClick={() => move(index, 1)}
                     aria-label={`Move photo ${index + 1} later`}
                   >
@@ -381,6 +442,15 @@ function ImageUploader({
                   type="button"
                   variant="ghost"
                   size="icon-xs"
+                  ref={(node) => {
+                    // Keyed by photo rather than by index: the index of any given photo changes
+                    // as its neighbours move, and the map has to survive that.
+                    if (node) {
+                      removeButtons.current.set(image.publicId, node);
+                    } else {
+                      removeButtons.current.delete(image.publicId);
+                    }
+                  }}
                   onClick={() => void handleRemove(index)}
                   aria-label={`Remove photo ${index + 1}`}
                 >
