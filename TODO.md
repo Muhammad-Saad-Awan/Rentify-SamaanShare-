@@ -46,7 +46,7 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
       tokens, email copy, view keys, nav map, review rules, report rules,
       moderation copy, trust score, email verification tokens, access tiers,
       handover rules, handover copy, claim rules, claim copy, admin rules) —
-      431 tests
+      550 tests
 - [x] Integration verification for the booking lifecycle — `npm run verify:phase4`
       exercises the transactional paths against a real database (conflict safety,
       date release, compare-and-swap, idempotency) and `npm run verify:phase4:ui`
@@ -1678,7 +1678,7 @@ position, not an audit, and it is the largest untouched risk before launch.
       tested surface is the pure modules, and the components carrying the logic
       are Server Components, which RTL cannot render
 - [x] Write unit tests for utilities — 31 test files co-located beside the modules
-      they cover in `src/`, ~431 tests
+      they cover in `src/`, 550 tests
 - [x] Write integration tests for actions — 15 `verify:*` scripts exercising the
       transactional paths against a **real database**: `verify:phase4`,
       `verify:stage-a`, `verify:security`, `verify:phase5`, `verify:trust-safety`,
