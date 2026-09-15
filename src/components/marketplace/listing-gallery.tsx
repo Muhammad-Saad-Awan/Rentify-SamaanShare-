@@ -42,7 +42,10 @@ function ListingGallery({ images, title }: ListingGalleryProps) {
 
   // Clamped rather than asserted: `images` can shrink between renders if the page
   // revalidates, and an out-of-range index would blank the gallery.
-  const active = images[Math.min(activeIndex, images.length - 1)] ?? images[0];
+  const position = Math.min(activeIndex, images.length - 1);
+  const active = images[position] ?? images[0];
+
+  const hasMany = images.length > 1;
 
   return (
     <div className="flex flex-col gap-3">
@@ -50,7 +53,18 @@ function ListingGallery({ images, title }: ListingGalleryProps) {
         {active && (
           <Image
             src={active.url}
-            alt={title}
+            /**
+             * The position is part of the description when there is more than one photo.
+             *
+             * Every photo carried the listing's title and nothing else, so ten photos had one
+             * indistinguishable description between them and a screen reader user had no way to
+             * tell which they were on.
+             */
+            alt={
+              hasMany
+                ? `${title} - photo ${position + 1} of ${images.length}`
+                : title
+            }
             fill
             // The gallery is half the width of a large viewport and full width
             // below `lg`, so the browser is told that rather than guessing.
@@ -64,10 +78,19 @@ function ListingGallery({ images, title }: ListingGalleryProps) {
       </div>
 
       {/*
+        Selecting a thumbnail swaps the main image in place. The `alt` above changes with it, but
+        an `alt` is only read when the image is first encountered, so without this the swap is
+        silent - the button reports being pressed and nothing says what happened.
+      */}
+      <p aria-live="polite" className="sr-only">
+        {hasMany ? `Showing photo ${position + 1} of ${images.length}` : ""}
+      </p>
+
+      {/*
         Hidden for a single image: a one-item picker implies there is something to
         pick between.
       */}
-      {images.length > 1 && (
+      {hasMany && (
         <div
           role="group"
           aria-label={`${images.length} photos of ${title}`}

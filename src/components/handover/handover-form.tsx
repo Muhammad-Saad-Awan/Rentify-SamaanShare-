@@ -54,6 +54,8 @@ function HandoverForm({
   onCancel,
 }: HandoverFormProps) {
   const promptId = useId();
+  const notesId = useId();
+  const blockedId = useId();
 
   /**
    * This panel replaces the button that opened it, so without moving focus the person who opened
@@ -70,8 +72,21 @@ function HandoverForm({
   const wantsPhotos =
     condition !== null && condition !== HandoverCondition.AS_EXPECTED;
 
+  /** Nothing is preselected, so the form opens in a state that cannot yet be submitted. */
+  const needsCondition = condition === null;
+
   function submit() {
-    if (!condition) {
+    /**
+     * `isPending` is guarded HERE, not only on the button.
+     *
+     * The button is `aria-disabled` rather than `disabled` so it keeps its place in the tab
+     * order and can explain itself - but an `aria-disabled` button still fires, so whatever the
+     * old `disabled` was protecting against has to move into the handler. Here that is a second
+     * submission during the first: the database refuses it, `@@unique([bookingId, type])` being
+     * the whole point of a sealed record, but the user would be shown a failure for pressing a
+     * button twice.
+     */
+    if (isPending || !condition) {
       return;
     }
 
@@ -128,15 +143,26 @@ function HandoverForm({
         ))}
       </div>
 
-      <Textarea
-        value={notes}
-        onChange={(event) => setNotes(event.target.value)}
-        maxLength={HANDOVER_NOTES_MAX}
-        rows={2}
-        placeholder="Optional — anything worth noting about the item's state"
-        disabled={isPending}
-        aria-label="Condition notes"
-      />
+      {/*
+        A visible label, not an `aria-label`. The field sits between a radio group and a photo
+        picker with nothing else naming it, and an accessible name only a screen reader can
+        perceive leaves every sighted user to infer what the box is for from its placeholder -
+        which disappears the moment they type.
+      */}
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor={notesId} className="text-xs font-medium">
+          Notes (optional)
+        </label>
+        <Textarea
+          id={notesId}
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          maxLength={HANDOVER_NOTES_MAX}
+          rows={2}
+          placeholder="Anything worth noting about the item's state"
+          disabled={isPending}
+        />
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-medium">
@@ -160,10 +186,17 @@ function HandoverForm({
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
+        {/*
+          `aria-disabled` with a reason attached, rather than `disabled` on its own. An unusable
+          button that does not say why is heard as "unavailable" and nothing else, leaving the
+          one thing standing in the way - an unanswered question directly above - to be guessed
+          at. `submit()` refuses a missing condition regardless.
+        */}
         <Button
           size="sm"
           onClick={submit}
-          disabled={isPending || condition === null}
+          aria-disabled={isPending || needsCondition}
+          {...(needsCondition ? { "aria-describedby": blockedId } : {})}
           aria-busy={isPending}
         >
           {isPending && <Loader2Icon className="animate-spin" />}
@@ -179,6 +212,12 @@ function HandoverForm({
           Cancel
         </Button>
       </div>
+
+      {needsCondition && (
+        <p id={blockedId} className="text-muted-foreground text-xs">
+          Choose a condition above to continue.
+        </p>
+      )}
     </div>
   );
 }

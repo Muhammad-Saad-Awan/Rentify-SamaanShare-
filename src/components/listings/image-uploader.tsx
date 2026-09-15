@@ -364,6 +364,18 @@ function ImageUploader({
         />
       </label>
 
+      {/*
+        Upload progress, announced. The same words are on screen inside the label above, but a
+        label is not a live region: it names the input, and changing it tells a screen reader
+        user nothing while they wait. Kept outside the `<label>` so it cannot become part of the
+        input's accessible name and be read twice.
+      */}
+      <p aria-live="polite" className="sr-only">
+        {isBusy
+          ? `Uploading ${pendingCount} photo${pendingCount === 1 ? "" : "s"}.`
+          : `${images.length} of ${max} photos added.`}
+      </p>
+
       {error && (
         <p className="text-destructive text-sm" role="alert">
           {error}

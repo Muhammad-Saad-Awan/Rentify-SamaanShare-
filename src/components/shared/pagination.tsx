@@ -95,7 +95,10 @@ interface PaginationLinkProps {
 function PaginationLink({ href, label, children }: PaginationLinkProps) {
   if (!href) {
     return (
-      <Button variant="outline" size="sm" disabled aria-label={label}>
+      // `aria-disabled`, matching the note above - this rendered `disabled` until it was
+      // spotted, which took the control out of the tab order and hid it from screen readers,
+      // the exact opposite of what that note promises.
+      <Button variant="outline" size="sm" aria-disabled aria-label={label}>
         {children}
       </Button>
     );
