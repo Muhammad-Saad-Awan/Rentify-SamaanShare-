@@ -1742,6 +1742,22 @@ below.
 Staging landed 9 September 2026 (see A6). Everything below concerns **production**
 unless the note says otherwise.
 
+> **⚠️ Two critical CVEs in the installed Next.js**, found by `npm audit` on
+> 15 September 2026 while adding error tracking. 15.5.22 is installed; **both are
+> fixed in 15.5.24**, a patch bump.
+>
+> - [ ] Upgrade to `next@15.5.24` — [GHSA-p293-qw3h-jr36](https://github.com/advisories/GHSA-p293-qw3h-jr36),
+>       unauthenticated RCE on **Windows-hosted servers**, and
+>       [GHSA-2xp9-vwfh-vxw4](https://github.com/advisories/GHSA-2xp9-vwfh-vxw4),
+>       unauthenticated RCE in the **Image Optimization API when AVIF is used**.
+>       The second one is not theoretical here: `next/image` is on twelve modules
+>       and the optimizer is reachable on every public listing page. Development
+>       runs on Windows, so the first applies locally too.
+>
+> The other 13 advisories are moderate-to-high in build and test tooling
+> (`prisma`, `vitest`, `postcss`, `sharp`, `esbuild`) and are not in the request
+> path. Worth a pass, not worth blocking on.
+
 - [x] Set up Vercel project — `vercel.json` runs `db:migrate:deploy` ahead of the
       build, so the schema cannot trail the code deployed against it
 - [x] Set up PostgreSQL — Neon, with `DIRECT_URL` alongside `DATABASE_URL` for
@@ -1755,8 +1771,22 @@ unless the note says otherwise.
 - [ ] Deploy to production
 - [ ] Verify production deployment
 - [ ] Set up monitoring (Vercel Analytics)
-- [ ] Set up error tracking — no Sentry or equivalent is installed. A server-side
-      failure in production would currently be visible only in platform logs
+- [x] Set up error tracking — `@sentry/nextjs`, wired 15 September 2026.
+      `src/instrumentation.ts` initialises the Node and edge runtimes and exports
+      `onRequestError`, which is what makes a throwing Server Component or Server
+      Action visible at all; `src/instrumentation-client.ts` covers the browser.
+      **Optional, like Resend and Cloudinary** — no DSN, no SDK, no reports, and
+      nothing degrades. Errors only: `tracesSampleRate` is 0 and the build
+      tree-shakes tracing out, because the job was visibility into failures and
+      turning on an APM's quota consumption should be somebody's decision.
+      `sendDefaultPii` is off explicitly — this app handles addresses, phone
+      numbers and pickup instructions, and `email/send.ts` already refuses to log
+      a recipient, which shipping request bodies to a third party would undo from
+      the other end
+      - [ ] **Set `NEXT_PUBLIC_SENTRY_DSN` in Vercel.** Until then this is wiring
+            with nothing at the end of it. Needs a Sentry account
+      - [ ] Set `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` for source
+            map upload, or every stack frame points into a minified bundle
 
 ### Launch Checklist
 

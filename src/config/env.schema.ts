@@ -111,6 +111,26 @@ export const publicEnvSchema = z.object({
     // A trailing slash produces `https://host//listings` once joined, which a crawler treats as a
     // different URL to the canonical one.
     .transform((value) => value.replace(/\/+$/, "")),
+
+  /**
+   * Where error reports are sent. Absent means they are not sent.
+   *
+   * `NEXT_PUBLIC_` DESPITE LOOKING LIKE A SECRET. A Sentry DSN is a write-only ingest address and
+   * ships in the client bundle of every application that uses one - it has to, or browser errors
+   * could never be reported. The credential worth protecting is `SENTRY_AUTH_TOKEN`, which
+   * uploads source maps during the build and is never read at runtime, which is why it is not in
+   * this schema at all.
+   *
+   * Optional, on the same principle as Cloudinary, Google and Resend: an unconfigured integration
+   * is a feature not offered, not an error. Nothing degrades without it - the app is simply not
+   * being watched.
+   */
+  NEXT_PUBLIC_SENTRY_DSN: z
+    .string()
+    .url(
+      "NEXT_PUBLIC_SENTRY_DSN must be the ingest URL Sentry gives the project."
+    )
+    .optional(),
 });
 
 export type PublicEnv = z.infer<typeof publicEnvSchema>;

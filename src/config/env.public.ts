@@ -20,6 +20,7 @@ import type { PublicEnv } from "@/config/env.schema";
 function loadPublicEnv(): PublicEnv {
   const parsed = parsePublicEnv({
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
   });
 
   if (!parsed.success) {
@@ -37,3 +38,13 @@ function loadPublicEnv(): PublicEnv {
  * notices for a week.
  */
 export const publicEnv = loadPublicEnv();
+
+/**
+ * Whether errors are being reported anywhere.
+ *
+ * Mirrors `isEmailEnabled()` and `isCloudinaryEnabled()` in `env.ts`, but lives here because the
+ * DSN is a public variable and this helper is safe to call from a Client Component.
+ */
+export function isErrorTrackingEnabled(): boolean {
+  return Boolean(publicEnv.NEXT_PUBLIC_SENTRY_DSN);
+}

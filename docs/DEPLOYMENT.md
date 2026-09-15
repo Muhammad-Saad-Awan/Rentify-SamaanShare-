@@ -69,10 +69,21 @@ time rather than as a mystery 500.
 | `EMAIL_FROM` | Falls back to `SamaanShare <onboarding@resend.dev>`, which reaches only the Resend account owner. **Set this once item 3 is done.** Accepts `a@b.com` or `Name <a@b.com>`. |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | No Google provider registered, no Google button rendered. |
 | `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET` | Everything works except image upload, which throws at the point of use naming the three variables. Listing creation is unusable without them. |
+| `NEXT_PUBLIC_SENTRY_DSN` | No error reporting. Nothing degrades - the app is simply not being watched, and a server-side failure is visible only in the platform log. Set it before production; that is the whole point of it. |
 
 Empty strings count as absent — that is how Vercel's dashboard records a cleared
 field, and a blank key would otherwise be sent to the provider as a real
 credential.
+
+### Build-time only — source maps
+
+`SENTRY_ORG`, `SENTRY_PROJECT` and `SENTRY_AUTH_TOKEN` are read by the build, not
+by the application, which is why they are not in `env.schema.ts`. Set them in
+Vercel alongside the DSN and stack traces arrive symbolicated; leave them out and
+the build still succeeds, but every stack frame points into a minified bundle.
+
+`SENTRY_AUTH_TOKEN` is a genuine secret, unlike the DSN. Scope it to source map
+upload for this project only.
 
 ### Do not set
 
