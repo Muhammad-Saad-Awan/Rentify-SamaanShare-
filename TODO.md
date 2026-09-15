@@ -1700,8 +1700,9 @@ position, not an audit, and it is the largest untouched risk before launch.
       revised against the code. It specifies message actions that do not exist,
       and omits claims, handover, identity verification, moderation,
       notifications, preferences and security entirely
-- [ ] Update `CHANGELOG.md` — still shows only the 27 July 2026 documentation
-      release, with every phase since sitting unrecorded
+- [x] Update `CHANGELOG.md` — done 15 September 2026. Phases 0–6, Stage A and
+      Trust & Safety are now recorded under `[Unreleased]`, since nothing has
+      shipped to production and there are no tags to release against
 
 ### Deployment
 
