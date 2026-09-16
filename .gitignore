@@ -145,6 +145,9 @@ public/workbox-*.js
 /blob-report/
 /playwright/.cache/
 
+# The signed-in browser state and the throwaway account's credentials. Generated per run.
+tests/e2e/.auth/
+
 # Turbo (if used)
 .turbo/
 

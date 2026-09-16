@@ -179,6 +179,14 @@ interface SwitchFieldProps {
  * The label uses `htmlFor` against the Switch's own id so the whole label is a hit target,
  * and the description is tied on with `aria-describedby` rather than left as loose text -
  * "Review reminders, on" alone does not say what would stop arriving.
+ *
+ * `aria-labelledby` AS WELL AS `htmlFor`, WHICH LOOKS REDUNDANT AND IS NOT. Base UI's Switch
+ * renders a `<span role="switch">` alongside a hidden `<input>`, and `id` lands on the input.
+ * So `htmlFor` names the input - which is real, and is not the element assistive technology
+ * reports - while the switch itself had no accessible name at all, announcing as "switch, on"
+ * with nothing to say what was on. axe caught this on the first signed-in scan
+ * (`aria-toggle-field-name`, serious); reading the source did not, because the markup looked
+ * correct and the gap was in what the primitive renders underneath.
  */
 function SwitchField({
   control,
@@ -188,6 +196,7 @@ function SwitchField({
   disabled,
 }: SwitchFieldProps) {
   const descriptionId = `${name}-description`;
+  const labelId = `${name}-label`;
 
   return (
     <Controller
@@ -196,7 +205,7 @@ function SwitchField({
       render={({ field }) => (
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-0.5">
-            <label htmlFor={name} className="text-sm font-medium">
+            <label id={labelId} htmlFor={name} className="text-sm font-medium">
               {label}
             </label>
             <p id={descriptionId} className="text-muted-foreground text-xs">
@@ -209,6 +218,7 @@ function SwitchField({
             checked={field.value}
             onCheckedChange={field.onChange}
             disabled={disabled}
+            aria-labelledby={labelId}
             aria-describedby={descriptionId}
             className="mt-0.5 shrink-0"
           />

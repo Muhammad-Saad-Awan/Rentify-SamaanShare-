@@ -83,7 +83,16 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  /**
+   * 0.556 until axe measured it. Muted text on a muted surface - the dashboard shell, every
+   * card footer, the calendar legend - came to 4.34:1 at 12px, against the 4.5:1 that WCAG AA
+   * requires for normal text. Close enough to look fine and to have survived every review.
+   *
+   * 0.545 gives 4.55:1 on this background, a change of three steps in sRGB (#737373 to #6f6f6f)
+   * that is invisible next to the old value and is the difference between conforming and not.
+   * Only the light theme was short: the dark pair below measures 5.83:1.
+   */
+  --muted-foreground: oklch(0.545 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);

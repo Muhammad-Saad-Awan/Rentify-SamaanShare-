@@ -1702,25 +1702,38 @@ below.
       with a test asserting the two lists stay aligned by index — nothing else
       would notice, since a missing entry reads as `undefined` to a screen reader
       and looks perfectly normal on screen
-- 🚧 **Verify the above in a browser.** Started 16 September 2026.
-      `tests/e2e/keyboard.spec.ts` now proves the skip link is the first tab stop
-      and that pagination's unavailable edge control keeps both its place in the
-      tab order and its ability to hold focus — the exact regression that shipped.
-      **The focus-management work is still unverified**: every panel it touches
-      (decline, cancel, handover, claim, the uploader's photo list) sits behind a
-      sign-in, so it waits on the fixture described under Testing
+- 🚧 **Verify the above in a browser.** The skip link, pagination's reachable
+      edge control, and — since the signed-in fixture landed — the calendar's
+      `aria-disabled` past days and its unabbreviated weekday headers are all now
+      proven rather than argued.
+      **Still unverified: the focus *handoff*.** `useFocusReturn` and
+      `useFocusOnMount` are exercised by the booking panels (decline, cancel,
+      handover, claim) and the uploader's photo list, and reaching those needs a
+      booking in a specific state and photos that have really been uploaded. That
+      belongs with the critical-path work below
 - [x] Audit with axe-core — `@axe-core/playwright`, WCAG 2.1 A and AA, over home,
       browse, listing detail, login and register. **All five pass.** Worth keeping
       in proportion: automated rules catch roughly a third of real issues, so this
       is a floor rather than a certificate
-- [ ] Extend the axe scan to signed-in pages — dashboard, settings, the owner
-      listing views. Same blocker as above
+- [x] Extend the axe scan to signed-in pages — dashboard, my listings, the new
+      listing form, the availability calendar, settings and profile. **It found two
+      serious defects on the first run**, both since fixed:
+      - `color-contrast`: `--muted-foreground` on `--muted` measured **4.34:1** at
+        12px against the 4.5:1 AA needs. Close enough to look right and to have
+        passed every review. The light token moved from `oklch(0.556)` to
+        `oklch(0.545)` — 4.55:1, three steps of sRGB, invisible beside the old
+        value. The dark pair was already at 5.83:1 and is untouched
+      - `aria-toggle-field-name`: the notification switches had **no accessible
+        name**, announcing as "switch, on" with nothing to say what was on. Base UI
+        renders `<span role="switch">` beside a hidden `<input>` and `id` lands on
+        the input, so `htmlFor` named something assistive technology never reports.
+        Reading the source could not have caught this; the markup looks right
 - [ ] Test with screen reader
-- 🚧 Ensure color contrast — axe checks contrast, and the five public pages pass
-      at AA in the default theme. Three gaps remain: the **dark** theme is never
-      loaded by these tests, the signed-in pages are not scanned, and the two
-      specific suspicions (`opacity-40` on past calendar days, `opacity-50` on the
-      exhausted drop zone) are both on pages behind a login
+- 🚧 Ensure color contrast — eleven pages now pass at AA, public and signed-in,
+      after the `--muted-foreground` fix above. One gap left: **the dark theme is
+      never loaded by these tests.** Its `--muted` pair computes to 5.83:1 by hand,
+      but every other dark token is unmeasured, and the light theme just
+      demonstrated that "looks fine" and "passes" are different claims
 
 ### Testing
 
@@ -1742,11 +1755,20 @@ below.
       from ours. `npm run test:e2e` builds then runs; the web server only boots an
       existing build, because folding the build into its start-up budget is what
       made the very first run time out having tested nothing
+- [x] Signed-in fixture — a `setup` project creates a throwaway account and a
+      listing it owns, signs in **through the form** rather than forging a cookie,
+      and saves the browser state; its `teardown` removes the rows even when tests
+      fail. The credential is 32 random bytes at an RFC 2606 `.test` address, never
+      committed, because `seed-demo.ts` is right that a known password in every
+      developer's database is a bad trade.
+      The database work runs through `tsx` in a child process: Prisma 7's generated
+      client is ESM-only and Playwright transpiles tests to CommonJS, so importing
+      it directly fails on `import.meta` before the first line runs
 - [ ] Write critical path E2E tests — register → list → book → hand over →
-      review, still covered only in pieces. Needs a signed-in fixture, and the
-      demo seed deliberately leaves `password` null so there is no working login
-      to borrow: the fixture has to create a throwaway user per run and remove it,
-      which is the right shape anyway
+      review, still covered only in pieces. The fixture above is the foundation;
+      what remains is walking the five-step listing form, and deciding whether this
+      suite may reach **Cloudinary**, since the uploader's focus behaviour cannot
+      be exercised without photos that were really uploaded
 
 ### Documentation
 
