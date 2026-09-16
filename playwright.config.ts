@@ -1,4 +1,16 @@
+import { config as loadEnv } from "dotenv";
+
 import { defineConfig } from "@playwright/test";
+
+import { STORAGE_STATE } from "./tests/e2e/fixtures/account";
+
+/**
+ * The setup and teardown projects talk to the database directly, and unlike the application they
+ * do not get `.env.local` loaded for them - Next does that for its own process, not for
+ * Playwright's. Without this, `@/config/env` throws on a missing `DATABASE_URL` before a single
+ * test runs.
+ */
+loadEnv({ path: ".env.local", quiet: true });
 
 /**
  * End-to-end and accessibility tests.
@@ -23,6 +35,13 @@ import { defineConfig } from "@playwright/test";
 
 const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3000);
 const baseURL = `http://127.0.0.1:${PORT}`;
+
+/**
+ * Desktop-sized on purpose: the browse filters, the thumbnail strip and the calendar all collapse
+ * below `sm`, and the controls under test here are the expanded ones. Shared so every project
+ * measures the same layout - a violation that only appears at one width is a different finding.
+ */
+const VIEWPORT = { viewport: { width: 1280, height: 900 } } as const;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -63,14 +82,39 @@ export default defineConfig({
   },
 
   projects: [
+    /**
+     * Creates a throwaway account and signs it in, once, before anything that needs one.
+     *
+     * Its `teardown` removes the rows afterwards - including when tests fail, which is exactly
+     * when a fixture is most likely to be left behind in a shared database.
+     */
     {
-      name: "chromium",
-      use: {
-        browserName: "chromium",
-        // Desktop-sized on purpose: the browse filters, the thumbnail strip and the calendar all
-        // collapse below `sm`, and the controls being tested here are the expanded ones.
-        viewport: { width: 1280, height: 900 },
-      },
+      name: "setup",
+      testMatch: /auth\.setup\.ts/,
+      teardown: "cleanup",
+      use: { ...VIEWPORT },
+    },
+    {
+      name: "cleanup",
+      testMatch: /auth\.teardown\.ts/,
+    },
+
+    /**
+     * SIGNED OUT, and deliberately not merely "without a session". These pages render differently
+     * to an anonymous visitor - the header offers sign-in, each card offers "Sign in to save" -
+     * and that is the version most people meet first, so it is the version scanned.
+     */
+    {
+      name: "public",
+      testIgnore: [/signed-in\//, /auth\.(setup|teardown)\.ts/],
+      use: { ...VIEWPORT },
+    },
+
+    {
+      name: "signed-in",
+      testMatch: /signed-in\//,
+      dependencies: ["setup"],
+      use: { ...VIEWPORT, storageState: STORAGE_STATE },
     },
   ],
 
