@@ -1588,6 +1588,18 @@ genuine remainder.*
       listings, categories, users, and the admin and owner detail routes. Each
       sits **one level above** the layout that throws, because a `notFound()`
       thrown from a layout bubbles past its own segment
+- [ ] **Every link styled as a button announces as a button, not a link.** Found
+      by the first Playwright run, 16 September 2026, in the accessibility tree —
+      neither the static audit nor axe caught it. `Button` derives
+      `nativeButton={false}` whenever `render` is not a literal `"button"`, and
+      Base UI then applies `role="button"` to the anchor. So `Pagination`, whose
+      own comment is proud of being "real `<Link>`s… shareable and linkable",
+      reads to a screen reader as a row of buttons that activate nothing in
+      particular. **42 modules use `render={<Link />}`.** The fix is to style the
+      link rather than render a button as one: `buttonVariants` is already
+      exported for precisely this and is currently used nowhere. Recorded as
+      `test.fixme` in `tests/e2e/keyboard.spec.ts`, so the suite states the defect
+      instead of asserting the broken behaviour is correct
 - [ ] Add a root `src/app/not-found.tsx` — the segment files cover every known
       route, but a URL matching no segment at all still falls through to Next's
       built-in page, which carries none of the site chrome
@@ -1690,17 +1702,25 @@ below.
       with a test asserting the two lists stay aligned by index — nothing else
       would notice, since a missing entry reads as `undefined` to a screen reader
       and looks perfectly normal on screen
-- [ ] **Verify the above in a browser.** None of it has been driven from a
-      keyboard or a screen reader; `tsc`, ESLint and 552 unit tests confirm only
-      that nothing broke. This is the first thing the Playwright work below should
-      cover
-- [ ] Audit with axe-core — wants a headless browser, so it waits for Playwright
-      and `@axe-core/playwright` rather than installing a second browser stack
+- 🚧 **Verify the above in a browser.** Started 16 September 2026.
+      `tests/e2e/keyboard.spec.ts` now proves the skip link is the first tab stop
+      and that pagination's unavailable edge control keeps both its place in the
+      tab order and its ability to hold focus — the exact regression that shipped.
+      **The focus-management work is still unverified**: every panel it touches
+      (decline, cancel, handover, claim, the uploader's photo list) sits behind a
+      sign-in, so it waits on the fixture described under Testing
+- [x] Audit with axe-core — `@axe-core/playwright`, WCAG 2.1 A and AA, over home,
+      browse, listing detail, login and register. **All five pass.** Worth keeping
+      in proportion: automated rules catch roughly a third of real issues, so this
+      is a floor rather than a certificate
+- [ ] Extend the axe scan to signed-in pages — dashboard, settings, the owner
+      listing views. Same blocker as above
 - [ ] Test with screen reader
-- [ ] Ensure color contrast — in **both** themes; the app ships light and dark.
-      `opacity-40` on past calendar days and `opacity-50` on the exhausted drop
-      zone are the likely failures, and `text-muted-foreground` at `text-xs` wants
-      measuring
+- 🚧 Ensure color contrast — axe checks contrast, and the five public pages pass
+      at AA in the default theme. Three gaps remain: the **dark** theme is never
+      loaded by these tests, the signed-in pages are not scanned, and the two
+      specific suspicions (`opacity-40` on past calendar days, `opacity-50` on the
+      exhausted drop zone) are both on pages behind a login
 
 ### Testing
 
@@ -1716,9 +1736,17 @@ below.
       transactional paths against a **real database**: `verify:phase4`,
       `verify:stage-a`, `verify:security`, `verify:phase5`, `verify:trust-safety`,
       `verify:handover`, `verify:claims`, `verify:preferences` and the admin set
-- [ ] Set up Playwright for E2E — `tests/e2e/` holds nothing but a `.gitkeep`
+- [x] Set up Playwright for E2E — 16 September 2026. `playwright.config.ts`,
+      chromium only, against a **production build** rather than `next dev`: the dev
+      server injects its own overlay, and an axe scan cannot tell Next's markup
+      from ours. `npm run test:e2e` builds then runs; the web server only boots an
+      existing build, because folding the build into its start-up budget is what
+      made the very first run time out having tested nothing
 - [ ] Write critical path E2E tests — register → list → book → hand over →
-      review is covered only in pieces, and never through a browser
+      review, still covered only in pieces. Needs a signed-in fixture, and the
+      demo seed deliberately leaves `password` null so there is no working login
+      to borrow: the fixture has to create a throwaway user per run and remove it,
+      which is the right shape anyway
 
 ### Documentation
 
