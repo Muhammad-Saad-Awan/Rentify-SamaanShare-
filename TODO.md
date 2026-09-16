@@ -1742,21 +1742,30 @@ below.
 Staging landed 9 September 2026 (see A6). Everything below concerns **production**
 unless the note says otherwise.
 
-> **⚠️ Two critical CVEs in the installed Next.js**, found by `npm audit` on
-> 15 September 2026 while adding error tracking. 15.5.22 is installed; **both are
-> fixed in 15.5.24**, a patch bump.
+> **Two critical CVEs in Next.js**, found by `npm audit` on 15 September 2026 while
+> adding error tracking.
 >
-> - [ ] Upgrade to `next@15.5.24` — [GHSA-p293-qw3h-jr36](https://github.com/advisories/GHSA-p293-qw3h-jr36),
+> - [x] Upgrade from 15.5.22 to `next@15.5.25` — closes
+>       [GHSA-p293-qw3h-jr36](https://github.com/advisories/GHSA-p293-qw3h-jr36),
 >       unauthenticated RCE on **Windows-hosted servers**, and
 >       [GHSA-2xp9-vwfh-vxw4](https://github.com/advisories/GHSA-2xp9-vwfh-vxw4),
 >       unauthenticated RCE in the **Image Optimization API when AVIF is used**.
->       The second one is not theoretical here: `next/image` is on twelve modules
->       and the optimizer is reachable on every public listing page. Development
->       runs on Windows, so the first applies locally too.
+>       The second was not theoretical here: `next/image` is used across twelve
+>       modules and the optimizer answers on every public listing page.
+>       `eslint-config-next` moved in lockstep, as it versions with `next`. The
+>       `package.json` floor rose from `^15.1.0` to `^15.5.25`, so a later
+>       `npm install` cannot resolve back below the fix
 >
-> The other 13 advisories are moderate-to-high in build and test tooling
-> (`prisma`, `vitest`, `postcss`, `sharp`, `esbuild`) and are not in the request
-> path. Worth a pass, not worth blocking on.
+> `next` still shows a **moderate** advisory: it bundles a vulnerable `postcss`,
+> and the only fix npm offers is Next 16 — a major upgrade, a project of its own,
+> and build-time rather than request-path. The other advisories are in build and
+> test tooling (`prisma`, `vitest`, `sharp`, `esbuild`). Worth a pass, not worth
+> blocking on.
+>
+> One build warning predates all of this and is **not** from the upgrade — verified
+> by building 15.5.22 and 15.5.25 side by side. `jose`, reached through
+> `@auth/core/jwt`, references `CompressionStream` in a code path the Edge Runtime
+> does not support. Auth.js never takes that path with the JWT strategy.
 
 - [x] Set up Vercel project — `vercel.json` runs `db:migrate:deploy` ahead of the
       build, so the schema cannot trail the code deployed against it
