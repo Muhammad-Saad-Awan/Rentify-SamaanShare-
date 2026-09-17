@@ -1,68 +1,16 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { expectNoViolations, measureContrast } from "../fixtures/axe";
 import { readAccount } from "../fixtures/account";
 
-import type { Page } from "@playwright/test";
-
 /**
- * axe over the signed-in surface, which the first pass could not reach.
+ * axe over the signed-in surface.
  *
- * These are the denser pages - forms, tables, a calendar - and they are also where the two
- * outstanding contrast suspicions live: `opacity-40` on past calendar days and `opacity-50` on an
- * exhausted drop zone. Contrast is one of the things axe actually computes, so this is where those
- * get settled.
+ * These are the denser pages - forms, tables, a calendar - and they are where both 16 September
+ * violations were found. The scan helper is shared; see `fixtures/axe.ts`.
  */
 
-const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
-
 const account = readAccount();
-
-function describeViolations(
-  violations: Awaited<ReturnType<AxeBuilder["analyze"]>>["violations"]
-): string {
-  return violations
-    .map((violation) => {
-      const targets = violation.nodes
-        .slice(0, 4)
-        .map((node) => `      ${node.target.join(" ")}`)
-        .join("\n");
-
-      const more =
-        violation.nodes.length > 4
-          ? `\n      ...and ${violation.nodes.length - 4} more`
-          : "";
-
-      return `  [${violation.impact ?? "unknown"}] ${violation.id}: ${violation.help}\n${targets}${more}\n      ${violation.helpUrl}`;
-    })
-    .join("\n\n");
-}
-
-async function expectNoViolations(page: Page) {
-  /**
-   * WAIT FOR THE DOCUMENT TO FINISH ARRIVING BEFORE SCANNING IT.
-   *
-   * Next streams the response, and `generateMetadata` resolves into `<head>` as part of that
-   * stream. Scanning too early reports `document-title` against a page that does have a title a
-   * moment later - which is exactly what happened once the suite grew enough to run scans under
-   * load. A real browser is never in a hurry the way a test is.
-   *
-   * Asserted rather than slept on: this retries until the title is there, and fails loudly if it
-   * genuinely never arrives instead of hiding a real missing title behind a timeout.
-   */
-  await expect(page).toHaveTitle(/.+/);
-
-  const { violations } = await new AxeBuilder({ page })
-    .withTags(WCAG_TAGS)
-    .analyze();
-
-  expect(
-    violations,
-    violations.length > 0
-      ? `\n${describeViolations(violations)}\n`
-      : "no violations"
-  ).toEqual([]);
-}
 
 test("dashboard", async ({ page }) => {
   await page.goto("/dashboard");
@@ -115,61 +63,7 @@ test.describe("regressions", () => {
      * formula - so it stays true through a token rename, a theme change, or any later edit that
      * happens to darken the surface instead.
      */
-    const ratio = await page.evaluate(() => {
-      const probe = document.createElement("div");
-      probe.style.color = "var(--muted-foreground)";
-      probe.style.backgroundColor = "var(--muted)";
-      document.body.appendChild(probe);
-
-      const computed = getComputedStyle(probe);
-      const foreground = computed.color;
-      const background = computed.backgroundColor;
-
-      probe.remove();
-
-      /** Any colour syntax resolves to sRGB bytes once something actually paints it. */
-      const toRgb = (value: string): [number, number, number] => {
-        const canvas = document.createElement("canvas");
-        canvas.width = 1;
-        canvas.height = 1;
-
-        const context = canvas.getContext("2d");
-
-        if (!context) {
-          throw new Error("No 2D context available to resolve colours.");
-        }
-
-        context.fillStyle = value;
-        context.fillRect(0, 0, 1, 1);
-
-        const { data } = context.getImageData(0, 0, 1, 1);
-
-        return [data[0] ?? 0, data[1] ?? 0, data[2] ?? 0];
-      };
-
-      const luminance = ([red, green, blue]: [number, number, number]) => {
-        const channel = (value: number) => {
-          const scaled = value / 255;
-
-          return scaled <= 0.03928
-            ? scaled / 12.92
-            : Math.pow((scaled + 0.055) / 1.055, 2.4);
-        };
-
-        return (
-          0.2126 * channel(red) +
-          0.7152 * channel(green) +
-          0.0722 * channel(blue)
-        );
-      };
-
-      const one = luminance(toRgb(foreground));
-      const two = luminance(toRgb(background));
-      const lighter = Math.max(one, two);
-      const darker = Math.min(one, two);
-
-      return (lighter + 0.05) / (darker + 0.05);
-    });
+    const ratio = await measureContrast(page, "--muted-foreground", "--muted");
 
     // 4.5:1 is the WCAG AA minimum for normal-size text. This pair measured 4.34:1 before the fix.
     expect(

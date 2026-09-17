@@ -68,7 +68,86 @@ async function create(): Promise<void> {
     select: { id: true },
   });
 
-  writeAccount({ userId: user.id, listingId: listing.id, email, password });
+  /**
+   * TWO PHOTOS, WRITTEN STRAIGHT TO THE DATABASE. **This suite does not upload to Cloudinary.**
+   *
+   * The decision, recorded because it was an open question: an end-to-end test that uploads real
+   * bytes to a third party needs credentials in CI, leaves assets behind when it is killed, and
+   * makes every run depend on somebody else's availability. None of that buys coverage of our own
+   * code - the browser posts directly to Cloudinary, so the upload path is theirs, not ours.
+   *
+   * What we do need is a listing that HAS photos, because that is the state the gallery and the
+   * uploader's reorder and delete behaviour only exist in. Rows are enough for that. The URLs
+   * point at the Cloudinary host so `next/image` will accept them - `remotePatterns` allows
+   * nothing else - and then 404, which renders a broken image and a perfectly real DOM. Every
+   * control under test is present and correct.
+   *
+   * The public ids are deliberately unmistakable. Removing a photo in the UI asks the server to
+   * destroy the asset, which for these will find nothing; `deletePendingImage` already treats a
+   * failed destroy as somebody else's problem and only logs it, so the flow completes exactly as
+   * it does in production.
+   */
+  await prisma.listingImage.createMany({
+    data: [
+      {
+        listingId: listing.id,
+        url: `https://res.cloudinary.com/demo/image/upload/e2e-fixture-${listing.id}-1.jpg`,
+        publicId: `e2e-fixture-does-not-exist/${listing.id}-1`,
+        order: 0,
+      },
+      {
+        listingId: listing.id,
+        url: `https://res.cloudinary.com/demo/image/upload/e2e-fixture-${listing.id}-2.jpg`,
+        publicId: `e2e-fixture-does-not-exist/${listing.id}-2`,
+        order: 1,
+      },
+    ],
+  });
+
+  /**
+   * A second account and a request from it, because the owner-side booking panels - the ones the
+   * focus handoff lives in - render only when there is a booking to act on. Nobody signs in as
+   * this one; it exists to be the other party.
+   */
+  const renterCredentials = newAccountCredentials();
+
+  const renter = await prisma.user.create({
+    data: {
+      email: renterCredentials.email,
+      name: "E2E Test Renter",
+      password: await hashPassword(renterCredentials.password),
+      emailVerified: new Date(),
+      city: "karachi",
+    },
+    select: { id: true },
+  });
+
+  /** Well into the future, so no overlap rule or past-date guard can refuse it. */
+  const startDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const endDate = new Date(Date.now() + 33 * 24 * 60 * 60 * 1000);
+
+  const booking = await prisma.booking.create({
+    data: {
+      listingId: listing.id,
+      renterId: renter.id,
+      ownerId: user.id,
+      startDate,
+      endDate,
+      totalPrice: 1500,
+      securityDeposit: 2000,
+      status: "PENDING",
+    },
+    select: { id: true },
+  });
+
+  writeAccount({
+    userId: user.id,
+    listingId: listing.id,
+    email,
+    password,
+    renterId: renter.id,
+    bookingId: booking.id,
+  });
 }
 
 /**
@@ -90,12 +169,21 @@ async function destroy(): Promise<void> {
     return;
   }
 
+  /**
+   * Order matters: a booking references both accounts and the listing, and `Listing.owner` is
+   * `onDelete: Restrict`. `ListingImage` cascades with its listing, so it is not listed.
+   */
+  await prisma.booking.deleteMany({ where: { id: account.bookingId } });
   await prisma.unavailableDate.deleteMany({
     where: { listingId: account.listingId },
   });
-  await prisma.savedListing.deleteMany({ where: { userId: account.userId } });
+  await prisma.savedListing.deleteMany({
+    where: { userId: { in: [account.userId, account.renterId] } },
+  });
   await prisma.listing.deleteMany({ where: { id: account.listingId } });
-  await prisma.user.deleteMany({ where: { id: account.userId } });
+  await prisma.user.deleteMany({
+    where: { id: { in: [account.userId, account.renterId] } },
+  });
 }
 
 const command = process.argv[2];
