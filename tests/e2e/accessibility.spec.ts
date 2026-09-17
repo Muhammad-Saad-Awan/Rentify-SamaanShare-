@@ -50,6 +50,19 @@ function describeViolations(
 }
 
 async function expectNoViolations(page: Page) {
+  /**
+   * WAIT FOR THE DOCUMENT TO FINISH ARRIVING BEFORE SCANNING IT.
+   *
+   * Next streams the response, and `generateMetadata` resolves into `<head>` as part of that
+   * stream. Scanning too early reports `document-title` against a page that does have a title a
+   * moment later - which is exactly what happened once the suite grew enough to run scans under
+   * load. A real browser is never in a hurry the way a test is.
+   *
+   * Asserted rather than slept on: this retries until the title is there, and fails loudly if it
+   * genuinely never arrives instead of hiding a real missing title behind a timeout.
+   */
+  await expect(page).toHaveTitle(/.+/);
+
   const { violations } = await scan(page);
 
   expect(
