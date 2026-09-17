@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { readAccount } from "./fixtures/account";
+
 /**
  * Keyboard and focus behaviour, which axe cannot see.
  *
@@ -138,29 +140,23 @@ test.describe("pagination", () => {
 
 test.describe("listing gallery", () => {
   /**
-   * The thumbnail strip only exists for a listing with more than one photo, and the restored demo
-   * seed deliberately carries none - `picsum.photos` was removed from `next.config.ts` before the
-   * first deploy, and the seed came back without images rather than pointing at a host the image
-   * optimizer is not allowed to fetch.
+   * The thumbnail strip only exists for a listing with more than one photo, and the demo seed
+   * deliberately ships none - `picsum.photos` was removed from `next.config.ts` before the first
+   * deploy, and the seed came back image-less rather than pointing at a host the optimizer is not
+   * allowed to fetch.
    *
-   * So this skips today and starts running the moment real listings exist, which is the useful
-   * behaviour: it does not rot, and it does not pretend to have verified something it has not.
+   * So this goes to the FIXTURE listing, which is seeded with two image rows. Signed out, because
+   * the gallery is a public control; the fixture is providing data here, not a session.
    */
   test("announces which photo is showing", async ({ page }) => {
-    await page.goto("/listings");
+    const account = readAccount();
 
-    const firstListing = page.locator('a[href^="/listings/"]').first();
-    await expect(firstListing).toBeVisible();
-    await firstListing.click();
+    expect(account, "The setup project must run first").not.toBeNull();
+
+    await page.goto(`/listings/${account?.listingId}`);
 
     const thumbnails = page.getByRole("group", { name: /photos of/ });
-
-    if ((await thumbnails.count()) === 0) {
-      test.skip(
-        true,
-        "No visible listing has more than one photo; the demo seed ships without images."
-      );
-    }
+    await expect(thumbnails).toBeVisible();
 
     const second = thumbnails.getByRole("button", { name: /Show photo 2 / });
     await second.click();

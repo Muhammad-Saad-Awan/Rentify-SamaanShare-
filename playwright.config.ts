@@ -107,6 +107,13 @@ export default defineConfig({
     {
       name: "public",
       testIgnore: [/signed-in\//, /auth\.(setup|teardown)\.ts/],
+      /**
+       * Depends on `setup` for its DATA, not for a session - these tests stay signed out, and no
+       * `storageState` is inherited. The fixture listing is the only one in the database with more
+       * than one photo, so without waiting for it the gallery test skipped itself on a race and
+       * reported a pass.
+       */
+      dependencies: ["setup"],
       use: { ...VIEWPORT },
     },
 

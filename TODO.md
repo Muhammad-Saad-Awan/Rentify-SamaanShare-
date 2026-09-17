@@ -1708,15 +1708,15 @@ below.
       with a test asserting the two lists stay aligned by index — nothing else
       would notice, since a missing entry reads as `undefined` to a screen reader
       and looks perfectly normal on screen
-- 🚧 **Verify the above in a browser.** The skip link, pagination's reachable
-      edge control, and — since the signed-in fixture landed — the calendar's
-      `aria-disabled` past days and its unabbreviated weekday headers are all now
-      proven rather than argued.
-      **Still unverified: the focus *handoff*.** `useFocusReturn` and
-      `useFocusOnMount` are exercised by the booking panels (decline, cancel,
-      handover, claim) and the uploader's photo list, and reaching those needs a
-      booking in a specific state and photos that have really been uploaded. That
-      belongs with the critical-path work below
+- [x] **Verify the above in a browser** — completed 17 September 2026. Every
+      accessibility fix shipped on 15 September is now observed rather than argued:
+      the skip link, pagination's reachable edge control, the calendar's
+      `aria-disabled` past days and unabbreviated weekday headers, the uploader's
+      reorder arrow staying focusable at the edge and handing focus to a neighbour
+      on delete, its live region, and **the focus handoff itself** — opening the
+      decline and approve panels moves focus into them, and backing out returns it
+      to a trigger that was unmounted and remounted in between, which is the whole
+      reason `useFocusReturn` uses a callback ref
 - [x] Audit with axe-core — `@axe-core/playwright`, WCAG 2.1 A and AA, over home,
       browse, listing detail, login and register. **All five pass.** Worth keeping
       in proportion: automated rules catch roughly a third of real issues, so this
@@ -1735,11 +1735,17 @@ below.
         the input, so `htmlFor` named something assistive technology never reports.
         Reading the source could not have caught this; the markup looks right
 - [ ] Test with screen reader
-- 🚧 Ensure color contrast — eleven pages now pass at AA, public and signed-in,
-      after the `--muted-foreground` fix above. One gap left: **the dark theme is
-      never loaded by these tests.** Its `--muted` pair computes to 5.83:1 by hand,
-      but every other dark token is unmeasured, and the light theme just
-      demonstrated that "looks fine" and "passes" are different claims
+- [x] Ensure color contrast — in **both** themes. Eleven pages pass at AA after
+      the `--muted-foreground` fix, and the dark theme is now measured too:
+      `tests/e2e/dark-theme.spec.ts` forces the `.dark` class and finds
+      **no violations** — nothing needed fixing there.
+      Two things worth knowing about that suite. **Dark mode is switched off for the
+      MVP** (`THEME_CONFIG.darkMode.enabled`), so the provider forces light and no
+      visitor can reach these tokens; the scans are pre-emptive, guarded by a test
+      that fails if the switch is ever flipped, since forcing the class would then
+      be testing the wrong thing. And the class goes on `<body>`, not `<html>`:
+      `next-themes` owns the `<html>` class and reclaims it on its next render,
+      which made two scans pass or fail on timing alone
 
 ### Testing
 
@@ -1770,11 +1776,21 @@ below.
       The database work runs through `tsx` in a child process: Prisma 7's generated
       client is ESM-only and Playwright transpiles tests to CommonJS, so importing
       it directly fails on `import.meta` before the first line runs
+- [x] **Decided: this suite does not upload to Cloudinary.** An end-to-end test
+      that posts real bytes to a third party needs credentials in CI, leaves assets
+      behind when it is killed, and makes every run depend on somebody else's
+      uptime — none of which covers our own code, since the browser posts directly
+      to Cloudinary and that path is theirs. The fixture seeds `ListingImage` rows
+      instead, with URLs on the Cloudinary host so `next/image` accepts them and
+      unmistakable public ids so the destroy a delete triggers finds nothing;
+      `deletePendingImage` already treats a failed destroy as our problem, not the
+      user's. That was enough to unblock the uploader's delete and reorder tests and
+      the public gallery, all of which reach the component through the **edit** form
+      — `/listings/new` is five steps with Photos at step four
 - [ ] Write critical path E2E tests — register → list → book → hand over →
-      review, still covered only in pieces. The fixture above is the foundation;
-      what remains is walking the five-step listing form, and deciding whether this
-      suite may reach **Cloudinary**, since the uploader's focus behaviour cannot
-      be exercised without photos that were really uploaded
+      review, still covered only in pieces. The fixture is the foundation and the
+      Cloudinary question above is settled; what remains is walking the five-step
+      listing form and driving a booking through its lifecycle
 
 ### Documentation
 

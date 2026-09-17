@@ -15,12 +15,16 @@ import { dirname } from "node:path";
  * file so the setup and teardown projects - separate processes - can agree on which row to remove.
  */
 
-/** Everything the run needs to know about the account it created. */
+/** Everything the run needs to know about the rows it created. */
 export interface TestAccount {
   userId: string;
   listingId: string;
   email: string;
   password: string;
+  /** A second account, so the listing has somebody to be booked by. */
+  renterId: string;
+  /** A PENDING request against the listing, which is what puts the owner panels on screen. */
+  bookingId: string;
 }
 
 const STATE_DIR = "tests/e2e/.auth";
