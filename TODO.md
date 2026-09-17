@@ -1588,18 +1588,24 @@ genuine remainder.*
       listings, categories, users, and the admin and owner detail routes. Each
       sits **one level above** the layout that throws, because a `notFound()`
       thrown from a layout bubbles past its own segment
-- [ ] **Every link styled as a button announces as a button, not a link.** Found
-      by the first Playwright run, 16 September 2026, in the accessibility tree —
-      neither the static audit nor axe caught it. `Button` derives
-      `nativeButton={false}` whenever `render` is not a literal `"button"`, and
-      Base UI then applies `role="button"` to the anchor. So `Pagination`, whose
-      own comment is proud of being "real `<Link>`s… shareable and linkable",
-      reads to a screen reader as a row of buttons that activate nothing in
-      particular. **42 modules use `render={<Link />}`.** The fix is to style the
-      link rather than render a button as one: `buttonVariants` is already
-      exported for precisely this and is currently used nowhere. Recorded as
-      `test.fixme` in `tests/e2e/keyboard.spec.ts`, so the suite states the defect
-      instead of asserting the broken behaviour is correct
+- [x] **Every link styled as a button announced as a button, not a link** — found
+      by the first Playwright run on 16 September in the accessibility tree, where
+      neither the static audit nor axe could see it; fixed 17 September.
+      Base UI applied `role="button"` **and a redundant `tabindex="0"`** to the
+      anchor whenever `nativeButton` was false, so `Pagination`, whose own comment
+      is proud of being "real `<Link>`s… shareable and linkable", read to a screen
+      reader as a row of buttons that navigate nowhere in particular.
+      **Fixed in `Button` alone, not across the 42 call sites.** Passing `role` to
+      the primitive does not work — it computes its own and wins — so a `render`
+      element carrying an `href` now takes the button classes directly and skips
+      the primitive. Nothing is lost: an `<a href>` already activates on Enter, and
+      it should *not* activate on Space, which is what the primitive was adding.
+      One rule applied once, rather than forty-two chances to forget it.
+      The three call sites that pass `disabled` to a link are handled explicitly:
+      `aria-disabled` plus a refused click, since an anchor has no `disabled`
+      attribute and the primitive used to absorb that. Guarded by a live test in
+      `tests/e2e/keyboard.spec.ts` asserting `role=link` — by role, because a lookup
+      by class or test id would have passed throughout the bug's entire life
 - [ ] Add a root `src/app/not-found.tsx` — the segment files cover every known
       route, but a URL matching no segment at all still falls through to Next's
       built-in page, which carries none of the site chrome

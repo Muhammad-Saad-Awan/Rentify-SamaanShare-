@@ -1,5 +1,8 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
+import { cloneElement, isValidElement } from "react";
+
+import type { MouseEvent, ReactElement } from "react";
 
 import { cn } from "@/lib/utils/cn";
 
@@ -68,6 +71,28 @@ const buttonVariants = cva(
  * `nativeButton={false}` makes Base UI supply the keyboard and ARIA behaviour a
  * non-button needs rather than assume it is already there.
  */
+/** The props this component reads off a `render` element that turns out to be a link. */
+interface LinkLikeProps {
+  href?: unknown;
+  className?: string | undefined;
+  children?: React.ReactNode;
+}
+
+/**
+ * Whether `render` will produce a link - an element carrying an `href`.
+ *
+ * Duck-typed on the prop rather than compared against `next/link`, so a plain `<a>`, a `<Link>`
+ * and anything else that navigates are all treated alike, and this primitive stays free of a
+ * framework import.
+ */
+function isLinkElement(
+  render: ButtonPrimitive.Props["render"]
+): render is ReactElement<LinkLikeProps> {
+  return (
+    isValidElement<LinkLikeProps>(render) && render.props.href !== undefined
+  );
+}
+
 function rendersNativeButton(render: ButtonPrimitive.Props["render"]): boolean {
   if (render === undefined) {
     return true;
@@ -99,13 +124,69 @@ function Button({
   nativeButton,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  const classes = cn(buttonVariants({ variant, size, className }));
+
+  /**
+   * A LINK IS STYLED, NOT WRAPPED.
+   *
+   * Base UI applies `role="button"` and `tabindex="0"` whenever `nativeButton` is false. That is
+   * right for a `<div>` or a `<label>` being taught to behave like a button, and wrong for an
+   * `<a href>`, which is not behaving like anything - it navigates. Left to the primitive it
+   * produced `<a role="button" tabindex="0" href="/listings?page=2">`, so every link styled as a
+   * button in this codebase - 42 modules of them - announced as a button. `Pagination`'s promise
+   * of being "shareable and linkable" was invisible to exactly the people who most need telling
+   * that a control leaves the page.
+   *
+   * PASSING `role` TO THE PRIMITIVE DOES NOT WORK; it computes its own and wins. So links skip it
+   * entirely and take the classes directly. Nothing is lost: an `<a href>` already activates on
+   * Enter natively, and it should NOT activate on Space - which is the behaviour the primitive was
+   * adding.
+   *
+   * Fixed here rather than at 42 call sites because there is one right answer for every link, and
+   * a rule applied once cannot be forgotten by the forty-third.
+   */
+  if (isLinkElement(props.render)) {
+    const { render, children, disabled, ...rest } = props;
+
+    const linkProps: Record<string, unknown> = {
+      "data-slot": "button",
+      ...rest,
+      className: cn(classes, render.props.className),
+      children: children ?? render.props.children,
+    };
+
+    /**
+     * `type` belongs to buttons. On an anchor it means something else entirely - a hint about the
+     * MIME type of what is being linked - so it is dropped rather than passed through.
+     */
+    delete linkProps["type"];
+
+    /**
+     * THREE CALL SITES PASS `disabled` TO A LINK, and an anchor has no such attribute.
+     *
+     * The primitive used to absorb that; skipping it means handling the case here or silently
+     * turning an inert control live while something is saving. `aria-disabled` announces it and,
+     * via the variants above, removes pointer events - but a keyboard Enter still fires a click on
+     * a link, so navigation is refused explicitly too. The href stays, so the control keeps its
+     * place in the tab order and can still say what it is.
+     */
+    if (disabled === true) {
+      linkProps["aria-disabled"] = true;
+      linkProps["onClick"] = (event: MouseEvent<HTMLAnchorElement>) => {
+        event.preventDefault();
+      };
+    }
+
+    return cloneElement(render, linkProps);
+  }
+
   return (
     <ButtonPrimitive
       data-slot="button"
       // `??` rather than a default parameter: an explicitly passed `false` must survive,
       // and under `exactOptionalPropertyTypes` an explicit `undefined` is not assignable.
       nativeButton={nativeButton ?? rendersNativeButton(props.render)}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={classes}
       {...props}
     />
   );

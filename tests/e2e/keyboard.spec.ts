@@ -90,29 +90,24 @@ test.describe("pagination", () => {
   });
 
   /**
-   * KNOWN DEFECT, found by this test on its first run - `test.fixme` so the suite stays honest
-   * about it rather than either failing forever or asserting the broken behaviour as correct.
+   * Regression test for a defect this file found, now fixed.
    *
-   * `Pagination`'s own doc comment says these are "Real `<Link>`s, not buttons with an
-   * `onClick`", and in the DOM they are. But the project's `Button` derives
-   * `nativeButton={false}` whenever `render` is not a literal `"button"`, and Base UI then
-   * applies `role="button"` to the anchor so a non-button behaves like one. The accessibility
-   * tree therefore reads:
+   * `Pagination`'s doc comment says these are "Real `<Link>`s, not buttons with an `onClick`",
+   * and in the DOM they always were - but Base UI stamped `role="button"` and `tabindex="0"` onto
+   * the anchor whenever `nativeButton` was false, so the accessibility tree read:
    *
    *     navigation "Pagination":
    *       button "Previous page" [disabled]
-   *       paragraph: Page 1 of 2
    *       button "Next page"
    *
-   * So a screen reader user is told these activate something, never that they navigate - and the
-   * "shareable and linkable" property the comment is proud of is invisible to them.
+   * A screen reader user was told these activate something and never that they navigate. `Button`
+   * now styles a link rather than wrapping it, which fixed all 42 modules that render a `<Link>`
+   * as a button at once.
    *
-   * NOT FIXED HERE because it is not local to pagination: 42 modules use `render={<Link />}`, and
-   * every one of them announces a navigation as a button. The fix is to style the link instead of
-   * rendering a button as one - `buttonVariants` is already exported for exactly that and is
-   * currently used nowhere. That is its own change, with its own review.
+   * Asserting BY ROLE is what makes this a real guard: a lookup by class or test id would have
+   * passed happily throughout the whole period the bug existed.
    */
-  test.fixme("next page is a real link, so the page is shareable", async ({
+  test("next page is a real link, so the page is shareable", async ({
     page,
   }) => {
     await page.goto("/listings");
