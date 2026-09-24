@@ -748,10 +748,38 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
       and what happens when each is absent, the migration sequence, and the eight
       post-deploy checks. Those checks are the actual point of A6:
 
-      - [ ] **Measure rate limiting across instances.** It is in-process by
-            design, so on more than one instance the limit is per-instance, and
-            that behaviour has still never been observed rather than reasoned
-            about. This is the one check that can change code
+      - [x] **Measure rate limiting across instances** — measured 24 September
+            2026, against two production instances on one machine. The numbers:
+            - Within one instance the limiter is **correct**. Registration
+              (5/hour/IP) admitted exactly five, refused the sixth and seventh,
+              and the refusal reached the user as "Too many sign-up attempts."
+            - Across two instances one client obtained **ten** registrations
+              against a documented limit of five. The counters are per-process,
+              so the effective limit is `limit × instances`, exactly as the
+              module's own comment warns.
+            - Restarting an instance admitted the client again immediately: the
+              window does **not** survive the process, so on a platform that
+              recycles or scales workers the limit resets with them.
+            No code changed as a result, which was the outcome worth confirming.
+            The behaviour is what `rate-limit.ts` documents, the failure mode is
+            graceful, and the fix is a shared store — `@upstash/ratelimit`,
+            already on the Phase 2 list, touching only that one file because every
+            caller sees the same `checkRateLimit` signature.
+            **What this does mean for launch:** any limit that is the only thing
+            standing between an attacker and a sensitive action should not be
+            relied on at its configured number while more than one instance runs.
+            Login and registration are the ones to watch.
+      - [x] Unit-test the limiter — it had none, alone among this project's pure
+            modules, while deciding whether a login attempt is allowed. Nine tests
+            in `src/lib/rate-limit.test.ts`, one per claim in its doc comment.
+            Two things surfaced that the comment does not say: the window is
+            anchored to the **first request for a key** rather than to a wall
+            clock (writing the burst test the other way round measured 5 and
+            looked like a bug), and passing the 20,000-key ceiling clears every
+            bucket — which drops an *active* limit rather than preserving it.
+            Reaching that ceiling needs 20,001 distinct `action:ip` keys behind a
+            platform that overwrites the forwarded address, so it takes a botnet,
+            by which point a per-IP limit is not the control that matters
       - [ ] Walk the eight post-deploy verifications in `docs/DEPLOYMENT.md` —
             two of them (password reset, email verification) cannot pass until
             A2's verified sending domain is set, since `onboarding@resend.dev`
