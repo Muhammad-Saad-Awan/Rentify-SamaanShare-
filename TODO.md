@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 15 September 2026 (backlog reconciled against the code — Phase 7 boxes corrected, staging deployed 9 September, A6 now blocked on verification rather than infrastructure; earlier: Phase 1 + 2.2 leftovers — profile editing, in-app password change, connected accounts, session invalidation, member preferences; Trust & Safety — reporting, trust profiles, identity verification, value-gated access, handover protocol, damage claims)
+**Last Updated:** 24 September 2026 (critical-path E2E — register through review in two browser contexts, everything but publishing a listing; earlier that week: Playwright and axe, which found and closed four real defects — a contrast pair below AA, unnamed notification switches, every link-styled-as-a-button announcing as a button, and focus dropped by panels and list changes; Next.js 15.5.25 for two critical RCEs; optional Sentry error tracking; 15 September: backlog reconciled against the code and staging deployed 9 September, leaving A6 blocked on verification rather than infrastructure)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -1787,10 +1787,38 @@ below.
       user's. That was enough to unblock the uploader's delete and reorder tests and
       the public gallery, all of which reach the component through the **edit** form
       — `/listings/new` is five steps with Photos at step four
-- [ ] Write critical path E2E tests — register → list → book → hand over →
-      review, still covered only in pieces. The fixture is the foundation and the
-      Cloudinary question above is settled; what remains is walking the five-step
-      listing form and driving a booking through its lifecycle
+- 🚧 Write critical path E2E tests — the journey landed 24 September 2026 in
+      `tests/e2e/critical-path.spec.ts`. **Every step is covered except publishing
+      a listing**, which is the one part that cannot be driven from here.
+      Two browser contexts hand one booking back and forth: register, request,
+      approve with pickup details, choose cash, confirm payment, pickup handover,
+      return handover, both reviews, and reciprocal release checked on the public
+      listing page — where a stranger would actually see it. Its own project,
+      because it is the only suite that writes, and its own listing, because the
+      other one must keep a PENDING request for the focus tests.
+      - [ ] **Publishing a listing through the form.** `createListing` calls
+            `verifyListingImages`, which asks Cloudinary's Admin API whether each
+            public id really exists and refuses the submission otherwise — so a
+            listing cannot be published without a real upload, and that call is
+            made **on the server**, where a browser-side route stub cannot reach
+            it. The only routes through are uploading from the test suite or
+            weakening the one check that stops a client asserting its own image
+            URLs, and the second is not on the table. The journey seeds its
+            listing instead.
+            No stand-in test is kept: `listing.test.ts` already asserts the photo
+            minimum directly, and walking three steps of a stepper to re-assert a
+            unit-tested rule tests the stepper
+      - [ ] **Watch registration for flakiness.** It failed twice in five early
+            runs — form still filled, URL still `/register`, no error shown
+            anywhere. Neither of the first two explanations survived contact:
+            it is not the 5-per-hour rate limit (Playwright starts a fresh server
+            per run, so the in-process counter resets) and not hydration (adding
+            `networkidle` still failed one run in three). What fits is the
+            `registerUser` → `signIn` → redirect round trip overrunning
+            Playwright's 5-second assertion default; at 15 seconds it has passed
+            six times running. Six is evidence, not proof — so the failure path
+            now reports the URL, every `role="alert"` and the field errors, and a
+            recurrence in CI will say what the form actually reported
 
 ### Documentation
 
