@@ -220,51 +220,66 @@ samaanshare/
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| Documentation | ✅ Complete | PRD, Architecture, Database, API, Guidelines |
-| Phase 0: Foundation | 🔲 Pending | Next.js, Prisma, Auth.js setup |
-| Phase 1: Authentication | 🔲 Pending | Login, Register, Profile |
-| Phase 2: Marketplace | 🔲 Pending | Browse, Search, Filters |
-| Phase 3: Listings | 🔲 Pending | CRUD, Images, Categories |
-| Phase 4: Booking | 🔲 Pending | Request, Payment, Lifecycle |
-| Phase 5: Reviews | 🔲 Pending | Ratings, Two-way reviews |
-| Phase 6: Admin | 🔲 Pending | Dashboard, Moderation |
-| Phase 7: Polish | 🔲 Pending | Testing, Deployment |
+| Documentation | ✅ Complete | PRD, Architecture, Database, Guidelines |
+| Phase 0: Foundation | ✅ Complete | Next.js 15, Prisma, Auth.js v5, Tailwind |
+| Phase 1: Authentication | ✅ Complete | Register, login, Google, password reset, email confirmation, profile |
+| Phase 2: Marketplace | ✅ Complete | Browse, search, filters, sorting, wishlist |
+| Phase 3: Listings | ✅ Complete | CRUD, signed Cloudinary uploads, availability calendar |
+| Phase 4: Booking | ✅ Complete | Request, offline payment, full lifecycle, notifications |
+| Phase 5: Reviews | ✅ Complete | Two-way reviews with reciprocal release |
+| Trust & Safety | ✅ Complete | Reporting, trust score, identity verification, handover records, damage claims |
+| Phase 6: Admin | ✅ Complete | Users, listing moderation, bookings, reports, analytics |
+| Phase 7: Polish | 🚧 In progress | Error tracking and accessibility done; production deploy outstanding |
 
-**Current Version:** Pre-release (Architecture v1.0 Locked)
+**Current Version:** Pre-release. Deployed to staging; not yet in production — see
+[TODO.md](TODO.md) for what remains, which is mostly waiting on a domain.
 
 ---
 
 ## Installation
 
-> **Note:** Installation instructions will be added after Next.js initialization.
-
 ### Prerequisites
 
-- Node.js 24+ (LTS) — see `.nvmrc`
-- PostgreSQL 15+
-- npm, yarn, or pnpm
+- Node.js 24+ — pinned in `.nvmrc` and enforced by `engines`
+- PostgreSQL 15+ (the project runs against Neon; any Postgres will do locally)
+- npm
 
-### Quick Start
+### Quick start
 
 ```bash
-# Clone the repository
 git clone https://github.com/Muhammad-Saad-Awan/Rentify-SamaanShare-.git
-
-# Navigate to project
 cd Rentify-SamaanShare-
 
-# Install dependencies (coming soon)
-npm install
+npm install                 # also generates the Prisma client via postinstall
+cp .env.example .env.local  # then fill in DATABASE_URL and AUTH_SECRET
 
-# Set up environment variables (coming soon)
-cp .env.example .env.local
+npm run db:migrate          # apply migrations
+npm run db:seed             # categories and cities - required
+npm run db:seed:demo        # optional: demo listings, development only
 
-# Run database migrations (coming soon)
-npx prisma migrate dev
-
-# Start development server (coming soon)
 npm run dev
 ```
+
+Only `DATABASE_URL` and `AUTH_SECRET` are required. Cloudinary, Google, Resend and
+Sentry are each optional and the app degrades honestly without them — no Google
+button, no password-reset link, no image upload, no error reporting. `.env.example`
+says what happens in each case.
+
+```bash
+openssl rand -base64 32     # a usable AUTH_SECRET
+```
+
+### Checks
+
+```bash
+npm run check               # lint, type-check, format check, unit tests
+npm run test:e2e            # Playwright: builds, then runs against a real database
+npm run build:analyze       # bundle treemap
+```
+
+`npm run check` is what CI should run. The end-to-end suite needs a seeded
+database, like the `verify:*` scripts do; see `playwright.config.ts` for why there
+is no meaningful version of it that runs against nothing.
 
 ---
 
@@ -272,15 +287,16 @@ npm run dev
 
 ### MVP (Phase 0-7)
 - [x] Architecture documentation
-- [ ] User authentication (Email + Google)
-- [ ] Listing management (up to 10 images)
-- [ ] Search with filters (category, city, price, condition, dates)
-- [ ] Booking system with lifecycle management
-- [ ] Offline payments (Cash, Bank Transfer)
-- [ ] Two-way review system
-- [ ] User reporting system
-- [ ] Admin dashboard
-- [ ] Production deployment
+- [x] User authentication (Email + Google)
+- [x] Listing management (up to 10 images)
+- [x] Search with filters (category, city, price, condition, dates)
+- [x] Booking system with lifecycle management
+- [x] Offline payments (Cash, Bank Transfer)
+- [x] Two-way review system
+- [x] User reporting system
+- [x] Admin dashboard
+- [ ] Production deployment — blocked on a domain, which also unblocks the
+      verified sending domain for email and the site's own SSL
 
 ### Phase 2: Trust & Payments (Future)
 - [ ] JazzCash integration

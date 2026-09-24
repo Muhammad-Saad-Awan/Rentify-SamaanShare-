@@ -1,9 +1,15 @@
 # SamaanShare - API Design Document
 
-**Version:** 1.0 - Architecture Locked
-**Last Updated:** July 2026
+**Last Updated:** 24 September 2026
 **Target Market:** Pakistan (PKR, Asia/Karachi)
-**Status:** Final - Ready for Implementation
+**Status:** Describes what is built, not what was planned.
+
+> This began as a design document written before implementation, and by September 2026 it had
+> drifted far enough to be misleading — it specified a REST API that was never built and message
+> actions that do not exist, while omitting claims, handover, identity verification, moderation,
+> notifications, preferences and security entirely. Sections 2 and 3 have been rebuilt from
+> `src/actions/`. The remaining sections are design rationale and still hold; where one describes
+> something as future work, that is still true.
 
 ---
 
@@ -27,520 +33,98 @@ SamaanShare uses a **hybrid approach**:
 
 ## 2. Server Actions
 
-### 2.1 Authentication Actions
+Every mutation in this application is a Server Action. There are **53 of them across
+25 modules**, and the table below is generated from `src/actions/` rather than
+maintained by hand — an earlier version of this section listed message actions that were never
+built and omitted seven feature areas that were.
 
-```typescript
-// src/actions/auth.ts
+**Read the module, not this table, for behaviour.** What each action does, refuses and why is
+documented at the point the decision lives; repeating it here is how the two drift apart. This is
+an index.
 
-/**
- * Register a new user with email/password
- */
-export async function registerUser(data: {
-  name: string;
-  email: string;
-  password: string;
-  city?: string;
-}): Promise<ActionResult<User>>
+Three conventions hold across all of them, and they are the ones worth knowing before reading any
+single action:
 
-/**
- * Request password reset email
- */
-export async function requestPasswordReset(data: {
-  email: string;
-}): Promise<ActionResult<void>>
+- **Actions return `ActionResult`; pages redirect.** `requireUser()` redirects and belongs in a
+  page. An action invoked from a button returns a result the caller can render, so an optimistic
+  update can roll back and explain itself — `getActiveUser()` is the non-redirecting equivalent.
+  Both verify against the database, because `status` in the JWT can be up to 24h stale.
+- **Input is re-validated server-side.** A Server Action is a public HTTP endpoint; the client's
+  Zod check can simply be skipped.
+- **Authority is derived, never accepted.** Which side of a booking you are on, whether you own a
+  listing, whether you may moderate — all computed from the session against the database, never
+  taken from the payload.
 
-/**
- * Reset password with token
- */
-export async function resetPassword(data: {
-  token: string;
-  password: string;
-}): Promise<ActionResult<void>>
+### Authentication and account
 
-/**
- * Update user profile
- */
-export async function updateProfile(data: {
-  name?: string;
-  bio?: string;
-  city?: string;  // Pakistani city
-  phone?: string; // +92 format
-}): Promise<ActionResult<User>>
+| Module | Actions |
+|---|---|
+| `auth.ts` | `registerUser()` |
+| `password-reset.ts` | `requestPasswordReset()`, `resetPassword()` |
+| `email-verification.ts` | `sendEmailVerification()`, `verifyEmail()` |
+| `security.ts` | `changePassword()`, `setPassword()`, `disconnectAccount()` |
+| `profile.ts` | `updateProfile()`, `updateProfileImage()`, `removeProfileImage()` |
+| `preferences.ts` | `updatePreferences()` |
 
-/**
- * Update profile image
- */
-export async function updateProfileImage(
-  formData: FormData // Contains image file
-): Promise<ActionResult<{ imageUrl: string }>>
-```
+### Listings
 
-### 2.2 Listing Actions
+| Module | Actions |
+|---|---|
+| `listings.ts` | `createListing()` |
+| `listing-management.ts` | `updateListing()`, `updateListingStatus()`, `deleteListing()` |
+| `availability.ts` | `toggleListingAvailability()` |
+| `uploads.ts` | `createImageUploadSignature()`, `createAvatarUploadSignature()`, `deletePendingImage()` |
+| `listing-views.ts` | `recordListingView()` |
+| `saved-listings.ts` | `saveListing()`, `unsaveListing()` |
 
-```typescript
-// src/actions/listings.ts
+### Bookings and payment
 
-/**
- * Create a new listing
- */
-export async function createListing(
-  formData: FormData
-): Promise<ActionResult<Listing>>
+| Module | Actions |
+|---|---|
+| `bookings.ts` | `createBookingRequest()`, `acceptBooking()`, `declineBooking()`, `updateBookingInstructions()` |
+| `booking-lifecycle.ts` | `startBooking()`, `completeBooking()`, `cancelBooking()` |
+| `payments.ts` | `selectPaymentMethod()`, `confirmPaymentReceived()`, `markDepositReturned()` |
+| `handover.ts` | `confirmHandover()` |
 
-// Input schema:
-const createListingSchema = z.object({
-  title: z.string().min(5).max(100),
-  description: z.string().min(20).max(5000),
-  categoryId: z.string().cuid(),
-  subcategoryId: z.string().cuid().optional(),
-  condition: z.enum(['NEW', 'LIKE_NEW', 'GOOD', 'FAIR']),
-  pricePerDay: z.number().positive().int(), // PKR, whole numbers
-  pricePerWeek: z.number().positive().int().optional(),
-  pricePerMonth: z.number().positive().int().optional(),
-  securityDeposit: z.number().nonnegative().int(), // PKR
-  city: z.string().min(1), // Pakistani city
-  area: z.string().optional(),
-  // Images handled separately via FormData (up to 10)
-});
+### Reviews, reports and claims
 
-/**
- * Update an existing listing
- */
-export async function updateListing(
-  listingId: string,
-  formData: FormData
-): Promise<ActionResult<Listing>>
+| Module | Actions |
+|---|---|
+| `reviews.ts` | `createReview()` |
+| `reports.ts` | `reportListing()`, `reportUser()`, `reportReview()` |
+| `claims.ts` | `fileDamageClaim()`, `respondToDamageClaim()`, `withdrawDamageClaim()` |
+| `claim-resolution.ts` | `resolveDamageClaim()` |
+| `notifications.ts` | `markNotificationsRead()` |
 
-/**
- * Delete a listing (soft delete - sets status to DELETED)
- */
-export async function deleteListing(
-  listingId: string
-): Promise<ActionResult<void>>
+### Administration
 
-/**
- * Update listing status (pause/activate)
- */
-export async function updateListingStatus(
-  listingId: string,
-  status: 'ACTIVE' | 'PAUSED'
-): Promise<ActionResult<Listing>>
-
-/**
- * Add images to listing (up to 10 total)
- */
-export async function addListingImages(
-  listingId: string,
-  formData: FormData
-): Promise<ActionResult<ListingImage[]>>
-
-/**
- * Remove image from listing
- */
-export async function removeListingImage(
-  imageId: string
-): Promise<ActionResult<void>>
-
-/**
- * Reorder listing images
- */
-export async function reorderListingImages(
-  listingId: string,
-  imageIds: string[] // Ordered array
-): Promise<ActionResult<void>>
-
-/**
- * Update listing availability (block dates)
- */
-export async function updateListingAvailability(
-  listingId: string,
-  data: {
-    blockedDates: Date[];
-    unblockedDates: Date[];
-  }
-): Promise<ActionResult<void>>
-```
-
-### 2.3 Booking Actions
-
-**Booking Lifecycle:** PENDING → APPROVED → PAYMENT_PENDING → ACTIVE → COMPLETED → REVIEWED
-**Additional Statuses:** DECLINED, CANCELLED, EXPIRED
-
-```typescript
-// src/actions/bookings.ts
-
-/**
- * Create a booking request (status: PENDING)
- */
-export async function createBookingRequest(data: {
-  listingId: string;
-  startDate: Date;
-  endDate: Date;
-  paymentMethod: 'CASH' | 'BANK_TRANSFER';
-  notes?: string;  // Renter can add notes to request
-}): Promise<ActionResult<{ booking: Booking; payment: Payment }>>
-
-/**
- * Accept a booking request (owner only)
- * Status: PENDING → APPROVED → PAYMENT_PENDING
- */
-export async function acceptBooking(
-  bookingId: string,
-  pickupInstructions: string
-): Promise<ActionResult<Booking>>
-
-/**
- * Decline a booking request (owner only)
- * Status: PENDING → DECLINED
- */
-export async function declineBooking(
-  bookingId: string,
-  reason?: string
-): Promise<ActionResult<Booking>>
-
-/**
- * Cancel a booking (renter or owner)
- * Status: Any → CANCELLED
- */
-export async function cancelBooking(
-  bookingId: string,
-  reason?: string
-): Promise<ActionResult<Booking>>
-
-/**
- * Mark booking as active (pickup completed, payment confirmed)
- * Status: PAYMENT_PENDING → ACTIVE
- */
-export async function startBooking(
-  bookingId: string
-): Promise<ActionResult<Booking>>
-
-/**
- * Mark booking as completed (item returned)
- * Status: ACTIVE → COMPLETED
- */
-export async function completeBooking(
-  bookingId: string
-): Promise<ActionResult<Booking>>
-
-/**
- * Mark booking as reviewed (both parties reviewed)
- * Status: COMPLETED → REVIEWED
- */
-export async function markBookingReviewed(
-  bookingId: string
-): Promise<ActionResult<Booking>>
-```
-
-### 2.4 Payment Actions
-
-```typescript
-// src/actions/payments.ts
-
-/**
- * Confirm offline payment received (owner only)
- */
-export async function confirmPaymentReceived(
-  paymentId: string
-): Promise<ActionResult<Payment>>
-
-/**
- * Mark security deposit as returned
- */
-export async function markDepositReturned(
-  paymentId: string
-): Promise<ActionResult<Payment>>
-
-/**
- * Get payment instructions for offline payment
- */
-export async function getPaymentInstructions(
-  paymentId: string
-): Promise<ActionResult<{
-  method: PaymentMethod;
-  amount: number;      // In PKR
-  deposit: number;     // In PKR
-  instructions: string;
-  ownerBankDetails?: string; // For bank transfer
-}>>
-```
-
-### 2.5 Review Actions
-
-```typescript
-// src/actions/reviews.ts
-
-/**
- * Create a review for a completed booking
- */
-export async function createReview(data: {
-  bookingId: string;
-  rating: number; // 1-5
-  comment?: string;
-}): Promise<ActionResult<Review>>
-
-/**
- * Report a review for moderation
- */
-export async function reportReview(
-  reviewId: string,
-  reason: string
-): Promise<ActionResult<void>>
-```
-
-### 2.6 Report Actions (MVP)
-
-```typescript
-// src/actions/reports.ts
-
-/**
- * Report a listing for moderation
- */
-export async function reportListing(data: {
-  listingId: string;
-  reason: ReportReason;
-  description?: string;
-}): Promise<ActionResult<Report>>
-
-/**
- * Report a user for moderation
- */
-export async function reportUser(data: {
-  userId: string;
-  reason: ReportReason;
-  description?: string;
-}): Promise<ActionResult<Report>>
-```
-
-### 2.7 Message Actions (Phase 2 - Future)
-
-**Note:** Real-time messaging is deferred to Phase 2. MVP uses booking notes only.
-
-```typescript
-// src/actions/messages.ts (Phase 2)
-
-/**
- * Send a message (creates conversation if needed)
- */
-export async function sendMessage(data: {
-  listingId: string;
-  recipientId: string;
-  content: string;
-}): Promise<ActionResult<Message>>
-
-/**
- * Mark messages as read
- */
-export async function markMessagesAsRead(
-  conversationId: string
-): Promise<ActionResult<void>>
-```
-
-### 2.7 Saved Listings Actions
-
-```typescript
-// src/actions/saved.ts
-
-/**
- * Save a listing to wishlist
- */
-export async function saveListing(
-  listingId: string
-): Promise<ActionResult<SavedListing>>
-
-/**
- * Remove listing from wishlist
- */
-export async function unsaveListing(
-  listingId: string
-): Promise<ActionResult<void>>
-```
-
-### 2.8 Report Actions
-
-```typescript
-// src/actions/reports.ts
-
-/**
- * Submit a report (user, listing, or review)
- */
-export async function submitReport(data: {
-  type: 'USER' | 'LISTING' | 'REVIEW';
-  targetId: string;
-  reason: string;
-  description?: string;
-}): Promise<ActionResult<Report>>
-```
-
-### 2.9 Admin Actions
-
-```typescript
-// src/actions/admin.ts
-
-/**
- * Get platform statistics (admin only)
- */
-export async function getAdminStats(): Promise<ActionResult<{
-  totalUsers: number;
-  activeListings: number;
-  totalBookings: number;
-  completedBookings: number;
-  totalGMV: number; // In PKR
-  pendingReports: number;
-  usersByCity: Record<string, number>;
-}>>
-
-/**
- * Update user status (admin only)
- */
-export async function updateUserStatus(
-  userId: string,
-  status: 'ACTIVE' | 'SUSPENDED' | 'BANNED'
-): Promise<ActionResult<User>>
-
-/**
- * Update user role (admin only)
- */
-export async function updateUserRole(
-  userId: string,
-  role: 'USER' | 'ADMIN'
-): Promise<ActionResult<User>>
-
-/**
- * Remove a listing (admin only)
- */
-export async function adminRemoveListing(
-  listingId: string,
-  reason: string
-): Promise<ActionResult<void>>
-
-/**
- * Resolve a report (admin only)
- */
-export async function resolveReport(
-  reportId: string,
-  data: {
-    status: 'RESOLVED' | 'DISMISSED';
-    resolution: string;
-    action?: 'SUSPEND_USER' | 'REMOVE_LISTING' | 'REMOVE_REVIEW' | 'NONE';
-  }
-): Promise<ActionResult<Report>>
-
-/**
- * Get all users with filters (admin only)
- */
-export async function getAdminUsers(params: {
-  search?: string;
-  status?: UserStatus;
-  role?: UserRole;
-  city?: string;
-  page?: number;
-  limit?: number;
-}): Promise<ActionResult<{ users: User[]; total: number }>>
-
-/**
- * Get all listings with filters (admin only)
- */
-export async function getAdminListings(params: {
-  search?: string;
-  status?: ListingStatus;
-  category?: string;
-  city?: string;
-  page?: number;
-  limit?: number;
-}): Promise<ActionResult<{ listings: Listing[]; total: number }>>
-
-/**
- * Get all bookings with filters (admin only)
- */
-export async function getAdminBookings(params: {
-  status?: BookingStatus;
-  page?: number;
-  limit?: number;
-}): Promise<ActionResult<{ bookings: Booking[]; total: number }>>
-
-/**
- * Get all reports with filters (admin only)
- */
-export async function getAdminReports(params: {
-  status?: ReportStatus;
-  type?: ReportType;
-  page?: number;
-  limit?: number;
-}): Promise<ActionResult<{ reports: Report[]; total: number }>>
-```
+| Module | Actions |
+|---|---|
+| `admin-users.ts` | `suspendUser()`, `banUser()`, `reinstateUser()`, `changeUserRole()` |
+| `admin-listings.ts` | `adminRemoveListing()`, `adminRestoreListing()`, `adminEditListing()` |
+| `moderation.ts` | `resolveReport()`, `dismissReport()` |
+| `identity-verification.ts` | `setIdentityVerified()` |
 
 ---
 
-## 3. API Routes (REST)
+## 3. HTTP Routes
 
-### 3.1 Authentication Routes
+**There is one, and it is not ours:** `/api/auth/[...nextauth]`, which Auth.js requires.
 
-Handled by Auth.js:
+An earlier version of this document specified a REST surface — listing routes, category routes,
+search routes, user routes, cities routes, webhook routes. None of it was built, and none of it is
+planned, because nothing needs it:
 
-```
-GET/POST  /api/auth/[...nextauth]  - Auth.js handler
-```
+- **Reads** happen in Server Components, which query the database directly. A REST endpoint in
+  front of that would be a second way to ask the same question, with its own serialization,
+  caching and authorization to keep in step.
+- **Writes** are Server Actions, which are already HTTP endpoints with CSRF protection and
+  type-safe arguments.
+- **No external client exists.** A mobile app is Phase 3, and payment webhooks arrive with the
+  payment providers in Phase 2. Both will need routes; neither needs them yet, and an unused
+  public API is attack surface with no user.
 
-### 3.2 Listing Routes
-
-```
-GET  /api/listings
-     Query: ?category=&city=&minPrice=&maxPrice=&page=&limit=&sort=
-     Response: { listings: Listing[], total: number, page: number }
-
-GET  /api/listings/:id
-     Response: { listing: ListingWithDetails }
-
-GET  /api/listings/:id/availability
-     Query: ?month=&year=
-     Response: { availableDates: Date[], unavailableDates: Date[] }
-```
-
-### 3.3 Category Routes
-
-```
-GET  /api/categories
-     Response: { categories: CategoryWithSubcategories[] }
-```
-
-### 3.4 Search Routes
-
-```
-GET  /api/search
-     Query: ?q=&category=&city=&minPrice=&maxPrice=&condition=&page=&limit=
-     Response: { results: Listing[], total: number, facets: Facets }
-```
-
-### 3.5 User Routes
-
-```
-GET  /api/users/:id
-     Response: { user: PublicUserProfile }
-
-GET  /api/users/:id/listings
-     Response: { listings: Listing[] }
-
-GET  /api/users/:id/reviews
-     Response: { reviews: Review[], stats: ReviewStats }
-```
-
-### 3.6 Cities Routes
-
-```
-GET  /api/cities
-     Response: { cities: PakistaniCity[] }
-     // Returns: Karachi, Lahore, Islamabad, Rawalpindi, etc.
-```
-
-### 3.7 Future Webhook Routes
-
-```
-POST /api/webhooks/jazzcash   - JazzCash payment events (Phase 2)
-POST /api/webhooks/easypaisa  - Easypaisa payment events (Phase 2)
-POST /api/webhooks/safepay    - Safepay payment events (Phase 2)
-POST /api/webhooks/cloudinary - Image processing events
-```
+`robots.ts` excludes `/api/` from crawling for the same reason: nothing under it is a page.
 
 ---
 
@@ -960,18 +544,33 @@ export interface IPaymentProvider {
 | Messages | 30 req | 1 minute |
 | Admin endpoints | 100 req | 1 minute |
 
-### Implementation (Phase 2 - Upstash Redis)
+The table above is the original plan. What is **built** is narrower and lives in
+`src/lib/rate-limit.ts`: a fixed-window counter held in one process's memory, applied per action
+to the endpoints that can be abused — registration, login, listing creation, bookings, claims,
+reviews, uploads, verification sends. Each call site sets its own limit; there is no global
+per-request throttle.
 
-```typescript
-// src/lib/rate-limit.ts (conceptual)
-import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
+### Measured behaviour, 24 September 2026
 
-export const rateLimiter = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(100, '1 m'),
-});
-```
+Two production instances, one client, registration limited to 5 per IP per hour:
+
+| | Result |
+|---|---|
+| Instance A, attempts 1-5 | allowed |
+| Instance A, attempts 6-7 | refused, with the message shown to the user |
+| Instance B, 5 further attempts | **all allowed** |
+| Instance A after a restart | allowed again immediately |
+
+So the effective limit is `limit x instances`, and it resets whenever a process does. Within a
+single instance the limiter is correct. The window is also anchored to the first request for a
+key rather than to a wall clock, which lets roughly `2 x limit - 1` requests through in the
+moment around a boundary — nine, for a limit of five.
+
+This is a deliberate trade against operating a second piece of infrastructure, and it is written
+down in the module. The upgrade is a shared store (`@upstash/ratelimit` on Vercel KV is the usual
+choice) and touches only that file, because every caller sees the same `checkRateLimit`
+signature. **Until then, do not rely on any of these limits at their configured number while more
+than one instance is serving.**
 
 ---
 

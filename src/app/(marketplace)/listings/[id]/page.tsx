@@ -71,6 +71,21 @@ export async function generateMetadata({
       // The cover image, so a shared link previews the item rather than the logo.
       ...(listing.images[0] ? { images: [listing.images[0].url] } : {}),
     },
+
+    /**
+     * Repeated for Twitter rather than inherited, because Next does not derive one from the
+     * other - a page that sets `openGraph` alone keeps the root's generic Twitter card and
+     * previews every listing identically.
+     *
+     * This is the page most likely to be pasted into a chat, so the cover image is the whole
+     * point of the tag.
+     */
+    twitter: {
+      card: "summary_large_image",
+      title: listing.title,
+      description,
+      ...(listing.images[0] ? { images: [listing.images[0].url] } : {}),
+    },
   };
 }
 

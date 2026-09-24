@@ -1,5 +1,6 @@
 // From `/config`, not the package root: the root re-export is deprecated and stops working in
 // the SDK's v11. The build says so, which is how this was caught.
+import withBundleAnalyzer from "@next/bundle-analyzer";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
 import type { NextConfig } from "next";
@@ -107,29 +108,45 @@ const nextConfig: NextConfig = {
  * would look like the feature exists, and it would quietly do nothing for whoever turns tracing on
  * later. The warning is a true statement and is left standing.
  */
-export default process.env.NEXT_PUBLIC_SENTRY_DSN
-  ? withSentryConfig(nextConfig, {
-      ...(process.env.SENTRY_ORG ? { org: process.env.SENTRY_ORG } : {}),
-      ...(process.env.SENTRY_PROJECT
-        ? { project: process.env.SENTRY_PROJECT }
-        : {}),
-      // Quiet locally, verbose in CI where an upload failure is worth seeing.
-      silent: !process.env.CI,
+/**
+ * Bundle analysis, off unless asked for.
+ *
+ * `npm run build:analyze` opens a treemap of what is actually in each bundle. Wrapped rather
+ * than always-on because the plugin writes report files and opens a browser, which nobody wants
+ * on a deploy - and because a tool that runs on every build is one people learn to ignore.
+ *
+ * Composed OUTSIDE the Sentry wrapper so it measures the bundle that actually ships, Sentry
+ * included. Measuring the unwrapped config would answer a question nobody asked.
+ */
+const withAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
-      /**
-       * Shrink the SDK itself, since this install uses a fraction of it.
-       *
-       * `removeTracing` is the one that pays: `tracesSampleRate` is 0, so every byte of
-       * performance-monitoring code in the bundle is dead weight, and it is the larger half of
-       * the browser SDK. `removeDebugLogging` strips Sentry's own console output.
-       *
-       * Replaces the old top-level `disableLogger`, which the build warns is on its way out.
-       */
-      webpack: {
-        treeshake: {
-          removeDebugLogging: true,
-          removeTracing: true,
+export default withAnalyzer(
+  process.env.NEXT_PUBLIC_SENTRY_DSN
+    ? withSentryConfig(nextConfig, {
+        ...(process.env.SENTRY_ORG ? { org: process.env.SENTRY_ORG } : {}),
+        ...(process.env.SENTRY_PROJECT
+          ? { project: process.env.SENTRY_PROJECT }
+          : {}),
+        // Quiet locally, verbose in CI where an upload failure is worth seeing.
+        silent: !process.env.CI,
+
+        /**
+         * Shrink the SDK itself, since this install uses a fraction of it.
+         *
+         * `removeTracing` is the one that pays: `tracesSampleRate` is 0, so every byte of
+         * performance-monitoring code in the bundle is dead weight, and it is the larger half of
+         * the browser SDK. `removeDebugLogging` strips Sentry's own console output.
+         *
+         * Replaces the old top-level `disableLogger`, which the build warns is on its way out.
+         */
+        webpack: {
+          treeshake: {
+            removeDebugLogging: true,
+            removeTracing: true,
+          },
         },
-      },
-    })
-  : nextConfig;
+      })
+    : nextConfig
+);

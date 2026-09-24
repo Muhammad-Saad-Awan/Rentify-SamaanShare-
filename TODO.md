@@ -38,8 +38,16 @@ This document serves as the main development backlog for SamaanShare. Tasks are 
 - [x] Configure Prettier
 - [x] Set up `.prettierrc` configuration
 - [x] Configure `eslint.config.mjs`
-- [ ] Add lint-staged for pre-commit hooks
-- [ ] Set up Husky for Git hooks
+- [x] Add lint-staged for pre-commit hooks — `eslint --fix` then `prettier --write`
+      on staged files only, which is what keeps it fast enough to leave enabled.
+      Type-checking is deliberately NOT in the hook: `tsc` takes long enough that
+      people start passing `--no-verify`, and a hook routinely bypassed is worse
+      than no hook. `npm run check` is the gate that runs it
+- [x] Set up Husky for Git hooks — note that `husky init` writes `npm test` as the
+      default pre-commit, and this project's `test` script is `vitest` in **watch
+      mode**, which would hang every commit forever. Replaced with `lint-staged`.
+      `prepare` is `husky || true` so an install without a `.git` directory — some
+      CI images, and the Vercel build container — cannot fail the whole install
 - [x] Create `.nvmrc` with Node.js version
 - [x] Set up Vitest for the pure modules (parsers, formatters, pricing, calendar,
       lifecycle, deposit window, notification copy, environment schema, reset
@@ -1634,9 +1642,12 @@ genuine remainder.*
       attribute and the primitive used to absorb that. Guarded by a live test in
       `tests/e2e/keyboard.spec.ts` asserting `role=link` — by role, because a lookup
       by class or test id would have passed throughout the bug's entire life
-- [ ] Add a root `src/app/not-found.tsx` — the segment files cover every known
-      route, but a URL matching no segment at all still falls through to Next's
-      built-in page, which carries none of the site chrome
+- [x] Add a root `src/app/not-found.tsx` — a URL matching no segment now lands on
+      a page with the project's own empty state and a way back, rather than Next's
+      built-in one. It renders inside the root layout only, outside every route
+      group, so it cannot use the marketplace header — that lives in
+      `(marketplace)/layout.tsx`, and a URL belonging to no group has no shell.
+      The segment-level 404s are untouched: those are the interesting ones
 - [x] Create 500 page — `global-error.tsx`, the only boundary that can replace
       the root layout when the root layout is what failed
 - [x] Add toast notifications — `sonner`, mounted once in the root layout and
@@ -1674,8 +1685,18 @@ genuine remainder.*
 - [ ] Add infinite scroll (where appropriate) — **not wanted; keep as a decision.**
       Browse URLs have to stay linkable and crawlable, and both the sitemap and
       the canonical-tag strategy depend on the page living in the URL
-- [ ] Analyze and optimize bundle size — no analyzer configured, no measurement
-      ever taken. Genuinely open
+- [x] Analyze and optimize bundle size — `@next/bundle-analyzer`, off unless asked
+      for: `npm run build:analyze` writes a treemap per runtime to
+      `.next/analyze/`. Composed OUTSIDE the Sentry wrapper so it measures the
+      bundle that actually ships.
+      **Measured: 121 kB shared first-load JS**, and nothing in it is a surprise —
+      React and the framework are the two large chunks, and the Sentry SDK stays
+      out of the initial bundle by design. No optimisation was warranted, which is
+      the useful half of measuring.
+      `cross-env` came with it, and it is not optional: `ANALYZE=true next build`
+      is POSIX-shell syntax, npm runs scripts through `cmd` on Windows, and this
+      project is developed on Windows. Verified the bare form fails here before
+      adding it
 - [x] Add caching strategies — `unstable_cache` for category options (shared
       across requests, unlike React's `cache()`), route-level `revalidate` where
       the data allows it, and `revalidatePath` on the mutating actions. The
@@ -1695,7 +1716,13 @@ genuine remainder.*
       in page metadata instead, since a `Disallow` would stop the crawler ever
       seeing the canonical tag that consolidates them
 - [x] Add Open Graph tags — homepage, listing detail and category pages
-- [ ] Add Twitter cards — no `twitter` key in any metadata export. Genuinely open
+- [x] Add Twitter cards — `summary_large_image` site-wide in the root layout, and
+      repeated on the three pages that set their own `openGraph` (home, listing
+      detail, category). **Repeated rather than inherited because Next derives
+      neither from the other** — a page setting only `openGraph` keeps the root's
+      generic card and previews every listing identically. The listing card carries
+      the cover image, which matters more for WhatsApp than for X and is the
+      sharing route the listing page was built around
 - [x] Implement structured data — `src/lib/marketplace/structured-data.ts`
       rendered through `src/components/shared/json-ld.tsx`
 
@@ -1855,12 +1882,21 @@ below.
       absent*, which is the half that matters for the optional ones
 - [x] Add JSDoc comments — throughout, following this codebase's convention of
       recording **why** at the point the decision lives
-- [ ] Update README with final instructions — the Development Status and Roadmap
-      sections still describe the planning-phase project
-- [ ] Refresh `docs/API.md` — written at v1.0.0 as a *design* document and never
-      revised against the code. It specifies message actions that do not exist,
-      and omits claims, handover, identity verification, moderation,
-      notifications, preferences and security entirely
+- [x] Update README with final instructions — the status table showed every phase
+      as Pending and the install steps said "coming soon" beside each command. Now
+      accurate, with real setup, which variables are actually required (two), and
+      the check commands
+- [x] Refresh `docs/API.md` — sections 2 and 3 rebuilt **from `src/actions/`**
+      rather than by hand, so the inventory cannot drift the same way twice: 53
+      actions across 25 modules, grouped, with the generator refusing to run if a
+      module belongs to no group.
+      Section 3 was the worse half. It specified a REST surface — listing, category,
+      search, user, cities and webhook routes — **none of which exists**; the only
+      HTTP route in the project is Auth.js's own. It now says so, and why.
+      Section 9 carried the measured rate-limit numbers in from the A6 work, since
+      it had been describing an Upstash implementation that was never built as
+      though it were the plan of record. 1096 lines down to 696, almost all of it
+      fiction removed
 - [x] Update `CHANGELOG.md` — done 15 September 2026. Phases 0–6, Stage A and
       Trust & Safety are now recorded under `[Unreleased]`, since nothing has
       shipped to production and there are no tags to release against
