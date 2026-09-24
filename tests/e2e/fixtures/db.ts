@@ -48,9 +48,7 @@ async function create(): Promise<void> {
    * A listing this account owns, because the owner-side controls have nowhere to render without
    * one - the availability calendar in particular, which is where the `aria-disabled` work landed.
    *
-   * NO IMAGES. `ListingImage` rows would have to point at Cloudinary URLs that do not exist, and
-   * `next/image` refuses any host outside `remotePatterns`, so fabricating them would trade an
-   * untested thing for a broken one.
+   * Photos are attached just below; see that note for why they are rows rather than uploads.
    */
   const listing = await prisma.listing.create({
     data: {
@@ -140,6 +138,45 @@ async function create(): Promise<void> {
     select: { id: true },
   });
 
+  /**
+   * A second listing, reserved for the critical-path journey.
+   *
+   * SEPARATE ON PURPOSE. The journey drives a booking from request all the way to REVIEWED, and
+   * the listing above has to keep a PENDING request for the focus tests to find an Approve and a
+   * Decline button on. Sharing one listing would make each suite depend on the other's timing.
+   *
+   * Its deposit is deliberately under `ELEVATED_DEPOSIT_PKR` (25,000), which puts it in the "open"
+   * access tier - the journey's renter registers seconds earlier and has no confirmed email, and
+   * anything above that tier would refuse them before they could book.
+   */
+  const journeyListing = await prisma.listing.create({
+    data: {
+      ownerId: user.id,
+      title: "E2E Journey Listing",
+      description:
+        "Created by the end-to-end critical-path test. If you are reading this in a real database, a run was interrupted before its teardown.",
+      categoryId: category.id,
+      condition: "GOOD",
+      pricePerDay: 400,
+      securityDeposit: 1500,
+      city: "karachi",
+      status: "ACTIVE",
+    },
+    select: { id: true },
+  });
+
+  await prisma.listingImage.create({
+    data: {
+      listingId: journeyListing.id,
+      url: `https://res.cloudinary.com/demo/image/upload/e2e-journey-${journeyListing.id}.jpg`,
+      publicId: `e2e-fixture-does-not-exist/journey-${journeyListing.id}`,
+      order: 0,
+    },
+  });
+
+  /** Not created here - the journey registers with these through the form. */
+  const journeyCredentials = newAccountCredentials();
+
   writeAccount({
     userId: user.id,
     listingId: listing.id,
@@ -147,6 +184,9 @@ async function create(): Promise<void> {
     password,
     renterId: renter.id,
     bookingId: booking.id,
+    journeyListingId: journeyListing.id,
+    journeyEmail: journeyCredentials.email,
+    journeyPassword: journeyCredentials.password,
   });
 }
 
@@ -169,21 +209,68 @@ async function destroy(): Promise<void> {
     return;
   }
 
+  const listingIds = [account.listingId, account.journeyListingId];
+
   /**
-   * Order matters: a booking references both accounts and the listing, and `Listing.owner` is
-   * `onDelete: Restrict`. `ListingImage` cascades with its listing, so it is not listed.
+   * The journey's renter registered through the form, so it has no id here - only the address it
+   * was told to use. Looked up rather than assumed present: the run may have failed before
+   * reaching the registration step.
    */
-  await prisma.booking.deleteMany({ where: { id: account.bookingId } });
+  const journeyRenter = await prisma.user.findUnique({
+    where: { email: account.journeyEmail },
+    select: { id: true },
+  });
+
+  const userIds = [account.userId, account.renterId];
+
+  if (journeyRenter) {
+    userIds.push(journeyRenter.id);
+  }
+
+  const bookings = await prisma.booking.findMany({
+    where: { listingId: { in: listingIds } },
+    select: { id: true, paymentId: true },
+  });
+
+  const bookingIds = bookings.map((booking) => booking.id);
+
+  /**
+   * `Booking` holds the foreign key to `Payment`, not the other way round, so a payment cannot be
+   * removed until the booking pointing at it is gone - and it must be removed, because
+   * `Payment.confirmedBy` references the owner and would otherwise block the account delete.
+   */
+  const paymentIds = bookings
+    .map((booking) => booking.paymentId)
+    .filter((id): id is string => id !== null);
+
+  /**
+   * ORDER MATTERS, and more of it than before the journey existed.
+   *
+   * `HandoverRecord`, `DamageClaim` and `Review` all reference `Booking` WITHOUT a cascade, so
+   * each one blocks the booking delete until it is gone - the journey creates two handovers and
+   * two reviews, none of which existed when this teardown was first written. `HandoverPhoto`
+   * cascades from its record, `UnavailableDate` from its booking, `ListingImage` from its listing,
+   * and `Listing.owner` is `onDelete: Restrict`, which is why the accounts go last.
+   *
+   * Everything is listed explicitly regardless. Which relations cascade is a schema decision that
+   * can change, and a teardown that quietly stops working leaves rows in a shared database without
+   * telling anybody.
+   */
+  await prisma.review.deleteMany({ where: { bookingId: { in: bookingIds } } });
+  await prisma.handoverRecord.deleteMany({
+    where: { bookingId: { in: bookingIds } },
+  });
+  await prisma.damageClaim.deleteMany({
+    where: { bookingId: { in: bookingIds } },
+  });
   await prisma.unavailableDate.deleteMany({
-    where: { listingId: account.listingId },
+    where: { listingId: { in: listingIds } },
   });
-  await prisma.savedListing.deleteMany({
-    where: { userId: { in: [account.userId, account.renterId] } },
-  });
-  await prisma.listing.deleteMany({ where: { id: account.listingId } });
-  await prisma.user.deleteMany({
-    where: { id: { in: [account.userId, account.renterId] } },
-  });
+  await prisma.booking.deleteMany({ where: { id: { in: bookingIds } } });
+  await prisma.payment.deleteMany({ where: { id: { in: paymentIds } } });
+  await prisma.savedListing.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.listing.deleteMany({ where: { id: { in: listingIds } } });
+  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 }
 
 const command = process.argv[2];

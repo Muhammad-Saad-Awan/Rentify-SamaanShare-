@@ -25,6 +25,24 @@ export interface TestAccount {
   renterId: string;
   /** A PENDING request against the listing, which is what puts the owner panels on screen. */
   bookingId: string;
+
+  /**
+   * A SECOND listing, owned by the same account, reserved for the critical-path journey.
+   *
+   * Separate from the one above because that listing's booking must stay PENDING for the focus
+   * tests to find an Approve and a Decline button. The journey drives a booking all the way to
+   * REVIEWED, so it needs somewhere of its own to do that.
+   */
+  journeyListingId: string;
+
+  /**
+   * Credentials the journey REGISTERS WITH through the form, rather than rows created here.
+   *
+   * Generated up front so teardown knows which account to remove without the test writing back
+   * to this file mid-run - two processes editing it is a race nobody needs.
+   */
+  journeyEmail: string;
+  journeyPassword: string;
 }
 
 const STATE_DIR = "tests/e2e/.auth";

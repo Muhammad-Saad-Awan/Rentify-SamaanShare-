@@ -106,7 +106,13 @@ export default defineConfig({
      */
     {
       name: "public",
-      testIgnore: [/signed-in\//, /auth\.(setup|teardown)\.ts/],
+      testIgnore: [
+        /signed-in\//,
+        /auth\.(setup|teardown)\.ts/,
+        // The journey has its own project; without this it would run twice, and the second run
+        // would find a listing its own first run had already booked out.
+        /critical-path\.spec\.ts/,
+      ],
       /**
        * Depends on `setup` for its DATA, not for a session - these tests stay signed out, and no
        * `storageState` is inherited. The fixture listing is the only one in the database with more
@@ -122,6 +128,20 @@ export default defineConfig({
       testMatch: /signed-in\//,
       dependencies: ["setup"],
       use: { ...VIEWPORT, storageState: STORAGE_STATE },
+    },
+
+    /**
+     * The critical path, in its own project because it is the only suite that WRITES.
+     *
+     * No `storageState`: the journey needs two people at once and manages both contexts itself -
+     * the owner from the saved session, the renter registered through the form as the first step.
+     * Inheriting a session here would sign the renter in as the owner.
+     */
+    {
+      name: "journey",
+      testMatch: /critical-path\.spec\.ts/,
+      dependencies: ["setup"],
+      use: { ...VIEWPORT },
     },
   ],
 
