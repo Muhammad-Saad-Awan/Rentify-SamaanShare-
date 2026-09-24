@@ -68,6 +68,13 @@ export async function generateMetadata({
       title: `${category.name} for Rent`,
       description,
     },
+
+    /** Set alongside `openGraph` because Next derives neither from the other. */
+    twitter: {
+      card: "summary_large_image",
+      title: `${category.name} for Rent`,
+      description,
+    },
   };
 }
 

@@ -46,6 +46,14 @@ export const metadata: Metadata = {
     description:
       "Peer-to-peer rentals across Karachi, Lahore and Islamabad. Rent what you need, list what you own.",
   },
+
+  /** Set alongside `openGraph` because Next derives neither from the other. */
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteConfig.name} - Rent Anything in Pakistan`,
+    description:
+      "Peer-to-peer rentals across Karachi, Lahore and Islamabad. Rent what you need, list what you own.",
+  },
 };
 
 /**
