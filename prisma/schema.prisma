@@ -94,6 +94,12 @@ enum PaymentMethod {
 enum PaymentStatus {
   PENDING
   AWAITING_CONFIRMATION // Waiting for owner to confirm receipt
+  // The renter has declared payment and supplied a reference; an administrator has not yet
+  // agreed the money arrived.
+  PENDING_VERIFICATION
+  // An administrator looked and could not match it. Terminal for this attempt; the renter may
+  // submit again, which is why it is distinct from FAILED.
+  REJECTED
   PROCESSING
   COMPLETED
   FAILED
@@ -185,6 +191,15 @@ enum AdminActionType {
   REMOVE_LISTING
   RESTORE_LISTING
   EDIT_LISTING
+  // Payments. The subject of these is the RENTER for verification decisions and the OWNER for
+  // settlement, because the subject is whoever the decision is about - the same rule the listing
+  // actions above follow. AdminAction.reason is already required, which is what makes a
+  // reversal or a rejection reviewable.
+  VERIFY_PAYMENT
+  REJECT_PAYMENT
+  REVERSE_PAYMENT_VERIFICATION
+  SETTLE_BOOKING
+  RECORD_REFUND
 }
 
 enum ReportType {
@@ -395,16 +410,17 @@ model User {
   sessions Session[]
 
   // App relations
-  listings          Listing[]      @relation("OwnerListings")
-  bookingsAsRenter  Booking[]      @relation("RenterBookings")
-  bookingsAsOwner   Booking[]      @relation("OwnerBookings")
-  reviewsGiven      Review[]       @relation("ReviewsGiven")
-  reviewsReceived   Review[]       @relation("ReviewsReceived")
-  savedListings     SavedListing[]
-  reportsSubmitted  Report[]       @relation("ReportsSubmitted")
-  reportsResolved   Report[]       @relation("ReportsResolved")
-  paymentsConfirmed Payment[]      @relation("PaymentsConfirmed") // P7
-  notifications     Notification[] // P1
+  listings            Listing[]      @relation("OwnerListings")
+  bookingsAsRenter    Booking[]      @relation("RenterBookings")
+  bookingsAsOwner     Booking[]      @relation("OwnerBookings")
+  reviewsGiven        Review[]       @relation("ReviewsGiven")
+  reviewsReceived     Review[]       @relation("ReviewsReceived")
+  savedListings       SavedListing[]
+  reportsSubmitted    Report[]       @relation("ReportsSubmitted")
+  reportsResolved     Report[]       @relation("ReportsResolved")
+  paymentsConfirmed   Payment[]      @relation("PaymentsConfirmed") // P7
+  settlementsRecorded Settlement[]   @relation("SettlementsRecorded")
+  notifications       Notification[] // P1
 
   // Phase 4: who cancelled a booking. A real foreign key rather than a bare
   // userId, for the same reason as Payment.confirmedById (P7).
@@ -759,18 +775,174 @@ model Payment {
 
   // P2: markDepositReturned() is a defined Server Action (API.md:250) and
   // "Deposit Return Tracking" is PRD.md:193, but no field recorded it.
+  //
+  // SUPERSEDED BY `Settlement.depositReturnedAt`, but not yet removed. The column still has a
+  // live reader in `markDepositReturned()`, and dropping it before that action goes would break
+  // the build for no gain. It is removed in the phase that removes its caller, not this one.
   depositReturnedAt DateTime?
+
+  // ---------------------------------------------------------------- collection evidence
+  /**
+   * /**
+   * When the renter declared they had paid.
+   * Distinct from `createdAt`, which is when the payment row was created as the renter chose a
+   * method, and from `confirmedAt`, which is when an administrator agreed the money had arrived.
+   * The gap between this and `confirmedAt` is the queue wait, and it is the number that tells us
+   * whether verification is keeping up.
+   */
+  submittedAt DateTime?
+
+  /**
+   * A screenshot or receipt, stored in Cloudinary like every other upload here.
+   * `proofHash` is a SHA-256 of the image bytes and is UNIQUE: the same screenshot submitted
+   * against two bookings is the cheapest payment fraud there is, and a constraint catches it
+   * without anybody having to notice. Nullable, because proof is optional - and Postgres treats
+   * NULLs as distinct in a unique index, so any number of payments may have none.
+   */
+  proofUrl      String?
+  proofPublicId String?
+  proofHash     String? @unique
+
+  // ---------------------------------------------------------------- refusal
+  rejectedAt      DateTime?
+  rejectionReason String?   @db.Text
+
+  /**
+   * The commission rate this payment was verified under, in basis points.
+   * FROZEN HERE, NOT READ FROM CONFIG AT SETTLEMENT. The owner is told what they will receive
+   * before they hand over the item; changing `COMMISSION_RATE_BPS` afterwards must not
+   * retroactively alter that promise. Settlement copies this value rather than the current one,
+   * which is what makes the config constant safe to edit.
+   */
+  commissionRateBps Int?
+
+  // ---------------------------------------------------------------- reversal of collection
+  /**
+   * /**
+   * A refund is the reversal of THIS collection, so it lives here rather than on `Settlement`.
+   * That gives a property worth relying on: a booking reaches exactly one terminal money
+   * outcome - it settles or it refunds, never both - so reconciliation is a single check rather
+   * than a union across two tables.
+   */
+  refundedAt   DateTime?
+  refundAmount Int?
+  refundRef    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  booking Booking?
+  booking    Booking?
+  settlement Settlement?
 
+  /**
+   * A provider's transaction reference identifies one real-world transfer, so the same reference
+   * must not be claimed twice. Scoped to the provider because two providers may legitimately
+   * issue the same string.
+   */
+  @@unique([provider, transactionRef])
   @@index([status])
   @@index([provider])
   @@index([confirmedById]) // P5
+  // The admin verification queue: pending payments, oldest first.
+  @@index([status, submittedAt])
   @@map("payments")
+}
+
+/**
+ * Money leaving SamaanShare at the end of a booking.
+ * SEPARATE FROM `Payment` BECAUSE COLLECTION AND DISBURSEMENT ARE DIFFERENT EVENTS. One row
+ * records what the renter paid in and when an administrator verified it; this one records what
+ * was paid out, to whom, and who authorised it. Folding both into `Payment` would have meant a
+ * model where half the columns are null for most of a booking's life, and no clean way to ask
+ * "what have we disbursed this week".
+ * ONE PER BOOKING, enforced by `@@unique` on both foreign keys rather than by the action that
+ * writes it. Settling twice would pay an owner twice, and the application check and the insert
+ * are not atomic - the constraint is what actually makes it impossible.
+ * EVERY AMOUNT IS A FACT ABOUT MONEY THAT MOVED, in whole PKR, frozen at settlement. None of them
+ * is recomputed from the listing, the booking or the config afterwards.
+ */
+model Settlement {
+  id String @id @default(cuid())
+
+  bookingId String @unique
+  paymentId String @unique
+
+  // ---------------------------------------------------------------- the rental side
+  /**
+   * /** What the renter was charged for the rental, excluding the deposit.
+   */
+  rentalAmount Int
+
+  /**
+   * Copied from `Payment.commissionRateBps`, so this row is readable without a join.
+   */
+  commissionRateBps Int
+
+  /**
+   * What SamaanShare retained. `commissionAmount + ownerRentalAmount == rentalAmount`, always.
+   */
+  commissionAmount  Int
+  ownerRentalAmount Int
+
+  // ---------------------------------------------------------------- the deposit side
+  securityDeposit Int
+
+  /**
+   * An upheld damage claim, paid to the owner OUT OF the deposit.
+   * Kept as its own column rather than folded into `ownerRentalAmount`, because the two are
+   * different kinds of money and every screen has to be able to say so: one is rental income the
+   * platform took a cut of, the other is compensation it did not. Summing them into a single
+   * payout figure is easy to do and impossible to undo.
+   */
+  damageCompensationAmount Int @default(0)
+
+  /**
+   * `securityDeposit - damageCompensationAmount`, recorded as the amount actually returned.
+   */
+  depositReturnedAmount Int
+
+  /**
+   * No `totalOwnerPayout` column, deliberately.
+   * It is exactly `ownerRentalAmount + damageCompensationAmount` and carries no information the
+   * two components do not. Storing a third number that must always equal the sum of two others
+   * is an invariant waiting to drift; `totalOwnerPayout()` in `lib/payments/commission.ts`
+   * derives it for display.
+   */
+
+  // ---------------------------------------------------------------- the two transfers
+  ownerPaidAt    DateTime?
+  ownerPayoutRef String?
+
+  depositReturnedAt DateTime?
+  depositReturnRef  String?
+
+  // ---------------------------------------------------------------- authorship
+  /**
+   * /**
+   * Required, unlike `Payment.confirmedById`. A settlement cannot exist without an administrator
+   * having decided to make it, and a payout nobody is accountable for is not reviewable.
+   */
+  settledById String
+  settledBy   User   @relation("SettlementsRecorded", fields: [settledById], references: [id])
+
+  settledAt DateTime @default(now())
+
+  /**
+   * Free text for anything the transfer references cannot carry - a partial, a delay, a bank issue.
+   */
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([settledById])
+  // The settlement history, newest first.
+  @@index([settledAt])
+  @@map("settlements")
 }
 
 // ==================== BOOKING MODELS ====================
@@ -830,7 +1002,10 @@ model Booking {
   renter  User     @relation("RenterBookings", fields: [renterId], references: [id])
   owner   User     @relation("OwnerBookings", fields: [ownerId], references: [id])
   payment Payment? @relation(fields: [paymentId], references: [id])
-  reviews Review[]
+
+  // Money out, at most one. See the note on the model.
+  settlement Settlement?
+  reviews    Review[]
 
   // Trust & Safety: the pickup and return condition records, at most one each.
   handovers HandoverRecord[]
