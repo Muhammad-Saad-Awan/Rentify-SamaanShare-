@@ -272,4 +272,20 @@ export const ADMIN_ACTION_LABELS: Readonly<Record<AdminActionType, string>> = {
   [AdminActionType.REMOVE_LISTING]: "Listing removed",
   [AdminActionType.RESTORE_LISTING]: "Listing restored",
   [AdminActionType.EDIT_LISTING]: "Listing edited",
+  /**
+   * Payments. Worded as what the administrator decided, not as what the money did - "Payment
+   * verified" is a judgement they are accountable for, whereas "Payment received" would read as
+   * a fact the platform observed. The distinction matters on a history somebody may have to
+   * defend later.
+   *
+   * This map is `Record<AdminActionType, string>` rather than a partial, which is why adding the
+   * enum values broke the build until these landed. That is the intended behaviour: a new action
+   * type with no label would otherwise render as a blank row in an audit trail.
+   */
+  [AdminActionType.VERIFY_PAYMENT]: "Payment verified",
+  [AdminActionType.REJECT_PAYMENT]: "Payment rejected",
+  [AdminActionType.REVERSE_PAYMENT_VERIFICATION]:
+    "Payment verification reversed",
+  [AdminActionType.SETTLE_BOOKING]: "Booking settled",
+  [AdminActionType.RECORD_REFUND]: "Refund recorded",
 };
