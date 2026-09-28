@@ -3,6 +3,7 @@
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
+  CameraIcon,
   ImagePlusIcon,
   Loader2Icon,
   StarIcon,
@@ -99,6 +100,9 @@ function ImageUploader({
 
   /** Focused when the last photo goes and there is no neighbour left to receive it. */
   const fileInput = useRef<HTMLInputElement>(null);
+
+  /** The camera-only input, opened by the "Take a photo" button. */
+  const cameraInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const target = focusAfterRemove.current;
@@ -383,6 +387,46 @@ function ImageUploader({
           }}
         />
       </label>
+
+      {/*
+        Straight to the camera, for the phone in someone's hand next to the item.
+
+        A second input rather than an attribute on the first: `capture` makes the browser skip the
+        gallery entirely, so the one input could no longer pick existing photos. Single-shot, since
+        a camera returns one frame per capture; `handleFiles` takes it the same way as a pick.
+
+        Shown only on touch-first devices. A desktop browser ignores `capture` and opens the
+        ordinary file picker, so there the button would be a second "choose a file" labelled
+        as something else.
+      */}
+      <Button
+        type="button"
+        variant="outline"
+        className="hidden self-start pointer-coarse:inline-flex"
+        aria-disabled={remaining === 0 || undefined}
+        onClick={() => {
+          if (remaining > 0) {
+            cameraInput.current?.click();
+          }
+        }}
+      >
+        <CameraIcon aria-hidden="true" />
+        Take a photo
+      </Button>
+
+      <input
+        ref={cameraInput}
+        type="file"
+        accept={ACCEPTED_IMAGE_TYPES.join(",")}
+        capture="environment"
+        tabIndex={-1}
+        aria-hidden="true"
+        className="sr-only"
+        onChange={(event) => {
+          void handleFiles(event.target.files);
+          event.target.value = "";
+        }}
+      />
 
       {/*
         Upload progress, announced. The same words are on screen inside the label above, but a
