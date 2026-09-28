@@ -26,8 +26,8 @@ import type { ActionResult } from "@/types";
  * then calls `signIn("credentials", ...)`. See
  * `src/components/auth/register-form.tsx`.
  *
- * `emailVerified` is left null. Email verification is a later phase; nothing
- * currently gates on it.
+ * `emailVerified` is left null until the user redeems the confirmation link sent
+ * below. Booking listings with a deposit requires it - see `src/lib/trust/access.ts`.
  */
 /**
  * Signup budget per client address.
@@ -105,7 +105,8 @@ export async function registerUser(
   /**
    * The confirmation email, and why a failure here does not fail the signup.
    *
-   * The account exists and is usable without a confirmed address - nothing is gated on it - so a
+   * The account exists and is usable without a confirmed address - only booking a listing with a
+   * deposit waits on it - so a
    * Resend outage must not turn a completed registration into an error the user would answer by
    * registering again, straight into the "already exists" branch above. It is sent best-effort and
    * the failure is logged; `/profile` offers a resend, which is the recovery path.

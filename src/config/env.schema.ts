@@ -55,9 +55,14 @@ export const serverEnvSchema = z.object({
   AUTH_GOOGLE_ID: z.string().optional(),
   AUTH_GOOGLE_SECRET: z.string().optional(),
 
-  CLOUDINARY_CLOUD_NAME: z.string().optional(),
-  CLOUDINARY_API_KEY: z.string().optional(),
-  CLOUDINARY_API_SECRET: z.string().optional(),
+  /**
+   * Trimmed because a value pasted into a hosting dashboard easily carries a trailing space or
+   * newline. In the cloud name that breaks the upload URL; in the secret it silently produces a
+   * signature Cloudinary rejects.
+   */
+  CLOUDINARY_CLOUD_NAME: z.string().trim().optional(),
+  CLOUDINARY_API_KEY: z.string().trim().optional(),
+  CLOUDINARY_API_SECRET: z.string().trim().optional(),
 
   /** Resend API key. Absent means no transactional email, and no password reset offered. */
   RESEND_API_KEY: z.string().optional(),
