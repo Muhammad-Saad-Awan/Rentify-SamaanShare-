@@ -182,7 +182,8 @@ export function describeDepositState(state: DepositState): string {
     case "not-due":
       return "Not due back yet - the rental has not finished.";
     case "returned":
-      return "Returned by the owner.";
+      // Not "by the owner": under the custodial flow the platform returns it. True either way.
+      return "Returned.";
     case "claimed":
       return `A claim for ${formatPKR(state.amountClaimed)} is live, so the return clock is paused.`;
     case "due":

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { TRANSACTION_REF_MAX } from "@/lib/validations/payment";
 import {
+  recordDepositReturnSchema,
   recordOwnerPayoutSchema,
   SETTLEMENT_NOTES_MAX,
   settleBookingSchema,
@@ -101,6 +102,37 @@ describe("recordOwnerPayout input", () => {
     expect(result.success && result.data).toEqual({
       bookingId: BOOKING_ID,
       payoutRef: "IBFT-1",
+    });
+  });
+});
+
+describe("recordDepositReturn input", () => {
+  it("requires a transfer reference", () => {
+    expect(
+      recordDepositReturnSchema.safeParse({ bookingId: BOOKING_ID }).success
+    ).toBe(false);
+  });
+
+  it("accepts a reference and trims it", () => {
+    const result = recordDepositReturnSchema.safeParse({
+      bookingId: BOOKING_ID,
+      returnRef: "  IBFT-77001  ",
+    });
+
+    expect(result.success && result.data.returnRef).toBe("IBFT-77001");
+  });
+
+  /** No amount here either: how much goes back was decided at settlement, off the deposit. */
+  it("discards an amount", () => {
+    const result = recordDepositReturnSchema.safeParse({
+      bookingId: BOOKING_ID,
+      returnRef: "IBFT-1",
+      depositReturnedAmount: 1,
+    });
+
+    expect(result.success && result.data).toEqual({
+      bookingId: BOOKING_ID,
+      returnRef: "IBFT-1",
     });
   });
 });

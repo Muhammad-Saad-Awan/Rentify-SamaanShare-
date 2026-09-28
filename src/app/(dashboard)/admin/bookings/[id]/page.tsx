@@ -256,8 +256,8 @@ export default async function AdminBookingPage({
                 <div>
                   <dt className="inline font-medium">Deposit returned: </dt>
                   <dd className="inline">
-                    {booking.paymentDetail.depositReturnedAt
-                      ? formatDateTime(booking.paymentDetail.depositReturnedAt)
+                    {booking.depositReturnedAt
+                      ? formatDateTime(booking.depositReturnedAt)
                       : "not recorded"}
                   </dd>
                 </div>

@@ -7,7 +7,9 @@ import {
 } from "@/generated/prisma/enums";
 import {
   computeSettlement,
+  depositReturnedAtOf,
   settlementReadiness,
+  settlementTransfers,
   type SettlementSubject,
 } from "@/lib/payments/settlement";
 
@@ -300,5 +302,112 @@ describe("settlementReadiness", () => {
     });
 
     expect(!result.ready && result.reason).toMatch(/no upheld amount/i);
+  });
+});
+
+const AT = new Date("2026-09-20T10:00:00.000Z");
+
+describe("settlementTransfers", () => {
+  it("reports both as owed before anything is sent", () => {
+    const t = settlementTransfers({
+      ownerRentalAmount: 4_625,
+      damageCompensationAmount: 0,
+      ownerPaidAt: null,
+      depositReturnedAmount: 25_000,
+      depositReturnedAt: null,
+    });
+
+    expect(t.ownerPayout).toEqual({ kind: "owed", amount: 4_625 });
+    expect(t.depositReturn).toEqual({ kind: "owed", amount: 25_000 });
+    expect(t.complete).toBe(false);
+  });
+
+  /** The two are independent: paying one side must not make the settlement look finished. */
+  it("stays incomplete when only the owner has been paid", () => {
+    const t = settlementTransfers({
+      ownerRentalAmount: 4_625,
+      damageCompensationAmount: 0,
+      ownerPaidAt: AT,
+      depositReturnedAmount: 25_000,
+      depositReturnedAt: null,
+    });
+
+    expect(t.ownerPayout).toEqual({ kind: "sent", amount: 4_625, at: AT });
+    expect(t.complete).toBe(false);
+  });
+
+  it("adds damage compensation into the owner's transfer", () => {
+    const t = settlementTransfers({
+      ownerRentalAmount: 1_850,
+      damageCompensationAmount: 6_000,
+      ownerPaidAt: null,
+      depositReturnedAmount: 19_000,
+      depositReturnedAt: null,
+    });
+
+    expect(t.ownerPayout).toEqual({ kind: "owed", amount: 7_850 });
+  });
+
+  /**
+   * The case this function exists for. A claim that takes the whole deposit leaves no transfer to
+   * make, and reporting it as outstanding would leave the settlement permanently unfinishable.
+   */
+  it("has nothing to send when damage consumed the deposit", () => {
+    const t = settlementTransfers({
+      ownerRentalAmount: 1_850,
+      damageCompensationAmount: 25_000,
+      ownerPaidAt: AT,
+      depositReturnedAmount: 0,
+      depositReturnedAt: null,
+    });
+
+    expect(t.depositReturn).toEqual({ kind: "nothing-to-send" });
+    expect(t.complete).toBe(true);
+  });
+
+  it("is complete once both have been sent", () => {
+    const t = settlementTransfers({
+      ownerRentalAmount: 4_625,
+      damageCompensationAmount: 0,
+      ownerPaidAt: AT,
+      depositReturnedAmount: 25_000,
+      depositReturnedAt: AT,
+    });
+
+    expect(t.complete).toBe(true);
+  });
+});
+
+describe("depositReturnedAtOf", () => {
+  it("prefers the settlement, which is the custodial record", () => {
+    const settled = new Date("2026-09-21T10:00:00.000Z");
+
+    expect(
+      depositReturnedAtOf({
+        settlement: { depositReturnedAt: settled },
+        payment: { depositReturnedAt: AT },
+      })
+    ).toBe(settled);
+  });
+
+  /** An offline booking has no settlement, and its record is the one that must still be found. */
+  it("falls back to the payment while the offline flow is live", () => {
+    expect(
+      depositReturnedAtOf({
+        settlement: null,
+        payment: { depositReturnedAt: AT },
+      })
+    ).toBe(AT);
+  });
+
+  it("reports nothing when neither has a record", () => {
+    expect(
+      depositReturnedAtOf({
+        settlement: { depositReturnedAt: null },
+        payment: { depositReturnedAt: null },
+      })
+    ).toBeNull();
+
+    expect(depositReturnedAtOf({})).toBeNull();
   });
 });

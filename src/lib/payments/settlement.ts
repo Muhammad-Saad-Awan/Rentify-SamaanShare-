@@ -326,3 +326,98 @@ function damageCompensationFromClaim(
         : { amount: claim.amountUpheld };
   }
 }
+
+// ---------------------------------------------------------------------------- the two transfers
+
+/**
+ * A transfer a settlement still owes, or does not.
+ *
+ * `nothing-to-send` is not a cosmetic third case. When an upheld claim consumes the whole
+ * deposit there is no deposit return to make, and a settlement that reported it as outstanding
+ * would sit on the administrator's list forever, unfinishable. The same shape covers the owner
+ * side for symmetry rather than because a zero payout is expected.
+ */
+export type TransferState =
+  | { kind: "owed"; amount: number }
+  | { kind: "sent"; amount: number; at: Date }
+  | { kind: "nothing-to-send" };
+
+export interface SettlementTransfersInput {
+  ownerRentalAmount: number;
+  damageCompensationAmount: number;
+  ownerPaidAt: Date | null;
+  depositReturnedAmount: number;
+  depositReturnedAt: Date | null;
+}
+
+export interface SettlementTransfers {
+  ownerPayout: TransferState;
+  depositReturn: TransferState;
+  /** Nothing further to send. The settlement is finished, not merely recorded. */
+  complete: boolean;
+}
+
+function transferState(amount: number, at: Date | null): TransferState {
+  if (amount <= 0) {
+    return { kind: "nothing-to-send" };
+  }
+
+  return at ? { kind: "sent", amount, at } : { kind: "owed", amount };
+}
+
+/**
+ * What a settlement has actually sent, and what it still owes.
+ *
+ * Deciding the amounts and moving the money are separate acts - see `recordOwnerPayout` - so a
+ * `Settlement` row spends time in a state where one transfer has happened and the other has not.
+ * This is the function that says which, without any screen having to work it out from two
+ * nullable timestamps and two amounts.
+ *
+ * THE TWO TRANSFERS ARE INDEPENDENT AND UNORDERED. Nothing requires the owner to be paid before
+ * the renter's deposit goes back, or the reverse. They go to different people out of different
+ * money, and imposing an order would only mean a renter waits on a bank's treatment of somebody
+ * else's transfer.
+ */
+export function settlementTransfers({
+  ownerRentalAmount,
+  damageCompensationAmount,
+  ownerPaidAt,
+  depositReturnedAmount,
+  depositReturnedAt,
+}: SettlementTransfersInput): SettlementTransfers {
+  const ownerPayout = transferState(
+    totalOwnerPayout({ ownerRentalAmount, damageCompensationAmount }),
+    ownerPaidAt
+  );
+
+  const depositReturn = transferState(depositReturnedAmount, depositReturnedAt);
+
+  return {
+    ownerPayout,
+    depositReturn,
+    complete: ownerPayout.kind !== "owed" && depositReturn.kind !== "owed",
+  };
+}
+
+/**
+ * Where a booking's deposit return is recorded, during the change of models.
+ *
+ * TRANSITIONAL, AND THE RIGHT-HAND SIDE IS THE ONE THAT GOES. Under the offline flow the owner
+ * held the deposit and stamped `Payment.depositReturnedAt` themselves; under the custodial flow
+ * the platform holds it and an administrator stamps `Settlement.depositReturnedAt`. Both kinds of
+ * booking exist while the user interface still drives the old flow, and a booking has at most one
+ * of the two, so the precedence never actually arbitrates - it just spares every caller from
+ * knowing that.
+ *
+ * It exists as a function so that retiring `Payment.depositReturnedAt` is one deletion with a
+ * type error at every site that mattered, rather than a search for `??` across the query layer.
+ */
+export function depositReturnedAtOf({
+  settlement,
+  payment,
+}: {
+  settlement?: { depositReturnedAt: Date | null } | null;
+  payment?: { depositReturnedAt: Date | null } | null;
+}): Date | null {
+  return settlement?.depositReturnedAt ?? payment?.depositReturnedAt ?? null;
+}

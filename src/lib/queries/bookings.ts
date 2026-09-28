@@ -1,5 +1,6 @@
 import { BookingStatus } from "@/generated/prisma/enums";
 import { depositState } from "@/lib/bookings/deposit";
+import { depositReturnedAtOf } from "@/lib/payments/settlement";
 import { expireStalePendingBookings } from "@/lib/bookings/expire";
 import { canRenterCancel, canStartBooking } from "@/lib/bookings/lifecycle";
 import { releaseDueReviews } from "@/lib/reviews/release";
@@ -217,6 +218,11 @@ const bookingSelect = {
       depositReturnedAt: true,
     },
   },
+  /**
+   * Where a custodially-returned deposit is recorded. See `depositReturnedAtOf`: the payment's
+   * column is the offline flow's, this one is the platform's, and a booking has at most one.
+   */
+  settlement: { select: { depositReturnedAt: true } },
   // Both sides' reviews. Which of them the viewer is allowed to see is decided in `toSummary`.
   //
   // Moderator-removed reviews are fetched rather than filtered out here, which is deliberate. The
@@ -419,7 +425,7 @@ function toSummary(
       // awaiting payment still reports "not due" rather than "none" for a real deposit.
       securityDeposit: row.payment?.securityDeposit ?? row.securityDeposit,
       completedAt: row.completedAt,
-      depositReturnedAt: row.payment?.depositReturnedAt ?? null,
+      depositReturnedAt: depositReturnedAtOf(row),
       /**
        * The claim's effect on what is owed, reduced to the two facts `depositState` needs.
        *

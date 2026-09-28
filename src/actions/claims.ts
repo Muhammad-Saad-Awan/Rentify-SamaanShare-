@@ -10,6 +10,7 @@ import {
   canWithdrawClaim,
 } from "@/lib/claims/rules";
 import { createNotifications } from "@/lib/notifications/create";
+import { depositReturnedAtOf } from "@/lib/payments/settlement";
 import { buildClaimNotifications } from "@/lib/notifications/claim-messages";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -98,6 +99,8 @@ export async function fileDamageClaim(input: unknown): Promise<ActionResult> {
         securityDeposit: true,
         listing: { select: { title: true } },
         payment: { select: { securityDeposit: true, depositReturnedAt: true } },
+        // See `depositReturnedAtOf` - a custodially-returned deposit closes the window too.
+        settlement: { select: { depositReturnedAt: true } },
         claim: { select: { id: true } },
         handovers: {
           where: { type: HandoverType.RETURN },
@@ -123,7 +126,7 @@ export async function fileDamageClaim(input: unknown): Promise<ActionResult> {
       status: booking.status,
       completedAt: booking.completedAt,
       securityDeposit,
-      depositReturnedAt: booking.payment?.depositReturnedAt ?? null,
+      depositReturnedAt: depositReturnedAtOf(booking),
       alreadyClaimed: booking.claim !== null,
       amountClaimed,
     });

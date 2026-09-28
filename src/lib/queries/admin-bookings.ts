@@ -1,5 +1,6 @@
 import { BookingStatus } from "@/generated/prisma/enums";
 import { depositState } from "@/lib/bookings/deposit";
+import { depositReturnedAtOf } from "@/lib/payments/settlement";
 import { isPendingExpired } from "@/lib/bookings/lifecycle";
 import { AWAITING_ACTION_STATUSES } from "@/lib/bookings/timeline";
 import {
@@ -139,6 +140,8 @@ const summarySelect = {
       depositReturnedAt: true,
     },
   },
+  // See `depositReturnedAtOf` - the custodial flow stamps the settlement, not the payment.
+  settlement: { select: { depositReturnedAt: true } },
   claim: {
     select: {
       status: true,
@@ -284,7 +287,7 @@ function toSummary(row: SummaryRow, now: Date): AdminBookingSummary {
       // `toSummary` in queries/bookings.ts - otherwise a real deposit reports as "none".
       securityDeposit: row.payment?.securityDeposit ?? row.securityDeposit,
       completedAt: row.completedAt ?? null,
-      depositReturnedAt: row.payment?.depositReturnedAt ?? null,
+      depositReturnedAt: depositReturnedAtOf(row),
       claim: toDepositClaim(row.claim),
       now,
     }),
@@ -407,9 +410,17 @@ export interface AdminBookingDetail extends AdminBookingSummary {
     securityDeposit: number;
     confirmedAt: Date | null;
     confirmedByName: string | null;
-    depositReturnedAt: Date | null;
     transactionRef: string | null;
   } | null;
+  /**
+   * When the deposit went back, from whichever flow recorded it.
+   *
+   * ON THE BOOKING RATHER THAN ON `paymentDetail`, because it is no longer a fact about the
+   * payment. The offline flow stamped the payment row; the custodial one stamps the settlement,
+   * and a screen showing "deposit returned" should not have to know which kind of booking it is
+   * looking at. `depositReturnedAtOf` is what decides.
+   */
+  depositReturnedAt: Date | null;
   handovers: AdminHandoverRecord[];
   claim: AdminBookingClaim | null;
   reviews: AdminBookingReview[];
@@ -456,6 +467,7 @@ export async function getAdminBookingDetail(
           transactionRef: true,
         },
       },
+      settlement: { select: { depositReturnedAt: true } },
       claim: {
         select: {
           id: true,
@@ -546,10 +558,10 @@ export async function getAdminBookingDetail(
           securityDeposit: row.payment.securityDeposit,
           confirmedAt: row.payment.confirmedAt,
           confirmedByName: row.payment.confirmedBy?.name ?? null,
-          depositReturnedAt: row.payment.depositReturnedAt,
           transactionRef: row.payment.transactionRef,
         }
       : null,
+    depositReturnedAt: depositReturnedAtOf(row),
     handovers: row.handovers,
     claim: row.claim,
     reviews: row.reviews,
