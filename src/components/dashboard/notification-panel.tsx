@@ -2,7 +2,7 @@
 
 import { BellIcon, CheckCheckIcon, Loader2Icon } from "lucide-react";
 import Link from "next/link";
-import { useTransition } from "react";
+import { useId, useTransition } from "react";
 import { toast } from "sonner";
 
 import { markNotificationsRead } from "@/actions/notifications";
@@ -12,7 +12,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -53,6 +52,7 @@ interface NotificationPanelProps {
  */
 function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
   const [isPending, startTransition] = useTransition();
+  const headingId = useId();
 
   const badge =
     unreadCount > UNREAD_BADGE_CAP ? `${UNREAD_BADGE_CAP}+` : `${unreadCount}`;
@@ -103,9 +103,32 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
         </span>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent
+        align="end"
+        className="w-80"
+        aria-labelledby={headingId}
+      >
         <div className="flex items-center justify-between gap-2 pr-1">
-          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+          {/*
+            A PLAIN HEADING, NOT `DropdownMenuLabel`. That component is Base UI's
+            `Menu.GroupLabel`, which reads `MenuGroupContext` and THROWS when there is no
+            `Menu.Group` around it - and it throws as the popup mounts, so the page rendered
+            fine and only opening this panel failed. The bell lives in the dashboard layout,
+            outside `(dashboard)/error.tsx`, so the throw reached `global-error.tsx`: the whole
+            app replaced by "SamaanShare could not load" on a click of the bell.
+
+            Wrapping it in a `Menu.Group` would silence it and be wrong. This is the panel's
+            title, not the label of a set of menu items - there is no group here, and a group
+            whose only child is its own label announces an empty collection. So it is a `<p>`,
+            matching the header block in `user-menu.tsx`, and the popup is pointed at it with
+            `aria-labelledby` so the name is not lost with the primitive.
+          */}
+          <p
+            id={headingId}
+            className="text-muted-foreground px-1.5 py-1 text-xs font-medium"
+          >
+            Notifications
+          </p>
 
           {unreadCount > 0 && (
             <Button
