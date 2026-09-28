@@ -17,7 +17,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   changePasswordSchema,
   PASSWORD_MIN_LENGTH,
@@ -265,9 +265,8 @@ function PasswordField({
   return (
     <Field data-invalid={Boolean(error)}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input
+      <PasswordInput
         id={id}
-        type="password"
         autoComplete={autoComplete}
         aria-invalid={Boolean(error)}
         disabled={disabled}

@@ -15,6 +15,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { getAuthErrorMessage } from "@/lib/auth/errors";
 import { loginSchema } from "@/lib/validations/auth";
 
@@ -122,9 +123,8 @@ function LoginForm({ callbackUrl, showForgotPassword }: LoginFormProps) {
             )}
           </div>
 
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             aria-invalid={Boolean(errors.password)}
             disabled={isSubmitting}
