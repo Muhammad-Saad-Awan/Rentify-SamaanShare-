@@ -56,6 +56,17 @@ function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
   return <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />;
 }
 
+/**
+ * The label for a `DropdownMenuGroup`, and ONLY usable inside one.
+ *
+ * This is Base UI's `Menu.GroupLabel`, which reads `MenuGroupContext` and throws if there is no
+ * `Menu.Group` around it - at popup mount, so the failure appears on opening the menu rather
+ * than on render, and in production as the opaque "Base UI error #31". The notification panel
+ * used it as a panel title and took the entire app down to `global-error.tsx` on a click of the
+ * bell; the fix was a plain `<p>`, because a title for a popup is not the label of a group.
+ *
+ * If you want a heading for the whole menu, write an element - see `user-menu.tsx`.
+ */
 function DropdownMenuLabel({
   className,
   inset,
