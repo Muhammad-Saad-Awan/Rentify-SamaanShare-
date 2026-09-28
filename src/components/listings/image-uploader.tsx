@@ -224,7 +224,27 @@ function ImageUploader({
       );
 
       if (!response.ok) {
-        toast.error(`Could not upload ${file.name}.`);
+        // Cloudinary explains a rejection in `error.message` ("Invalid Signature...", "Unknown
+        // API key..."). Dropping it left a misconfigured deployment reporting only that the upload
+        // failed, with nothing to say whether the key, the secret or the cloud name was wrong.
+        const reason = await response
+          .json()
+          .then(
+            (payload: { error?: { message?: string } }) =>
+              payload.error?.message
+          )
+          .catch(() => undefined);
+
+        console.error(
+          "Cloudinary rejected the upload",
+          response.status,
+          reason
+        );
+        toast.error(
+          reason
+            ? `Could not upload ${file.name}: ${reason}`
+            : `Could not upload ${file.name}.`
+        );
 
         return null;
       }
