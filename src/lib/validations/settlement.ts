@@ -62,5 +62,29 @@ export const recordOwnerPayoutSchema = z.object({
   note: z.string().trim().max(PAYMENT_REASON_MAX).optional(),
 });
 
+/**
+ * Recording the transfer that returned the deposit to the renter.
+ *
+ * Same shape as the payout, and deliberately so: they are two transfers out of one settlement,
+ * to different people, and nothing about them differs except who receives the money. A renter
+ * asking where their deposit went, and an owner asking where their payout went, should be
+ * answered from records of the same quality.
+ */
+export const recordDepositReturnSchema = z.object({
+  bookingId: listingIdSchema,
+  returnRef: z
+    .string()
+    .trim()
+    .min(1, { error: "Enter the reference for the transfer to the renter." })
+    .max(TRANSACTION_REF_MAX, {
+      error: `A transfer reference is at most ${TRANSACTION_REF_MAX} characters.`,
+    }),
+  /** Recorded in the audit trail, not on the settlement row - see the note above. */
+  note: z.string().trim().max(PAYMENT_REASON_MAX).optional(),
+});
+
 export type SettleBookingInput = z.infer<typeof settleBookingSchema>;
 export type RecordOwnerPayoutInput = z.infer<typeof recordOwnerPayoutSchema>;
+export type RecordDepositReturnInput = z.infer<
+  typeof recordDepositReturnSchema
+>;

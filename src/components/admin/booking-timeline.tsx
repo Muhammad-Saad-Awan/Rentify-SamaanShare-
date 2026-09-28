@@ -41,7 +41,7 @@ function BookingTimeline({ booking }: BookingTimelineProps) {
     cancelledByRole: booking.cancelledByRole,
     statusReason: booking.statusReason,
     paymentConfirmedAt: booking.paymentDetail?.confirmedAt ?? null,
-    depositReturnedAt: booking.paymentDetail?.depositReturnedAt ?? null,
+    depositReturnedAt: booking.depositReturnedAt,
     extra: relatedEvents(booking),
   });
 

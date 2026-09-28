@@ -499,7 +499,7 @@ async function main() {
     cancelledByRole: detail!.cancelledByRole,
     statusReason: detail!.statusReason,
     paymentConfirmedAt: detail!.paymentDetail?.confirmedAt ?? null,
-    depositReturnedAt: detail!.paymentDetail?.depositReturnedAt ?? null,
+    depositReturnedAt: detail!.depositReturnedAt,
   });
 
   check(

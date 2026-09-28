@@ -12,6 +12,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { formatPKR } from "@/lib/utils/currency";
 import {
+  recordDepositReturnSchema,
   recordOwnerPayoutSchema,
   settleBookingSchema,
 } from "@/lib/validations/settlement";
@@ -36,10 +37,16 @@ import type { ActionResult } from "@/types";
  * `payment-verification.ts`. A settled booking is a `COMPLETED` or `REVIEWED` booking that now
  * has a `Settlement` row; the status describes the rental, not the money.
  *
- * WHAT THIS PHASE DELIBERATELY LEAVES ALONE. The deposit going back to the renter is computed and
- * stored here - it has to be, it is half the arithmetic - but nothing marks it returned. That is
- * the deposit phase, and it is also where `markDepositReturned()` and `Payment.depositReturnedAt`
- * are retired, since until then they are the only path that records a deposit coming back.
+ * THE TWO TRANSFERS ARE SEPARATE ACTS AND SO ARE THEIR RECORDS. Settling decides the figures;
+ * `recordOwnerPayout` and `recordDepositReturn` stamp the money actually leaving, in either
+ * order, because they go to different people and nothing makes one wait on the other.
+ *
+ * WHAT IS STILL NOT HERE. The offline flow's `markDepositReturned()` and the column it writes,
+ * `Payment.depositReturnedAt`, survive alongside this. They are not redundant yet: the user
+ * interface still drives the offline flow end to end, so that action is the only path a real
+ * booking has today, and deleting it would leave every finished rental with no way to record a
+ * deposit coming back at all. Both go when the interface switches over - see
+ * `depositReturnedAtOf`, which is the one place that has to know both exist.
  */
 
 const CONCURRENT_CHANGE_ERROR =
@@ -385,4 +392,106 @@ export async function recordOwnerPayout(
   revalidateSettlementPaths();
 
   return { success: true, data: { ownerPaidAt } };
+}
+
+/**
+ * An administrator records the transfer that returned the deposit to the renter.
+ *
+ * The mirror of `recordOwnerPayout`, and separate from it for the same reason settling is
+ * separate from either: the reference only exists once somebody has made the transfer. Neither
+ * waits on the other. A renter whose deposit is clean should not be kept waiting because the
+ * owner's bank is slow, and an owner should not be kept waiting because the renter's is.
+ *
+ * REFUSES WHEN THERE IS NOTHING TO SEND. An upheld claim can consume the whole deposit, and then
+ * `depositReturnedAmount` is zero: no transfer happens, so stamping one would record a payment
+ * that was never made. `settlementTransfers()` reports that case as `nothing-to-send` rather than
+ * as outstanding, which is what keeps such a settlement from sitting on the queue forever.
+ */
+export async function recordDepositReturn(
+  input: unknown
+): Promise<ActionResult<{ depositReturnedAt: Date }>> {
+  const parsed = recordDepositReturnSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? NOT_FOUND_ERROR,
+    };
+  }
+
+  const admin = await getActiveAdmin();
+
+  if (!admin) {
+    return { success: false, error: ADMIN_ONLY_ERROR };
+  }
+
+  const settlement = await prisma.settlement.findUnique({
+    where: { bookingId: parsed.data.bookingId },
+    select: {
+      id: true,
+      depositReturnedAt: true,
+      depositReturnedAmount: true,
+      booking: { select: { renterId: true } },
+    },
+  });
+
+  if (!settlement) {
+    return {
+      success: false,
+      error: "Settle this booking before returning the deposit.",
+    };
+  }
+
+  if (settlement.depositReturnedAt) {
+    return {
+      success: true,
+      data: { depositReturnedAt: settlement.depositReturnedAt },
+    };
+  }
+
+  if (settlement.depositReturnedAmount <= 0) {
+    return {
+      success: false,
+      error:
+        "There is nothing to return - the whole deposit went to the owner as damage compensation.",
+    };
+  }
+
+  const depositReturnedAt = new Date();
+
+  const applied = await prisma.$transaction(async (tx) => {
+    const updated = await tx.settlement.updateMany({
+      where: { id: settlement.id, depositReturnedAt: null },
+      data: { depositReturnedAt, depositReturnRef: parsed.data.returnRef },
+    });
+
+    if (updated.count !== 1) {
+      return false;
+    }
+
+    /**
+     * The subject is the RENTER. This is their money going back to them, and it is their account
+     * history that has to answer "when did SamaanShare return my deposit" - the same rule that
+     * puts verification on the renter and the payout on the owner.
+     */
+    await writeAdminAction(tx, {
+      actorId: admin.id,
+      subjectId: settlement.booking.renterId,
+      type: AdminActionType.SETTLE_BOOKING,
+      reason:
+        `Returned ${formatPKR(settlement.depositReturnedAmount)} of the deposit against reference ${parsed.data.returnRef}.` +
+        `${parsed.data.note ? ` ${parsed.data.note}` : ""}`,
+      newValue: parsed.data.returnRef,
+    });
+
+    return true;
+  });
+
+  if (!applied) {
+    return { success: false, error: CONCURRENT_CHANGE_ERROR };
+  }
+
+  revalidateSettlementPaths();
+
+  return { success: true, data: { depositReturnedAt } };
 }

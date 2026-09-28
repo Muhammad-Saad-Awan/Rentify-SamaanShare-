@@ -9,8 +9,12 @@
 //                    itself with a unique index rather than a conditional update,
 //                    because there is no prior row to put a condition on, and an index
 //                    is only a guard if it actually rejects.
-//   THE SECOND CAS - the owner payout stamp, which must happen once. A timestamp that
-//                    can move is not a record of when money left.
+//   THE TWO STAMPS  - the owner payout and the deposit return, each of which must
+//                    happen once. A timestamp that can move is not a record of when
+//                    money left.
+//   TWO MODELS AT ONCE - the offline flow stamps the payment, the custodial one stamps
+//                    the settlement, and both kinds of booking exist while the interface
+//                    still drives the old flow.
 //   THE FREEZE     - the settlement is computed from the rate stored on the payment,
 //                    not from today's configuration. Checked by settling at a rate the
 //                    config does not hold.
@@ -43,7 +47,9 @@ import {
 import { writeAdminAction } from "../src/lib/admin/log";
 import {
   computeSettlement,
+  depositReturnedAtOf,
   settlementReadiness,
+  settlementTransfers,
 } from "../src/lib/payments/settlement";
 
 dotenv.config({ path: [".env.local", ".env"], quiet: true });
@@ -583,6 +589,117 @@ async function main(): Promise<void> {
       "the two payout components are stored separately",
       claimSettlement.ownerRentalAmount === 1_850 &&
         claimSettlement.damageCompensationAmount === 6_000
+    );
+
+    // ------------------------------------------------------------ the deposit going back
+    console.log("\nDeposit return");
+
+    const returnRef = `IBFT-DEP-${stamp}`;
+
+    const returned = await prisma.settlement.updateMany({
+      where: { id: settlement.id, depositReturnedAt: null },
+      data: { depositReturnedAt: new Date(), depositReturnRef: returnRef },
+    });
+
+    check("the deposit return stamp applies once", returned.count === 1);
+
+    const returnedTwice = await prisma.settlement.updateMany({
+      where: { id: settlement.id, depositReturnedAt: null },
+      data: { depositReturnedAt: new Date(), depositReturnRef: "IBFT-DUP" },
+    });
+
+    check(
+      "returning the same deposit twice affects nothing",
+      returnedTwice.count === 0
+    );
+
+    const settled = await prisma.settlement.findUnique({
+      where: { id: settlement.id },
+      select: {
+        ownerRentalAmount: true,
+        damageCompensationAmount: true,
+        ownerPaidAt: true,
+        ownerPayoutRef: true,
+        depositReturnedAmount: true,
+        depositReturnedAt: true,
+        depositReturnRef: true,
+      },
+    });
+
+    check(
+      "the two references are kept apart",
+      settled?.depositReturnRef === returnRef &&
+        settled.ownerPayoutRef === payoutRef
+    );
+
+    const transfers = settlementTransfers(settled!);
+
+    check(
+      "both transfers report as sent, and the settlement is complete",
+      transfers.ownerPayout.kind === "sent" &&
+        transfers.depositReturn.kind === "sent" &&
+        transfers.complete
+    );
+
+    const claimTransfers = settlementTransfers(
+      (await prisma.settlement.findUnique({
+        where: { id: claimSettlement.id },
+        select: {
+          ownerRentalAmount: true,
+          damageCompensationAmount: true,
+          ownerPaidAt: true,
+          depositReturnedAmount: true,
+          depositReturnedAt: true,
+        },
+      }))!
+    );
+
+    check(
+      "an unsent settlement owes the owner rental plus damage, and the renter the rest",
+      claimTransfers.ownerPayout.kind === "owed" &&
+        claimTransfers.ownerPayout.amount === 7_850 &&
+        claimTransfers.depositReturn.kind === "owed" &&
+        claimTransfers.depositReturn.amount === DEPOSIT - 6_000 &&
+        !claimTransfers.complete
+    );
+
+    // ------------------------------------------------------------ both models at once
+    console.log("\nTwo models in one table");
+
+    const custodial = await prisma.booking.findUnique({
+      where: { id: booking.id },
+      select: {
+        payment: { select: { depositReturnedAt: true } },
+        settlement: { select: { depositReturnedAt: true } },
+      },
+    });
+
+    check(
+      "a custodial booking reports the settlement's stamp",
+      depositReturnedAtOf(custodial!)?.getTime() ===
+        settled!.depositReturnedAt!.getTime() &&
+        custodial!.payment!.depositReturnedAt === null
+    );
+
+    /** An offline booking: the owner stamped the payment and there is no settlement stamp. */
+    const offlineReturnedAt = new Date();
+
+    await prisma.payment.update({
+      where: { id: otherPayment.id },
+      data: { depositReturnedAt: offlineReturnedAt },
+    });
+
+    const offline = await prisma.booking.findUnique({
+      where: { id: claimedBooking.id },
+      select: {
+        payment: { select: { depositReturnedAt: true } },
+        settlement: { select: { depositReturnedAt: true } },
+      },
+    });
+
+    check(
+      "an offline booking still reports the payment's stamp",
+      depositReturnedAtOf(offline!)?.getTime() === offlineReturnedAt.getTime()
     );
 
     // ------------------------------------------------------------ audit
