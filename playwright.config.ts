@@ -143,6 +143,22 @@ export default defineConfig({
       dependencies: ["setup"],
       use: { ...VIEWPORT },
     },
+
+    /**
+     * Realtime delivery, in its own project because it drives TWO browsers at once.
+     *
+     * No `storageState`: it signs in as its own owner and its own renter, neither of which any
+     * other project touches. Depends on `setup` for that cast, not for a session.
+     *
+     * Separate from `journey` so a failure says which of the two is broken - the whole rental
+     * lifecycle, or the delivery of one event - rather than pointing at a file that does both.
+     */
+    {
+      name: "realtime",
+      testMatch: /realtime-delivery\.spec\.ts/,
+      dependencies: ["setup"],
+      use: { ...VIEWPORT },
+    },
   ],
 
   webServer: {

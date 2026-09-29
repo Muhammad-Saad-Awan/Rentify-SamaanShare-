@@ -43,6 +43,28 @@ export interface TestAccount {
    */
   journeyEmail: string;
   journeyPassword: string;
+
+  /**
+   * A whole second cast, for the realtime delivery test.
+   *
+   * ITS OWN OWNER, RENTER, LISTING AND BOOKING, sharing nothing with the fixtures above. That
+   * test has to APPROVE a booking to make the other browser receive something, and the approve
+   * and decline buttons the focus tests look for exist only while a request is still pending -
+   * so consuming the shared one would break them from another project, intermittently, depending
+   * on which worker got there first.
+   *
+   * Both passwords are known here, unlike the journey's renter which registers through the form.
+   * The realtime test is about what one browser sees when another acts; making it register an
+   * account first would add a failure mode that has nothing to do with what it measures.
+   */
+  realtimeOwnerEmail: string;
+  realtimeOwnerPassword: string;
+  realtimeRenterEmail: string;
+  realtimeRenterPassword: string;
+  realtimeOwnerId: string;
+  realtimeRenterId: string;
+  realtimeListingId: string;
+  realtimeBookingId: string;
 }
 
 const STATE_DIR = "tests/e2e/.auth";
