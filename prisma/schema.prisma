@@ -786,6 +786,7 @@ model Payment {
    * /**
    * /**
    * /**
+   * /**
    * When the renter declared they had paid.
    * Distinct from `createdAt`, which is when the payment row was created as the renter chose a
    * method, and from `confirmedAt`, which is when an administrator agreed the money had arrived.
@@ -820,6 +821,7 @@ model Payment {
 
   // ---------------------------------------------------------------- reversal of collection
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -876,6 +878,7 @@ model Settlement {
   /**
    * /**
    * /**
+   * /**
    * /** What the renter was charged for the rental, excluding the deposit.
    */
   rentalAmount Int
@@ -925,6 +928,7 @@ model Settlement {
 
   // ---------------------------------------------------------------- authorship
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -1258,6 +1262,22 @@ model ClaimPhoto {
   url      String
   publicId String @unique
   order    Int    @default(0)
+
+  /**
+   * Cloudinary's checksum of the stored bytes. Same control as `HandoverPhoto.hash`.
+   * UNIQUE ACROSS CLAIM PHOTOS, which refuses the scam this table is most exposed to: one
+   * photograph of damage, filed against rental after rental. Also catches the same image
+   * attached twice under two uploads, and a respondent answering with the claimant's own photo.
+   * SCOPED TO THIS TABLE, NOT SHARED WITH `HandoverPhoto`, and that is a decision rather than an
+   * oversight. A claim photo that also appears on THIS booking's return handover is the honest
+   * case - it is the damage recorded at the door, offered again as the basis of the claim - and a
+   * shared index would refuse it. The dishonest version, the same image from ANOTHER booking's
+   * handover, is refused by a check in `actions/claims.ts` instead. That check reads before it
+   * writes and no index backs it, so it is the weaker half; this index is the firm one.
+   * Nullable for the same reasons as the handover column, including that Postgres treats NULLs
+   * as distinct so unchecked photos never collide.
+   */
+  hash String? @unique
 
   // Who attached it. A claim carries the owner's photos and the renter's reply
   // may carry their own, and telling them apart is the point of the column.

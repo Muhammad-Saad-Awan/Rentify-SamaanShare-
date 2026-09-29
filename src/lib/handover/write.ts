@@ -1,5 +1,8 @@
 import { canRecordHandover } from "@/lib/handover/rules";
-import { photoReuseError } from "@/lib/uploads/photo-reuse";
+import {
+  HANDOVER_REUSE_COPY,
+  photoReuseError,
+} from "@/lib/uploads/photo-reuse";
 import { resolveOwnedPhotos } from "@/lib/uploads/resolve-photos";
 import { prisma } from "@/lib/prisma";
 
@@ -114,7 +117,8 @@ export async function prepareHandover({
               sameBooking: row.handover.bookingId === bookingId,
             },
           ]
-    )
+    ),
+    HANDOVER_REUSE_COPY
   );
 
   if (reuse) {
