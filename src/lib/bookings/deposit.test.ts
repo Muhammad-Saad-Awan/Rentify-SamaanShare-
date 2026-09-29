@@ -4,6 +4,7 @@ import {
   DEPOSIT_RETURN_SLA_HOURS,
   depositReturnDueAt,
   depositState,
+  describeDepositState,
 } from "@/lib/bookings/deposit";
 
 /**
@@ -114,7 +115,7 @@ describe("depositState", () => {
         depositReturnedAt: returnedAt,
         now: hoursAfter(200),
       })
-    ).toEqual({ kind: "returned", returnedAt });
+    ).toEqual({ kind: "returned", returnedAt, confirmedAt: null });
   });
 
   it("reports returned even if the rental has no completion timestamp", () => {
@@ -127,7 +128,7 @@ describe("depositState", () => {
         depositReturnedAt: returnedAt,
         now: hoursAfter(2),
       })
-    ).toEqual({ kind: "returned", returnedAt });
+    ).toEqual({ kind: "returned", returnedAt, confirmedAt: null });
   });
 });
 
@@ -260,5 +261,61 @@ describe("depositState with a damage claim", () => {
     if (state.kind === "due") {
       expect(state.owed).toBe(0);
     }
+  });
+});
+
+/**
+ * The renter's half of the record.
+ *
+ * `depositState` treats confirmation as a field on `returned` rather than as a state of its own -
+ * see the note on the union. What these assert is the distinction that matters to every sentence
+ * built on it: a deposit nobody has confirmed is not the same as one the renter says never came,
+ * and the type has no way to express the second.
+ */
+describe("depositState with a renter confirmation", () => {
+  const completedAt = new Date("2026-09-10T12:00:00.000Z");
+  const returnedAt = new Date("2026-09-11T12:00:00.000Z");
+  const confirmedAt = new Date("2026-09-11T18:00:00.000Z");
+
+  it("reports a return the renter has not confirmed", () => {
+    const state = depositState({
+      securityDeposit: 5000,
+      completedAt,
+      depositReturnedAt: returnedAt,
+      now: new Date("2026-09-12T12:00:00.000Z"),
+    });
+
+    expect(state).toEqual({ kind: "returned", returnedAt, confirmedAt: null });
+    expect(describeDepositState(state)).toMatch(/has not confirmed/i);
+  });
+
+  it("carries the confirmation through once the renter gives it", () => {
+    const state = depositState({
+      securityDeposit: 5000,
+      completedAt,
+      depositReturnedAt: returnedAt,
+      depositConfirmedAt: confirmedAt,
+      now: new Date("2026-09-12T12:00:00.000Z"),
+    });
+
+    expect(state).toEqual({ kind: "returned", returnedAt, confirmedAt });
+    expect(describeDepositState(state)).toMatch(/confirmed it arrived/i);
+  });
+
+  /**
+   * A confirmation without a recorded return should not be able to exist - the action refuses it -
+   * and if one did, the state still turns on the return. Confirming receipt of something nobody
+   * sent is not evidence that it was sent.
+   */
+  it("ignores a confirmation when no return was recorded", () => {
+    const state = depositState({
+      securityDeposit: 5000,
+      completedAt,
+      depositReturnedAt: null,
+      depositConfirmedAt: confirmedAt,
+      now: new Date("2026-09-11T00:00:00.000Z"),
+    });
+
+    expect(state.kind).toBe("due");
   });
 });

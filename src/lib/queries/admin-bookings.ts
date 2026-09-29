@@ -128,6 +128,8 @@ const summarySelect = {
   updatedAt: true,
   // Needed by `depositState`: the return clock is measured from when the rental completed.
   completedAt: true,
+  // The renter's half of the deposit-return record. See the note on the column.
+  depositConfirmedAt: true,
   listing: { select: { id: true, title: true, city: true } },
   renter: partySelect,
   owner: partySelect,
@@ -288,6 +290,7 @@ function toSummary(row: SummaryRow, now: Date): AdminBookingSummary {
       securityDeposit: row.payment?.securityDeposit ?? row.securityDeposit,
       completedAt: row.completedAt ?? null,
       depositReturnedAt: depositReturnedAtOf(row),
+      depositConfirmedAt: row.depositConfirmedAt,
       claim: toDepositClaim(row.claim),
       now,
     }),

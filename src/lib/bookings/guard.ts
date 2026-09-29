@@ -51,6 +51,10 @@ export interface BookingForAction {
     confirmedAt: Date | null;
     depositReturnedAt: Date | null;
   } | null;
+  /** Where the custodial flow records the return - see `depositReturnedAtOf`. */
+  settlement: { depositReturnedAt: Date | null } | null;
+  /** The renter's half of that record. */
+  depositConfirmedAt: Date | null;
 }
 
 const bookingForActionSelect = {
@@ -75,6 +79,8 @@ const bookingForActionSelect = {
       depositReturnedAt: true,
     },
   },
+  settlement: { select: { depositReturnedAt: true } },
+  depositConfirmedAt: true,
 } as const;
 
 /** Which side of the booking the caller claims to be. */

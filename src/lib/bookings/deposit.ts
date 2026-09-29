@@ -42,8 +42,16 @@ export type DepositState =
   | { kind: "none" }
   /** The rental has not finished, so the clock has not started. */
   | { kind: "not-due" }
-  /** The owner has marked it returned. */
-  | { kind: "returned"; returnedAt: Date }
+  /**
+   * The return has been recorded, and - separately - whether the renter says it arrived.
+   *
+   * ONE STATE WITH A NULLABLE FIELD, not two states. Every surface that handles "returned" must
+   * keep handling it whether or not the renter has confirmed, and splitting the union would make
+   * each of those an exhaustiveness error to be silenced rather than a sentence to be written.
+   * `confirmedAt` is null while unconfirmed, and null means UNCONFIRMED, never "not received" -
+   * a renter who has not looked at the app is the common case, not a complaint.
+   */
+  | { kind: "returned"; returnedAt: Date; confirmedAt: Date | null }
   /**
    * A claim is live, so the clock is paused and the amount is not yet settled.
    *
@@ -77,8 +85,10 @@ interface DepositStateInput {
   securityDeposit: number;
   /** `null` until the rental completes. */
   completedAt: Date | null;
-  /** `null` until the owner marks the deposit returned. */
+  /** `null` until whoever holds the deposit records returning it. */
   depositReturnedAt: Date | null;
+  /** `null` until the renter confirms it reached them. Only ever read alongside the above. */
+  depositConfirmedAt?: Date | null;
   /** `null` when no claim was ever filed, which is the overwhelming majority. */
   claim?: DepositClaim | null;
   now?: Date;
@@ -99,6 +109,7 @@ export function depositState({
   securityDeposit,
   completedAt,
   depositReturnedAt,
+  depositConfirmedAt = null,
   claim = null,
   now = new Date(),
 }: DepositStateInput): DepositState {
@@ -107,7 +118,11 @@ export function depositState({
   }
 
   if (depositReturnedAt) {
-    return { kind: "returned", returnedAt: depositReturnedAt };
+    return {
+      kind: "returned",
+      returnedAt: depositReturnedAt,
+      confirmedAt: depositConfirmedAt,
+    };
   }
 
   if (!completedAt) {
@@ -182,8 +197,16 @@ export function describeDepositState(state: DepositState): string {
     case "not-due":
       return "Not due back yet - the rental has not finished.";
     case "returned":
-      // Not "by the owner": under the custodial flow the platform returns it. True either way.
-      return "Returned.";
+      /**
+       * Not "by the owner": under the custodial flow the platform returns it. True either way.
+       *
+       * The unconfirmed wording says who said so, because that is the whole distinction. An
+       * administrator reading this while a renter is on the phone claiming the money never came
+       * needs to see that the record is one-sided, not read "Returned" and assume it is settled.
+       */
+      return state.confirmedAt
+        ? "Returned, and the renter confirmed it arrived."
+        : "Recorded as returned. The renter has not confirmed it arrived yet.";
     case "claimed":
       return `A claim for ${formatPKR(state.amountClaimed)} is live, so the return clock is paused.`;
     case "due":
