@@ -60,6 +60,22 @@ export function isEmailEnabled(): boolean {
   return Boolean(env.RESEND_API_KEY);
 }
 
+/**
+ * Whether realtime delivery is configured.
+ *
+ * All four or nothing: a partial configuration is a misconfiguration, and starting a client with
+ * three of them produces an authentication failure at subscribe time rather than at boot, on the
+ * one surface where the failure is invisible.
+ */
+export function isRealtimeEnabled(): boolean {
+  return Boolean(
+    env.PUSHER_APP_ID &&
+    env.PUSHER_KEY &&
+    env.PUSHER_SECRET &&
+    env.PUSHER_CLUSTER
+  );
+}
+
 /** Whether Cloudinary uploads are configured. */
 export function isCloudinaryEnabled(): boolean {
   return Boolean(
