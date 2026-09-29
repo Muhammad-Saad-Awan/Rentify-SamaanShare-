@@ -177,6 +177,69 @@ async function create(): Promise<void> {
   /** Not created here - the journey registers with these through the form. */
   const journeyCredentials = newAccountCredentials();
 
+  /**
+   * The realtime cast: its own owner, renter, listing and pending request.
+   *
+   * Separate from everything above because the realtime test approves this booking, and an
+   * approved booking has no Approve button left for the focus tests to find. Two projects racing
+   * for one pending request is the kind of failure that appears only under parallelism and only
+   * sometimes.
+   */
+  const realtimeOwnerCredentials = newAccountCredentials();
+  const realtimeRenterCredentials = newAccountCredentials();
+
+  const realtimeOwner = await prisma.user.create({
+    data: {
+      email: realtimeOwnerCredentials.email,
+      name: "E2E Realtime Owner",
+      password: await hashPassword(realtimeOwnerCredentials.password),
+      emailVerified: new Date(),
+      city: "karachi",
+    },
+    select: { id: true },
+  });
+
+  const realtimeRenter = await prisma.user.create({
+    data: {
+      email: realtimeRenterCredentials.email,
+      name: "E2E Realtime Renter",
+      password: await hashPassword(realtimeRenterCredentials.password),
+      emailVerified: new Date(),
+      city: "karachi",
+    },
+    select: { id: true },
+  });
+
+  const realtimeListing = await prisma.listing.create({
+    data: {
+      ownerId: realtimeOwner.id,
+      title: "E2E Realtime Listing",
+      description:
+        "Created by the end-to-end realtime test. If you are reading this in a real database, a run was interrupted before its teardown.",
+      categoryId: category.id,
+      condition: "GOOD",
+      pricePerDay: 300,
+      securityDeposit: 1000,
+      city: "karachi",
+      status: "ACTIVE",
+    },
+    select: { id: true },
+  });
+
+  const realtimeBooking = await prisma.booking.create({
+    data: {
+      listingId: realtimeListing.id,
+      renterId: realtimeRenter.id,
+      ownerId: realtimeOwner.id,
+      startDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+      endDate: new Date(Date.now() + 62 * 24 * 60 * 60 * 1000),
+      totalPrice: 600,
+      securityDeposit: 1000,
+      status: "PENDING",
+    },
+    select: { id: true },
+  });
+
   writeAccount({
     userId: user.id,
     listingId: listing.id,
@@ -187,6 +250,14 @@ async function create(): Promise<void> {
     journeyListingId: journeyListing.id,
     journeyEmail: journeyCredentials.email,
     journeyPassword: journeyCredentials.password,
+    realtimeOwnerEmail: realtimeOwnerCredentials.email,
+    realtimeOwnerPassword: realtimeOwnerCredentials.password,
+    realtimeRenterEmail: realtimeRenterCredentials.email,
+    realtimeRenterPassword: realtimeRenterCredentials.password,
+    realtimeOwnerId: realtimeOwner.id,
+    realtimeRenterId: realtimeRenter.id,
+    realtimeListingId: realtimeListing.id,
+    realtimeBookingId: realtimeBooking.id,
   });
 }
 
@@ -209,7 +280,11 @@ async function destroy(): Promise<void> {
     return;
   }
 
-  const listingIds = [account.listingId, account.journeyListingId];
+  const listingIds = [
+    account.listingId,
+    account.journeyListingId,
+    account.realtimeListingId,
+  ];
 
   /**
    * The journey's renter registered through the form, so it has no id here - only the address it
@@ -221,7 +296,12 @@ async function destroy(): Promise<void> {
     select: { id: true },
   });
 
-  const userIds = [account.userId, account.renterId];
+  const userIds = [
+    account.userId,
+    account.renterId,
+    account.realtimeOwnerId,
+    account.realtimeRenterId,
+  ];
 
   if (journeyRenter) {
     userIds.push(journeyRenter.id);
@@ -268,6 +348,7 @@ async function destroy(): Promise<void> {
   });
   await prisma.booking.deleteMany({ where: { id: { in: bookingIds } } });
   await prisma.payment.deleteMany({ where: { id: { in: paymentIds } } });
+  await prisma.notification.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.savedListing.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.listing.deleteMany({ where: { id: { in: listingIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
