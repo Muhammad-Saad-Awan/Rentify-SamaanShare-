@@ -1,4 +1,5 @@
 import { canRecordHandover } from "@/lib/handover/rules";
+import { photoReuseError } from "@/lib/uploads/photo-reuse";
 import { resolveOwnedPhotos } from "@/lib/uploads/resolve-photos";
 import { prisma } from "@/lib/prisma";
 
@@ -79,6 +80,47 @@ export async function prepareHandover({
     return { ok: false, error: resolved.error };
   }
 
+  /**
+   * Has any of these images been submitted as evidence before?
+   *
+   * The checksums come from Cloudinary, not from the browser - see `ResolvedPhoto.hash` - so this
+   * is a question about bytes the server has seen, not about a claim the client made. The reading
+   * that matters most is a photo already attached to THIS booking, which is this rental's pickup
+   * picture offered again at return.
+   *
+   * Runs here, outside the transaction, alongside the other read this function does. The unique
+   * index on `HandoverPhoto.hash` is the real guarantee; this is for the message.
+   */
+  const hashes = resolved.photos
+    .map((photo) => photo.hash)
+    .filter((hash): hash is string => hash !== null);
+
+  const priorRows =
+    hashes.length > 0
+      ? await prisma.handoverPhoto.findMany({
+          where: { hash: { in: hashes } },
+          select: { hash: true, handover: { select: { bookingId: true } } },
+        })
+      : [];
+
+  const reuse = photoReuseError(
+    resolved.photos,
+    priorRows.flatMap((row) =>
+      row.hash === null
+        ? []
+        : [
+            {
+              hash: row.hash,
+              sameBooking: row.handover.bookingId === bookingId,
+            },
+          ]
+    )
+  );
+
+  if (reuse) {
+    return { ok: false, error: reuse };
+  }
+
   return {
     ok: true,
     record: {
@@ -126,6 +168,8 @@ export async function writeHandoverRecord(
                 url: photo.url,
                 publicId: photo.publicId,
                 order: photo.order,
+                // Conditional: `exactOptionalPropertyTypes` refuses an explicit `undefined`.
+                ...(photo.hash ? { hash: photo.hash } : {}),
               })),
             },
           }

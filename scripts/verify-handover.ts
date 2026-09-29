@@ -98,11 +98,14 @@ async function main() {
           publicId: `ho-${stamp}-a`,
           url: "https://res.cloudinary.com/x/a.jpg",
           order: 0,
+          // Distinct checksums: reuse is exercised on its own below.
+          hash: `ho-${stamp}-hash-a`,
         },
         {
           publicId: `ho-${stamp}-b`,
           url: "https://res.cloudinary.com/x/b.jpg",
           order: 1,
+          hash: `ho-${stamp}-hash-b`,
         },
       ],
     })
@@ -258,6 +261,77 @@ async function main() {
       type: HandoverType.PICKUP,
       alreadyRecorded: false,
     }).allowed
+  );
+
+  // ------------------------------------------------- photo reuse
+  console.log("\n=== photo reuse ===");
+
+  /**
+   * The index is the guarantee, so the index is what gets tested.
+   *
+   * `photoReuseError` produces the readable refusal and has unit tests of its own, but it reads
+   * before it writes and two submissions can race between the two. What actually stops the same
+   * image being evidence twice is the unique constraint, and a constraint is only a constraint if
+   * it rejects.
+   */
+  const reusedHash = `ho-${stamp}-hash-a`;
+
+  let duplicateRefused = false;
+
+  try {
+    await prisma.handoverPhoto.create({
+      data: {
+        handoverId: record.id,
+        url: "https://res.cloudinary.com/x/reused.jpg",
+        publicId: `ho-${stamp}-reused`,
+        order: 0,
+        hash: reusedHash,
+      },
+      select: { id: true },
+    });
+  } catch {
+    duplicateRefused = true;
+  }
+
+  check(
+    "the same image cannot be attached to a second handover",
+    duplicateRefused,
+    "the unique index on hash did not reject"
+  );
+
+  /**
+   * Two unhashed photos must still be allowed. Postgres treats NULLs as distinct in a unique
+   * index, which is the property the nullable column depends on - if it did not hold, every
+   * photo Cloudinary gave no etag for would collide with every other.
+   */
+  const unhashed = await prisma.handoverPhoto.createMany({
+    data: [
+      {
+        handoverId: record.id,
+        url: "https://res.cloudinary.com/x/n1.jpg",
+        publicId: `ho-${stamp}-n1`,
+        order: 1,
+      },
+      {
+        handoverId: record.id,
+        url: "https://res.cloudinary.com/x/n2.jpg",
+        publicId: `ho-${stamp}-n2`,
+        order: 2,
+      },
+    ],
+  });
+
+  check("photos with no checksum do not collide", unhashed.count === 2);
+
+  const storedHash = await prisma.handoverPhoto.findFirst({
+    where: { publicId: `ho-${stamp}-a` },
+    select: { hash: true },
+  });
+
+  check(
+    "the checksum is stored with the photo",
+    storedHash?.hash === reusedHash,
+    storedHash?.hash
   );
 
   // ------------------------------------------- 5. photos cascade, the record does not
