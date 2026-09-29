@@ -16,6 +16,7 @@ import { getActiveAdmin } from "@/lib/auth/session";
 import { createNotifications } from "@/lib/notifications/create";
 import { buildReportNotifications } from "@/lib/notifications/report-messages";
 import { prisma } from "@/lib/prisma";
+import { publishAfterCommit } from "@/lib/realtime/publish";
 import { isActionPermittedFor, isReportOpen } from "@/lib/reports/rules";
 import { recomputeUserRating } from "@/lib/reviews/publish";
 import {
@@ -169,7 +170,7 @@ async function closeReport({
       });
 
       if (claimed.count === 0) {
-        return { claimed: false as const };
+        return { claimed: false as const, notifications: [] };
       }
 
       const applied = await applyReportAction(tx, {
@@ -181,7 +182,7 @@ async function closeReport({
         ...(resolution ? { resolution } : {}),
       });
 
-      await createNotifications(
+      const notifications = await createNotifications(
         tx,
         buildReportNotifications({
           reportId: report.id,
@@ -190,8 +191,10 @@ async function closeReport({
         })
       );
 
-      return { claimed: true as const, applied };
+      return { claimed: true as const, applied, notifications };
     });
+
+    publishAfterCommit(outcome.notifications);
 
     if (!outcome.claimed) {
       return {

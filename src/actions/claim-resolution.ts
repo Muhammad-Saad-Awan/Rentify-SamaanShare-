@@ -8,6 +8,7 @@ import { canResolveClaim } from "@/lib/claims/rules";
 import { createNotifications } from "@/lib/notifications/create";
 import { buildClaimNotifications } from "@/lib/notifications/claim-messages";
 import { prisma } from "@/lib/prisma";
+import { publishAfterCommit } from "@/lib/realtime/publish";
 import { resolveClaimSchema } from "@/lib/validations/claim";
 import { UNAUTHENTICATED_ERROR } from "@/types";
 
@@ -93,7 +94,7 @@ export async function resolveDamageClaim(
     const securityDeposit =
       claim.booking.payment?.securityDeposit ?? claim.booking.securityDeposit;
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       /**
        * Compare-and-swap on `DISPUTED`.
        *
@@ -113,7 +114,7 @@ export async function resolveDamageClaim(
       });
 
       if (claimed.count === 0) {
-        return false;
+        return null;
       }
 
       /**
@@ -122,7 +123,7 @@ export async function resolveDamageClaim(
        * Telling each side only their own half is how a settled dispute restarts: the two would go
        * on to describe different outcomes to each other.
        */
-      await createNotifications(
+      return createNotifications(
         tx,
         buildClaimNotifications({
           bookingId: claim.booking.id,
@@ -134,16 +135,16 @@ export async function resolveDamageClaim(
           event: { event: "resolved", amountUpheld, securityDeposit },
         })
       );
-
-      return true;
     });
 
-    if (!applied) {
+    if (!created) {
       return {
         success: false,
         error: "That claim has already been decided.",
       };
     }
+
+    publishAfterCommit(created);
 
     for (const path of [
       "/admin/claims",

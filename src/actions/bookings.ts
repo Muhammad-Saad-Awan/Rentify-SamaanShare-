@@ -18,6 +18,7 @@ import {
   MAX_BOOKING_DAYS,
 } from "@/lib/bookings/pricing";
 import { emitBookingNotifications } from "@/lib/notifications/create";
+import { publishAfterCommit } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getRenterAccessSignals } from "@/lib/queries/renter-access";
@@ -286,7 +287,7 @@ export async function createBookingRequest(
 
       // Inside the transaction, so the request that loses the date race does not notify an
       // owner about a booking that was rolled back.
-      await emitBookingNotifications(tx, {
+      const notifications = await emitBookingNotifications(tx, {
         event: "requested",
         bookingId: created.id,
         listingTitle: listing.title,
@@ -295,12 +296,19 @@ export async function createBookingRequest(
         endDate: toUtcDate(endDate),
       });
 
-      return created;
+      return { booking: created, notifications };
     });
+
+    /**
+     * Outside the transaction, for the reason the comment above gives in reverse: the write must
+     * not announce itself until it has committed, or an owner is told about a request the date
+     * race then rolled back.
+     */
+    publishAfterCommit(booking.notifications);
 
     revalidateBookingPaths(listing.id);
 
-    return { success: true, data: { id: booking.id } };
+    return { success: true, data: { id: booking.booking.id } };
   } catch (error) {
     // Another request claimed one of these days between the check and the write. The expected
     // outcome of the race, not a fault - so it gets a clear message rather than a generic one.
@@ -438,7 +446,7 @@ export async function updateBookingInstructions(
       return { success: true, data: undefined };
     }
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       const updated = await tx.booking.updateMany({
         where: {
           id: booking.id,
@@ -448,22 +456,22 @@ export async function updateBookingInstructions(
       });
 
       if (updated.count !== 1) {
-        return false;
+        return null;
       }
 
-      await emitBookingNotifications(tx, {
+      return emitBookingNotifications(tx, {
         event: "instructions-updated",
         bookingId: booking.id,
         listingTitle: booking.listing.title,
         parties: { renterId: booking.renterId, ownerId: owner.id },
       });
-
-      return true;
     });
 
-    if (!applied) {
+    if (!created) {
       return { success: false, error: CONCURRENT_CHANGE_ERROR };
     }
+
+    publishAfterCommit(created);
 
     revalidateBookingPaths(booking.listingId);
 
@@ -554,7 +562,7 @@ async function decide({
       };
     }
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       /**
        * The status read above is re-asserted in the WHERE, not trusted.
        *
@@ -574,7 +582,7 @@ async function decide({
       });
 
       if (updated.count !== 1) {
-        return false;
+        return null;
       }
 
       if (releaseDates) {
@@ -584,7 +592,7 @@ async function decide({
         });
       }
 
-      await emitBookingNotifications(tx, {
+      return emitBookingNotifications(tx, {
         bookingId: booking.id,
         listingTitle: booking.listing.title,
         parties: { renterId: booking.renterId, ownerId: owner.id },
@@ -592,13 +600,13 @@ async function decide({
           ? ({ event: "approved" } as const)
           : ({ event: "declined", reason: statusReason ?? null } as const)),
       });
-
-      return true;
     });
 
-    if (!applied) {
+    if (!created) {
       return { success: false, error: CONCURRENT_CHANGE_ERROR };
     }
+
+    publishAfterCommit(created);
 
     revalidateBookingPaths(booking.listingId);
 

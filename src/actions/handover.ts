@@ -8,6 +8,7 @@ import { canConfirmHandover } from "@/lib/handover/rules";
 import { createNotifications } from "@/lib/notifications/create";
 import { buildHandoverNotifications } from "@/lib/notifications/handover-messages";
 import { prisma } from "@/lib/prisma";
+import { publishAfterCommit } from "@/lib/realtime/publish";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { confirmHandoverSchema } from "@/lib/validations/handover";
 import { UNAUTHENTICATED_ERROR } from "@/types";
@@ -117,7 +118,7 @@ export async function confirmHandover(input: unknown): Promise<ActionResult> {
       ? HandoverConfirmation.AGREED
       : HandoverConfirmation.DISPUTED;
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       /**
        * Compare-and-swap on `PENDING`, the same shape as every other one-way transition here.
        * Checked in the write rather than trusted from the read above, which is outside this
@@ -134,7 +135,7 @@ export async function confirmHandover(input: unknown): Promise<ActionResult> {
       });
 
       if (claimed.count === 0) {
-        return false;
+        return null;
       }
 
       /**
@@ -145,7 +146,7 @@ export async function confirmHandover(input: unknown): Promise<ActionResult> {
        * different: it is the other party contesting a written account of their conduct, and the
        * person who wrote it needs to know while the item is still in front of them.
        */
-      await createNotifications(
+      return createNotifications(
         tx,
         buildHandoverNotifications({
           bookingId: record.booking.id,
@@ -161,13 +162,13 @@ export async function confirmHandover(input: unknown): Promise<ActionResult> {
           },
         })
       );
-
-      return true;
     });
 
-    if (!applied) {
+    if (!created) {
       return { success: false, error: "You have already answered this." };
     }
+
+    publishAfterCommit(created);
 
     for (const path of [
       "/dashboard/bookings",
