@@ -10,6 +10,7 @@ import {
   canWithdrawClaim,
 } from "@/lib/claims/rules";
 import { createNotifications } from "@/lib/notifications/create";
+import { publishAfterCommit } from "@/lib/realtime/publish";
 import { depositReturnedAtOf } from "@/lib/payments/settlement";
 import { buildClaimNotifications } from "@/lib/notifications/claim-messages";
 import { prisma } from "@/lib/prisma";
@@ -221,8 +222,8 @@ export async function fileDamageClaim(input: unknown): Promise<ActionResult> {
      */
     const handoverId = booking.handovers[0]?.id ?? null;
 
-    await prisma.$transaction(async (tx) => {
-      const claim = await tx.damageClaim.create({
+    const filed = await prisma.$transaction(async (tx) => {
+      await tx.damageClaim.create({
         data: {
           bookingId: booking.id,
           claimantId: booking.ownerId,
@@ -250,7 +251,7 @@ export async function fileDamageClaim(input: unknown): Promise<ActionResult> {
         select: { id: true },
       });
 
-      await createNotifications(
+      const notifications = await createNotifications(
         tx,
         buildClaimNotifications({
           bookingId: booking.id,
@@ -260,8 +261,10 @@ export async function fileDamageClaim(input: unknown): Promise<ActionResult> {
         })
       );
 
-      return claim;
+      return notifications;
     });
+
+    publishAfterCommit(filed);
 
     revalidateClaimPaths();
 
@@ -357,7 +360,7 @@ export async function respondToDamageClaim(
       return { success: false, error: reuse };
     }
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       /**
        * Compare-and-swap on `OPEN`.
        *
@@ -379,7 +382,7 @@ export async function respondToDamageClaim(
       });
 
       if (claimed.count === 0) {
-        return false;
+        return null;
       }
 
       if (photos.photos.length > 0) {
@@ -396,7 +399,7 @@ export async function respondToDamageClaim(
         });
       }
 
-      await createNotifications(
+      return createNotifications(
         tx,
         buildClaimNotifications({
           bookingId: claim.booking.id,
@@ -412,16 +415,16 @@ export async function respondToDamageClaim(
           },
         })
       );
-
-      return true;
     });
 
-    if (!applied) {
+    if (!created) {
       return {
         success: false,
         error: "This claim has already moved on. Please refresh.",
       };
     }
+
+    publishAfterCommit(created);
 
     revalidateClaimPaths();
 
@@ -498,7 +501,7 @@ export async function withdrawDamageClaim(
       return { success: false, error: eligibility.reason };
     }
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       const claimed = await tx.damageClaim.updateMany({
         // Both live states, so a claim escalated between the read and the write is still withdrawable.
         where: {
@@ -513,10 +516,10 @@ export async function withdrawDamageClaim(
       });
 
       if (claimed.count === 0) {
-        return false;
+        return null;
       }
 
-      await createNotifications(
+      return createNotifications(
         tx,
         buildClaimNotifications({
           bookingId: claim.booking.id,
@@ -528,16 +531,16 @@ export async function withdrawDamageClaim(
           event: { event: "withdrawn" },
         })
       );
-
-      return true;
     });
 
-    if (!applied) {
+    if (!created) {
       return {
         success: false,
         error: "This claim has already been settled.",
       };
     }
+
+    publishAfterCommit(created);
 
     revalidateClaimPaths();
 

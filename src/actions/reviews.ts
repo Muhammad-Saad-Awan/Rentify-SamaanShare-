@@ -7,6 +7,7 @@ import { getActiveUser } from "@/lib/auth/session";
 import { transitionBooking } from "@/lib/bookings/guard";
 import { canTransition } from "@/lib/bookings/lifecycle";
 import { emitBookingNotifications } from "@/lib/notifications/create";
+import { publishAfterCommit } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { publishReviews } from "@/lib/reviews/publish";
@@ -138,7 +139,7 @@ export async function createReview(
       });
 
       if (!releases) {
-        return { published: false };
+        return { published: false, notifications: [] };
       }
 
       /**
@@ -164,19 +165,22 @@ export async function createReview(
         });
       }
 
-      await emitBookingNotifications(tx, {
+      const notifications = await emitBookingNotifications(tx, {
         event: "reviews-published",
         bookingId: booking.id,
         listingTitle: booking.listing.title,
         parties: { renterId: booking.renterId, ownerId: booking.ownerId },
       });
 
-      return { published: true };
+      return { published: true, notifications };
     });
+
+    publishAfterCommit(outcome.notifications);
 
     revalidateReviewPaths(booking.listingId);
 
-    return { success: true, data: outcome };
+    // `notifications` is delivery plumbing and has no business in the action's answer.
+    return { success: true, data: { published: outcome.published } };
   } catch (error) {
     console.error("createReview failed", error);
 

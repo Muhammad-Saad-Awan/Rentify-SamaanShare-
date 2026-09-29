@@ -18,6 +18,7 @@ import {
 } from "@/lib/bookings/lifecycle";
 import { prepareHandover, writeHandoverRecord } from "@/lib/handover/write";
 import { emitBookingNotifications } from "@/lib/notifications/create";
+import { publishAfterCommit } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { bookingCancelSchema } from "@/lib/validations/booking";
@@ -129,7 +130,7 @@ export async function startBooking(
       return { success: false, error: handover.error };
     }
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       const moved = await transitionBooking(tx, {
         bookingId: booking.id,
         from: booking.status,
@@ -138,7 +139,7 @@ export async function startBooking(
       });
 
       if (!moved) {
-        return false;
+        return null;
       }
 
       /**
@@ -160,19 +161,19 @@ export async function startBooking(
        * physically out - releasing them here would let the listing be booked for days it cannot
        * be delivered on.
        */
-      await emitBookingNotifications(tx, {
+      return emitBookingNotifications(tx, {
         event: "picked-up",
         bookingId: booking.id,
         listingTitle: booking.listing.title,
         parties: { renterId: booking.renterId, ownerId: booking.ownerId },
       });
-
-      return true;
     });
 
-    if (!applied) {
+    if (!created) {
       return { success: false, error: CONCURRENT_CHANGE_ERROR };
     }
+
+    publishAfterCommit(created);
 
     revalidateBookingPaths(booking.listingId);
 
@@ -269,7 +270,7 @@ export async function completeBooking(
       return { success: false, error: handover.error };
     }
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       const moved = await transitionBooking(tx, {
         bookingId: booking.id,
         from: booking.status,
@@ -278,7 +279,7 @@ export async function completeBooking(
       });
 
       if (!moved) {
-        return false;
+        return null;
       }
 
       /**
@@ -299,7 +300,7 @@ export async function completeBooking(
       // block on an overlapping day survives.
       await releaseHeldDates(tx, booking.id);
 
-      await emitBookingNotifications(tx, {
+      const returned = await emitBookingNotifications(tx, {
         event: "returned",
         bookingId: booking.id,
         listingTitle: booking.listing.title,
@@ -317,19 +318,22 @@ export async function completeBooking(
        * two say different things - one is "your rental is finished", the other is a request - and
        * a renter who ignores the first should still see the second in their feed.
        */
-      await emitBookingNotifications(tx, {
+      const reminder = await emitBookingNotifications(tx, {
         event: "review-reminder",
         bookingId: booking.id,
         listingTitle: booking.listing.title,
         parties: { renterId: booking.renterId, ownerId: booking.ownerId },
       });
 
-      return true;
+      // Two events, four rows, one publish - see the note on `publishNotifications` batching.
+      return [...returned, ...reminder];
     });
 
-    if (!applied) {
+    if (!created) {
       return { success: false, error: CONCURRENT_CHANGE_ERROR };
     }
+
+    publishAfterCommit(created);
 
     revalidateBookingPaths(booking.listingId);
 
@@ -408,7 +412,7 @@ export async function cancelBooking(
       return { success: false, error: eligibility.reason };
     }
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       const moved = await transitionBooking(tx, {
         bookingId: booking.id,
         from: booking.status,
@@ -423,12 +427,12 @@ export async function cancelBooking(
       });
 
       if (!moved) {
-        return false;
+        return null;
       }
 
       await releaseHeldDates(tx, booking.id);
 
-      await emitBookingNotifications(tx, {
+      return emitBookingNotifications(tx, {
         event: "cancelled",
         by: "renter",
         bookingId: booking.id,
@@ -436,13 +440,13 @@ export async function cancelBooking(
         parties: { renterId: booking.renterId, ownerId: booking.ownerId },
         reason: reason ?? null,
       });
-
-      return true;
     });
 
-    if (!applied) {
+    if (!created) {
       return { success: false, error: CONCURRENT_CHANGE_ERROR };
     }
+
+    publishAfterCommit(created);
 
     revalidateBookingPaths(booking.listingId);
 

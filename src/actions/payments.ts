@@ -16,6 +16,7 @@ import {
 } from "@/lib/bookings/guard";
 import { canTransition } from "@/lib/bookings/lifecycle";
 import { emitBookingNotifications } from "@/lib/notifications/create";
+import { publishAfterCommit } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
@@ -146,7 +147,7 @@ export async function selectPaymentMethod(
       };
     }
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       /**
        * The payment row and the status change are one transaction.
        *
@@ -175,10 +176,10 @@ export async function selectPaymentMethod(
       });
 
       if (!moved) {
-        return false;
+        return null;
       }
 
-      await emitBookingNotifications(tx, {
+      return emitBookingNotifications(tx, {
         event: "payment-selected",
         bookingId: booking.id,
         listingTitle: booking.listing.title,
@@ -186,13 +187,13 @@ export async function selectPaymentMethod(
         method,
         amount: booking.totalPrice,
       });
-
-      return true;
     });
 
-    if (!applied) {
+    if (!created) {
       return { success: false, error: CONCURRENT_CHANGE_ERROR };
     }
+
+    publishAfterCommit(created);
 
     revalidateBookingPaths(booking.listingId);
 
@@ -277,7 +278,7 @@ export async function confirmPaymentReceived(
       return { success: false, error: "This payment cannot be confirmed." };
     }
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       /**
        * Guarded on the payment's current status, for the same reason the booking transitions are.
        * Two confirmations racing would otherwise both write, and the second would overwrite the
@@ -297,23 +298,23 @@ export async function confirmPaymentReceived(
       });
 
       if (updated.count !== 1) {
-        return false;
+        return null;
       }
 
-      await emitBookingNotifications(tx, {
+      return emitBookingNotifications(tx, {
         event: "payment-confirmed",
         bookingId: booking.id,
         listingTitle: booking.listing.title,
         parties: { renterId: booking.renterId, ownerId: booking.ownerId },
         amount: payment.amount,
       });
-
-      return true;
     });
 
-    if (!applied) {
+    if (!created) {
       return { success: false, error: CONCURRENT_CHANGE_ERROR };
     }
+
+    publishAfterCommit(created);
 
     revalidateBookingPaths(booking.listingId);
 
@@ -412,30 +413,30 @@ export async function markDepositReturned(
 
     const returnedAt = new Date();
 
-    const applied = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       const updated = await tx.payment.updateMany({
         where: { id: payment.id, depositReturnedAt: null },
         data: { depositReturnedAt: returnedAt },
       });
 
       if (updated.count !== 1) {
-        return false;
+        return null;
       }
 
-      await emitBookingNotifications(tx, {
+      return emitBookingNotifications(tx, {
         event: "deposit-returned",
         bookingId: booking.id,
         listingTitle: booking.listing.title,
         parties: { renterId: booking.renterId, ownerId: booking.ownerId },
         amount: payment.securityDeposit,
       });
-
-      return true;
     });
 
-    if (!applied) {
+    if (!created) {
       return { success: false, error: CONCURRENT_CHANGE_ERROR };
     }
+
+    publishAfterCommit(created);
 
     revalidateBookingPaths(booking.listingId);
 
