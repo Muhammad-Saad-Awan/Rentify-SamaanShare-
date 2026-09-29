@@ -279,6 +279,25 @@ enum NotificationType {
   // Appended rather than inserted: nothing orders by this enum (unlike
   // BookingStatus, where declaration order drives the requests screen).
   BOOKING_INSTRUCTIONS_UPDATED
+
+  /**
+   * The custodial money flow, where SamaanShare holds the payment.
+   * WHAT IS NOT HERE, AND WHY. There is no PAYMENT_SUBMITTED: the renter declaring
+   * they paid is addressed to an administrator, and administrators are served by the
+   * verification queue, not by a per-user feed - a notification fanned out to every
+   * admin account is a mailing list nobody owns. And PAYMENT_CONFIRMED is reused for
+   * a verified payment rather than duplicated, because "the money is confirmed" is
+   * the same fact whichever flow established it; only who established it differs.
+   * DEPOSIT_RETURNED is reused for the same reason.
+   * REFUND_RECORDED has no emitter yet - the refund action is a later phase. It is
+   * declared now because adding an enum value is a migration, and one migration for
+   * the money events costs less than two.
+   */
+  PAYMENT_REJECTED
+  PAYMENT_VERIFICATION_REVERSED
+  BOOKING_SETTLED
+  OWNER_PAID
+  REFUND_RECORDED
 }
 
 // ==================== AUTH.JS MODELS ====================
@@ -787,6 +806,7 @@ model Payment {
    * /**
    * /**
    * /**
+   * /**
    * When the renter declared they had paid.
    * Distinct from `createdAt`, which is when the payment row was created as the renter chose a
    * method, and from `confirmedAt`, which is when an administrator agreed the money had arrived.
@@ -821,6 +841,7 @@ model Payment {
 
   // ---------------------------------------------------------------- reversal of collection
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -879,6 +900,7 @@ model Settlement {
    * /**
    * /**
    * /**
+   * /**
    * /** What the renter was charged for the rental, excluding the deposit.
    */
   rentalAmount Int
@@ -928,6 +950,7 @@ model Settlement {
 
   // ---------------------------------------------------------------- authorship
   /**
+   * /**
    * /**
    * /**
    * /**

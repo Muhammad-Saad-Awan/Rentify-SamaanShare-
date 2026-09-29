@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { AdminActionType } from "@/generated/prisma/enums";
 import { writeAdminAction } from "@/lib/admin/log";
 import { getActiveAdmin } from "@/lib/auth/session";
+import { createNotifications } from "@/lib/notifications/create";
+import { buildPaymentNotifications } from "@/lib/notifications/payment-messages";
 import {
   computeSettlement,
   settlementReadiness,
@@ -85,6 +87,8 @@ async function loadBookingForSettlement(bookingId: string) {
       status: true,
       ownerId: true,
       renterId: true,
+      // For the notification copy - see `buildPaymentNotifications`.
+      listing: { select: { title: true } },
       payment: {
         select: {
           id: true,
@@ -287,6 +291,26 @@ export async function settleBooking(
       newValue: String(breakdown.totalOwnerPayout),
     });
 
+    /**
+     * Each side is told their own half. The owner sees the commission they were charged; the
+     * renter sees what is coming back and nothing about the platform's cut - see the copy module.
+     */
+    await createNotifications(
+      tx,
+      buildPaymentNotifications({
+        bookingId: booking.id,
+        listingTitle: booking.listing.title,
+        parties: { renterId: booking.renterId, ownerId: booking.ownerId },
+        event: {
+          event: "settled",
+          ownerRentalAmount: breakdown.ownerRentalAmount,
+          commissionAmount: breakdown.commissionAmount,
+          damageCompensationAmount: breakdown.damageCompensationAmount,
+          depositReturnedAmount: breakdown.depositReturnedAmount,
+        },
+      })
+    );
+
     return created.id;
   });
 
@@ -336,7 +360,14 @@ export async function recordOwnerPayout(
       ownerPaidAt: true,
       ownerRentalAmount: true,
       damageCompensationAmount: true,
-      booking: { select: { ownerId: true } },
+      booking: {
+        select: {
+          id: true,
+          ownerId: true,
+          renterId: true,
+          listing: { select: { title: true } },
+        },
+      },
     },
   });
 
@@ -381,6 +412,20 @@ export async function recordOwnerPayout(
         `${parsed.data.note ? ` ${parsed.data.note}` : ""}`,
       newValue: parsed.data.payoutRef,
     });
+
+    // The owner alone: the renter's deposit is a separate transfer with its own message.
+    await createNotifications(
+      tx,
+      buildPaymentNotifications({
+        bookingId: settlement.booking.id,
+        listingTitle: settlement.booking.listing.title,
+        parties: {
+          renterId: settlement.booking.renterId,
+          ownerId: settlement.booking.ownerId,
+        },
+        event: { event: "owner-paid", amount: paid },
+      })
+    );
 
     return true;
   });
@@ -431,7 +476,14 @@ export async function recordDepositReturn(
       id: true,
       depositReturnedAt: true,
       depositReturnedAmount: true,
-      booking: { select: { renterId: true } },
+      booking: {
+        select: {
+          id: true,
+          ownerId: true,
+          renterId: true,
+          listing: { select: { title: true } },
+        },
+      },
     },
   });
 
@@ -483,6 +535,26 @@ export async function recordDepositReturn(
         `${parsed.data.note ? ` ${parsed.data.note}` : ""}`,
       newValue: parsed.data.returnRef,
     });
+
+    /**
+     * The renter alone, and the body points at us rather than at the owner - under this flow the
+     * platform sent the money, so the platform is who they chase if it does not arrive.
+     */
+    await createNotifications(
+      tx,
+      buildPaymentNotifications({
+        bookingId: settlement.booking.id,
+        listingTitle: settlement.booking.listing.title,
+        parties: {
+          renterId: settlement.booking.renterId,
+          ownerId: settlement.booking.ownerId,
+        },
+        event: {
+          event: "deposit-returned",
+          amount: settlement.depositReturnedAmount,
+        },
+      })
+    );
 
     return true;
   });

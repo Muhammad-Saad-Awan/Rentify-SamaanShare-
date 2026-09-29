@@ -14,6 +14,8 @@ import {
   LIFECYCLE_RATE_LIMIT,
   loadBookingForParty,
 } from "@/lib/bookings/guard";
+import { createNotifications } from "@/lib/notifications/create";
+import { buildPaymentNotifications } from "@/lib/notifications/payment-messages";
 import { computeCommission } from "@/lib/payments/commission";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -111,6 +113,8 @@ async function loadBookingForAdmin(bookingId: string) {
       status: true,
       renterId: true,
       ownerId: true,
+      // For the notification copy - see `buildPaymentNotifications`.
+      listing: { select: { title: true } },
       payment: {
         select: {
           id: true,
@@ -349,6 +353,21 @@ export async function verifyPayment(
       newValue: PaymentStatus.COMPLETED,
     });
 
+    /**
+     * Both parties, in the same transaction as the decision - the house rule for every
+     * notification here. The owner's copy is the one that matters most: the handover is gated on
+     * this payment, so this is what tells them they may hand the item over.
+     */
+    await createNotifications(
+      tx,
+      buildPaymentNotifications({
+        bookingId: booking.id,
+        listingTitle: booking.listing.title,
+        parties: { renterId: booking.renterId, ownerId: booking.ownerId },
+        event: { event: "verified", amount: payment.amount },
+      })
+    );
+
     return true;
   });
 
@@ -434,6 +453,17 @@ export async function rejectPayment(
       previousValue: PaymentStatus.PENDING_VERIFICATION,
       newValue: PaymentStatus.REJECTED,
     });
+
+    // The renter alone, carrying the reason - without it this is "open the app and guess".
+    await createNotifications(
+      tx,
+      buildPaymentNotifications({
+        bookingId: booking.id,
+        listingTitle: booking.listing.title,
+        parties: { renterId: booking.renterId, ownerId: booking.ownerId },
+        event: { event: "rejected", reason: parsed.data.reason },
+      })
+    );
 
     return true;
   });
@@ -525,6 +555,23 @@ export async function reverseVerification(
       previousValue: PaymentStatus.COMPLETED,
       newValue: PaymentStatus.PENDING_VERIFICATION,
     });
+
+    /**
+     * The renter was already told their payment was confirmed. Undoing that silently and leaving
+     * them to notice the status had moved backwards would be worse than the mistake being fixed.
+     */
+    await createNotifications(
+      tx,
+      buildPaymentNotifications({
+        bookingId: booking.id,
+        listingTitle: booking.listing.title,
+        parties: { renterId: booking.renterId, ownerId: booking.ownerId },
+        event: {
+          event: "verification-reversed",
+          reason: parsed.data.reason,
+        },
+      })
+    );
 
     return true;
   });

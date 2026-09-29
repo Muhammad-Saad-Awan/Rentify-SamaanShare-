@@ -45,6 +45,8 @@ import {
   UserRole,
 } from "../src/generated/prisma/enums";
 import { writeAdminAction } from "../src/lib/admin/log";
+import { createNotifications } from "../src/lib/notifications/create";
+import { buildPaymentNotifications } from "../src/lib/notifications/payment-messages";
 import { depositState } from "../src/lib/bookings/deposit";
 import {
   computeSettlement,
@@ -795,6 +797,61 @@ async function main(): Promise<void> {
       offlineState.kind === "returned" && offlineState.confirmedAt !== null,
       `state is ${offlineState.kind}`
     );
+
+    // ------------------------------------------------------------ notifications
+    console.log("\nNotifications");
+
+    /**
+     * The new enum values exist in THIS database, not only in the schema file.
+     *
+     * The copy has unit tests; what they cannot prove is that the migration adding
+     * BOOKING_SETTLED and the rest has actually been applied wherever this runs. A Postgres enum
+     * rejects an unknown label, so writing one is the check.
+     */
+    const written = await createNotifications(
+      prisma,
+      buildPaymentNotifications({
+        bookingId: booking.id,
+        listingTitle: "Verify Settlement Listing",
+        parties: { renterId: renter.id, ownerId: owner.id },
+        event: {
+          event: "settled",
+          ownerRentalAmount: 4_625,
+          commissionAmount: 374,
+          damageCompensationAmount: 0,
+          depositReturnedAmount: DEPOSIT,
+        },
+      })
+    );
+
+    check("a settlement notifies both parties", written === 2, String(written));
+
+    const settledNotices = await prisma.notification.findMany({
+      where: { userId: { in: [renter.id, owner.id] }, type: "BOOKING_SETTLED" },
+      select: { userId: true, title: true, body: true },
+    });
+
+    check("both rows landed", settledNotices.length === 2);
+
+    const renterNotice = settledNotices.find((n) => n.userId === renter.id);
+
+    check(
+      "the renter is not shown the commission",
+      renterNotice !== undefined &&
+        !`${renterNotice.title} ${renterNotice.body ?? ""}`.includes("374")
+    );
+
+    const transferNotices = await createNotifications(
+      prisma,
+      buildPaymentNotifications({
+        bookingId: booking.id,
+        listingTitle: "Verify Settlement Listing",
+        parties: { renterId: renter.id, ownerId: owner.id },
+        event: { event: "owner-paid", amount: 4_625 },
+      })
+    );
+
+    check("a payout notifies the owner only", transferNotices === 1);
 
     // ------------------------------------------------------------ audit
     console.log("\nAudit");
