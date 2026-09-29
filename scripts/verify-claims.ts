@@ -347,6 +347,93 @@ async function main() {
     afterWithdrawal.kind !== "claimed"
   );
 
+  // ------------------------------------------- 7. a photo cannot be evidence twice
+  console.log("\n=== claim photos are not reusable ===");
+
+  const evidenceHash = `claim-${stamp}-hash`;
+
+  await prisma.claimPhoto.create({
+    data: {
+      claimId: claim.id,
+      url: "https://res.cloudinary.com/x/damage.jpg",
+      publicId: `claim-${stamp}-a`,
+      order: 0,
+      hash: evidenceHash,
+      uploadedById: owner.id,
+    },
+    select: { id: true },
+  });
+
+  let reusedRefused = false;
+
+  try {
+    await prisma.claimPhoto.create({
+      data: {
+        claimId: claim.id,
+        url: "https://res.cloudinary.com/x/damage-again.jpg",
+        publicId: `claim-${stamp}-b`,
+        order: 1,
+        hash: evidenceHash,
+        uploadedById: renter.id,
+      },
+      select: { id: true },
+    });
+  } catch {
+    reusedRefused = true;
+  }
+
+  check(
+    "the same image cannot be attached to a claim twice",
+    reusedRefused,
+    "the unique index on hash did not reject"
+  );
+
+  /**
+   * THE INDEXES ARE SEPARATE, AND THIS IS WHAT THAT BUYS.
+   *
+   * A claim photo that is also this booking's return-handover photo is the honest case - the
+   * damage recorded at the door, offered again as the basis of the claim. A single index shared
+   * across both tables would refuse it and punish the owner who documented the problem properly.
+   * The dishonest version, an image from ANOTHER booking's handover, is refused by the read in
+   * `claimPhotoReuseError` rather than by a constraint.
+   */
+  const alsoOnHandover = await prisma.handoverPhoto.create({
+    data: {
+      handoverId: handover.id,
+      url: "https://res.cloudinary.com/x/damage.jpg",
+      publicId: `claim-${stamp}-ho`,
+      order: 0,
+      hash: evidenceHash,
+    },
+    select: { id: true },
+  });
+
+  check(
+    "the same image may be both this booking's handover photo and its claim photo",
+    alsoOnHandover.id.length > 0
+  );
+
+  const unhashed = await prisma.claimPhoto.createMany({
+    data: [
+      {
+        claimId: claim.id,
+        url: "https://res.cloudinary.com/x/n1.jpg",
+        publicId: `claim-${stamp}-n1`,
+        order: 2,
+        uploadedById: owner.id,
+      },
+      {
+        claimId: claim.id,
+        url: "https://res.cloudinary.com/x/n2.jpg",
+        publicId: `claim-${stamp}-n2`,
+        order: 3,
+        uploadedById: owner.id,
+      },
+    ],
+  });
+
+  check("photos with no checksum do not collide", unhashed.count === 2);
+
   // ---------------------------------------------------------------- cleanup
   console.log("\n=== cleanup ===");
 

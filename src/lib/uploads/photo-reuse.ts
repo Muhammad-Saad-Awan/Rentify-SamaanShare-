@@ -19,6 +19,12 @@
  * (false positives on genuinely similar photos, which this has none of). What this does catch is
  * the byte-identical re-submission, which is what someone reaching for the gallery actually does.
  *
+ * WHICH PRIOR USES COUNT IS THE CALLER'S DECISION, not this module's. It is handed a list and
+ * applies it. That matters because the two callers disagree on one case: a claim photo that also
+ * appears on THIS booking's return handover is honest - it is the damage recorded at the door,
+ * offered again as the basis of the claim - while the same image on another booking's handover is
+ * not. `actions/claims.ts` filters accordingly before calling here.
+ *
  * Pure, so every branch is assertable without Cloudinary or a database.
  */
 
@@ -40,14 +46,40 @@ export interface PriorPhotoUse {
   sameBooking: boolean;
 }
 
-const DUPLICATE_IN_SUBMISSION =
-  "The same photo was attached more than once. Take a separate photo of each thing you want to record.";
+/**
+ * The three refusals, supplied by the caller rather than fixed here.
+ *
+ * The rule is the same for a handover and for a damage claim; the sentence is not. "This rental's
+ * other handover" is meaningless on a claim, and a person who has just been refused needs to be
+ * told what to do next in the words of the thing they are doing. Required rather than defaulted,
+ * so a third caller has to decide its own wording instead of silently inheriting a handover's.
+ */
+export interface PhotoReuseCopy {
+  /** The same bytes twice in one submission. */
+  duplicateInSubmission: string;
+  /** Seen before, on this same booking. The specific, actionable case. */
+  reusedOnThisBooking: string;
+  /** Seen before, somewhere the person must not be told about. */
+  reusedElsewhere: string;
+}
 
-const REUSED_ON_THIS_RENTAL =
-  "One of these photos was already used on this rental's other handover. Take a new photo of the item as it is now.";
+export const HANDOVER_REUSE_COPY: PhotoReuseCopy = {
+  duplicateInSubmission:
+    "The same photo was attached more than once. Take a separate photo of each thing you want to record.",
+  reusedOnThisBooking:
+    "One of these photos was already used on this rental's other handover. Take a new photo of the item as it is now.",
+  reusedElsewhere:
+    "One of these photos has been submitted as evidence before. Take a new photo of the item as it is now.",
+};
 
-const REUSED_ELSEWHERE =
-  "One of these photos has been submitted as evidence before. Take a new photo of the item as it is now.";
+export const CLAIM_REUSE_COPY: PhotoReuseCopy = {
+  duplicateInSubmission:
+    "The same photo was attached more than once. Attach a separate photo of each thing you are claiming for.",
+  reusedOnThisBooking:
+    "One of these photos is already attached to this claim. Attach a different photo.",
+  reusedElsewhere:
+    "One of these photos has been submitted as evidence before. Take a new photo of the damage.",
+};
 
 /**
  * The message to refuse this set of photos with, or `null` to accept them.
@@ -68,7 +100,8 @@ const REUSED_ELSEWHERE =
  */
 export function photoReuseError(
   submitted: readonly SubmittedPhoto[],
-  priorUses: readonly PriorPhotoUse[]
+  priorUses: readonly PriorPhotoUse[],
+  copy: PhotoReuseCopy
 ): string | null {
   const hashes = submitted
     .map((photo) => photo.hash)
@@ -86,7 +119,7 @@ export function photoReuseError(
    * row, so without this the message would be a constraint violation.
    */
   if (new Set(hashes).size !== hashes.length) {
-    return DUPLICATE_IN_SUBMISSION;
+    return copy.duplicateInSubmission;
   }
 
   const submittedHashes = new Set(hashes);
@@ -98,6 +131,6 @@ export function photoReuseError(
 
   // The more specific reading wins when both apply: it is likelier, and it is actionable.
   return matches.some((use) => use.sameBooking)
-    ? REUSED_ON_THIS_RENTAL
-    : REUSED_ELSEWHERE;
+    ? copy.reusedOnThisBooking
+    : copy.reusedElsewhere;
 }

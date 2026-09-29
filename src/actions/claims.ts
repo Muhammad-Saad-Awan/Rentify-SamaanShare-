@@ -14,6 +14,7 @@ import { depositReturnedAtOf } from "@/lib/payments/settlement";
 import { buildClaimNotifications } from "@/lib/notifications/claim-messages";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { CLAIM_REUSE_COPY, photoReuseError } from "@/lib/uploads/photo-reuse";
 import { resolveOwnedPhotos } from "@/lib/uploads/resolve-photos";
 import {
   fileClaimSchema,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/validations/claim";
 import { UNAUTHENTICATED_ERROR } from "@/types";
 
+import type { ResolvedPhoto } from "@/lib/uploads/resolve-photos";
 import type { ActionResult } from "@/types";
 
 /**
@@ -57,6 +59,67 @@ const CLAIM_RATE_LIMIT = { limit: 10, windowMs: 60 * 60 * 1000 };
  * The owner only. `loadBookingForParty` is not reused here because this needs the payment's deposit
  * figure and the return handover record in the same read, and the shared loader selects neither.
  */
+/**
+ * Has any of these images been offered as evidence before?
+ *
+ * TWO LOOKUPS, AND THEY DISAGREE ON ONE CASE ON PURPOSE.
+ *
+ * Any prior CLAIM photo is refused. The scam this table is most exposed to is one photograph of
+ * damage filed against rental after rental, and there is no honest reading of the same image
+ * turning up on two claims.
+ *
+ * A prior HANDOVER photo is refused only when it belongs to a DIFFERENT booking. On this booking
+ * it is the expected thing: the damage recorded at the door, offered again as the basis of the
+ * claim, which is the claim at its most credible rather than its least. Refusing that would
+ * punish the owner who documented the problem properly - so those matches are dropped before the
+ * decision rather than passed in and argued about.
+ *
+ * The checksums come from Cloudinary, not the browser - see `ResolvedPhoto.hash`. This runs
+ * before the transaction opens, like the resolve above it. The unique index on `ClaimPhoto.hash`
+ * is what actually enforces the first rule and this is for the message; the cross-booking
+ * handover rule has no index behind it and is a read only, which the schema note records.
+ */
+async function claimPhotoReuseError(
+  bookingId: string,
+  photos: readonly ResolvedPhoto[]
+): Promise<string | null> {
+  const hashes = photos
+    .map((photo) => photo.hash)
+    .filter((hash): hash is string => hash !== null);
+
+  if (hashes.length === 0) {
+    // Still worth calling: it catches the same file twice in one submission, which needs no reads.
+    return photoReuseError(photos, [], CLAIM_REUSE_COPY);
+  }
+
+  const [priorClaims, priorHandovers] = await Promise.all([
+    prisma.claimPhoto.findMany({
+      where: { hash: { in: hashes } },
+      select: { hash: true, claim: { select: { bookingId: true } } },
+    }),
+    prisma.handoverPhoto.findMany({
+      where: { hash: { in: hashes } },
+      select: { hash: true, handover: { select: { bookingId: true } } },
+    }),
+  ]);
+
+  const priorUses = [
+    ...priorClaims.flatMap((row) =>
+      row.hash === null
+        ? []
+        : [{ hash: row.hash, sameBooking: row.claim.bookingId === bookingId }]
+    ),
+    ...priorHandovers.flatMap((row) =>
+      // This booking's own handover photo is allowed - see the note above.
+      row.hash === null || row.handover.bookingId === bookingId
+        ? []
+        : [{ hash: row.hash, sameBooking: false }]
+    ),
+  ];
+
+  return photoReuseError(photos, priorUses, CLAIM_REUSE_COPY);
+}
+
 export async function fileDamageClaim(input: unknown): Promise<ActionResult> {
   const parsed = fileClaimSchema.safeParse(input);
 
@@ -143,6 +206,12 @@ export async function fileDamageClaim(input: unknown): Promise<ActionResult> {
       return { success: false, error: photos.error };
     }
 
+    const reuse = await claimPhotoReuseError(booking.id, photos.photos);
+
+    if (reuse) {
+      return { success: false, error: reuse };
+    }
+
     /**
      * The return condition record this claim rests on, when there is one.
      *
@@ -170,6 +239,8 @@ export async function fileDamageClaim(input: unknown): Promise<ActionResult> {
                     url: photo.url,
                     publicId: photo.publicId,
                     order: photo.order,
+                    // Conditional: `exactOptionalPropertyTypes` refuses an explicit `undefined`.
+                    ...(photo.hash ? { hash: photo.hash } : {}),
                     uploadedById: owner.id,
                   })),
                 },
@@ -280,6 +351,12 @@ export async function respondToDamageClaim(
       return { success: false, error: photos.error };
     }
 
+    const reuse = await claimPhotoReuseError(claim.booking.id, photos.photos);
+
+    if (reuse) {
+      return { success: false, error: reuse };
+    }
+
     const applied = await prisma.$transaction(async (tx) => {
       /**
        * Compare-and-swap on `OPEN`.
@@ -311,6 +388,7 @@ export async function respondToDamageClaim(
             claimId: claim.id,
             url: photo.url,
             publicId: photo.publicId,
+            ...(photo.hash ? { hash: photo.hash } : {}),
             // Ordered after the claimant's, so the two sets stay in the sequence they were added.
             order: 100 + photo.order,
             uploadedById: user.id,
