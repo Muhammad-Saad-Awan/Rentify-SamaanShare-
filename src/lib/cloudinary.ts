@@ -193,6 +193,20 @@ export interface UploadedImage {
   secureUrl: string;
   format: string;
   bytes: number;
+  /**
+   * Cloudinary's checksum of the stored bytes, or `null` if it did not send one.
+   *
+   * WHOSE NUMBER THIS IS, is the whole reason it is read here rather than computed in the browser
+   * and posted alongside. A hash the client supplies is a claim about a file, and a caller willing
+   * to reuse an old photo is equally willing to send a hash that does not match it. This one is
+   * computed by Cloudinary over what it actually stored, and arrives on the same authenticated
+   * Admin API response as `secureUrl` - the one already trusted to say the asset exists.
+   *
+   * It is an MD5 of the bytes, so it identifies a file, not a scene: re-encoding or a single
+   * changed pixel produces a different one. That is the limit of what it can detect - see
+   * `photoReuseError`.
+   */
+  etag: string | null;
 }
 
 /**
@@ -251,6 +265,7 @@ export async function getUploadedImages(
       secure_url?: string;
       format?: string;
       bytes?: number;
+      etag?: string;
     }[];
   };
 
@@ -264,6 +279,7 @@ export async function getUploadedImages(
       secureUrl: resource.secure_url,
       format: resource.format ?? "",
       bytes: resource.bytes ?? 0,
+      etag: resource.etag ?? null,
     });
   }
 

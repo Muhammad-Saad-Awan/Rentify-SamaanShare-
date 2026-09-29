@@ -35,6 +35,14 @@ export interface ResolvedPhoto {
   /** Cloudinary's own secure URL, derived rather than accepted. */
   url: string;
   order: number;
+  /**
+   * Cloudinary's checksum of the stored bytes - derived here for the same reason the URL is.
+   *
+   * `null` when Cloudinary sent none. Absent rather than fatal: a checksum is what lets a reused
+   * photo be spotted, and refusing the whole handover because the provider omitted one would turn
+   * a missing nicety into two people stuck in a doorway.
+   */
+  hash: string | null;
 }
 
 export type PhotoResolution =
@@ -81,7 +89,12 @@ export async function resolveOwnedPhotos(
       return { ok: false, error: "Those photos could not be attached." };
     }
 
-    photos.push({ publicId, url: image.secureUrl, order: index });
+    photos.push({
+      publicId,
+      url: image.secureUrl,
+      order: index,
+      hash: image.etag,
+    });
   }
 
   return { ok: true, photos };

@@ -785,6 +785,7 @@ model Payment {
   /**
    * /**
    * /**
+   * /**
    * When the renter declared they had paid.
    * Distinct from `createdAt`, which is when the payment row was created as the renter chose a
    * method, and from `confirmedAt`, which is when an administrator agreed the money had arrived.
@@ -819,6 +820,7 @@ model Payment {
 
   // ---------------------------------------------------------------- reversal of collection
   /**
+   * /**
    * /**
    * /**
    * A refund is the reversal of THIS collection, so it lives here rather than on `Settlement`.
@@ -873,6 +875,7 @@ model Settlement {
   // ---------------------------------------------------------------- the rental side
   /**
    * /**
+   * /**
    * /** What the renter was charged for the rental, excluding the deposit.
    */
   rentalAmount Int
@@ -922,6 +925,7 @@ model Settlement {
 
   // ---------------------------------------------------------------- authorship
   /**
+   * /**
    * /**
    * /**
    * Required, unlike `Payment.confirmedById`. A settlement cannot exist without an administrator
@@ -1122,6 +1126,23 @@ model HandoverPhoto {
   url      String
   publicId String @unique
   order    Int    @default(0)
+
+  /**
+   * Cloudinary's checksum of the stored bytes, and the thing that catches a reused photo.
+   * UNIQUE, so the same image cannot be submitted as evidence twice - most importantly not this
+   * rental's pickup photo offered again at return, which is the cheapest way to misrepresent an
+   * item's condition. `photoReuseError` produces the readable refusal; this index is what
+   * actually enforces it, because that check and the insert are not atomic.
+   * NOT SUPPLIED BY THE CLIENT. It is read from the Admin API response that already gives us the
+   * URL - a hash posted by the browser would be a claim about a file, and anybody willing to
+   * reuse a photo is willing to send a hash that does not match it.
+   * Nullable for two reasons: rows written before this existed have none, and Cloudinary may
+   * omit an etag - and Postgres treats NULLs as distinct in a unique index, so any number of
+   * photos may go unchecked without colliding. An unhashed photo is unverifiable, not suspect.
+   * Identifies a FILE, not a scene: a re-crop or a re-encode produces a different hash. See the
+   * note in `photo-reuse.ts` for what that does and does not buy.
+   */
+  hash String? @unique
 
   createdAt DateTime @default(now())
 
