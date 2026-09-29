@@ -183,6 +183,19 @@ describe("the set of mutable types", () => {
     NotificationType.CLAIM_RESPONDED,
     NotificationType.CLAIM_RESOLVED,
     NotificationType.BOOKING_INSTRUCTIONS_UPDATED,
+    /**
+     * The custodial money events, all transactional and none of them mutable.
+     *
+     * Every one of these changes what somebody is owed or has been paid, which is the line
+     * `MUTABLE_NOTIFICATION_TYPES` draws: a person may switch off a nudge about leaving a review,
+     * never a message about their own money. A muted "we could not confirm your payment" would
+     * leave a booking to expire in silence.
+     */
+    NotificationType.PAYMENT_REJECTED,
+    NotificationType.PAYMENT_VERIFICATION_REVERSED,
+    NotificationType.BOOKING_SETTLED,
+    NotificationType.OWNER_PAID,
+    NotificationType.REFUND_RECORDED,
   ];
 
   const ADVISORY: NotificationType[] = [
