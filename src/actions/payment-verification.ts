@@ -17,6 +17,7 @@ import {
 import { createNotifications } from "@/lib/notifications/create";
 import { buildPaymentNotifications } from "@/lib/notifications/payment-messages";
 import { computeCommission } from "@/lib/payments/commission";
+import { publishAfterCommit } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { formatPKR } from "@/lib/utils/currency";
@@ -317,7 +318,7 @@ export async function verifyPayment(
 
   const verifiedAt = new Date();
 
-  const applied = await prisma.$transaction(async (tx) => {
+  const created = await prisma.$transaction(async (tx) => {
     const updated = await tx.payment.updateMany({
       where: { id: payment.id, status: PaymentStatus.PENDING_VERIFICATION },
       data: {
@@ -329,7 +330,7 @@ export async function verifyPayment(
     });
 
     if (updated.count !== 1) {
-      return false;
+      return null;
     }
 
     /**
@@ -358,7 +359,7 @@ export async function verifyPayment(
      * notification here. The owner's copy is the one that matters most: the handover is gated on
      * this payment, so this is what tells them they may hand the item over.
      */
-    await createNotifications(
+    return createNotifications(
       tx,
       buildPaymentNotifications({
         bookingId: booking.id,
@@ -367,13 +368,13 @@ export async function verifyPayment(
         event: { event: "verified", amount: payment.amount },
       })
     );
-
-    return true;
   });
 
-  if (!applied) {
+  if (!created) {
     return { success: false, error: CONCURRENT_CHANGE_ERROR };
   }
+
+  publishAfterCommit(created);
 
   revalidatePaymentPaths();
 
@@ -431,7 +432,7 @@ export async function rejectPayment(
 
   const rejectedAt = new Date();
 
-  const applied = await prisma.$transaction(async (tx) => {
+  const created = await prisma.$transaction(async (tx) => {
     const updated = await tx.payment.updateMany({
       where: { id: payment.id, status: PaymentStatus.PENDING_VERIFICATION },
       data: {
@@ -442,7 +443,7 @@ export async function rejectPayment(
     });
 
     if (updated.count !== 1) {
-      return false;
+      return null;
     }
 
     await writeAdminAction(tx, {
@@ -455,7 +456,7 @@ export async function rejectPayment(
     });
 
     // The renter alone, carrying the reason - without it this is "open the app and guess".
-    await createNotifications(
+    return createNotifications(
       tx,
       buildPaymentNotifications({
         bookingId: booking.id,
@@ -464,13 +465,13 @@ export async function rejectPayment(
         event: { event: "rejected", reason: parsed.data.reason },
       })
     );
-
-    return true;
   });
 
-  if (!applied) {
+  if (!created) {
     return { success: false, error: CONCURRENT_CHANGE_ERROR };
   }
+
+  publishAfterCommit(created);
 
   revalidatePaymentPaths();
 
@@ -532,7 +533,7 @@ export async function reverseVerification(
     };
   }
 
-  const applied = await prisma.$transaction(async (tx) => {
+  const created = await prisma.$transaction(async (tx) => {
     const updated = await tx.payment.updateMany({
       where: { id: payment.id, status: PaymentStatus.COMPLETED },
       data: {
@@ -544,7 +545,7 @@ export async function reverseVerification(
     });
 
     if (updated.count !== 1) {
-      return false;
+      return null;
     }
 
     await writeAdminAction(tx, {
@@ -560,7 +561,7 @@ export async function reverseVerification(
      * The renter was already told their payment was confirmed. Undoing that silently and leaving
      * them to notice the status had moved backwards would be worse than the mistake being fixed.
      */
-    await createNotifications(
+    return createNotifications(
       tx,
       buildPaymentNotifications({
         bookingId: booking.id,
@@ -572,13 +573,13 @@ export async function reverseVerification(
         },
       })
     );
-
-    return true;
   });
 
-  if (!applied) {
+  if (!created) {
     return { success: false, error: CONCURRENT_CHANGE_ERROR };
   }
+
+  publishAfterCommit(created);
 
   revalidatePaymentPaths();
 

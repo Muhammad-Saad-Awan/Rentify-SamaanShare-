@@ -6,6 +6,7 @@ import {
 } from "@/lib/notifications/preferences";
 
 import type { Prisma } from "@/generated/prisma/client";
+import type { NotificationType } from "@/generated/prisma/enums";
 import type {
   BookingNotificationInput,
   NotificationDraft,
@@ -44,17 +45,39 @@ export type NotificationWriter = Pick<
 >;
 
 /**
- * Inserts pre-built drafts.
+ * A notification as it exists once written.
  *
- * `createMany` rather than a loop: an event that notifies both parties is two rows, and two
- * round trips inside a transaction hold locks for twice as long for no benefit.
+ * Exactly the fields the realtime payload needs and nothing else - see `NotificationEvent`. The
+ * `id` is the reason this shape exists at all: it is what a subscriber deduplicates on, and it
+ * does not exist until the row does.
+ */
+export interface CreatedNotification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  entityType: string | null;
+  entityId: string | null;
+  createdAt: Date;
+}
+
+/**
+ * Inserts pre-built drafts and returns them as written.
+ *
+ * `createManyAndReturn` rather than `createMany`: an event that notifies both parties is two
+ * rows, and two round trips inside a transaction hold locks for twice as long for no benefit -
+ * but the caller now needs the generated ids to publish, and Postgres can return them from the
+ * same statement. No extra query, and no second source for what was written.
+ *
+ * RETURNS THE ROWS, NOT A COUNT, and the difference is what makes realtime possible without a
+ * second read. A caller that only wants the count can take `.length`.
  */
 export async function createNotifications(
   client: NotificationWriter,
   drafts: NotificationDraft[]
-): Promise<number> {
+): Promise<CreatedNotification[]> {
   if (drafts.length === 0) {
-    return 0;
+    return [];
   }
 
   /**
@@ -70,12 +93,21 @@ export async function createNotifications(
     : drafts;
 
   if (sendable.length === 0) {
-    return 0;
+    return [];
   }
 
-  const result = await client.notification.createMany({ data: sendable });
-
-  return result.count;
+  return client.notification.createManyAndReturn({
+    data: sendable,
+    select: {
+      id: true,
+      userId: true,
+      type: true,
+      title: true,
+      entityType: true,
+      entityId: true,
+      createdAt: true,
+    },
+  });
 }
 
 /**
@@ -128,6 +160,6 @@ async function readPreferences(
 export async function emitBookingNotifications(
   client: NotificationWriter,
   input: BookingNotificationInput
-): Promise<number> {
+): Promise<CreatedNotification[]> {
   return createNotifications(client, buildBookingNotifications(input));
 }
