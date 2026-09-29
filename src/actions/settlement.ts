@@ -12,6 +12,7 @@ import {
   settlementReadiness,
 } from "@/lib/payments/settlement";
 import { prisma } from "@/lib/prisma";
+import { publishAfterCommit } from "@/lib/realtime/publish";
 import { formatPKR } from "@/lib/utils/currency";
 import {
   recordDepositReturnSchema,
@@ -234,7 +235,7 @@ export async function settleBooking(
     };
   }
 
-  const settlementId = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     /**
      * Re-read inside the transaction, narrowing the window between deciding and writing.
      *
@@ -295,7 +296,7 @@ export async function settleBooking(
      * Each side is told their own half. The owner sees the commission they were charged; the
      * renter sees what is coming back and nothing about the platform's cut - see the copy module.
      */
-    await createNotifications(
+    const notifications = await createNotifications(
       tx,
       buildPaymentNotifications({
         bookingId: booking.id,
@@ -311,16 +312,26 @@ export async function settleBooking(
       })
     );
 
-    return created.id;
+    /**
+     * Both leave together. The settlement id is what the caller answers with; the notifications
+     * are what gets published, and publishing must wait for this transaction to commit - so they
+     * travel out as a return value rather than being sent from inside it.
+     */
+    return { settlementId: created.id, notifications };
   });
 
-  if (!settlementId) {
+  if (!result) {
     return { success: false, error: CONCURRENT_CHANGE_ERROR };
   }
 
+  publishAfterCommit(result.notifications);
+
   revalidateSettlementPaths();
 
-  return { success: true, data: { settlementId, breakdown } };
+  return {
+    success: true,
+    data: { settlementId: result.settlementId, breakdown },
+  };
 }
 
 /**
@@ -386,7 +397,7 @@ export async function recordOwnerPayout(
   const paid =
     settlement.ownerRentalAmount + settlement.damageCompensationAmount;
 
-  const applied = await prisma.$transaction(async (tx) => {
+  const created = await prisma.$transaction(async (tx) => {
     // Guarded on `ownerPaidAt: null`, so two administrators recording the same transfer produce
     // one stamp and one refusal rather than a timestamp that quietly moved.
     const updated = await tx.settlement.updateMany({
@@ -395,7 +406,7 @@ export async function recordOwnerPayout(
     });
 
     if (updated.count !== 1) {
-      return false;
+      return null;
     }
 
     /**
@@ -414,7 +425,7 @@ export async function recordOwnerPayout(
     });
 
     // The owner alone: the renter's deposit is a separate transfer with its own message.
-    await createNotifications(
+    return createNotifications(
       tx,
       buildPaymentNotifications({
         bookingId: settlement.booking.id,
@@ -426,13 +437,13 @@ export async function recordOwnerPayout(
         event: { event: "owner-paid", amount: paid },
       })
     );
-
-    return true;
   });
 
-  if (!applied) {
+  if (!created) {
     return { success: false, error: CONCURRENT_CHANGE_ERROR };
   }
+
+  publishAfterCommit(created);
 
   revalidateSettlementPaths();
 
@@ -511,14 +522,14 @@ export async function recordDepositReturn(
 
   const depositReturnedAt = new Date();
 
-  const applied = await prisma.$transaction(async (tx) => {
+  const created = await prisma.$transaction(async (tx) => {
     const updated = await tx.settlement.updateMany({
       where: { id: settlement.id, depositReturnedAt: null },
       data: { depositReturnedAt, depositReturnRef: parsed.data.returnRef },
     });
 
     if (updated.count !== 1) {
-      return false;
+      return null;
     }
 
     /**
@@ -540,7 +551,7 @@ export async function recordDepositReturn(
      * The renter alone, and the body points at us rather than at the owner - under this flow the
      * platform sent the money, so the platform is who they chase if it does not arrive.
      */
-    await createNotifications(
+    return createNotifications(
       tx,
       buildPaymentNotifications({
         bookingId: settlement.booking.id,
@@ -555,13 +566,13 @@ export async function recordDepositReturn(
         },
       })
     );
-
-    return true;
   });
 
-  if (!applied) {
+  if (!created) {
     return { success: false, error: CONCURRENT_CHANGE_ERROR };
   }
+
+  publishAfterCommit(created);
 
   revalidateSettlementPaths();
 

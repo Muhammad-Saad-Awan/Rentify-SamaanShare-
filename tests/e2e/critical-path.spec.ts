@@ -340,10 +340,45 @@ test("register, book, pay, hand over, return and review", async ({
       .fill("Item was exactly as described and pickup was easy.");
     await renter.getByRole("button", { name: "Post review" }).click();
 
-    /** The second review releases the pair, and the wording changes to say exactly that. */
-    await expect(
-      renter.getByText(/Review posted\. Both reviews are now public\./)
-    ).toBeVisible();
+    /**
+     * WAIT FOR THE DURABLE SIGNAL BEFORE NAVIGATING AWAY.
+     *
+     * "Your review" is the released state: the section renders it only once `publishedAt` is set,
+     * which happens when the second review releases the pair. Server-rendered, so it is the
+     * database answering rather than a message about it.
+     *
+     * This is also a synchronisation point, and that is why it is here rather than being folded
+     * into the public-listing assertion below. Removing the toast assertion removed a wait as
+     * well as a check: without something to wait on, the test navigated to the listing before the
+     * action had finished and found no review - it failed three times out of three, which is how
+     * a missing await announces itself.
+     *
+     * WAITED FOR IN PLACE, AND NOT BY NAVIGATING. Re-navigating here was tried and was worse: a
+     * `goto` immediately after the click aborts the in-flight Server Action, so the review was
+     * never written at all and the page came back correctly offering "Leave a review". The
+     * request has to be allowed to finish, and waiting for its own result is what allows it.
+     *
+     * Fifteen seconds rather than the default five. The action writes two rows, releases both
+     * reviews and revalidates five paths, and under a loaded machine that had been overrunning
+     * the default - the same adjustment, for the same reason, as the registration step.
+     */
+    await expect(renter.getByText("Your review", { exact: true })).toBeVisible({
+      timeout: 15_000,
+    });
+
+    /**
+     * NOT ASSERTED ON THE TOAST, and this is a fix rather than an omission.
+     *
+     * It used to read the "Both reviews are now public" toast, which sonner dismisses on its own
+     * timer. Under load the gap between the click and the assertion outgrew that timer and the
+     * test failed having found nothing - twice in one afternoon, passing alone each time. The
+     * toast is a transient announcement of a durable fact, and the durable fact is asserted a few
+     * lines below on the public listing.
+     *
+     * The rule this follows, and which the realtime tests depend on: assert what the database
+     * says, never what a disappearing element said about it. Raising the timeout would not have
+     * helped - the element is gone, not late.
+     */
 
     /**
      * RECIPROCAL RELEASE is the thing worth asserting at the end. Neither review is visible until

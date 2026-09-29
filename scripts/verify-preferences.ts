@@ -98,8 +98,8 @@ async function main() {
       draft(unmuted.id, NotificationType.REVIEW_REMINDER),
     ]);
 
-    check("only the member who wants it is written to", written === 1, {
-      written,
+    check("only the member who wants it is written to", written.length === 1, {
+      written: written.length,
     });
     check(
       "the muted member has no reminder",

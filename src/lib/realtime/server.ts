@@ -3,6 +3,8 @@ import Pusher from "pusher";
 import { env } from "@/config/env";
 import { NOTIFICATION_EVENT, userChannel } from "@/lib/realtime/channels";
 
+import type { NotificationEvent } from "@/lib/realtime/channels";
+
 /**
  * The server half of realtime delivery.
  *
@@ -64,30 +66,6 @@ function getClient(): Pusher | null {
 }
 
 /**
- * What the browser is told.
- *
- * DELIBERATELY NOT THE NOTIFICATION. No body, no amounts, no counterparty name - the payload is
- * an identifier, a type, and just enough to raise a toast and deep-link it. Three reasons, in
- * order of weight: a third party sees less of our members' business; the client cannot drift from
- * the database because it has nothing to drift with; and a payload that carries state invites
- * somebody to start rendering from it, at which point a dropped or duplicated event becomes a
- * wrong badge rather than a missed refresh.
- *
- * `title` is the one concession, and it buys the toast. It is already the shortest user-facing
- * sentence we have and it saves a round trip purely to render one line.
- */
-export interface NotificationEvent {
-  /** The row's id. The subscriber deduplicates on this. */
-  id: string;
-  type: string;
-  title: string;
-  /** Where the notification points, so a toast can link without a fetch. */
-  entityType: string | null;
-  entityId: string | null;
-  createdAt: string;
-}
-
-/**
  * Sends one event to each recipient's own channel.
  *
  * BATCHED, one call per publish rather than one per notification. An event that notifies both
@@ -130,6 +108,33 @@ export async function publishNotifications(
 
     return false;
   }
+}
+
+/**
+ * What the browser needs to subscribe, or `null` when realtime is off.
+ *
+ * READ ON THE SERVER AND PASSED AS PROPS, rather than exposed as `NEXT_PUBLIC_` variables. The
+ * key is public in practice - it appears in every WebSocket handshake - so this is not secrecy;
+ * it is the route `cloudName` already takes to the uploader, and it keeps two strings out of the
+ * bundle on every public page that will never subscribe to anything.
+ *
+ * The channel is derived here from the session's user id. The browser is told which channel to
+ * ask for; it is never believed about it - `/api/realtime/auth` derives it again and compares.
+ */
+export function realtimeClientConfig(
+  userId: string
+): { channel: string; pusherKey: string; cluster: string } | null {
+  const { PUSHER_KEY, PUSHER_CLUSTER } = env;
+
+  if (!getClient() || !PUSHER_KEY || !PUSHER_CLUSTER) {
+    return null;
+  }
+
+  return {
+    channel: userChannel(userId),
+    pusherKey: PUSHER_KEY,
+    cluster: PUSHER_CLUSTER,
+  };
 }
 
 /**

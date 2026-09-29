@@ -824,7 +824,11 @@ async function main(): Promise<void> {
       })
     );
 
-    check("a settlement notifies both parties", written === 2, String(written));
+    check(
+      "a settlement notifies both parties",
+      written.length === 2,
+      String(written.length)
+    );
 
     const settledNotices = await prisma.notification.findMany({
       where: { userId: { in: [renter.id, owner.id] }, type: "BOOKING_SETTLED" },
@@ -851,7 +855,7 @@ async function main(): Promise<void> {
       })
     );
 
-    check("a payout notifies the owner only", transferNotices === 1);
+    check("a payout notifies the owner only", transferNotices.length === 1);
 
     // ------------------------------------------------------------ audit
     console.log("\nAudit");

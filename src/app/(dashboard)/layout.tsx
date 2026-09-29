@@ -1,10 +1,12 @@
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { RealtimeNotifications } from "@/components/dashboard/realtime-notifications";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import {
   MAIN_CONTENT_ID,
   SkipToContent,
 } from "@/components/shared/skip-to-content";
 import { requireUser } from "@/lib/auth/session";
+import { realtimeClientConfig } from "@/lib/realtime/server";
 
 import type { ReactNode } from "react";
 
@@ -32,8 +34,25 @@ export default async function DashboardLayout({
 }: DashboardLayoutProps) {
   const user = await requireUser();
 
+  /**
+   * `null` when Pusher is not configured, and then nothing subscribes.
+   *
+   * Rendered here rather than beside the bell because the header is not the only thing an event
+   * updates - a refresh re-runs the booking lists and the dashboard too - and because the layout
+   * is the one component every authenticated screen shares. One socket per tab, not one per
+   * surface that happens to care.
+   */
+  const realtime = realtimeClientConfig(user.id);
+
   return (
     <div className="flex flex-1">
+      {realtime && (
+        <RealtimeNotifications
+          channel={realtime.channel}
+          pusherKey={realtime.pusherKey}
+          cluster={realtime.cluster}
+        />
+      )}
       {/*
         The dashboard needed this more than the public shell did, and had it longer: the
         sidebar is eight or nine links plus a brand, so without a skip link a keyboard or
