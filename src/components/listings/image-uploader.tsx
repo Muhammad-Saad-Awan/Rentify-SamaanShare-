@@ -46,6 +46,22 @@ interface ImageUploaderProps {
    * than the action will accept.
    */
   max?: number;
+  /**
+   * Offer the camera and nothing else. Used by the handover record.
+   *
+   * WHAT THIS IS AND IS NOT WORTH. A handover photo is evidence of an item's condition at one
+   * moment, and a picture chosen from a gallery could have been taken any time - so the gallery,
+   * the drag-and-drop target and the multi-file pick are all removed here, and the only way in is
+   * a fresh frame from the camera.
+   *
+   * IT IS FRICTION, NOT A CONTROL, and nothing downstream may be written as though it were. The
+   * `capture` attribute is a hint a browser may ignore - desktop browsers ignore it entirely and
+   * open an ordinary file dialog - some Android camera apps offer a gallery of their own, and the
+   * upload goes from the browser straight to Cloudinary, so a crafted request never meets this
+   * component at all. It stops the person who would have reached for an old photo because it was
+   * the easy thing to do. It does not stop somebody who set out to.
+   */
+  cameraOnly?: boolean;
 }
 
 /**
@@ -67,8 +83,10 @@ function ImageUploader({
   onChange,
   error,
   max = MAX_IMAGES_PER_LISTING,
+  cameraOnly = false,
 }: ImageUploaderProps) {
   const inputId = useId();
+  const cameraInputId = useId();
 
   const [pendingCount, setPendingCount] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -337,13 +355,22 @@ function ImageUploader({
         to open the picker.
       */}
       <label
-        htmlFor={inputId}
-        onDragOver={(event) => {
-          event.preventDefault();
-          setIsDragging(true);
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
+        htmlFor={cameraOnly ? cameraInputId : inputId}
+        /*
+         * No drop target in camera-only mode. Leaving it would be the whole point undone: a file
+         * dragged in from the desktop is exactly the old photo the camera requirement exists to
+         * refuse, and it would arrive without ever touching the picker.
+         */
+        {...(cameraOnly
+          ? {}
+          : {
+              onDragOver: (event: DragEvent<HTMLLabelElement>) => {
+                event.preventDefault();
+                setIsDragging(true);
+              },
+              onDragLeave: () => setIsDragging(false),
+              onDrop: handleDrop,
+            })}
         className={cn(
           "focus-within:ring-ring flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors focus-within:ring-2",
           isDragging ? "border-primary bg-primary/5" : "border-border",
@@ -356,6 +383,8 @@ function ImageUploader({
         >
           {isBusy ? (
             <Loader2Icon className="size-5 animate-spin" />
+          ) : cameraOnly ? (
+            <CameraIcon className="size-5" />
           ) : (
             <ImagePlusIcon className="size-5" />
           )}
@@ -364,28 +393,34 @@ function ImageUploader({
         <span className="text-sm font-medium">
           {isBusy
             ? `Uploading ${pendingCount} photo${pendingCount === 1 ? "" : "s"}...`
-            : "Drag photos here, or click to choose"}
+            : cameraOnly
+              ? "Take a photo of the item"
+              : "Drag photos here, or click to choose"}
         </span>
 
         <span className="text-muted-foreground text-xs">
-          JPEG, PNG or WebP up to 15MB. {images.length} of {max} added.
+          {cameraOnly
+            ? `Photographed now, at the handover. ${images.length} of ${max} added.`
+            : `JPEG, PNG or WebP up to 15MB. ${images.length} of ${max} added.`}
         </span>
 
-        <input
-          id={inputId}
-          ref={fileInput}
-          type="file"
-          multiple
-          accept={ACCEPTED_IMAGE_TYPES.join(",")}
-          disabled={remaining === 0}
-          className="sr-only"
-          onChange={(event) => {
-            void handleFiles(event.target.files);
-            // Cleared so re-selecting the same file fires `change` again; without this
-            // a user who removed a photo could not re-add the identical file.
-            event.target.value = "";
-          }}
-        />
+        {!cameraOnly && (
+          <input
+            id={inputId}
+            ref={fileInput}
+            type="file"
+            multiple
+            accept={ACCEPTED_IMAGE_TYPES.join(",")}
+            disabled={remaining === 0}
+            className="sr-only"
+            onChange={(event) => {
+              void handleFiles(event.target.files);
+              // Cleared so re-selecting the same file fires `change` again; without this
+              // a user who removed a photo could not re-add the identical file.
+              event.target.value = "";
+            }}
+          />
+        )}
       </label>
 
       {/*
@@ -399,28 +434,39 @@ function ImageUploader({
         ordinary file picker, so there the button would be a second "choose a file" labelled
         as something else.
       */}
-      <Button
-        type="button"
-        variant="outline"
-        className="hidden self-start pointer-coarse:inline-flex"
-        aria-disabled={remaining === 0 || undefined}
-        onClick={() => {
-          if (remaining > 0) {
-            cameraInput.current?.click();
-          }
-        }}
-      >
-        <CameraIcon aria-hidden="true" />
-        Take a photo
-      </Button>
+      {!cameraOnly && (
+        <Button
+          type="button"
+          variant="outline"
+          className="hidden self-start pointer-coarse:inline-flex"
+          aria-disabled={remaining === 0 || undefined}
+          onClick={() => {
+            if (remaining > 0) {
+              cameraInput.current?.click();
+            }
+          }}
+        >
+          <CameraIcon aria-hidden="true" />
+          Take a photo
+        </Button>
+      )}
 
+      {/*
+        In camera-only mode this IS the control - the label above points at it, so it must be
+        focusable and visible to assistive technology. Everywhere else it stays a hidden partner
+        to the button, which is what `tabIndex={-1}` and `aria-hidden` are for: without them the
+        camera would be a second, unlabelled tab stop next to the picker.
+
+        Single-shot in both cases, because a camera returns one frame per capture.
+      */}
       <input
+        id={cameraInputId}
         ref={cameraInput}
         type="file"
         accept={ACCEPTED_IMAGE_TYPES.join(",")}
         capture="environment"
-        tabIndex={-1}
-        aria-hidden="true"
+        disabled={cameraOnly && remaining === 0}
+        {...(cameraOnly ? {} : { tabIndex: -1, "aria-hidden": true })}
         className="sr-only"
         onChange={(event) => {
           void handleFiles(event.target.files);

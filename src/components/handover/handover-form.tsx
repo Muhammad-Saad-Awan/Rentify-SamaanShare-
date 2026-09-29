@@ -168,10 +168,23 @@ function HandoverForm({
         <span className="text-xs font-medium">
           Photos {wantsPhotos ? "(strongly recommended)" : "(optional)"}
         </span>
+        {/*
+          CAMERA ONLY. A handover photo is evidence of the item's condition at this moment, and a
+          picture chosen from a gallery could have been taken at any other one - including before
+          the rental, which is the specific thing it would be used to misrepresent.
+
+          Worth being exact about what this buys, because the copy above must not overstate it:
+          it removes the easy path, not every path. `capture` is a hint browsers may ignore, a
+          desktop browser opens an ordinary file dialog regardless, and the upload goes from the
+          browser straight to Cloudinary without passing through this component. Treat what
+          arrives as a photo somebody offered, never as a photo the platform witnessed being
+          taken.
+        */}
         <ImageUploader
           images={photos}
           onChange={setPhotos}
           max={HANDOVER_PHOTOS_MAX}
+          cameraOnly
         />
       </div>
 

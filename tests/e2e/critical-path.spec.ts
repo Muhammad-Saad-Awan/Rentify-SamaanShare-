@@ -247,6 +247,24 @@ test("register, book, pay, hand over, return and review", async ({
     await expect(returnCondition).toBeVisible();
     await returnCondition.check();
 
+    /**
+     * The handover photo picker offers the camera and nothing else.
+     *
+     * A condition photo is evidence of one moment; a gallery pick could be from any other one.
+     * Asserted on the DOM rather than by trying to open a file dialog, because `capture` is a
+     * hint to the browser and Playwright cannot observe which app the phone would launch. What
+     * IS checkable is that the gallery path is gone: no multi-file input, no drop target.
+     *
+     * This is a guard on the affordance, not a claim that the photo was taken now. It cannot be
+     * that - see the note in `handover-form.tsx`.
+     */
+    const handoverFile = owner.locator('input[type="file"]');
+
+    await expect(handoverFile).toHaveCount(1);
+    await expect(handoverFile).toHaveAttribute("capture", "environment");
+    await expect(owner.locator('input[type="file"][multiple]')).toHaveCount(0);
+    await expect(owner.getByText("Take a photo of the item")).toBeVisible();
+
     await owner
       .getByRole("button", { name: "Mark item as returned" })
       .last()
