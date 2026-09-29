@@ -64,6 +64,30 @@ export const serverEnvSchema = z.object({
   CLOUDINARY_API_KEY: z.string().trim().optional(),
   CLOUDINARY_API_SECRET: z.string().trim().optional(),
 
+  /**
+   * Pusher Channels, for realtime notification delivery.
+   *
+   * ALL FOUR OPTIONAL, AND ALL FOUR SERVER-SIDE. Absent means the app behaves exactly as it did
+   * before realtime existed: notifications are written, and a recipient sees them on their next
+   * page load. That is the same "an unconfigured integration is not an error" rule the Cloudinary
+   * and Resend blocks follow, and here it also means a contributor with no Pusher account, and
+   * CI, can run the whole suite.
+   *
+   * NO `NEXT_PUBLIC_` PREFIX, even though the browser needs the key and the cluster. The
+   * dashboard layout is a Server Component and hands them to the subscriber as props - the same
+   * route `cloudName` takes to the uploader. The key is public in practice (it appears in every
+   * WebSocket handshake), so this is not secrecy; it keeps two strings out of the bundle on every
+   * public marketplace page that will never subscribe to anything.
+   *
+   * Trimmed for the reason the Cloudinary values are: a value pasted from a dashboard easily
+   * carries a trailing newline, and in `PUSHER_SECRET` that silently produces signatures Pusher
+   * rejects - an authorization that fails with no useful message.
+   */
+  PUSHER_APP_ID: z.string().trim().optional(),
+  PUSHER_KEY: z.string().trim().optional(),
+  PUSHER_SECRET: z.string().trim().optional(),
+  PUSHER_CLUSTER: z.string().trim().optional(),
+
   /** Resend API key. Absent means no transactional email, and no password reset offered. */
   RESEND_API_KEY: z.string().optional(),
 
