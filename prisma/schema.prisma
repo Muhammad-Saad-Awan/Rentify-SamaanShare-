@@ -784,6 +784,7 @@ model Payment {
   // ---------------------------------------------------------------- collection evidence
   /**
    * /**
+   * /**
    * When the renter declared they had paid.
    * Distinct from `createdAt`, which is when the payment row was created as the renter chose a
    * method, and from `confirmedAt`, which is when an administrator agreed the money had arrived.
@@ -818,6 +819,7 @@ model Payment {
 
   // ---------------------------------------------------------------- reversal of collection
   /**
+   * /**
    * /**
    * A refund is the reversal of THIS collection, so it lives here rather than on `Settlement`.
    * That gives a property worth relying on: a booking reaches exactly one terminal money
@@ -870,6 +872,7 @@ model Settlement {
 
   // ---------------------------------------------------------------- the rental side
   /**
+   * /**
    * /** What the renter was charged for the rental, excluding the deposit.
    */
   rentalAmount Int
@@ -919,6 +922,7 @@ model Settlement {
 
   // ---------------------------------------------------------------- authorship
   /**
+   * /**
    * /**
    * Required, unlike `Payment.confirmedById`. A settlement cannot exist without an administrator
    * having decided to make it, and a payout nobody is accountable for is not reviewable.
@@ -984,6 +988,22 @@ model Booking {
   startedAt   DateTime? // Picked up - PAYMENT_PENDING -> ACTIVE
   completedAt DateTime? // Returned - ACTIVE -> COMPLETED
   cancelledAt DateTime?
+
+  /**
+   * When the RENTER confirmed the security deposit actually reached them.
+   * The other half of a record that was one-sided. Whoever returns the deposit says they sent it -
+   * the owner under the offline flow, an administrator under the custodial one - and until now
+   * that assertion was the only evidence there was. A transfer reference proves money left an
+   * account; only the person waiting for it can say it arrived.
+   * ON THE BOOKING RATHER THAN ON `Payment` OR `Settlement`, deliberately. The two flows record
+   * the return in different tables and an offline booking has no settlement at all, but every
+   * booking has this row - so the renter's side of it is stored once and works the same either
+   * way, and survives `Payment.depositReturnedAt` being retired. See `depositReturnedAtOf`.
+   * Set once and never moved: it is the record of when the renter said so. Silence is not a
+   * denial - it means unconfirmed, which is why "the renter has not confirmed" is never rendered
+   * as "the renter did not receive it".
+   */
+  depositConfirmedAt DateTime?
 
   /**
    * Who cancelled, when someone did.

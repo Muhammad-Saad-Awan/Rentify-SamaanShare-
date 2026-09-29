@@ -192,6 +192,8 @@ const bookingSelect = {
   createdAt: true,
   startedAt: true,
   completedAt: true,
+  // The renter's half of the deposit-return record. See the note on the column.
+  depositConfirmedAt: true,
   listing: {
     select: {
       id: true,
@@ -309,6 +311,7 @@ type BookingRow = {
   createdAt: Date;
   startedAt: Date | null;
   completedAt: Date | null;
+  depositConfirmedAt: Date | null;
   listing: {
     id: string;
     title: string;
@@ -324,6 +327,14 @@ type BookingRow = {
     securityDeposit: number;
     depositReturnedAt: Date | null;
   } | null;
+  /**
+   * Declared even though only `depositReturnedAtOf` reads it.
+   *
+   * That helper takes both sources optionally, so a row type that omitted this would still
+   * compile and would quietly always answer from the payment - the custodial stamp ignored, with
+   * nothing to notice. Stating it here makes the select and the type agree.
+   */
+  settlement: { depositReturnedAt: Date | null } | null;
   reviews: {
     reviewerId: string;
     rating: number;
@@ -426,6 +437,7 @@ function toSummary(
       securityDeposit: row.payment?.securityDeposit ?? row.securityDeposit,
       completedAt: row.completedAt,
       depositReturnedAt: depositReturnedAtOf(row),
+      depositConfirmedAt: row.depositConfirmedAt,
       /**
        * The claim's effect on what is owed, reduced to the two facts `depositState` needs.
        *

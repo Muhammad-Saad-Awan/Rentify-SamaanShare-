@@ -30,6 +30,7 @@ import {
   markDepositReturned,
   selectPaymentMethod,
 } from "@/actions/payments";
+import { confirmDepositReturn } from "@/actions/deposit";
 import { PaymentInstructions } from "@/components/bookings/payment-instructions";
 import { FileClaimForm } from "@/components/claims/file-claim-form";
 import { HandoverForm } from "@/components/handover/handover-form";
@@ -841,10 +842,47 @@ function BookingActions({ booking, side }: BookingActionsProps) {
     return (
       <div className="flex flex-col gap-2">
         {deposit.kind === "returned" && (
-          <Note>
-            The owner recorded your {formatPKR(booking.securityDeposit)} deposit
-            as returned on {formatDate(deposit.returnedAt)}.
-          </Note>
+          <>
+            {/*
+              "Recorded as returned", not "the owner returned it". The sentence has to be true
+              under both flows - the owner records it today, an administrator will once the
+              platform holds the money - and it also has to stop short of asserting the money
+              arrived, which is the very thing the button below asks this person to tell us.
+            */}
+            <Note>
+              Your {formatPKR(booking.securityDeposit)} deposit was recorded as
+              returned on {formatDate(deposit.returnedAt)}.
+            </Note>
+
+            {deposit.confirmedAt ? (
+              <Note>
+                You confirmed you received it on{" "}
+                {formatDate(deposit.confirmedAt)}.
+              </Note>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    run(
+                      () => confirmDepositReturn({ bookingId: booking.id }),
+                      "Thanks - we have recorded that your deposit arrived."
+                    )
+                  }
+                  disabled={isPending}
+                  aria-busy={isPending}
+                >
+                  {isPending ? (
+                    <Loader2Icon className="animate-spin" />
+                  ) : (
+                    <CheckIcon />
+                  )}
+                  I have received my deposit
+                </Button>
+              </div>
+            )}
+          </>
         )}
 
         {/*

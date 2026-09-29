@@ -45,6 +45,7 @@ import {
   UserRole,
 } from "../src/generated/prisma/enums";
 import { writeAdminAction } from "../src/lib/admin/log";
+import { depositState } from "../src/lib/bookings/deposit";
 import {
   computeSettlement,
   depositReturnedAtOf,
@@ -700,6 +701,99 @@ async function main(): Promise<void> {
     check(
       "an offline booking still reports the payment's stamp",
       depositReturnedAtOf(offline!)?.getTime() === offlineReturnedAt.getTime()
+    );
+
+    // ------------------------------------------------------------ the renter's half
+    console.log("\nRenter confirmation");
+
+    const confirmed = await prisma.booking.updateMany({
+      where: {
+        id: booking.id,
+        renterId: renter.id,
+        depositConfirmedAt: null,
+      },
+      data: { depositConfirmedAt: new Date() },
+    });
+
+    check("the renter's confirmation applies once", confirmed.count === 1);
+
+    const confirmedTwice = await prisma.booking.updateMany({
+      where: { id: booking.id, renterId: renter.id, depositConfirmedAt: null },
+      data: { depositConfirmedAt: new Date() },
+    });
+
+    check("confirming twice affects nothing", confirmedTwice.count === 0);
+
+    /**
+     * The owner must not be able to sign for the renter. The action loads as the renter, and the
+     * write predicate carries `renterId` as well - this is that second guard, at the database.
+     */
+    const ownerAttempt = await prisma.booking.updateMany({
+      where: {
+        id: claimedBooking.id,
+        renterId: owner.id,
+        depositConfirmedAt: null,
+      },
+      data: { depositConfirmedAt: new Date() },
+    });
+
+    check(
+      "the owner cannot confirm receipt on the renter's behalf",
+      ownerAttempt.count === 0
+    );
+
+    const confirmedRow = await prisma.booking.findUnique({
+      where: { id: booking.id },
+      select: {
+        completedAt: true,
+        depositConfirmedAt: true,
+        securityDeposit: true,
+        payment: { select: { depositReturnedAt: true } },
+        settlement: { select: { depositReturnedAt: true } },
+      },
+    });
+
+    const custodialState = depositState({
+      securityDeposit: confirmedRow!.securityDeposit,
+      completedAt: confirmedRow!.completedAt,
+      depositReturnedAt: depositReturnedAtOf(confirmedRow!),
+      depositConfirmedAt: confirmedRow!.depositConfirmedAt,
+    });
+
+    check(
+      "a custodial return the renter confirmed reports both halves",
+      custodialState.kind === "returned" && custodialState.confirmedAt !== null,
+      `state is ${custodialState.kind}`
+    );
+
+    /** The same confirmation, against the booking whose return was recorded the offline way. */
+    await prisma.booking.updateMany({
+      where: { id: claimedBooking.id, renterId: renter.id },
+      data: { depositConfirmedAt: new Date() },
+    });
+
+    const offlineRow = await prisma.booking.findUnique({
+      where: { id: claimedBooking.id },
+      select: {
+        completedAt: true,
+        depositConfirmedAt: true,
+        securityDeposit: true,
+        payment: { select: { depositReturnedAt: true } },
+        settlement: { select: { depositReturnedAt: true } },
+      },
+    });
+
+    const offlineState = depositState({
+      securityDeposit: offlineRow!.securityDeposit,
+      completedAt: offlineRow!.completedAt,
+      depositReturnedAt: depositReturnedAtOf(offlineRow!),
+      depositConfirmedAt: offlineRow!.depositConfirmedAt,
+    });
+
+    check(
+      "the same confirmation works off the offline flow's stamp",
+      offlineState.kind === "returned" && offlineState.confirmedAt !== null,
+      `state is ${offlineState.kind}`
     );
 
     // ------------------------------------------------------------ audit

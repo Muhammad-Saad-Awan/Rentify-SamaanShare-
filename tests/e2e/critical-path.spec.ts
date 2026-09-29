@@ -256,6 +256,40 @@ test("register, book, pay, hand over, return and review", async ({
       owner.getByText(/Rental completed and those dates are free again\./)
     ).toBeVisible();
 
+    // ---------------------------------------------------------------- 7b. the deposit, both sides
+    /**
+     * The half of the deposit record that only the renter can supply.
+     *
+     * The owner says they sent it; that is an assertion by the sender and always has been. What
+     * is asserted here is that the renter is actually offered somewhere to say it arrived, and
+     * that the confirmation sticks - the button had no counterpart before and the renter's card
+     * simply dead-ended on "the owner recorded your deposit as returned".
+     */
+    await owner
+      .getByRole("button", { name: "I have returned the deposit" })
+      .click();
+
+    await expect(owner.getByText(/Deposit recorded as returned/)).toBeVisible();
+
+    await gotoReady(renter, "/dashboard/bookings");
+
+    const confirmDeposit = renter.getByRole("button", {
+      name: "I have received my deposit",
+    });
+
+    await expect(confirmDeposit).toBeVisible();
+    await confirmDeposit.click();
+
+    await expect(
+      renter.getByText(/we have recorded that your deposit arrived/i)
+    ).toBeVisible();
+
+    // The record replaces the control, so the same person cannot be asked to sign for it twice.
+    await gotoReady(renter, "/dashboard/bookings");
+    await expect(
+      renter.getByText(/You confirmed you received it on/)
+    ).toBeVisible();
+
     // ---------------------------------------------------------------- 8. both review
     await ownerRequests(owner);
     await owner.getByRole("button", { name: "Leave a review" }).first().click();
