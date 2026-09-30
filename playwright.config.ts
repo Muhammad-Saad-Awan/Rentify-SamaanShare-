@@ -112,6 +112,14 @@ export default defineConfig({
         // The journey has its own project; without this it would run twice, and the second run
         // would find a listing its own first run had already booked out.
         /critical-path\.spec\.ts/,
+        /**
+         * The realtime test, for exactly the same reason and caught the same way.
+         *
+         * It ran here as well as in its own project, and its first run approved the booking its
+         * second run needed to still be pending. That showed up as an intermittent failure on
+         * "nothing is unread yet", which reads like a delivery problem and is not one.
+         */
+        /realtime-delivery\.spec\.ts/,
       ],
       /**
        * Depends on `setup` for its DATA, not for a session - these tests stay signed out, and no
