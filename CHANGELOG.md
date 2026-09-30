@@ -117,6 +117,70 @@ stays unreleased; `TODO.md` holds what remains.
 - In-app password change, and a list of connected accounts
 - Member preferences — default browse city, notification switches
 
+#### Accessibility and end-to-end testing (15-24 September 2026)
+
+- Playwright with `@axe-core/playwright`, run against a production build rather
+  than `next dev` — the dev server injects its own overlay, and a scan cannot
+  tell Next's markup from ours
+- A throwaway account fixture created and removed per run, so no known password
+  is ever seeded into a developer's database
+- The critical path end to end: register, request, approve, pay, collect,
+  return, review, in two browser contexts. Publishing a listing is the one step
+  it cannot reach, because image verification calls Cloudinary's Admin API
+- The in-process rate limiter measured rather than assumed. Ten registrations
+  were obtained against a documented limit of five, because the limit is
+  per-instance and a restart resets it
+
+#### Custodial payments — collection through deposit return (27-30 September 2026)
+
+- `computeCommission` in basis points, rounding down with the remainder to the
+  owner. It takes a rental amount and nothing else, so it structurally cannot
+  take a cut of a deposit or of damage compensation
+- `Payment` gained evidence fields — submission, proof with a unique hash,
+  rejection, and the commission rate frozen at verification
+- `submitPaymentEvidence`, `verifyPayment`, `rejectPayment` and
+  `reverseVerification`. Every write is a compare-and-swap; reversal is refused
+  once the booking has left `PAYMENT_PENDING`, because by then an owner has
+  handed over an item on the strength of it
+- A `Settlement` model and `settleBooking`, deriving every figure rather than
+  accepting any. Two conservation rules hold by construction: commission plus
+  owner rental equals the rental, and damage compensation plus the returned
+  deposit equals the deposit
+- `recordOwnerPayout` and `recordDepositReturn` as separate acts, in either
+  order — they go to different people and nothing makes one wait on the other
+- `Booking.depositConfirmedAt`, the renter's half of a record that was
+  one-sided. Whoever returns the deposit says they sent it; only the person
+  waiting for it can say it arrived
+
+#### Photo evidence integrity (29-30 September 2026)
+
+- Handover condition photos come from the camera only — the gallery, the
+  drag-and-drop target and the multi-file pick are all removed from that form
+- Handover and claim photos carry Cloudinary's checksum, read server-side from
+  the Admin API response that already supplies the URL, and unique per table. The
+  same image cannot be submitted as evidence twice — most importantly not this
+  rental's pickup photo offered again at return
+
+#### Realtime notifications (29-30 September 2026)
+
+- Pusher Channels, one private channel per member, with authorization derived
+  from the session and compared against the requested name
+- A dashboard subscriber that deduplicates by notification id, raises a toast and
+  debounces a `router.refresh()`. Nothing is rendered from the payload but the
+  toast's line; the badge, the panel, the feed and the booking cards are Server
+  Components re-run against Postgres
+- Reconnects refresh, which recovers everything missed with no cursor and no
+  replay endpoint
+- Five new notification types for the custodial money events, and two reused
+  rather than duplicated
+- A two-browser test that watches one page change because of another's action,
+  and which was confirmed to fail with the refresh disabled
+
+#### Smaller additions
+
+- A show-password toggle on the sign-in form and on both settings password forms
+- "Take a photo" on the listing uploader, for the phone in someone's hand
+
 ### Changed
 
 - Read-only `$transaction([...])` pairs converted to `Promise.all` (Stage A4).
@@ -130,6 +194,16 @@ stays unreleased; `TODO.md` holds what remains.
 - Migrations now run during the Vercel build (`db:migrate:deploy && build`), so a
   deploy cannot serve a build against a schema it does not match
 - The generated Prisma client is no longer tracked in git
+- `createNotifications` returns the rows it wrote rather than a count, through
+  `createManyAndReturn`. The ids do not exist until the rows do, and the realtime
+  subscriber deduplicates on them
+- `depositState` carries the renter's confirmation as a nullable field on the
+  existing `returned` state rather than as a new state, so every surface that
+  handles "returned" keeps handling it. Null means unconfirmed, never "not
+  received"
+- Deposit wording is neutral between the two flows: "Returned." rather than
+  "Returned by the owner", because under the custodial flow the platform returns
+  it
 
 ### Fixed
 
@@ -149,6 +223,19 @@ stays unreleased; `TODO.md` holds what remains.
   the field and the caret jumped out after each keystroke. Server-rendered HTML is
   identical either way, which is what hid it
 - Base UI is now told when a `Button` is not rendering a `button`
+- **Clicking the notification bell replaced the whole application** with
+  "SamaanShare could not load". The panel used `DropdownMenuLabel`, which is Base
+  UI's `Menu.GroupLabel` and throws without a `Menu.Group` around it — as the
+  popup mounts, which is why the page loaded fine and only the click failed. The
+  bell lives in the dashboard layout, and a segment's `error.tsx` does not cover
+  its own layout, so the throw reached `global-error.tsx`. In production the
+  message is minified to "Base UI error #31"
+- A link styled as a button announced itself as a button, across 42 modules
+- Muted text on a muted surface sat below the AA contrast threshold
+- The notification switches had no accessible name
+- Panels and list changes dropped keyboard focus to `<body>`
+- A `loading.tsx` above a 404-able route flushed a 200 before `notFound()` could
+  change it
 
 ### Removed
 
@@ -183,6 +270,17 @@ stays unreleased; `TODO.md` holds what remains.
   owner's listings cannot resurface through a hand-written query
 - Cloudinary uploads are signed server-side and short-lived
 - Every administrative write is recorded in an audit log
+- **Realtime channels are private and authorized server-side.** The channel a
+  client asks for is never trusted: the endpoint builds the channel the session is
+  entitled to and compares, rather than parsing an id out of the requested name,
+  which is what a prefix trick slips past. The session is re-read from the
+  database, because a subscription outlives the request that authorized it
+- **Realtime payloads carry an id, a type, a title and a link target** — no body,
+  no amounts, no counterparty. Less of a member's business crosses a third party,
+  and a client with nothing to render from cannot drift from the database
+- **Evidence photos cannot be reused.** Cloudinary's checksum is read
+  server-side, never accepted from the browser, because anybody willing to reuse
+  a photo is equally willing to send a hash that does not match it
 
 ---
 
