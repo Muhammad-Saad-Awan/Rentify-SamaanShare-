@@ -46,19 +46,30 @@ async function signIn(page: Page, email: string, password: string) {
 async function waitForRealtime(page: Page): Promise<boolean> {
   const marker = page.locator("[data-realtime-state]");
 
+  /**
+   * NO SUBSCRIBER AT ALL means realtime is unconfigured, which is the only legitimate skip.
+   *
+   * The distinction is the whole point of this helper. An earlier version caught the timeout too
+   * and skipped on either - so when the socket failed to connect under parallel load, the test
+   * reported a skip instead of a failure and stopped protecting anything. That is worse than
+   * failing, because nobody investigates a skip.
+   */
   if ((await marker.count()) === 0) {
     return false;
   }
 
-  try {
-    await expect(marker).toHaveAttribute("data-realtime-state", "connected", {
-      timeout: 20_000,
-    });
+  /**
+   * Rendered but not connecting is a FAILURE, and this is left to throw.
+   *
+   * Forty-five seconds rather than twenty: the whole suite runs in parallel and every signed-in
+   * page in it now opens a socket of its own, so first connection under load is measurably
+   * slower than it is alone. Long enough that only a real problem reaches it.
+   */
+  await expect(marker).toHaveAttribute("data-realtime-state", "connected", {
+    timeout: 45_000,
+  });
 
-    return true;
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 test("a renter sees the owner's approval arrive, without reloading", async ({
@@ -92,10 +103,7 @@ test("a renter sees the owner's approval arrive, without reloading", async ({
 
     const connected = await waitForRealtime(renter);
 
-    test.skip(
-      !connected,
-      "Realtime is not configured or did not connect; nothing to observe."
-    );
+    test.skip(!connected, "Realtime is not configured; nothing to observe.");
 
     /** The request is pending, and the renter's own page says so before anything happens. */
     await expect(renter.getByText("E2E Realtime Listing")).toBeVisible();
