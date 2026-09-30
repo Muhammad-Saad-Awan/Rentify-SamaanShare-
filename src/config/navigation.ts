@@ -1,4 +1,5 @@
 import {
+  BanknoteIcon,
   BarChart3Icon,
   BellIcon,
   CalendarCheckIcon,
@@ -145,6 +146,12 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
       },
       { title: "Claims", href: "/admin/claims", icon: ScaleIcon },
       /**
+       * Between claims and analytics rather than at the end: it is a QUEUE, and the queues
+       * belong together. An administrator working through the day moves reports, claims and
+       * payments in one pass, and analytics is the thing they read afterwards.
+       */
+      { title: "Payments", href: "/admin/payments", icon: BanknoteIcon },
+      /**
        * Platform totals. Last in the section deliberately: the queues above it are where somebody
        * is waiting on a decision, and analytics is where nobody is.
        */
@@ -175,6 +182,9 @@ export const PATH_LABELS: Readonly<Record<string, string>> = {
   "/admin/bookings": "Bookings",
   "/admin/analytics": "Analytics",
   "/admin/users": "Members",
+  // `payments` has no segment entry of its own, and would otherwise be title-cased into place -
+  // listed here so the breadcrumb says the same word as the sidebar.
+  "/admin/payments": "Payments",
 };
 
 export const SEGMENT_LABELS: Readonly<Record<string, string>> = {

@@ -141,6 +141,8 @@ describe("adminNavItems", () => {
       "/admin/listings",
       "/admin/bookings",
       "/admin/claims",
+      // The payment verification queue, beside the other queues rather than after analytics.
+      "/admin/payments",
       "/admin/analytics",
     ]);
   });
