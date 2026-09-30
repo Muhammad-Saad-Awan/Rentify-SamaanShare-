@@ -48,6 +48,7 @@ import { writeAdminAction } from "../src/lib/admin/log";
 import { createNotifications } from "../src/lib/notifications/create";
 import { buildPaymentNotifications } from "../src/lib/notifications/payment-messages";
 import { depositState } from "../src/lib/bookings/deposit";
+import { refundReadiness } from "../src/lib/payments/refund";
 import {
   computeSettlement,
   depositReturnedAtOf,
@@ -202,6 +203,36 @@ async function main(): Promise<void> {
       description: "Created by npm run verify:settlement.",
       amountClaimed: 6_000,
       status: ClaimStatus.OPEN,
+    },
+    select: { id: true },
+  });
+
+  /** Verified, unsettled, and destined to be refunded rather than settled. */
+  const refundPayment = await prisma.payment.create({
+    data: {
+      provider: PaymentProvider.OFFLINE,
+      method: "BANK_TRANSFER",
+      status: PaymentStatus.COMPLETED,
+      amount: 3_000,
+      securityDeposit: 5_000,
+      confirmedAt: new Date(),
+      confirmedById: admin.id,
+      commissionRateBps: FROZEN_RATE_BPS,
+    },
+    select: { id: true },
+  });
+
+  const refundBooking = await prisma.booking.create({
+    data: {
+      listingId: listing.id,
+      renterId: renter.id,
+      ownerId: owner.id,
+      startDate: new Date(Date.now() - 5 * 864e5),
+      endDate: new Date(Date.now() - 2 * 864e5),
+      totalPrice: 3_000,
+      securityDeposit: 5_000,
+      status: BookingStatus.CANCELLED,
+      paymentId: refundPayment.id,
     },
     select: { id: true },
   });
@@ -857,6 +888,136 @@ async function main(): Promise<void> {
 
     check("a payout notifies the owner only", transferNotices.length === 1);
 
+    // ------------------------------------------------------------ the other terminal outcome
+    console.log("\nRefunds");
+
+    const refundable = await prisma.booking.findUnique({
+      where: { id: refundBooking.id },
+      select: {
+        payment: {
+          select: {
+            status: true,
+            amount: true,
+            securityDeposit: true,
+            refundedAt: true,
+          },
+        },
+        settlement: { select: { id: true } },
+      },
+    });
+
+    const canRefund = refundReadiness({
+      paymentStatus: refundable!.payment!.status,
+      amount: refundable!.payment!.amount,
+      securityDeposit: refundable!.payment!.securityDeposit,
+      refunded: refundable!.payment!.refundedAt !== null,
+      settled: refundable!.settlement !== null,
+    });
+
+    check(
+      "a verified, unsettled payment can be refunded in full",
+      canRefund.ready && canRefund.refundAmount === 8_000,
+      canRefund.ready ? undefined : canRefund.reason
+    );
+
+    /**
+     * THE INVARIANT, FROM THE SETTLEMENT SIDE. `booking` was settled above, so it must not be
+     * refundable - otherwise the same money pays the owner and comes back to the renter.
+     */
+    const settledBooking = await prisma.booking.findUnique({
+      where: { id: booking.id },
+      select: {
+        payment: {
+          select: {
+            status: true,
+            amount: true,
+            securityDeposit: true,
+            refundedAt: true,
+          },
+        },
+        settlement: { select: { id: true } },
+      },
+    });
+
+    const refundAfterSettle = refundReadiness({
+      paymentStatus: settledBooking!.payment!.status,
+      amount: settledBooking!.payment!.amount,
+      securityDeposit: settledBooking!.payment!.securityDeposit,
+      refunded: settledBooking!.payment!.refundedAt !== null,
+      settled: settledBooking!.settlement !== null,
+    });
+
+    check("a settled booking cannot be refunded", !refundAfterSettle.ready);
+
+    // The compare-and-swap the action issues.
+    const refunded = await prisma.payment.updateMany({
+      where: {
+        id: refundPayment.id,
+        status: PaymentStatus.COMPLETED,
+        refundedAt: null,
+      },
+      data: {
+        status: PaymentStatus.REFUNDED,
+        refundedAt: new Date(),
+        refundAmount: 8_000,
+        refundRef: `RFND-${stamp}`,
+      },
+    });
+
+    check("the refund applies once", refunded.count === 1);
+
+    const refundedTwice = await prisma.payment.updateMany({
+      where: {
+        id: refundPayment.id,
+        status: PaymentStatus.COMPLETED,
+        refundedAt: null,
+      },
+      data: { status: PaymentStatus.REFUNDED, refundedAt: new Date() },
+    });
+
+    check("refunding twice affects nothing", refundedTwice.count === 0);
+
+    /**
+     * AND FROM THE REFUND SIDE. A refunded payment must not be settleable. This is the half that
+     * `settlementReadiness` owns, checked here against a row that really was refunded rather
+     * than against a flag somebody passed it.
+     */
+    const afterRefund = await prisma.booking.findUnique({
+      where: { id: refundBooking.id },
+      select: {
+        status: true,
+        payment: {
+          select: {
+            status: true,
+            commissionRateBps: true,
+            refundedAt: true,
+          },
+        },
+        claim: { select: { status: true, amountUpheld: true } },
+        settlement: { select: { id: true } },
+      },
+    });
+
+    const settleAfterRefund = settlementReadiness({
+      bookingStatus: afterRefund!.status,
+      paymentStatus: afterRefund!.payment!.status,
+      commissionRateBps: afterRefund!.payment!.commissionRateBps,
+      refunded: afterRefund!.payment!.refundedAt !== null,
+      settled: false,
+      claim: afterRefund!.claim,
+    });
+
+    check("a refunded payment cannot be settled", !settleAfterRefund.ready);
+
+    /**
+     * The handover gate closes as a side effect, which is worth asserting rather than assuming:
+     * `canStartBooking()` requires COMPLETED, and a refund moves the payment past it.
+     */
+    check(
+      "a refunded payment is no longer COMPLETED, so the handover gate refuses it",
+      afterRefund!.payment!.status === PaymentStatus.REFUNDED
+    );
+
     // ------------------------------------------------------------ audit
     console.log("\nAudit");
 
@@ -886,10 +1047,10 @@ async function main(): Promise<void> {
     });
     await prisma.damageClaim.deleteMany({ where: { id: claim.id } });
     await prisma.booking.deleteMany({
-      where: { id: { in: [booking.id, claimedBooking.id] } },
+      where: { id: { in: [booking.id, claimedBooking.id, refundBooking.id] } },
     });
     await prisma.payment.deleteMany({
-      where: { id: { in: [payment.id, otherPayment.id] } },
+      where: { id: { in: [payment.id, otherPayment.id, refundPayment.id] } },
     });
     await prisma.listing.deleteMany({ where: { id: listing.id } });
     await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });

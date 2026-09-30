@@ -95,6 +95,37 @@ export const reverseVerificationSchema = z.object({
     .max(PAYMENT_REASON_MAX),
 });
 
+/**
+ * Recording that the money has been given back.
+ *
+ * NO AMOUNT, like the settlement schemas. A refund is all of it - rental and deposit - and how
+ * much is derived by `refundReadiness`. There is no partial refund because there is no
+ * cancellation policy to produce one, and a free text figure here would be that policy invented
+ * at the keyboard.
+ *
+ * Both fields are required. The reference is the platform asserting money left its account, and
+ * an assertion with nothing to reconcile against cannot be checked afterwards; the reason is
+ * required because a refund is never the expected path, so nothing about it is self-evident from
+ * the data the way a verification's is.
+ */
+export const recordRefundSchema = z.object({
+  bookingId: listingIdSchema,
+  refundRef: z
+    .string()
+    .trim()
+    .min(1, { error: "Enter the reference for the transfer to the renter." })
+    .max(TRANSACTION_REF_MAX, {
+      error: `A transfer reference is at most ${TRANSACTION_REF_MAX} characters.`,
+    }),
+  reason: z
+    .string()
+    .trim()
+    .min(1, { error: "Say why this booking is being refunded." })
+    .max(PAYMENT_REASON_MAX),
+});
+
+export type RecordRefundInput = z.infer<typeof recordRefundSchema>;
+
 export type SubmitPaymentEvidenceInput = z.infer<
   typeof submitPaymentEvidenceSchema
 >;

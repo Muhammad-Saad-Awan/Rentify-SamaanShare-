@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   PAYMENT_REASON_MAX,
+  recordRefundSchema,
   rejectPaymentSchema,
   reverseVerificationSchema,
   submitPaymentEvidenceRefined,
@@ -152,5 +153,42 @@ describe("administrator decisions", () => {
         reason: tooLong,
       }).success
     ).toBe(false);
+  });
+});
+
+describe("recordRefund input", () => {
+  it("requires both a reference and a reason", () => {
+    expect(
+      recordRefundSchema.safeParse({ bookingId: BOOKING_ID }).success
+    ).toBe(false);
+
+    expect(
+      recordRefundSchema.safeParse({ bookingId: BOOKING_ID, refundRef: "R-1" })
+        .success
+    ).toBe(false);
+
+    expect(
+      recordRefundSchema.safeParse({
+        bookingId: BOOKING_ID,
+        refundRef: "R-1",
+        reason: "Listing was removed after the payment cleared.",
+      }).success
+    ).toBe(true);
+  });
+
+  /** No partial refunds, so no amount - the figure is derived, never typed. */
+  it("discards an amount", () => {
+    const result = recordRefundSchema.safeParse({
+      bookingId: BOOKING_ID,
+      refundRef: "R-1",
+      reason: "Duplicate payment.",
+      refundAmount: 1,
+    });
+
+    expect(result.success && result.data).toEqual({
+      bookingId: BOOKING_ID,
+      refundRef: "R-1",
+      reason: "Duplicate payment.",
+    });
   });
 });
