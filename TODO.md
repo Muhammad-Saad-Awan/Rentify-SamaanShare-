@@ -1,6 +1,6 @@
 # SamaanShare - Development Backlog
 
-**Last Updated:** 24 September 2026 (critical-path E2E — register through review in two browser contexts, everything but publishing a listing; earlier that week: Playwright and axe, which found and closed four real defects — a contrast pair below AA, unnamed notification switches, every link-styled-as-a-button announcing as a button, and focus dropped by panels and list changes; Next.js 15.5.25 for two critical RCEs; optional Sentry error tracking; 15 September: backlog reconciled against the code and staging deployed 9 September, leaving A6 blocked on verification rather than infrastructure)
+**Last Updated:** 30 September 2026 (realtime notification delivery, proven in two browsers and confirmed on staging — Pusher private channels, publish after commit, reconnect recovery; the custodial payment backend from collection through deposit return, including the renter's own confirmation; evidence photos are camera-only at handover and cannot be submitted twice; the notification bell no longer takes the whole application down; 24 September: critical-path E2E in two browser contexts, everything but publishing a listing; Playwright and axe, which found and closed four real defects)
 **Architecture Version:** 1.0 (Locked)
 
 This document serves as the main development backlog for SamaanShare. Tasks are organized by phase and should be completed in order.
@@ -1975,6 +1975,95 @@ unless the note says otherwise.
 
 ---
 
+## Phase 8 – Custodial payments (27-30 September 2026)
+
+The platform holds the money. Decided as Model A after the planning pass: the
+renter pays SamaanShare, an administrator verifies it arrived, the owner is paid
+after the item comes back, and the deposit is returned less any upheld claim.
+
+**The backend is complete through deposit return. None of it has a screen**, which
+is the single most important thing on this page: every action below exists, is
+tested and publishes notifications, and no user can reach any of it. The live
+product still runs the offline flow end to end.
+
+### Done
+
+- [x] `computeCommission` — basis points, rounds down, remainder to the owner.
+      Takes a rental amount and nothing else, so it cannot commission a deposit
+- [x] `COMMISSION_RATE_BPS = 0` — configurable, unset until a rate is decided
+- [x] `Payment` evidence fields and the `Settlement` model
+- [x] `submitPaymentEvidence`, `verifyPayment`, `rejectPayment`,
+      `reverseVerification` — compare-and-swap throughout, commission rate frozen
+      at verification
+- [x] `settleBooking` — every figure derived, no amount accepted from any caller
+- [x] `recordOwnerPayout` and `recordDepositReturn` — separate acts, either order
+- [x] `confirmDepositReturn` — the renter's half of the record. This one IS
+      reachable, on the booking card, because it works under the offline flow too
+- [x] Notifications for all of it, delivered in realtime
+
+### Phase 6 – Refunds and claim payouts
+
+- [ ] `recordRefund` — the reversal of a collection. `REFUND_RECORDED` and
+      `RECORD_REFUND` already exist, so this is an action and a UI, not a
+      migration
+- [ ] The guard from the other side: a refund must refuse a settled booking, as
+      settlement already refuses a refunded payment. Settlement's half is an
+      index; the refund's half is not yet written
+
+### Phase 7 – The user interface, and the switchover
+
+The largest remaining piece, and the one that changes what members see.
+
+- [ ] Renter: record a payment, with proof upload
+- [ ] Admin: the verification queue, and the settlement screens
+- [ ] Owner: what is owed and when it was sent
+- [ ] **Retire the offline flow in the same change** — `confirmPaymentReceived`,
+      `markDepositReturned`, `Payment.depositReturnedAt` and the
+      `depositReturnedAtOf` helper that exists only to bridge the two
+- [ ] **Rewrite the renter-facing copy.** Several screens currently say
+      SamaanShare does not hold the deposit and cannot release it. That is true
+      today and becomes false the moment the flow flips, so the strings move in
+      the same commit — `payment-instructions.tsx`, `file-claim-form.tsx`,
+      `trust-panel.tsx`, and the deposit notes in `booking-actions.tsx`
+
+### Production prerequisites, not implementation
+
+- [ ] Payment licensing and regulatory position for holding customer funds in
+      Pakistan. Documented as a blocker for going live, deliberately not for
+      building
+- [ ] A provider. Nothing here integrates one; every transfer is recorded by an
+      administrator against a reference from outside the system
+
+---
+
+## Phase 9 – Realtime notifications (29-30 September 2026)
+
+Working on staging as of 30 September. Notifications were already correct; what
+was missing was any way for the server to reach a browser that was not asking.
+
+### Done
+
+- [x] Pusher Channels, one private channel per member
+- [x] `/api/realtime/auth` — derives the allowed channel from the session and
+      compares, never parses the requested name
+- [x] The dashboard subscriber — dedupe by id, toast, debounced
+      `router.refresh()`, reconnect recovery
+- [x] Publish after the transaction commits, at all 22 sites
+- [x] Two-browser test, confirmed to fail with the refresh disabled
+- [x] `PUSHER_*` set in Vercel; delivery confirmed on the deployed site
+
+### Left
+
+- [ ] Watch **concurrent connections**, not messages. One per open signed-in
+      tab, against 100 on the free tier. Messages will not be the constraint
+- [ ] Nothing publishes the custodial money events in production yet, because
+      nothing can trigger them — see Phase 8's interface work
+- [ ] Notification preferences do not cover the money types, deliberately: they
+      are transactional, and a person may switch off a review nudge but not a
+      message about their own money
+
+---
+
 ## Future Features (Post-MVP)
 
 ### Phase 2: Trust & Payments
@@ -1984,7 +2073,12 @@ unless the note says otherwise.
 - [ ] Safepay integration
 - [ ] PayFast integration
 - [ ] Phone OTP verification (+92)
-- [ ] Real-time messaging system
+- [ ] Real-time messaging system. The transport now exists — private channels,
+      authorization and a subscriber — so this is the `Conversation` and
+      `Message` models, a screen, and one `publishAfterCommit`. Worth knowing
+      that a chat probably wants the message text in the payload rather than a
+      refresh nudge, which is a deliberate departure from the rule the
+      notification layer follows
 - [ ] CNIC verification (NADRA)
 - [ ] Escrow payment system
 - [ ] Platform fee implementation
