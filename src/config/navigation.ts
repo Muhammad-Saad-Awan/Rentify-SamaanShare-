@@ -1,5 +1,6 @@
 import {
   BanknoteIcon,
+  HandCoinsIcon,
   BarChart3Icon,
   BellIcon,
   CalendarCheckIcon,
@@ -151,6 +152,12 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
        * payments in one pass, and analytics is the thing they read afterwards.
        */
       { title: "Payments", href: "/admin/payments", icon: BanknoteIcon },
+      // Immediately after payments, because that is the order the money moves in.
+      {
+        title: "Settlements",
+        href: "/admin/settlements",
+        icon: HandCoinsIcon,
+      },
       /**
        * Platform totals. Last in the section deliberately: the queues above it are where somebody
        * is waiting on a decision, and analytics is where nobody is.
@@ -185,6 +192,7 @@ export const PATH_LABELS: Readonly<Record<string, string>> = {
   // `payments` has no segment entry of its own, and would otherwise be title-cased into place -
   // listed here so the breadcrumb says the same word as the sidebar.
   "/admin/payments": "Payments",
+  "/admin/settlements": "Settlements",
 };
 
 export const SEGMENT_LABELS: Readonly<Record<string, string>> = {

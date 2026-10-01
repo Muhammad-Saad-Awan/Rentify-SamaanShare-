@@ -23,6 +23,10 @@
 //
 // Requires a PRODUCTION build and server - `npm run build && npm run start`.
 //
+//   THE SETTLEMENT QUEUE - that a finished rental appears once it can be settled,
+//                    with the figures the action would produce, and that it moves
+//                    between the views as the two transfers are recorded.
+//
 //   npm run verify:admin-payments
 // ============================================================================
 
@@ -37,6 +41,7 @@ import {
   PaymentStatus,
   UserRole,
 } from "../src/generated/prisma/enums";
+import { computeSettlement } from "../src/lib/payments/settlement";
 import { COMMISSION_RATE_BPS } from "../src/config/commission";
 import { computeCommission } from "../src/lib/payments/commission";
 
@@ -92,6 +97,10 @@ async function fetchPage(path: string, cookie: string) {
 
   return { status: response.status, html: await response.text() };
 }
+
+/** Matches `formatPKR`'s grouping, so an assertion compares what the page actually prints. */
+const formatted = (value: number) =>
+  new Intl.NumberFormat("en-PK").format(value);
 
 const RENTAL = 7_777;
 const DEPOSIT = 15_000;
@@ -172,6 +181,9 @@ async function main(): Promise<void> {
 
   const createdUserIds = [admin.id, owner.id, renter.id];
 
+  /** Set when the settlement section creates one, so cleanup can remove it. */
+  let settlementId: string | null = null;
+
   try {
     const adminCookie = await sessionCookie({ ...admin, role: "ADMIN" });
     const renterCookie = await sessionCookie({ ...renter, role: "USER" });
@@ -220,9 +232,6 @@ async function main(): Promise<void> {
       rentalAmount: RENTAL,
       rateBps: COMMISSION_RATE_BPS,
     });
-
-    const formatted = (value: number) =>
-      new Intl.NumberFormat("en-PK").format(value);
 
     check(
       "the split it would freeze is shown",
@@ -275,7 +284,143 @@ async function main(): Promise<void> {
     const stillPending = await fetchPage("/admin/payments", adminCookie);
 
     check("and has left the queue", !stillPending.html.includes(reference));
+    // ------------------------------------------------------------ the settlement queue
+    console.log("\nSettlements");
+
+    /**
+     * The booking is verified but still running, so it must NOT be offered for settlement.
+     * `settlementReadiness` refuses anything that is not finished, and the queue reads the same
+     * function - this is the check that catches the two disagreeing.
+     */
+    const beforeReturn = await fetchPage("/admin/settlements", adminCookie);
+
+    check(
+      "a rental still running is not offered for settlement",
+      beforeReturn.status === 200 &&
+        !beforeReturn.html.includes(`Queue Listing ${stamp}`),
+      `status ${beforeReturn.status}`
+    );
+
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: { status: BookingStatus.COMPLETED, completedAt: new Date() },
+    });
+
+    const toSettle = await fetchPage("/admin/settlements", adminCookie);
+
+    check(
+      "a finished rental with a verified payment is offered",
+      toSettle.html.includes(`Queue Listing ${stamp}`)
+    );
+
+    /**
+     * The figures on screen, against the same function the action uses. Computed rather than
+     * hardcoded for the reason given above: at a rate of zero a hardcoded expectation passes
+     * whatever is rendered.
+     */
+    const expected = computeSettlement({
+      rentalAmount: RENTAL,
+      rateBps: COMMISSION_RATE_BPS,
+      securityDeposit: DEPOSIT,
+      damageCompensationAmount: 0,
+    });
+
+    check(
+      "it shows what settling would produce",
+      toSettle.html.includes(formatted(expected.ownerRentalAmount)) &&
+        toSettle.html.includes(formatted(expected.depositReturnedAmount)),
+      `expected owner ${formatted(expected.ownerRentalAmount)}`
+    );
+
+    // Settled directly, because driving the Server Action needs the build-time id dance.
+    const settlement = await prisma.settlement.create({
+      data: {
+        bookingId: booking.id,
+        paymentId: payment.id,
+        rentalAmount: expected.rentalAmount,
+        commissionRateBps: expected.commissionRateBps,
+        commissionAmount: expected.commissionAmount,
+        ownerRentalAmount: expected.ownerRentalAmount,
+        securityDeposit: expected.securityDeposit,
+        damageCompensationAmount: expected.damageCompensationAmount,
+        depositReturnedAmount: expected.depositReturnedAmount,
+        settledById: admin.id,
+      },
+      select: { id: true },
+    });
+
+    settlementId = settlement.id;
+
+    const afterSettle = await fetchPage("/admin/settlements", adminCookie);
+
+    check(
+      "and leaves the to-settle view once settled",
+      !afterSettle.html.includes(`Queue Listing ${stamp}`)
+    );
+
+    const toSend = await fetchPage(
+      "/admin/settlements?view=to-send",
+      adminCookie
+    );
+
+    check(
+      "appearing under To send, with both transfers outstanding",
+      toSend.html.includes(`Queue Listing ${stamp}`) &&
+        toSend.html.includes("Owner payout") &&
+        toSend.html.includes("Deposit return")
+    );
+
+    await prisma.settlement.update({
+      where: { id: settlement.id },
+      data: {
+        ownerPaidAt: new Date(),
+        ownerPayoutRef: `OUT-${stamp}`,
+        depositReturnedAt: new Date(),
+        depositReturnRef: `DEP-${stamp}`,
+      },
+    });
+
+    const done = await fetchPage("/admin/settlements?view=done", adminCookie);
+
+    check(
+      "and moving to Done once both are sent",
+      done.html.includes(`Queue Listing ${stamp}`)
+    );
+
+    const stillToSend = await fetchPage(
+      "/admin/settlements?view=to-send",
+      adminCookie
+    );
+
+    check(
+      "and leaving To send",
+      !stillToSend.html.includes(`Queue Listing ${stamp}`)
+    );
+
+    const asRenterSettlements = await fetchPage(
+      "/admin/settlements",
+      renterCookie
+    );
+
+    check(
+      "a member who is not an administrator does not receive the settlement queue",
+      asRenterSettlements.status !== 200 ||
+        !asRenterSettlements.html.includes("To settle")
+    );
   } finally {
+    await prisma.adminAction.deleteMany({
+      where: {
+        OR: [{ actorId: admin.id }, { subjectId: { in: createdUserIds } }],
+      },
+    });
+    await prisma.notification.deleteMany({
+      where: { userId: { in: createdUserIds } },
+    });
+
+    if (settlementId) {
+      await prisma.settlement.deleteMany({ where: { id: settlementId } });
+    }
+
     await prisma.booking.deleteMany({ where: { id: booking.id } });
     await prisma.payment.deleteMany({ where: { id: payment.id } });
     await prisma.listing.deleteMany({ where: { id: listing.id } });
