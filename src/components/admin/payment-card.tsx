@@ -1,6 +1,12 @@
 "use client";
 
-import { CheckIcon, Loader2Icon, RotateCcwIcon, XIcon } from "lucide-react";
+import {
+  CheckIcon,
+  Loader2Icon,
+  RotateCcwIcon,
+  Undo2Icon,
+  XIcon,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -11,15 +17,20 @@ import {
   reverseVerification,
   verifyPayment,
 } from "@/actions/payment-verification";
+import { recordRefund } from "@/actions/refund";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { PaymentStatus } from "@/generated/prisma/enums";
 import { paymentMethodLabel } from "@/lib/notifications/messages";
 import { formatPKR } from "@/lib/utils/currency";
 import { formatDateTime } from "@/lib/utils/date";
-import { PAYMENT_REASON_MAX } from "@/lib/validations/payment";
+import {
+  PAYMENT_REASON_MAX,
+  TRANSACTION_REF_MAX,
+} from "@/lib/validations/payment";
 
 import type { ActionResult } from "@/types";
 import type { AdminPaymentSummary } from "@/lib/queries/admin-payments";
@@ -27,6 +38,37 @@ import type { AdminPaymentSummary } from "@/lib/queries/admin-payments";
 interface PaymentCardProps {
   payment: AdminPaymentSummary;
 }
+
+/**
+ * The three things that need a reason, and what each one says.
+ *
+ * A table rather than nested ternaries: with two outcomes the inline form read fine, with three
+ * it would be six conditionals saying the same thing in different places, and the day a fourth
+ * arrives one of them gets missed.
+ */
+const PANEL_COPY = {
+  reject: {
+    reasonLabel: "Why the payment could not be verified",
+    placeholder: "No transfer matching this reference in the account.",
+    hint: "The renter is shown this, so tell them what to check.",
+    submitLabel: "Reject payment",
+    success: "Payment rejected. The renter can record it again.",
+  },
+  reverse: {
+    reasonLabel: "Why the verification is being reversed",
+    placeholder: "Verified against the wrong booking.",
+    hint: "Recorded in the audit trail and sent to the renter.",
+    submitLabel: "Reverse",
+    success: "Verification reversed. The payment is back in the queue.",
+  },
+  refund: {
+    reasonLabel: "Why this booking is being refunded",
+    placeholder: "Listing was removed after the payment cleared.",
+    hint: "Everything collected goes back - the rental and the deposit. The booking can never be settled afterwards.",
+    submitLabel: "Refund everything",
+    success: "Refund recorded. The renter has been told.",
+  },
+} as const;
 
 /**
  * One payment in the administrator's queue.
@@ -47,8 +89,11 @@ interface PaymentCardProps {
  */
 function PaymentCard({ payment }: PaymentCardProps) {
   const [isPending, setIsPending] = useState(false);
-  const [panel, setPanel] = useState<"reject" | "reverse" | null>(null);
+  const [panel, setPanel] = useState<"reject" | "reverse" | "refund" | null>(
+    null
+  );
   const [reason, setReason] = useState("");
+  const [refundRef, setRefundRef] = useState("");
 
   const awaitingDecision =
     payment.status === PaymentStatus.PENDING_VERIFICATION;
@@ -62,6 +107,13 @@ function PaymentCard({ payment }: PaymentCardProps) {
    * button whose only outcome is a refusal is its own kind of lie.
    */
   const reversible = verified && !payment.settled && !payment.refundedAt;
+
+  /**
+   * Refundable on exactly the same conditions, because it is the same question: is this money
+   * still ours to move? `refundReadiness` decides for real - it refuses a settled booking and an
+   * already-refunded payment - and this only decides whether to offer the control.
+   */
+  const refundable = reversible;
 
   async function run(
     action: () => Promise<ActionResult<unknown>>,
@@ -245,20 +297,29 @@ function PaymentCard({ payment }: PaymentCardProps) {
               Reverse this verification
             </Button>
           )}
+
+          {/*
+            Refund lives HERE rather than on the settlement queue, because this is where the
+            verified payments are and giving money back is a decision about a payment, not about
+            a settlement - a booking that refunds never reaches a settlement at all.
+          */}
+          {refundable && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => setPanel("refund")}
+            >
+              <Undo2Icon />
+              Refund everything
+            </Button>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           <Textarea
-            aria-label={
-              panel === "reject"
-                ? "Why the payment could not be verified"
-                : "Why the verification is being reversed"
-            }
-            placeholder={
-              panel === "reject"
-                ? "No transfer matching this reference in the account."
-                : "Verified against the wrong booking."
-            }
+            aria-label={PANEL_COPY[panel].reasonLabel}
+            placeholder={PANEL_COPY[panel].placeholder}
             maxLength={PAYMENT_REASON_MAX}
             value={reason}
             onChange={(event) => setReason(event.target.value)}
@@ -266,41 +327,64 @@ function PaymentCard({ payment }: PaymentCardProps) {
           />
 
           {/*
+            A refund also needs the reference for the transfer BACK. The rejection and the
+            reversal move no money and so have nothing to reference.
+          */}
+          {panel === "refund" && (
+            <Input
+              aria-label="Refund transfer reference"
+              placeholder="Reference for the transfer back"
+              maxLength={TRANSACTION_REF_MAX}
+              value={refundRef}
+              disabled={isPending}
+              onChange={(event) => setRefundRef(event.target.value)}
+            />
+          )}
+
+          {/*
             The reason reaches the renter verbatim on a rejection, which is worth saying here -
             an administrator writing a note to themselves would word it differently.
           */}
           <p className="text-muted-foreground text-xs">
-            {panel === "reject"
-              ? "The renter is shown this, so tell them what to check."
-              : "Recorded in the audit trail and sent to the renter."}
+            {PANEL_COPY[panel].hint}
           </p>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
-              variant={panel === "reject" ? "destructive" : "default"}
-              disabled={isPending || reason.trim().length === 0}
+              variant={panel === "reverse" ? "default" : "destructive"}
+              disabled={
+                isPending ||
+                reason.trim().length === 0 ||
+                (panel === "refund" && refundRef.trim().length === 0)
+              }
               aria-busy={isPending}
               onClick={() =>
-                void run(
-                  () =>
-                    panel === "reject"
-                      ? rejectPayment({
-                          bookingId: payment.bookingId,
-                          reason,
-                        })
-                      : reverseVerification({
-                          bookingId: payment.bookingId,
-                          reason,
-                        }),
-                  panel === "reject"
-                    ? "Payment rejected. The renter can record it again."
-                    : "Verification reversed. The payment is back in the queue."
-                )
+                void run(() => {
+                  if (panel === "reject") {
+                    return rejectPayment({
+                      bookingId: payment.bookingId,
+                      reason,
+                    });
+                  }
+
+                  if (panel === "refund") {
+                    return recordRefund({
+                      bookingId: payment.bookingId,
+                      refundRef,
+                      reason,
+                    });
+                  }
+
+                  return reverseVerification({
+                    bookingId: payment.bookingId,
+                    reason,
+                  });
+                }, PANEL_COPY[panel].success)
               }
             >
               {isPending ? <Loader2Icon className="animate-spin" /> : null}
-              {panel === "reject" ? "Reject payment" : "Reverse"}
+              {PANEL_COPY[panel].submitLabel}
             </Button>
 
             <Button
@@ -310,6 +394,7 @@ function PaymentCard({ payment }: PaymentCardProps) {
               onClick={() => {
                 setPanel(null);
                 setReason("");
+                setRefundRef("");
               }}
             >
               Cancel
