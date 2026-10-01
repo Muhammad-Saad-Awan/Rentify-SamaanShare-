@@ -35,32 +35,22 @@ export const submitPaymentEvidenceSchema = z.object({
       error: `A transaction reference is at most ${TRANSACTION_REF_MAX} characters.`,
     }),
   /**
-   * Optional, and all three travel together or not at all.
+   * The uploaded receipt, as a Cloudinary public id and NOTHING ELSE.
    *
-   * `proofHash` is a SHA-256 of the uploaded bytes, computed by the caller that handled the
-   * upload. It is what the unique constraint catches a reused screenshot with, so a proof without
-   * one would defeat the control while looking like it was in place - hence the refinement below
-   * rather than three independently optional fields.
+   * IT USED TO TAKE THE URL AND THE HASH TOO, AND THAT WAS A HOLE. The hash is what the unique
+   * constraint catches a reused screenshot with - "the same screenshot submitted against two
+   * bookings is the cheapest payment fraud there is" - and a hash the client supplies is a claim
+   * about a file, not a fact about one. Anybody willing to reuse a receipt is willing to send a
+   * random 64 hex characters with it, and the constraint would have waved it through while
+   * looking exactly like a control.
+   *
+   * So both are now derived server-side from the Admin API response, through the same
+   * `resolveOwnedPhotos` the handover and claim photos use - which also checks the id belongs to
+   * this member's own upload folder. The same reasoning, arrived at two phases later, and applied
+   * back here.
    */
-  proofUrl: z.string().url().optional(),
-  proofPublicId: z.string().min(1).max(255).optional(),
-  proofHash: z
-    .string()
-    .regex(/^[a-f0-9]{64}$/, {
-      error: "Proof hash must be a SHA-256 hex digest.",
-    })
-    .optional(),
+  proofPublicId: z.string().trim().min(1).max(255).optional(),
 });
-
-export const submitPaymentEvidenceRefined = submitPaymentEvidenceSchema.refine(
-  (value) => {
-    const parts = [value.proofUrl, value.proofPublicId, value.proofHash];
-    const present = parts.filter((part) => part !== undefined).length;
-
-    return present === 0 || present === parts.length;
-  },
-  { error: "Proof needs its URL, public id and hash together." }
-);
 
 /**
  * An administrator verifying a payment.

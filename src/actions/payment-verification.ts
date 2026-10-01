@@ -19,12 +19,13 @@ import { buildPaymentNotifications } from "@/lib/notifications/payment-messages"
 import { computeCommission } from "@/lib/payments/commission";
 import { publishAfterCommit } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
+import { resolveOwnedPhotos } from "@/lib/uploads/resolve-photos";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { formatPKR } from "@/lib/utils/currency";
 import {
   rejectPaymentSchema,
   reverseVerificationSchema,
-  submitPaymentEvidenceRefined,
+  submitPaymentEvidenceSchema,
   verifyPaymentSchema,
 } from "@/lib/validations/payment";
 import { UNAUTHENTICATED_ERROR } from "@/types";
@@ -139,7 +140,7 @@ async function loadBookingForAdmin(bookingId: string) {
 export async function submitPaymentEvidence(
   input: unknown
 ): Promise<ActionResult<{ paymentStatus: PaymentStatus }>> {
-  const parsed = submitPaymentEvidenceRefined.safeParse(input);
+  const parsed = submitPaymentEvidenceSchema.safeParse(input);
 
   if (!parsed.success) {
     return {
@@ -166,8 +167,7 @@ export async function submitPaymentEvidence(
     };
   }
 
-  const { bookingId, transactionRef, proofUrl, proofPublicId, proofHash } =
-    parsed.data;
+  const { bookingId, transactionRef, proofPublicId } = parsed.data;
 
   /**
    * Loaded as the RENTER, so a booking belonging to somebody else is indistinguishable from one
@@ -208,6 +208,32 @@ export async function submitPaymentEvidence(
     };
   }
 
+  /**
+   * The receipt, resolved rather than accepted.
+   *
+   * `resolveOwnedPhotos` checks the id is in THIS member's own upload folder and returns
+   * Cloudinary's URL and checksum from the Admin API. Both used to arrive from the browser, and
+   * the checksum is the thing the duplicate-receipt constraint rests on - see the note on the
+   * schema. Resolved outside the transaction, because it makes an outbound HTTP request.
+   */
+  let proof: { publicId: string; url: string; hash: string | null } | null =
+    null;
+
+  if (proofPublicId) {
+    const resolved = await resolveOwnedPhotos(renter.id, [proofPublicId]);
+
+    if (!resolved.ok || !resolved.photos[0]) {
+      return { success: false, error: "That receipt could not be attached." };
+    }
+
+    proof = {
+      // Carried through rather than closed over, so the write below narrows without an assertion.
+      publicId: proofPublicId,
+      url: resolved.photos[0].url,
+      hash: resolved.photos[0].hash,
+    };
+  }
+
   try {
     const applied = await prisma.payment.updateMany({
       where: { id: payment.id, status: { in: SUBMITTABLE_FROM } },
@@ -221,9 +247,14 @@ export async function submitPaymentEvidence(
          */
         rejectedAt: null,
         rejectionReason: null,
-        ...(proofUrl ? { proofUrl } : {}),
-        ...(proofPublicId ? { proofPublicId } : {}),
-        ...(proofHash ? { proofHash } : {}),
+        ...(proof
+          ? {
+              proofUrl: proof.url,
+              proofPublicId: proof.publicId,
+              // Null when Cloudinary sent no etag - unverifiable, not suspect. See `ResolvedPhoto`.
+              ...(proof.hash ? { proofHash: proof.hash } : {}),
+            }
+          : {}),
       },
     });
 

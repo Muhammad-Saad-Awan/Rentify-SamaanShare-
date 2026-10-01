@@ -113,13 +113,15 @@ function TrustPanel({
         </ul>
 
         {/*
-          The disclaimer is not boilerplate. SamaanShare holds no deposit and settles no dispute, so
-          a trust badge that a reader treated as a guarantee would be a promise the platform cannot
-          keep - the same line every piece of payment copy draws.
+          The disclaimer is not boilerplate, and it survives the move to custody almost intact.
+          SamaanShare now holds the money, which is a real protection and worth more than a
+          badge - but it still does not vouch for a person or an item, and a trust signal read
+          as a guarantee would be a promise nobody can keep.
         */}
         <p className="text-muted-foreground border-t pt-2.5 text-xs leading-relaxed">
           These are signals from past rentals, not a guarantee. Meet in a public
-          place and check the item before you pay.
+          place and check the item at handover — we hold your deposit until the
+          rental is finished, but we cannot vouch for the item itself.
         </p>
       </div>
     </Card>

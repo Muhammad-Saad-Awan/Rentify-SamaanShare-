@@ -28,21 +28,28 @@ import { UNAUTHENTICATED_ERROR } from "@/types";
 import type { ActionResult } from "@/types";
 
 /**
- * Offline payment: the renter says how they will pay, the owner confirms it arrived, and later
- * confirms the deposit went back.
+ * What is left of the offline payment flow.
  *
- * WHAT "PAYMENT" MEANS HERE. Nothing in this file moves money. Payment is cash or a bank transfer
- * between two people; SamaanShare records what they say happened and when, and that is the whole
- * of it. `Payment.confirmedById` exists precisely so the record says *who* vouched for the money
- * arriving, which is the only thing worth storing about an offline transaction.
+ * THIS FILE IS BEING DISMANTLED, and the shape it is in says where that got to.
  *
- * Consequently there is no refund path, and there cannot be one. `canRenterCancel` refuses a
- * cancellation once payment is confirmed for exactly that reason - see the note there.
+ * `confirmPaymentReceived` is gone. Under the custodial flow the money comes to SamaanShare, so
+ * the owner is not in a position to say it arrived - they never see it - and a button asking
+ * them to vouch for something they cannot observe was worse than no button. Verification now
+ * belongs to `payment-verification.ts`.
  *
- * RENTAL AND DEPOSIT STAY SEPARATE. `Payment.amount` is the rental; `Payment.securityDeposit` is
- * the deposit, which is the renter's money held by the owner and owed back. Summing them into one
- * figure would erase the distinction between what the owner has earned and what they are holding,
- * and the deposit-return obligation is derived from that distinction.
+ * `selectPaymentMethod` remains, and still does the useful half of its job: it creates the
+ * `Payment` row and moves the booking to PAYMENT_PENDING. Only `BANK_TRANSFER` is offered now -
+ * cash was a way to pay a person standing in front of you, not a platform.
+ *
+ * `markDepositReturned` remains too, and should not. The owner does not hold the deposit any
+ * more, so recording its return is not theirs to do; it stays only because the administrator
+ * screen that replaces it is the next phase, and deleting the one path a finished rental has
+ * before building its replacement would leave a gap rather than close one.
+ *
+ * RENTAL AND DEPOSIT STAY SEPARATE, which outlives the change of model. `Payment.amount` is the
+ * rental; `Payment.securityDeposit` is the renter's money, now held by the platform and owed
+ * back. Summing them into one figure would erase the distinction the whole return obligation
+ * rests on.
  */
 
 const UNEXPECTED_ERROR = "Something went wrong. Please try again.";
@@ -200,127 +207,6 @@ export async function selectPaymentMethod(
     return { success: true, data: { status: BookingStatus.PAYMENT_PENDING } };
   } catch (error) {
     console.error("selectPaymentMethod failed", error);
-
-    return { success: false, error: UNEXPECTED_ERROR };
-  }
-}
-
-/**
- * The owner confirms the rental payment reached them.
- *
- * DELIBERATELY DOES NOT START THE RENTAL. Confirming money and handing over an item are two
- * events, often hours or days apart for a bank transfer, and conflating them would mean an owner
- * who confirms a transfer on Monday has a booking that claims the camera left their hands on
- * Monday. `startBooking` is the separate step, and keeping it separate is also what gives the
- * Trust & Safety handover record somewhere to attach.
- *
- * The booking stays in `PAYMENT_PENDING`; only `Payment.status` moves.
- */
-export async function confirmPaymentReceived(
-  input: unknown
-): Promise<ActionResult<{ paymentStatus: PaymentStatus }>> {
-  const parsed = bookingActionSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return { success: false, error: "That booking was not found." };
-  }
-
-  const owner = await getActiveUser();
-
-  if (!owner) {
-    return { success: false, error: UNAUTHENTICATED_ERROR };
-  }
-
-  const rate = checkRateLimit(
-    `booking-payment:${owner.id}`,
-    LIFECYCLE_RATE_LIMIT
-  );
-
-  if (!rate.allowed) {
-    return {
-      success: false,
-      error: "Too many changes just now. Please try again shortly.",
-    };
-  }
-
-  try {
-    const booking = await loadBookingForParty({
-      bookingId: parsed.data.bookingId,
-      userId: owner.id,
-      side: "owner",
-    });
-
-    if (!booking) {
-      return { success: false, error: "That booking was not found." };
-    }
-
-    if (booking.status !== BookingStatus.PAYMENT_PENDING || !booking.payment) {
-      return {
-        success: false,
-        error: "This booking is not awaiting a payment confirmation.",
-      };
-    }
-
-    // Bound to a local so the narrowing survives into the transaction closure below, where
-    // TypeScript can no longer prove `booking.payment` is non-null.
-    const payment = booking.payment;
-
-    // Idempotent: already confirmed is the outcome the caller wanted, and re-confirming must not
-    // move `confirmedAt` - it is the record of when the owner said the money arrived.
-    if (payment.status === PaymentStatus.COMPLETED) {
-      return {
-        success: true,
-        data: { paymentStatus: PaymentStatus.COMPLETED },
-      };
-    }
-
-    if (payment.status !== PaymentStatus.AWAITING_CONFIRMATION) {
-      return { success: false, error: "This payment cannot be confirmed." };
-    }
-
-    const created = await prisma.$transaction(async (tx) => {
-      /**
-       * Guarded on the payment's current status, for the same reason the booking transitions are.
-       * Two confirmations racing would otherwise both write, and the second would overwrite the
-       * first's timestamp.
-       */
-      const updated = await tx.payment.updateMany({
-        where: {
-          id: payment.id,
-          status: PaymentStatus.AWAITING_CONFIRMATION,
-        },
-        data: {
-          status: PaymentStatus.COMPLETED,
-          confirmedAt: new Date(),
-          // Who vouched for the money arriving. The point of the column.
-          confirmedById: owner.id,
-        },
-      });
-
-      if (updated.count !== 1) {
-        return null;
-      }
-
-      return emitBookingNotifications(tx, {
-        event: "payment-confirmed",
-        bookingId: booking.id,
-        listingTitle: booking.listing.title,
-        parties: { renterId: booking.renterId, ownerId: booking.ownerId },
-        amount: payment.amount,
-      });
-    });
-
-    if (!created) {
-      return { success: false, error: CONCURRENT_CHANGE_ERROR };
-    }
-
-    publishAfterCommit(created);
-
-    revalidateBookingPaths(booking.listingId);
-
-    return { success: true, data: { paymentStatus: PaymentStatus.COMPLETED } };
-  } catch (error) {
-    console.error("confirmPaymentReceived failed", error);
 
     return { success: false, error: UNEXPECTED_ERROR };
   }

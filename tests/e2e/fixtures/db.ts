@@ -177,6 +177,21 @@ async function create(): Promise<void> {
   /** Not created here - the journey registers with these through the form. */
   const journeyCredentials = newAccountCredentials();
 
+  /** The administrator the journey needs to verify a payment. */
+  const journeyAdminCredentials = newAccountCredentials();
+
+  const journeyAdmin = await prisma.user.create({
+    data: {
+      email: journeyAdminCredentials.email,
+      name: "E2E Journey Admin",
+      password: await hashPassword(journeyAdminCredentials.password),
+      emailVerified: new Date(),
+      role: "ADMIN",
+      city: "karachi",
+    },
+    select: { id: true },
+  });
+
   /**
    * The realtime cast: its own owner, renter, listing and pending request.
    *
@@ -250,6 +265,9 @@ async function create(): Promise<void> {
     journeyListingId: journeyListing.id,
     journeyEmail: journeyCredentials.email,
     journeyPassword: journeyCredentials.password,
+    journeyAdminEmail: journeyAdminCredentials.email,
+    journeyAdminPassword: journeyAdminCredentials.password,
+    journeyAdminId: journeyAdmin.id,
     realtimeOwnerEmail: realtimeOwnerCredentials.email,
     realtimeOwnerPassword: realtimeOwnerCredentials.password,
     realtimeRenterEmail: realtimeRenterCredentials.email,
@@ -299,6 +317,7 @@ async function destroy(): Promise<void> {
   const userIds = [
     account.userId,
     account.renterId,
+    account.journeyAdminId,
     account.realtimeOwnerId,
     account.realtimeRenterId,
   ];
@@ -348,6 +367,18 @@ async function destroy(): Promise<void> {
   });
   await prisma.booking.deleteMany({ where: { id: { in: bookingIds } } });
   await prisma.payment.deleteMany({ where: { id: { in: paymentIds } } });
+  /**
+   * The audit rows the journey's administrator writes when they verify a payment.
+   *
+   * `AdminAction` references both the actor and the subject, and neither reference cascades -
+   * an audit row is evidence and outlives tidying up everywhere else in this schema. Here it
+   * would simply block the account delete, so it goes first.
+   */
+  await prisma.adminAction.deleteMany({
+    where: {
+      OR: [{ actorId: { in: userIds } }, { subjectId: { in: userIds } }],
+    },
+  });
   await prisma.notification.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.savedListing.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.listing.deleteMany({ where: { id: { in: listingIds } } });
