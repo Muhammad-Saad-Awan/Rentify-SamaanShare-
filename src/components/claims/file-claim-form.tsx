@@ -186,9 +186,9 @@ function FileClaimForm({
       */}
       <p className="text-muted-foreground text-xs leading-relaxed">
         The renter has {CLAIM_RESPONSE_DAYS} days to accept or dispute this. If
-        they do not reply, SamaanShare decides on what has been recorded.
-        SamaanShare does not hold the deposit and cannot transfer it — a claim
-        changes what we state is owed, not who has the money.
+        they do not reply, SamaanShare decides on what has been recorded. We
+        hold the deposit, so an upheld claim is paid to you out of it when the
+        booking is settled — and the rest goes back to the renter.
       </p>
 
       <div className="flex flex-wrap items-center gap-2">

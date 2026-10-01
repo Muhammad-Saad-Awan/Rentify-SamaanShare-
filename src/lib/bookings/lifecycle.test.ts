@@ -159,16 +159,27 @@ describe("canRenterCancel", () => {
     ).toEqual({ allowed: true });
   });
 
-  /** The rule the whole offline-payment design rests on. */
-  it("refuses once the owner has confirmed receiving payment", () => {
+  /**
+   * The rule survives the change of model; the REASON is the opposite of what it was.
+   *
+   * Under the offline flow the renter had to be pointed at the owner and told plainly that the
+   * platform held nothing. Under the custodial one SamaanShare is holding the money, so the
+   * renter is pointed at us and the refusal offers the thing that can actually happen next - a
+   * refund. This assertion was written the other way round and failed on the copy change, which
+   * is what it was for.
+   */
+  it("refuses once the payment has been verified", () => {
     const result = canRenterCancel({
       status: BookingStatus.PAYMENT_PENDING,
       paymentStatus: PaymentStatus.COMPLETED,
     });
 
     expect(result.allowed).toBe(false);
-    // The renter must be pointed at the owner, and must not be told the platform holds the money.
     expect(result).toMatchObject({
+      reason: expect.stringContaining("refunding"),
+    });
+    // And must no longer disclaim holding it, because we do.
+    expect(result).not.toMatchObject({
       reason: expect.stringContaining("does not hold"),
     });
   });

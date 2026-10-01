@@ -227,24 +227,31 @@ async function main() {
 
   for (const [label, needle] of [
     ["cancel affordance on a pending request", "Cancel request"],
-    ["payment choice after approval", "Pay by cash"],
-    ["bank transfer option", "Pay by bank transfer"],
-    ["payment instructions panel", "Paying by cash"],
+    ["payment step after approval", "Continue to payment"],
+    ["payment instructions panel", "Paying SamaanShare"],
     ["awaiting-payment badge", "Awaiting payment"],
     ["active rental copy", "Return it to the owner by"],
     ["deposit window copy", "deposit within"],
     ["overdue deposit warning", "overdue"],
-    ["no escrow claim", "does not hold it"],
+    ["says we are returning the deposit", "of your deposit within"],
     // Stage A: the renter is told when the owner has left them no way to make contact.
     ["missing-instructions warning", "has not added collection details"],
   ] as const) {
     check(label, bookings.html.includes(needle));
   }
 
+  /**
+   * THE INVARIANT INVERTED, which is the point rather than an edit.
+   *
+   * This used to assert the page never claimed the platform held the deposit, because it did
+   * not - the renter paid the owner and SamaanShare only recorded it. Under the custodial flow
+   * the platform receives both the rental and the deposit, so the old sentence is the false one
+   * and its absence is what has to be checked. A copy change that left this assertion standing
+   * would have failed loudly, which is why it was written this way round in the first place.
+   */
   check(
-    "never claims the platform holds the deposit",
-    !/samaanshare (holds|is holding)/i.test(bookings.html) ||
-      /samaanshare does not hold/i.test(bookings.html)
+    "no longer disclaims holding the deposit",
+    !/does not hold (it|the deposit)/i.test(bookings.html)
   );
 
   console.log("\n=== owner dashboard (/dashboard/requests) ===");
@@ -255,7 +262,8 @@ async function main() {
   for (const [label, needle] of [
     ["approve button", "Approve"],
     ["decline button", "Decline"],
-    ["confirm payment button", "Confirm payment received"],
+    // The owner no longer confirms a payment they never receive - see `actions/payments.ts`.
+    ["waiting-on-verification note", "We will tell you the moment"],
     ["mark collected button", "Mark item as collected"],
     ["mark returned button", "Mark item as returned"],
     ["deposit return button", "I have returned the deposit"],

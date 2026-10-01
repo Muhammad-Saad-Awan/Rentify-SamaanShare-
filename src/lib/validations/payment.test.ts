@@ -5,7 +5,7 @@ import {
   recordRefundSchema,
   rejectPaymentSchema,
   reverseVerificationSchema,
-  submitPaymentEvidenceRefined,
+  submitPaymentEvidenceSchema,
   TRANSACTION_REF_MAX,
   verifyPaymentSchema,
 } from "@/lib/validations/payment";
@@ -23,7 +23,7 @@ const HASH = "a".repeat(64);
 
 describe("submitPaymentEvidence input", () => {
   it("accepts a reference on its own", () => {
-    const result = submitPaymentEvidenceRefined.safeParse({
+    const result = submitPaymentEvidenceSchema.safeParse({
       bookingId: BOOKING_ID,
       transactionRef: "TID-4482991",
     });
@@ -33,7 +33,7 @@ describe("submitPaymentEvidence input", () => {
 
   it("requires a transaction reference", () => {
     expect(
-      submitPaymentEvidenceRefined.safeParse({
+      submitPaymentEvidenceSchema.safeParse({
         bookingId: BOOKING_ID,
         transactionRef: "   ",
       }).success
@@ -41,7 +41,7 @@ describe("submitPaymentEvidence input", () => {
   });
 
   it("trims the reference, so whitespace is not stored as a distinct value", () => {
-    const result = submitPaymentEvidenceRefined.safeParse({
+    const result = submitPaymentEvidenceSchema.safeParse({
       bookingId: BOOKING_ID,
       transactionRef: "  TID-4482991  ",
     });
@@ -51,7 +51,7 @@ describe("submitPaymentEvidence input", () => {
 
   it("caps the reference length", () => {
     expect(
-      submitPaymentEvidenceRefined.safeParse({
+      submitPaymentEvidenceSchema.safeParse({
         bookingId: BOOKING_ID,
         transactionRef: "x".repeat(TRANSACTION_REF_MAX + 1),
       }).success
@@ -59,41 +59,49 @@ describe("submitPaymentEvidence input", () => {
   });
 
   /**
-   * Proof travels as a set or not at all. A URL with no hash would store a receipt that the
-   * duplicate-screenshot constraint cannot see - the control would look present and do nothing.
+   * THE PROOF IS A PUBLIC ID AND NOTHING ELSE, and that is the point of these three.
+   *
+   * The URL and the SHA-256 used to arrive alongside it, and the hash is what the
+   * duplicate-receipt constraint rests on - so a caller could send any 64 hex characters and
+   * walk past the one control that catches a screenshot reused across two bookings. Both are
+   * now derived from Cloudinary server-side. A schema that still accepted them would leave the
+   * hole open whatever the action did with them.
    */
-  it("accepts a complete proof", () => {
+  it("accepts a receipt as a public id", () => {
+    const result = submitPaymentEvidenceSchema.safeParse({
+      bookingId: BOOKING_ID,
+      transactionRef: "TID-1",
+      proofPublicId: "samaanshare/pending/user-1/receipt",
+    });
+
+    expect(result.success && result.data.proofPublicId).toBe(
+      "samaanshare/pending/user-1/receipt"
+    );
+  });
+
+  it("discards a URL or a hash a caller sends alongside it", () => {
+    const result = submitPaymentEvidenceSchema.safeParse({
+      bookingId: BOOKING_ID,
+      transactionRef: "TID-1",
+      proofPublicId: "samaanshare/pending/user-1/receipt",
+      proofUrl: "https://res.cloudinary.com/demo/image/upload/x.jpg",
+      proofHash: HASH,
+    });
+
+    expect(result.success && result.data).toEqual({
+      bookingId: BOOKING_ID,
+      transactionRef: "TID-1",
+      proofPublicId: "samaanshare/pending/user-1/receipt",
+    });
+  });
+
+  it("still accepts a submission with no receipt at all", () => {
     expect(
-      submitPaymentEvidenceRefined.safeParse({
+      submitPaymentEvidenceSchema.safeParse({
         bookingId: BOOKING_ID,
         transactionRef: "TID-1",
-        proofUrl: "https://res.cloudinary.com/demo/image/upload/x.jpg",
-        proofPublicId: "payments/x",
-        proofHash: HASH,
       }).success
     ).toBe(true);
-  });
-
-  it("refuses a partial proof", () => {
-    expect(
-      submitPaymentEvidenceRefined.safeParse({
-        bookingId: BOOKING_ID,
-        transactionRef: "TID-1",
-        proofUrl: "https://res.cloudinary.com/demo/image/upload/x.jpg",
-      }).success
-    ).toBe(false);
-  });
-
-  it("refuses a hash that is not a SHA-256 digest", () => {
-    expect(
-      submitPaymentEvidenceRefined.safeParse({
-        bookingId: BOOKING_ID,
-        transactionRef: "TID-1",
-        proofUrl: "https://res.cloudinary.com/demo/image/upload/x.jpg",
-        proofPublicId: "payments/x",
-        proofHash: "not-a-hash",
-      }).success
-    ).toBe(false);
   });
 });
 

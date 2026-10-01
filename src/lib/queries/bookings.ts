@@ -62,6 +62,10 @@ export interface BookingSummary {
     method: PaymentMethod;
     status: PaymentStatus;
     confirmedAt: Date | null;
+    /** What the renter told us they sent, so they can correct it rather than retype it. */
+    transactionRef: string | null;
+    /** Why an administrator could not match it. Shown beside the form they fix it in. */
+    rejectionReason: string | null;
   } | null;
   /**
    * Where the security deposit stands, computed server-side.
@@ -218,6 +222,9 @@ const bookingSelect = {
       confirmedAt: true,
       securityDeposit: true,
       depositReturnedAt: true,
+      // The renter's own record of what they sent, and why it was refused if it was.
+      transactionRef: true,
+      rejectionReason: true,
     },
   },
   /**
@@ -326,6 +333,8 @@ type BookingRow = {
     confirmedAt: Date | null;
     securityDeposit: number;
     depositReturnedAt: Date | null;
+    transactionRef: string | null;
+    rejectionReason: string | null;
   } | null;
   /**
    * Declared even though only `depositReturnedAtOf` reads it.
@@ -429,6 +438,8 @@ function toSummary(
           method: row.payment.method,
           status: row.payment.status,
           confirmedAt: row.payment.confirmedAt,
+          transactionRef: row.payment.transactionRef,
+          rejectionReason: row.payment.rejectionReason,
         }
       : null,
     deposit: depositState({

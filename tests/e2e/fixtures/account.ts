@@ -57,6 +57,17 @@ export interface TestAccount {
    * The realtime test is about what one browser sees when another acts; making it register an
    * account first would add a failure mode that has nothing to do with what it measures.
    */
+  /**
+   * An administrator, because the critical path now needs one.
+   *
+   * Under the custodial flow a renter records a payment and an ADMINISTRATOR confirms it
+   * arrived - the owner cannot, they never see the money. So the journey grew a third browser,
+   * and a journey that skipped that step would no longer be the critical path.
+   */
+  journeyAdminEmail: string;
+  journeyAdminPassword: string;
+  journeyAdminId: string;
+
   realtimeOwnerEmail: string;
   realtimeOwnerPassword: string;
   realtimeRenterEmail: string;

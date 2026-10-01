@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BanknoteIcon,
   CheckIcon,
   HandCoinsIcon,
   LandmarkIcon,
@@ -25,13 +24,10 @@ import {
   declineBooking,
   updateBookingInstructions,
 } from "@/actions/bookings";
-import {
-  confirmPaymentReceived,
-  markDepositReturned,
-  selectPaymentMethod,
-} from "@/actions/payments";
+import { markDepositReturned, selectPaymentMethod } from "@/actions/payments";
 import { confirmDepositReturn } from "@/actions/deposit";
 import { PaymentInstructions } from "@/components/bookings/payment-instructions";
+import { RecordPaymentForm } from "@/components/bookings/record-payment-form";
 import { FileClaimForm } from "@/components/claims/file-claim-form";
 import { HandoverForm } from "@/components/handover/handover-form";
 import { BookingReviewSection } from "@/components/reviews/booking-review-section";
@@ -379,36 +375,19 @@ function BookingActions({ booking, side }: BookingActionsProps) {
       if (!isPaymentConfirmed) {
         return (
           <div className="flex flex-col gap-2">
+            {/*
+              THE OWNER NO LONGER CONFIRMS ANYTHING, and this note replaces the button that used
+              to do it. Under the custodial flow the money comes to SamaanShare, so the owner is
+              not in a position to say it arrived - they never see it. Leaving them a button
+              would have been asking them to vouch for something they cannot observe.
+            */}
             <Note>
-              The renter will pay {formatPKR(booking.totalPrice)}
+              The renter pays SamaanShare {formatPKR(booking.totalPrice)}
               {booking.securityDeposit > 0 &&
-                ` plus a ${formatPKR(booking.securityDeposit)} deposit`}{" "}
-              by {payment.method === "CASH" ? "cash" : "bank transfer"}. Confirm
-              only once you actually have it.
+                ` plus a ${formatPKR(booking.securityDeposit)} deposit`}
+              . We will tell you the moment it is confirmed, and you keep the
+              item until then.
             </Note>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() =>
-                  run(
-                    () => confirmPaymentReceived({ bookingId: booking.id }),
-                    "Payment confirmed. You can mark the item as collected when the renter picks it up."
-                  )
-                }
-                disabled={isPending}
-                aria-busy={isPending}
-              >
-                {isPending ? (
-                  <Loader2Icon className="animate-spin" />
-                ) : payment.method === "CASH" ? (
-                  <BanknoteIcon />
-                ) : (
-                  <LandmarkIcon />
-                )}
-                Confirm payment received
-              </Button>
-            </div>
 
             {instructionsEditor}
             {editInstructionsButton}
@@ -677,8 +656,8 @@ function BookingActions({ booking, side }: BookingActionsProps) {
     return (
       <div className="flex flex-col gap-2">
         <Note>
-          Approved. Choose how you will pay the owner — payment is arranged
-          directly between the two of you.
+          Approved. Pay SamaanShare, and we hold the money until the rental is
+          finished — the owner is paid after the item comes back.
         </Note>
 
         {/* Said explicitly, because an approval with no instructions leaves the renter with
@@ -690,6 +669,14 @@ function BookingActions({ booking, side }: BookingActionsProps) {
           </Note>
         )}
 
+        {/*
+          ONE METHOD, WHERE THERE WERE TWO. Cash was a way to pay a person standing in front of
+          you; it is not a way to pay a platform, and offering it would have produced bookings
+          waiting on a transfer nobody could make. `PaymentMethod` still declares CASH and the
+          wallet values - the enum is not the question - but only the one that can actually be
+          completed is offered, which is the rule `offlinePaymentMethodSchema` already applied
+          to the card values for the same reason.
+        */}
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
@@ -698,9 +685,9 @@ function BookingActions({ booking, side }: BookingActionsProps) {
                 () =>
                   selectPaymentMethod({
                     bookingId: booking.id,
-                    method: "CASH",
+                    method: "BANK_TRANSFER",
                   }),
-                "Cash selected. Pay the owner when you collect the item."
+                "Next: send the transfer and record its reference."
               )
             }
             disabled={isPending}
@@ -709,28 +696,9 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             {isPending ? (
               <Loader2Icon className="animate-spin" />
             ) : (
-              <BanknoteIcon />
+              <LandmarkIcon />
             )}
-            Pay by cash
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              run(
-                () =>
-                  selectPaymentMethod({
-                    bookingId: booking.id,
-                    method: "BANK_TRANSFER",
-                  }),
-                "Bank transfer selected. Ask the owner for their account details."
-              )
-            }
-            disabled={isPending}
-          >
-            <LandmarkIcon />
-            Pay by bank transfer
+            Continue to payment
           </Button>
         </div>
 
@@ -756,7 +724,6 @@ function BookingActions({ booking, side }: BookingActionsProps) {
     return (
       <div className="flex flex-col gap-2">
         <PaymentInstructions
-          method={payment.method}
           amount={booking.totalPrice}
           securityDeposit={booking.securityDeposit}
           isConfirmed={isPaymentConfirmed}
@@ -764,32 +731,28 @@ function BookingActions({ booking, side }: BookingActionsProps) {
 
         {isPaymentConfirmed ? (
           <Note>
-            The owner confirmed receiving your payment. Arrange collection using
-            the pickup details above.
+            We have confirmed your payment. Arrange collection using the pickup
+            details above - the owner has been told they can hand it over.
           </Note>
         ) : (
           <>
-            {/* Switching method stays available until the owner confirms - a renter who picked
-                cash and then decided to transfer should not be stuck with an unusable panel. */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="self-start"
-              onClick={() =>
-                run(
-                  () =>
-                    selectPaymentMethod({
-                      bookingId: booking.id,
-                      method:
-                        payment.method === "CASH" ? "BANK_TRANSFER" : "CASH",
-                    }),
-                  "Payment method changed."
-                )
-              }
-              disabled={isPending}
-            >
-              Switch to {payment.method === "CASH" ? "bank transfer" : "cash"}
-            </Button>
+            {/*
+              Waiting, not idle. A renter who has recorded a payment and hears nothing assumes
+              it is lost; saying who is looking and roughly when closes that gap.
+            */}
+            {payment.status === PaymentStatus.PENDING_VERIFICATION ? (
+              <Note>
+                We are checking your payment against our account, usually the
+                same day. You will hear either way. Nothing else is needed from
+                you.
+              </Note>
+            ) : (
+              <RecordPaymentForm
+                bookingId={booking.id}
+                transactionRef={payment.transactionRef}
+                rejectionReason={payment.rejectionReason}
+              />
+            )}
 
             {panel === "cancel"
               ? cancelPanel("Cancel booking", "Booking cancelled.")
@@ -905,16 +868,18 @@ function BookingActions({ booking, side }: BookingActionsProps) {
         */}
         {deposit.kind === "due" && (
           <Note>
-            The owner should return {formatPKR(deposit.owed)} within{" "}
-            {deposit.hoursRemaining}h. SamaanShare does not hold it.
+            {`We are returning ${formatPKR(deposit.owed)} of your deposit within ${deposit.hoursRemaining}h.`}
           </Note>
         )}
 
+        {/*
+          "Tell us" rather than "contact the owner". Under the custodial flow the platform is
+          holding the money, so the platform is who has failed and who can fix it - sending a
+          renter to chase the owner would send them to somebody with nothing of theirs.
+        */}
         {deposit.kind === "overdue" && (
           <Note tone="warning">
-            {formatPKR(deposit.owed)} of your deposit is {deposit.hoursLate}h
-            overdue. Contact the owner — SamaanShare does not hold the deposit
-            and cannot release it.
+            {`${formatPKR(deposit.owed)} of your deposit is ${deposit.hoursLate}h overdue. We are holding it and should have sent it back by now — tell us if you have not heard.`}
           </Note>
         )}
 

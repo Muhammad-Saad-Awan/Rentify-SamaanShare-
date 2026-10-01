@@ -147,7 +147,7 @@ export function canRenterCancel({
         ? {
             allowed: false,
             reason:
-              "The owner has already confirmed receiving your payment, so this cannot be cancelled here. Contact the owner to sort out the money directly - SamaanShare does not hold it.",
+              "Your payment has been confirmed, so this cannot be cancelled here. Ask us and we will look at refunding it - SamaanShare is holding the money until the rental is finished.",
           }
         : { allowed: true };
 

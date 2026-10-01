@@ -191,23 +191,50 @@ test("register, book, pay, hand over, return and review", async ({
       renter.getByText("Flat 4, Bahria Town Phase 5", { exact: false })
     ).toBeVisible();
 
-    await renter.getByRole("button", { name: "Pay by cash" }).click();
+    await renter.getByRole("button", { name: "Continue to payment" }).click();
 
-    await expect(
-      renter.getByText(
-        /Cash selected\. Pay the owner when you collect the item\./
-      )
-    ).toBeVisible();
+    /**
+     * THE PAYMENT STEP IS NOW THREE PARTIES, not two.
+     *
+     * The renter sends money to SamaanShare and records the reference; an ADMINISTRATOR checks
+     * it against the account. The owner is not involved and cannot be - they never see the
+     * money. A journey that still had the owner confirming would be testing a flow the product
+     * no longer has.
+     */
+    await renter.getByLabel("Transaction reference").fill(`E2E-${Date.now()}`);
 
-    // ---------------------------------------------------------------- 5. owner confirms payment
-    await ownerRequests(owner);
+    await renter.getByRole("button", { name: "I have paid" }).click();
 
-    await owner
-      .getByRole("button", { name: "Confirm payment received" })
-      .first()
-      .click();
+    await expect(renter.getByText(/We are checking your payment/i)).toBeVisible(
+      { timeout: 15_000 }
+    );
 
-    await expect(owner.getByText(/Payment confirmed\./)).toBeVisible();
+    // ---------------------------------------------------------------- 5. an administrator verifies
+    const adminContext: BrowserContext = await browser.newContext();
+    const admin = await adminContext.newPage();
+
+    try {
+      await gotoReady(admin, "/login");
+      await admin.getByLabel("Email").fill(account?.journeyAdminEmail ?? "");
+      await admin
+        .getByLabel("Password", { exact: true })
+        .fill(account?.journeyAdminPassword ?? "");
+      await admin.getByRole("button", { name: "Sign in" }).click();
+      await expect(admin).toHaveURL(/\/dashboard/, { timeout: 15_000 });
+
+      await gotoReady(admin, "/admin/payments");
+
+      await admin
+        .getByRole("button", { name: "The money arrived" })
+        .first()
+        .click();
+
+      await expect(admin.getByText(/Payment verified/i)).toBeVisible({
+        timeout: 15_000,
+      });
+    } finally {
+      await adminContext.close();
+    }
 
     // ---------------------------------------------------------------- 6. pickup handover
     await ownerRequests(owner);

@@ -278,8 +278,8 @@ function ClaimCard({ claim }: ClaimCardProps) {
             </div>
 
             <p className="text-muted-foreground text-xs leading-relaxed">
-              This states how much of the deposit the owner may keep.
-              SamaanShare does not hold or transfer the money.
+              This decides how much of the deposit the owner is paid out of it
+              at settlement. The rest goes back to the renter.
             </p>
           </div>
         )}
