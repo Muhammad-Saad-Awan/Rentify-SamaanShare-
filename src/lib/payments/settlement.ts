@@ -398,26 +398,3 @@ export function settlementTransfers({
     complete: ownerPayout.kind !== "owed" && depositReturn.kind !== "owed",
   };
 }
-
-/**
- * Where a booking's deposit return is recorded, during the change of models.
- *
- * TRANSITIONAL, AND THE RIGHT-HAND SIDE IS THE ONE THAT GOES. Under the offline flow the owner
- * held the deposit and stamped `Payment.depositReturnedAt` themselves; under the custodial flow
- * the platform holds it and an administrator stamps `Settlement.depositReturnedAt`. Both kinds of
- * booking exist while the user interface still drives the old flow, and a booking has at most one
- * of the two, so the precedence never actually arbitrates - it just spares every caller from
- * knowing that.
- *
- * It exists as a function so that retiring `Payment.depositReturnedAt` is one deletion with a
- * type error at every site that mattered, rather than a search for `??` across the query layer.
- */
-export function depositReturnedAtOf({
-  settlement,
-  payment,
-}: {
-  settlement?: { depositReturnedAt: Date | null } | null;
-  payment?: { depositReturnedAt: Date | null } | null;
-}): Date | null {
-  return settlement?.depositReturnedAt ?? payment?.depositReturnedAt ?? null;
-}

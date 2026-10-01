@@ -84,7 +84,13 @@ test("register, book, pay, hand over, return and review", async ({
    * The first run died at the default having got somewhere past registration, which told us
    * nothing about the application and everything about the budget.
    */
-  test.setTimeout(180_000);
+  /**
+   * Four browsers and the whole money flow now. The budget grew with the journey: the renter
+   * registers, the owner approves and hands over, an administrator verifies the payment and
+   * then settles and sends the deposit, and both parties review. Three minutes was enough when
+   * the owner confirmed payment with one click.
+   */
+  test.setTimeout(300_000);
 
   expect(account, "The setup project must run first").not.toBeNull();
 
@@ -301,20 +307,58 @@ test("register, book, pay, hand over, return and review", async ({
       owner.getByText(/Rental completed and those dates are free again\./)
     ).toBeVisible();
 
-    // ---------------------------------------------------------------- 7b. the deposit, both sides
+    // ---------------------------------------------------------------- 7b. settle, and the deposit
     /**
-     * The half of the deposit record that only the renter can supply.
+     * THE OWNER NO LONGER RETURNS THE DEPOSIT, because they never had it. An administrator
+     * settles the booking - which decides what everyone is owed - and then records the two
+     * transfers. This step used to be one click by the owner; it is now the whole money flow,
+     * which is the thing worth covering end to end.
      *
-     * The owner says they sent it; that is an assertion by the sender and always has been. What
-     * is asserted here is that the renter is actually offered somewhere to say it arrived, and
-     * that the confirmation sticks - the button had no counterpart before and the renter's card
-     * simply dead-ended on "the owner recorded your deposit as returned".
+     * Only the deposit return is driven here. The owner payout is the same control with a
+     * different label and `verify-admin-payments` asserts both against the real pages; what
+     * this journey needs is the deposit, because the renter's confirmation hangs off it.
      */
-    await owner
-      .getByRole("button", { name: "I have returned the deposit" })
-      .click();
+    const settleContext: BrowserContext = await browser.newContext();
+    const settler = await settleContext.newPage();
 
-    await expect(owner.getByText(/Deposit recorded as returned/)).toBeVisible();
+    try {
+      await gotoReady(settler, "/login");
+      await settler.getByLabel("Email").fill(account?.journeyAdminEmail ?? "");
+      await settler
+        .getByLabel("Password", { exact: true })
+        .fill(account?.journeyAdminPassword ?? "");
+      await settler.getByRole("button", { name: "Sign in" }).click();
+      await expect(settler).toHaveURL(/\/dashboard/, { timeout: 15_000 });
+
+      await gotoReady(settler, "/admin/settlements");
+
+      await settler
+        .getByRole("button", { name: "Settle this booking" })
+        .first()
+        .click();
+
+      await expect(settler.getByText(/Settled/i).first()).toBeVisible({
+        timeout: 15_000,
+      });
+
+      await gotoReady(settler, "/admin/settlements?view=to-send");
+
+      await settler
+        .getByLabel("Deposit return transfer reference")
+        .first()
+        .fill(`DEP-${Date.now()}`);
+
+      await settler
+        .getByRole("button", { name: "Record as sent" })
+        .last()
+        .click();
+
+      await expect(settler.getByText(/Deposit return recorded/i)).toBeVisible({
+        timeout: 15_000,
+      });
+    } finally {
+      await settleContext.close();
+    }
 
     await gotoReady(renter, "/dashboard/bookings");
 

@@ -266,7 +266,6 @@ async function main() {
     ["waiting-on-verification note", "We will tell you the moment"],
     ["mark collected button", "Mark item as collected"],
     ["mark returned button", "Mark item as returned"],
-    ["deposit return button", "I have returned the deposit"],
     ["waiting-on-renter note", "Waiting for the renter"],
     // Stage A: the owner's only channel to the renter.
     ["pickup details affordance", "pickup details"],
@@ -274,6 +273,19 @@ async function main() {
   ] as const) {
     check(label, requests.html.includes(needle));
   }
+
+  /**
+   * AND THE ONE THE OWNER MUST NO LONGER BE OFFERED.
+   *
+   * "I have returned the deposit" was theirs while they held it. The platform holds it now and
+   * an administrator records the return, so a button here would ask an owner to vouch for a
+   * transfer they did not make - the same mistake as the payment confirmation that went before
+   * it. Asserted as an absence, because that is the only way a deleted control stays deleted.
+   */
+  check(
+    "the owner is no longer asked to return a deposit they do not hold",
+    !requests.html.includes("I have returned the deposit")
+  );
 
   console.log("\n=== notification feed (/dashboard/notifications) ===");
 

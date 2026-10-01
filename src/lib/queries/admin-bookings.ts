@@ -1,6 +1,5 @@
 import { BookingStatus } from "@/generated/prisma/enums";
 import { depositState } from "@/lib/bookings/deposit";
-import { depositReturnedAtOf } from "@/lib/payments/settlement";
 import { isPendingExpired } from "@/lib/bookings/lifecycle";
 import { AWAITING_ACTION_STATUSES } from "@/lib/bookings/timeline";
 import {
@@ -139,10 +138,10 @@ const summarySelect = {
       status: true,
       confirmedAt: true,
       securityDeposit: true,
-      depositReturnedAt: true,
     },
   },
-  // See `depositReturnedAtOf` - the custodial flow stamps the settlement, not the payment.
+  // The deposit return lives on the settlement: the platform sends it, so the platform's
+  // record of doing so is where it belongs.
   settlement: { select: { depositReturnedAt: true } },
   claim: {
     select: {
@@ -289,7 +288,7 @@ function toSummary(row: SummaryRow, now: Date): AdminBookingSummary {
       // `toSummary` in queries/bookings.ts - otherwise a real deposit reports as "none".
       securityDeposit: row.payment?.securityDeposit ?? row.securityDeposit,
       completedAt: row.completedAt ?? null,
-      depositReturnedAt: depositReturnedAtOf(row),
+      depositReturnedAt: row.settlement?.depositReturnedAt ?? null,
       depositConfirmedAt: row.depositConfirmedAt,
       claim: toDepositClaim(row.claim),
       now,
@@ -418,10 +417,9 @@ export interface AdminBookingDetail extends AdminBookingSummary {
   /**
    * When the deposit went back, from whichever flow recorded it.
    *
-   * ON THE BOOKING RATHER THAN ON `paymentDetail`, because it is no longer a fact about the
-   * payment. The offline flow stamped the payment row; the custodial one stamps the settlement,
-   * and a screen showing "deposit returned" should not have to know which kind of booking it is
-   * looking at. `depositReturnedAtOf` is what decides.
+   * ON THE BOOKING RATHER THAN ON `paymentDetail`, because it is not a fact about the payment.
+   * It was moved here while two flows recorded it in two places; it stays because a screen
+   * showing "deposit returned" has no business knowing which row the transfer was written to.
    */
   depositReturnedAt: Date | null;
   handovers: AdminHandoverRecord[];
@@ -466,7 +464,6 @@ export async function getAdminBookingDetail(
           securityDeposit: true,
           confirmedAt: true,
           confirmedBy: { select: { name: true } },
-          depositReturnedAt: true,
           transactionRef: true,
         },
       },
@@ -564,7 +561,7 @@ export async function getAdminBookingDetail(
           transactionRef: row.payment.transactionRef,
         }
       : null,
-    depositReturnedAt: depositReturnedAtOf(row),
+    depositReturnedAt: row.settlement?.depositReturnedAt ?? null,
     handovers: row.handovers,
     claim: row.claim,
     reviews: row.reviews,

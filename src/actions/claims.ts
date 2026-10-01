@@ -11,7 +11,6 @@ import {
 } from "@/lib/claims/rules";
 import { createNotifications } from "@/lib/notifications/create";
 import { publishAfterCommit } from "@/lib/realtime/publish";
-import { depositReturnedAtOf } from "@/lib/payments/settlement";
 import { buildClaimNotifications } from "@/lib/notifications/claim-messages";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -162,8 +161,8 @@ export async function fileDamageClaim(input: unknown): Promise<ActionResult> {
         renterId: true,
         securityDeposit: true,
         listing: { select: { title: true } },
-        payment: { select: { securityDeposit: true, depositReturnedAt: true } },
-        // See `depositReturnedAtOf` - a custodially-returned deposit closes the window too.
+        payment: { select: { securityDeposit: true } },
+        // Returning the deposit closes the window to claim against it.
         settlement: { select: { depositReturnedAt: true } },
         claim: { select: { id: true } },
         handovers: {
@@ -190,7 +189,7 @@ export async function fileDamageClaim(input: unknown): Promise<ActionResult> {
       status: booking.status,
       completedAt: booking.completedAt,
       securityDeposit,
-      depositReturnedAt: depositReturnedAtOf(booking),
+      depositReturnedAt: booking.settlement?.depositReturnedAt ?? null,
       alreadyClaimed: booking.claim !== null,
       amountClaimed,
     });

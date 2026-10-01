@@ -7,7 +7,6 @@ import {
 } from "@/generated/prisma/enums";
 import {
   computeSettlement,
-  depositReturnedAtOf,
   settlementReadiness,
   settlementTransfers,
   type SettlementSubject,
@@ -375,39 +374,5 @@ describe("settlementTransfers", () => {
     });
 
     expect(t.complete).toBe(true);
-  });
-});
-
-describe("depositReturnedAtOf", () => {
-  it("prefers the settlement, which is the custodial record", () => {
-    const settled = new Date("2026-09-21T10:00:00.000Z");
-
-    expect(
-      depositReturnedAtOf({
-        settlement: { depositReturnedAt: settled },
-        payment: { depositReturnedAt: AT },
-      })
-    ).toBe(settled);
-  });
-
-  /** An offline booking has no settlement, and its record is the one that must still be found. */
-  it("falls back to the payment while the offline flow is live", () => {
-    expect(
-      depositReturnedAtOf({
-        settlement: null,
-        payment: { depositReturnedAt: AT },
-      })
-    ).toBe(AT);
-  });
-
-  it("reports nothing when neither has a record", () => {
-    expect(
-      depositReturnedAtOf({
-        settlement: { depositReturnedAt: null },
-        payment: { depositReturnedAt: null },
-      })
-    ).toBeNull();
-
-    expect(depositReturnedAtOf({})).toBeNull();
   });
 });

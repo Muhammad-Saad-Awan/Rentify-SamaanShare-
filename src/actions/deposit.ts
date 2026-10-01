@@ -7,7 +7,6 @@ import {
   LIFECYCLE_RATE_LIMIT,
   loadBookingForParty,
 } from "@/lib/bookings/guard";
-import { depositReturnedAtOf } from "@/lib/payments/settlement";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { bookingActionSchema } from "@/lib/validations/booking";
@@ -24,10 +23,10 @@ import type { ActionResult } from "@/types";
  * has, and until this there was nowhere for them to state it - the renter's booking card said
  * "the owner recorded your deposit as returned" and offered nothing to do about it.
  *
- * FLOW-AGNOSTIC BY CONSTRUCTION. This does not care which side recorded the return; it reads
- * whichever of the two stamps exists through `depositReturnedAtOf` and writes the confirmation to
- * `Booking.depositConfirmedAt`, which every booking has. So it works today, under the flow that
- * is actually live, and keeps working unchanged when the custodial flow takes over.
+ * ON `Booking`, NOT ON `Settlement`, and the reason has outlived the one it was written for.
+ * It went there so a single column could serve the offline and the custodial flow while both
+ * existed; the offline one is gone now, and it stays because a renter's acknowledgement is a
+ * fact about the rental rather than about the row that happens to record the transfer.
  *
  * WHAT THIS IS NOT. It is not a release, an approval, or a condition on anything: the money has
  * already moved, and nothing downstream waits on this. It is a record, and its value is entirely
@@ -105,7 +104,7 @@ export async function confirmDepositReturn(
    * running, a booking with no deposit, and a claim that consumed the whole deposit all reach
    * here with no stamp on either side, because nothing records a return in any of them.
    */
-  if (!depositReturnedAtOf(booking)) {
+  if (!booking.settlement?.depositReturnedAt) {
     return {
       success: false,
       error:

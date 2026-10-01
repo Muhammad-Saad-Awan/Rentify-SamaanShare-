@@ -355,6 +355,16 @@ async function destroy(): Promise<void> {
    * can change, and a teardown that quietly stops working leaves rows in a shared database without
    * telling anybody.
    */
+  /**
+   * The settlement the journey now creates.
+   *
+   * `Booking.settlement` and `Payment.settlement` are both one-to-one and neither cascades - a
+   * settlement is a money record and outlives tidying up everywhere that matters. Here it just
+   * blocks the booking delete, so it goes first.
+   */
+  await prisma.settlement.deleteMany({
+    where: { bookingId: { in: bookingIds } },
+  });
   await prisma.review.deleteMany({ where: { bookingId: { in: bookingIds } } });
   await prisma.handoverRecord.deleteMany({
     where: { bookingId: { in: bookingIds } },

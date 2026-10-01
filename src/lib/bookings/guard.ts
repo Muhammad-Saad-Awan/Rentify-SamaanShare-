@@ -49,9 +49,8 @@ export interface BookingForAction {
     amount: number;
     securityDeposit: number;
     confirmedAt: Date | null;
-    depositReturnedAt: Date | null;
   } | null;
-  /** Where the custodial flow records the return - see `depositReturnedAtOf`. */
+  /** Where the return is recorded, once an administrator has sent it. */
   settlement: { depositReturnedAt: Date | null } | null;
   /** The renter's half of that record. */
   depositConfirmedAt: Date | null;
@@ -76,7 +75,6 @@ const bookingForActionSelect = {
       amount: true,
       securityDeposit: true,
       confirmedAt: true,
-      depositReturnedAt: true,
     },
   },
   settlement: { select: { depositReturnedAt: true } },

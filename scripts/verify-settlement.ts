@@ -12,9 +12,8 @@
 //   THE TWO STAMPS  - the owner payout and the deposit return, each of which must
 //                    happen once. A timestamp that can move is not a record of when
 //                    money left.
-//   TWO MODELS AT ONCE - the offline flow stamps the payment, the custodial one stamps
-//                    the settlement, and both kinds of booking exist while the interface
-//                    still drives the old flow.
+//   THE RENTER'S HALF - the confirmation that the money actually arrived, which is the
+//                    one thing only the person waiting for it can supply.
 //   THE FREEZE     - the settlement is computed from the rate stored on the payment,
 //                    not from today's configuration. Checked by settling at a rate the
 //                    config does not hold.
@@ -51,7 +50,6 @@ import { depositState } from "../src/lib/bookings/deposit";
 import { refundReadiness } from "../src/lib/payments/refund";
 import {
   computeSettlement,
-  depositReturnedAtOf,
   settlementReadiness,
   settlementTransfers,
 } from "../src/lib/payments/settlement";
@@ -697,45 +695,6 @@ async function main(): Promise<void> {
         !claimTransfers.complete
     );
 
-    // ------------------------------------------------------------ both models at once
-    console.log("\nTwo models in one table");
-
-    const custodial = await prisma.booking.findUnique({
-      where: { id: booking.id },
-      select: {
-        payment: { select: { depositReturnedAt: true } },
-        settlement: { select: { depositReturnedAt: true } },
-      },
-    });
-
-    check(
-      "a custodial booking reports the settlement's stamp",
-      depositReturnedAtOf(custodial!)?.getTime() ===
-        settled!.depositReturnedAt!.getTime() &&
-        custodial!.payment!.depositReturnedAt === null
-    );
-
-    /** An offline booking: the owner stamped the payment and there is no settlement stamp. */
-    const offlineReturnedAt = new Date();
-
-    await prisma.payment.update({
-      where: { id: otherPayment.id },
-      data: { depositReturnedAt: offlineReturnedAt },
-    });
-
-    const offline = await prisma.booking.findUnique({
-      where: { id: claimedBooking.id },
-      select: {
-        payment: { select: { depositReturnedAt: true } },
-        settlement: { select: { depositReturnedAt: true } },
-      },
-    });
-
-    check(
-      "an offline booking still reports the payment's stamp",
-      depositReturnedAtOf(offline!)?.getTime() === offlineReturnedAt.getTime()
-    );
-
     // ------------------------------------------------------------ the renter's half
     console.log("\nRenter confirmation");
 
@@ -781,7 +740,6 @@ async function main(): Promise<void> {
         completedAt: true,
         depositConfirmedAt: true,
         securityDeposit: true,
-        payment: { select: { depositReturnedAt: true } },
         settlement: { select: { depositReturnedAt: true } },
       },
     });
@@ -789,7 +747,7 @@ async function main(): Promise<void> {
     const custodialState = depositState({
       securityDeposit: confirmedRow!.securityDeposit,
       completedAt: confirmedRow!.completedAt,
-      depositReturnedAt: depositReturnedAtOf(confirmedRow!),
+      depositReturnedAt: confirmedRow!.settlement?.depositReturnedAt ?? null,
       depositConfirmedAt: confirmedRow!.depositConfirmedAt,
     });
 
@@ -797,36 +755,6 @@ async function main(): Promise<void> {
       "a custodial return the renter confirmed reports both halves",
       custodialState.kind === "returned" && custodialState.confirmedAt !== null,
       `state is ${custodialState.kind}`
-    );
-
-    /** The same confirmation, against the booking whose return was recorded the offline way. */
-    await prisma.booking.updateMany({
-      where: { id: claimedBooking.id, renterId: renter.id },
-      data: { depositConfirmedAt: new Date() },
-    });
-
-    const offlineRow = await prisma.booking.findUnique({
-      where: { id: claimedBooking.id },
-      select: {
-        completedAt: true,
-        depositConfirmedAt: true,
-        securityDeposit: true,
-        payment: { select: { depositReturnedAt: true } },
-        settlement: { select: { depositReturnedAt: true } },
-      },
-    });
-
-    const offlineState = depositState({
-      securityDeposit: offlineRow!.securityDeposit,
-      completedAt: offlineRow!.completedAt,
-      depositReturnedAt: depositReturnedAtOf(offlineRow!),
-      depositConfirmedAt: offlineRow!.depositConfirmedAt,
-    });
-
-    check(
-      "the same confirmation works off the offline flow's stamp",
-      offlineState.kind === "returned" && offlineState.confirmedAt !== null,
-      `state is ${offlineState.kind}`
     );
 
     // ------------------------------------------------------------ notifications

@@ -44,12 +44,11 @@ import type { ActionResult } from "@/types";
  * `recordOwnerPayout` and `recordDepositReturn` stamp the money actually leaving, in either
  * order, because they go to different people and nothing makes one wait on the other.
  *
- * WHAT IS STILL NOT HERE. The offline flow's `markDepositReturned()` and the column it writes,
- * `Payment.depositReturnedAt`, survive alongside this. They are not redundant yet: the user
- * interface still drives the offline flow end to end, so that action is the only path a real
- * booking has today, and deleting it would leave every finished rental with no way to record a
- * deposit coming back at all. Both go when the interface switches over - see
- * `depositReturnedAtOf`, which is the one place that has to know both exist.
+ * THE OFFLINE DEPOSIT PATH IS GONE. `markDepositReturned()` and `Payment.depositReturnedAt`
+ * existed while the owner held the deposit, and survived one phase longer than the rest of that
+ * flow so there was never a moment when a finished rental had no way to record a return at all.
+ * `recordDepositReturn` below is what replaced them, and the column it writes is the only one
+ * left.
  */
 
 const CONCURRENT_CHANGE_ERROR =

@@ -359,18 +359,14 @@ async function main() {
   });
   check("deposit is overdue 50h later", overdue.kind === "overdue", overdue);
 
-  const returnedAt = new Date();
-  const depositWrite = await prisma.payment.updateMany({
-    where: { id: payment.id, depositReturnedAt: null },
-    data: { depositReturnedAt: returnedAt },
-  });
-  check("deposit return recorded once", depositWrite.count === 1);
-
-  const secondWrite = await prisma.payment.updateMany({
-    where: { id: payment.id, depositReturnedAt: null },
-    data: { depositReturnedAt: new Date() },
-  });
-  check("re-recording is a no-op", secondWrite.count === 0);
+  /**
+   * The write that used to be here is gone with the column.
+   *
+   * `Payment.depositReturnedAt` was the offline flow's record of the owner handing the deposit
+   * back. The platform holds it now, so the return is recorded on the settlement by an
+   * administrator and its compare-and-swap is asserted in `verify-settlement`. What is left
+   * here is the clock itself, which is unchanged: it still runs from `completedAt`.
+   */
 
   // ------------------------------------------------- cancellation releases dates
   console.log("\n=== cancellation releases dates and records who did it ===");

@@ -126,21 +126,23 @@ describe("buildBookingNotifications addressing", () => {
     );
   });
 
-  it("routes payment events to the side that has to act", () => {
-    // The renter arranged it, so the owner is told to confirm.
+  /**
+   * Only one payment event is left here.
+   *
+   * Confirmation moved to `payment-messages.ts` when the platform started receiving the money:
+   * an administrator confirms it now, both parties are told, and the copy says "we". What
+   * remains in this module is the renter choosing a method, which is still a booking event.
+   */
+  it("tells the owner when the renter has chosen how to pay", () => {
     expect(
-      build({ event: "payment-selected", method: "CASH", amount: 7500 })[0]
+      build({
+        event: "payment-selected",
+        method: "BANK_TRANSFER",
+        amount: 7500,
+      })[0]
     ).toMatchObject({
       userId: parties.ownerId,
       type: NotificationType.PAYMENT_PENDING,
-    });
-
-    // The owner confirmed it, so the renter is told to collect.
-    expect(
-      build({ event: "payment-confirmed", amount: 7500 })[0]
-    ).toMatchObject({
-      userId: parties.renterId,
-      type: NotificationType.PAYMENT_CONFIRMED,
     });
   });
 
@@ -210,11 +212,14 @@ describe("buildBookingNotifications addressing", () => {
 
 describe("buildBookingNotifications money wording", () => {
   /**
-   * The load-bearing assertion of this phase.
+   * Still load-bearing, for a narrower reason than when it was written.
    *
-   * SamaanShare is not in the money path: the deposit goes from renter to owner and back the same
-   * way. Copy claiming the platform holds it, protects it, or will return it would be a promise
-   * nothing in the system can keep.
+   * The platform IS in the money path now - it receives the rental and the deposit and returns
+   * what is left. But that is the custodial flow's story, and its copy lives in
+   * `payment-messages.ts`, which says "we" deliberately. These are the booking LIFECYCLE events:
+   * a request, an approval, a handover, a review reminder. None of them is about money, and a
+   * promise about custody appearing in one would be a promise made in the wrong place, by a
+   * module with no idea whether it is true.
    */
   it("never claims the platform holds or protects the deposit", () => {
     const everyEvent: BookingNotificationEvent[] = [
@@ -227,11 +232,9 @@ describe("buildBookingNotifications money wording", () => {
       { event: "declined" },
       { event: "expired" },
       { event: "payment-selected", method: "BANK_TRANSFER", amount: 7500 },
-      { event: "payment-confirmed", amount: 7500 },
       { event: "picked-up" },
       { event: "returned" },
       { event: "review-reminder" },
-      { event: "deposit-returned", amount: 10800 },
       { event: "cancelled", by: "renter" },
       { event: "instructions-updated" },
       { event: "reviews-published" },
@@ -255,21 +258,6 @@ describe("buildBookingNotifications money wording", () => {
     ]) {
       expect(text).not.toContain(forbidden);
     }
-  });
-
-  it("attributes the deposit return to the owner and offers the only real recourse", () => {
-    const draft = build({ event: "deposit-returned", amount: 10800 })[0];
-
-    expect(draft?.title).toContain("The owner marked");
-    expect(draft?.body).toContain("SamaanShare does not hold the deposit");
-  });
-
-  it("attributes payment confirmation to the owner, not to the platform", () => {
-    // "Rs." rather than "PKR": that is what `formatPKR` produces, and the amount in a
-    // notification has to read the same as the amount on the booking card beside it.
-    expect(build({ event: "payment-confirmed", amount: 7500 })[0]?.title).toBe(
-      "The owner confirmed receiving Rs. 7,500"
-    );
   });
 
   it("falls back to a plain sentence when a decline carries no reason", () => {

@@ -1,15 +1,16 @@
 /**
  * The security-deposit return window.
  *
- * WHAT THIS IS AND IS NOT. The deposit is paid by the renter directly to the owner, in cash or
- * by transfer, and returned the same way. SamaanShare never holds it, cannot release it, and
- * cannot compensate a renter whose deposit does not come back. What the platform *can* do is
- * record that a return is owed, put a visible clock on it, and make an owner who lets that clock
- * run out visible as such.
+ * WHAT THIS IS, NOW THAT THE MONEY IS OURS. SamaanShare receives the deposit with the rental and
+ * holds it until the item is back, then returns it less anything an upheld claim awards the
+ * owner. So the clock these states describe is OUR clock: it measures how long we have taken,
+ * and an overdue deposit is the platform's failure rather than an owner's.
  *
- * So every function here is about *stating an obligation*, never about custody. The wording the
- * UI hangs off these states has to stay on the right side of that line: "the owner should
- * return", not "your deposit is protected".
+ * THIS MODULE USED TO SAY THE OPPOSITE, and said it deliberately - "the owner should return",
+ * "SamaanShare does not hold it". Every one of those sentences was rewritten in the change that
+ * made the platform custodial, because a deposit screen describing the wrong arrangement is not
+ * a stale string, it is a false statement about somebody's money. What survived unaltered is the
+ * shape: the states, the clock measured from completion, and the pause a live claim puts on it.
  *
  * A DAMAGE CLAIM CHANGES THE OBLIGATION, NOT THE MONEY. Once a claim is settled - by the renter
  * accepting it or an administrator ruling on it - the amount this module says is owed drops by the
