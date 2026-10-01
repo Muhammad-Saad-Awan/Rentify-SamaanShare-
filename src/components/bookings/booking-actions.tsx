@@ -2,7 +2,6 @@
 
 import {
   CheckIcon,
-  HandCoinsIcon,
   LandmarkIcon,
   Loader2Icon,
   MapPinIcon,
@@ -24,7 +23,7 @@ import {
   declineBooking,
   updateBookingInstructions,
 } from "@/actions/bookings";
-import { markDepositReturned, selectPaymentMethod } from "@/actions/payments";
+import { selectPaymentMethod } from "@/actions/payments";
 import { confirmDepositReturn } from "@/actions/deposit";
 import { PaymentInstructions } from "@/components/bookings/payment-instructions";
 import { RecordPaymentForm } from "@/components/bookings/record-payment-form";
@@ -572,28 +571,6 @@ function BookingActions({ booking, side }: BookingActionsProps) {
                   </Button>
                 </div>
               ))}
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant={deposit.kind === "overdue" ? "default" : "outline"}
-                onClick={() =>
-                  run(
-                    () => markDepositReturned({ bookingId: booking.id }),
-                    "Deposit recorded as returned. The renter has been notified."
-                  )
-                }
-                disabled={isPending}
-                aria-busy={isPending}
-              >
-                {isPending ? (
-                  <Loader2Icon className="animate-spin" />
-                ) : (
-                  <HandCoinsIcon />
-                )}
-                I have returned the deposit
-              </Button>
-            </div>
 
             <BookingReviewSection booking={booking} side="owner" />
           </div>

@@ -792,16 +792,9 @@ model Payment {
   confirmedById String?
   confirmedBy   User?   @relation("PaymentsConfirmed", fields: [confirmedById], references: [id])
 
-  // P2: markDepositReturned() is a defined Server Action (API.md:250) and
-  // "Deposit Return Tracking" is PRD.md:193, but no field recorded it.
-  //
-  // SUPERSEDED BY `Settlement.depositReturnedAt`, but not yet removed. The column still has a
-  // live reader in `markDepositReturned()`, and dropping it before that action goes would break
-  // the build for no gain. It is removed in the phase that removes its caller, not this one.
-  depositReturnedAt DateTime?
-
   // ---------------------------------------------------------------- collection evidence
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -841,6 +834,7 @@ model Payment {
 
   // ---------------------------------------------------------------- reversal of collection
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -901,6 +895,7 @@ model Settlement {
    * /**
    * /**
    * /**
+   * /**
    * /** What the renter was charged for the rental, excluding the deposit.
    */
   rentalAmount Int
@@ -950,6 +945,7 @@ model Settlement {
 
   // ---------------------------------------------------------------- authorship
   /**
+   * /**
    * /**
    * /**
    * /**

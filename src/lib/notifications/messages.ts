@@ -81,11 +81,9 @@ export type BookingNotificationEvent =
   | { event: "declined"; reason?: string | null }
   | { event: "expired" }
   | { event: "payment-selected"; method: PaymentMethod; amount: number }
-  | { event: "payment-confirmed"; amount: number }
   | { event: "picked-up" }
   | { event: "returned" }
   | { event: "review-reminder" }
-  | { event: "deposit-returned"; amount: number }
   | { event: "cancelled"; by: "renter" | "owner"; reason?: string | null }
   | { event: "instructions-updated" }
   /**
@@ -250,15 +248,6 @@ export function buildBookingNotifications(
      * says so. The wording keeps who vouched for what visible, which matters if the two later
      * disagree about it.
      */
-    case "payment-confirmed":
-      return [
-        toRenter(
-          NotificationType.PAYMENT_CONFIRMED,
-          `The owner confirmed receiving ${formatPKR(input.amount)}`,
-          `Arrange collection of ${item} using the pickup instructions on your booking.`
-        ),
-      ];
-
     case "picked-up":
       return [
         toRenter(
@@ -318,21 +307,6 @@ export function buildBookingNotifications(
      * This records an owner's claim that they handed the money back, which is all an offline
      * flow can record. Telling the renter to speak up if it did not arrive is the only recourse
      * the platform can honestly offer at this stage.
-     */
-    case "deposit-returned":
-      return [
-        toRenter(
-          NotificationType.DEPOSIT_RETURNED,
-          `The owner marked your ${formatPKR(input.amount)} deposit as returned`,
-          "If it has not reached you, contact the owner - SamaanShare does not hold the deposit."
-        ),
-      ];
-
-    /**
-     * Addressed to the side that did not do it.
-     *
-     * Sending the actor a notification about their own click is noise, and worse, it makes the
-     * unread badge untrustworthy - the one thing a badge has to be.
      */
     case "cancelled": {
       const reason =

@@ -1,6 +1,5 @@
 import { BookingStatus } from "@/generated/prisma/enums";
 import { depositState } from "@/lib/bookings/deposit";
-import { depositReturnedAtOf } from "@/lib/payments/settlement";
 import { expireStalePendingBookings } from "@/lib/bookings/expire";
 import { canRenterCancel, canStartBooking } from "@/lib/bookings/lifecycle";
 import { releaseDueReviews } from "@/lib/reviews/release";
@@ -221,16 +220,12 @@ const bookingSelect = {
       status: true,
       confirmedAt: true,
       securityDeposit: true,
-      depositReturnedAt: true,
       // The renter's own record of what they sent, and why it was refused if it was.
       transactionRef: true,
       rejectionReason: true,
     },
   },
-  /**
-   * Where a custodially-returned deposit is recorded. See `depositReturnedAtOf`: the payment's
-   * column is the offline flow's, this one is the platform's, and a booking has at most one.
-   */
+  /** Where the deposit return is recorded, once an administrator has sent it. */
   settlement: { select: { depositReturnedAt: true } },
   // Both sides' reviews. Which of them the viewer is allowed to see is decided in `toSummary`.
   //
@@ -332,16 +327,15 @@ type BookingRow = {
     status: PaymentStatus;
     confirmedAt: Date | null;
     securityDeposit: number;
-    depositReturnedAt: Date | null;
     transactionRef: string | null;
     rejectionReason: string | null;
   } | null;
   /**
-   * Declared even though only `depositReturnedAtOf` reads it.
+   * Declared even though one line reads it.
    *
-   * That helper takes both sources optionally, so a row type that omitted this would still
-   * compile and would quietly always answer from the payment - the custodial stamp ignored, with
-   * nothing to notice. Stating it here makes the select and the type agree.
+   * The hand-written row type and the select can drift silently - that is how this was missed
+   * the first time, when the helper reading it took both sources optionally and would happily
+   * answer from the wrong one. Stating it keeps the two in step.
    */
   settlement: { depositReturnedAt: Date | null } | null;
   reviews: {
@@ -447,7 +441,8 @@ function toSummary(
       // awaiting payment still reports "not due" rather than "none" for a real deposit.
       securityDeposit: row.payment?.securityDeposit ?? row.securityDeposit,
       completedAt: row.completedAt,
-      depositReturnedAt: depositReturnedAtOf(row),
+      // One source now: the platform returns the deposit, so the settlement records it.
+      depositReturnedAt: row.settlement?.depositReturnedAt ?? null,
       depositConfirmedAt: row.depositConfirmedAt,
       /**
        * The claim's effect on what is owed, reduced to the two facts `depositState` needs.

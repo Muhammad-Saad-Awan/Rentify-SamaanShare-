@@ -19,32 +19,23 @@ import { emitBookingNotifications } from "@/lib/notifications/create";
 import { publishAfterCommit } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
-import {
-  bookingActionSchema,
-  selectPaymentMethodSchema,
-} from "@/lib/validations/booking";
+import { selectPaymentMethodSchema } from "@/lib/validations/booking";
 import { UNAUTHENTICATED_ERROR } from "@/types";
 
 import type { ActionResult } from "@/types";
 
 /**
- * What is left of the offline payment flow.
+ * Choosing how to pay. What remains of a file that used to be the whole payment flow.
  *
- * THIS FILE IS BEING DISMANTLED, and the shape it is in says where that got to.
+ * BOTH OF THE OTHER TWO ACTIONS ARE GONE, and the file is kept for the one that survives the
+ * change of model. `confirmPaymentReceived` went when the money started coming to SamaanShare -
+ * an owner cannot vouch for a transfer they never see. `markDepositReturned` went once an
+ * administrator could record the return instead, which is the honest order: the replacement
+ * first, the deletion after, so there was never a moment with no path at all.
  *
- * `confirmPaymentReceived` is gone. Under the custodial flow the money comes to SamaanShare, so
- * the owner is not in a position to say it arrived - they never see it - and a button asking
- * them to vouch for something they cannot observe was worse than no button. Verification now
- * belongs to `payment-verification.ts`.
- *
- * `selectPaymentMethod` remains, and still does the useful half of its job: it creates the
- * `Payment` row and moves the booking to PAYMENT_PENDING. Only `BANK_TRANSFER` is offered now -
- * cash was a way to pay a person standing in front of you, not a platform.
- *
- * `markDepositReturned` remains too, and should not. The owner does not hold the deposit any
- * more, so recording its return is not theirs to do; it stays only because the administrator
- * screen that replaces it is the next phase, and deleting the one path a finished rental has
- * before building its replacement would leave a gap rather than close one.
+ * `selectPaymentMethod` still creates the `Payment` row and moves the booking to
+ * PAYMENT_PENDING. Only `BANK_TRANSFER` is offered - cash was a way to pay a person standing in
+ * front of you, not a platform.
  *
  * RENTAL AND DEPOSIT STAY SEPARATE, which outlives the change of model. `Payment.amount` is the
  * rental; `Payment.securityDeposit` is the renter's money, now held by the platform and owed
@@ -207,128 +198,6 @@ export async function selectPaymentMethod(
     return { success: true, data: { status: BookingStatus.PAYMENT_PENDING } };
   } catch (error) {
     console.error("selectPaymentMethod failed", error);
-
-    return { success: false, error: UNEXPECTED_ERROR };
-  }
-}
-
-/**
- * The owner records that they have returned the security deposit.
- *
- * A CLAIM, NOT A TRANSFER. The platform is not in the money path, so this stamps
- * `Payment.depositReturnedAt` and tells the renter what the owner said. The renter's notification
- * says so explicitly and points them at the owner if it has not arrived - that is the only honest
- * recourse an offline flow has, and pretending otherwise is what a protection promise the platform
- * cannot keep would look like.
- *
- * Permitted from COMPLETED and REVIEWED. Reviews and the deposit are independent: an owner should
- * not have to wait for a review to hand money back, and a renter who reviewed promptly must not
- * lose the record that their deposit is still outstanding.
- */
-export async function markDepositReturned(
-  input: unknown
-): Promise<ActionResult<{ returnedAt: Date }>> {
-  const parsed = bookingActionSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return { success: false, error: "That booking was not found." };
-  }
-
-  const owner = await getActiveUser();
-
-  if (!owner) {
-    return { success: false, error: UNAUTHENTICATED_ERROR };
-  }
-
-  const rate = checkRateLimit(
-    `booking-payment:${owner.id}`,
-    LIFECYCLE_RATE_LIMIT
-  );
-
-  if (!rate.allowed) {
-    return {
-      success: false,
-      error: "Too many changes just now. Please try again shortly.",
-    };
-  }
-
-  try {
-    const booking = await loadBookingForParty({
-      bookingId: parsed.data.bookingId,
-      userId: owner.id,
-      side: "owner",
-    });
-
-    if (!booking) {
-      return { success: false, error: "That booking was not found." };
-    }
-
-    const finished =
-      booking.status === BookingStatus.COMPLETED ||
-      booking.status === BookingStatus.REVIEWED;
-
-    if (!finished) {
-      return {
-        success: false,
-        error: "Mark the item as returned before recording the deposit.",
-      };
-    }
-
-    if (!booking.payment) {
-      return { success: false, error: "This booking has no payment record." };
-    }
-
-    // Local binding so the narrowing survives into the transaction closure.
-    const payment = booking.payment;
-
-    if (payment.securityDeposit <= 0) {
-      return {
-        success: false,
-        error: "There was no security deposit on this booking.",
-      };
-    }
-
-    // Idempotent, and the timestamp must not move: it is the record of when the owner said they
-    // handed the money back.
-    if (payment.depositReturnedAt) {
-      return {
-        success: true,
-        data: { returnedAt: payment.depositReturnedAt },
-      };
-    }
-
-    const returnedAt = new Date();
-
-    const created = await prisma.$transaction(async (tx) => {
-      const updated = await tx.payment.updateMany({
-        where: { id: payment.id, depositReturnedAt: null },
-        data: { depositReturnedAt: returnedAt },
-      });
-
-      if (updated.count !== 1) {
-        return null;
-      }
-
-      return emitBookingNotifications(tx, {
-        event: "deposit-returned",
-        bookingId: booking.id,
-        listingTitle: booking.listing.title,
-        parties: { renterId: booking.renterId, ownerId: booking.ownerId },
-        amount: payment.securityDeposit,
-      });
-    });
-
-    if (!created) {
-      return { success: false, error: CONCURRENT_CHANGE_ERROR };
-    }
-
-    publishAfterCommit(created);
-
-    revalidateBookingPaths(booking.listingId);
-
-    return { success: true, data: { returnedAt } };
-  } catch (error) {
-    console.error("markDepositReturned failed", error);
 
     return { success: false, error: UNEXPECTED_ERROR };
   }
