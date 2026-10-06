@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { Prisma } from "@/generated/prisma/client";
 import { BookingStatus } from "@/generated/prisma/enums";
+import { isEmailConfirmationRequired } from "@/lib/auth/email-gate";
 import { getActiveUser } from "@/lib/auth/session";
 import { expireStalePendingBookings } from "@/lib/bookings/expire";
 import {
@@ -203,7 +204,8 @@ export async function createBookingRequest(
     const tier = accessTierFor(listing.securityDeposit);
     const access = checkRenterAccess(
       tier,
-      await getRenterAccessSignals(renter.id)
+      await getRenterAccessSignals(renter.id),
+      isEmailConfirmationRequired()
     );
 
     if (!access.allowed) {

@@ -62,34 +62,53 @@ describe("accessTierFor", () => {
   });
 });
 
-describe("checkRenterAccess — open", () => {
-  it("asks nothing of anyone", () => {
-    expect(checkRenterAccess("open", nobody).allowed).toBe(true);
-  });
-});
+/** The floor: a confirmed address, at every tier including the cheapest. */
+describe.each(["open", "elevated"] as const)(
+  "checkRenterAccess — %s",
+  (tier) => {
+    it("asks only for a confirmed email address", () => {
+      expect(
+        checkRenterAccess(tier, renter({ emailVerified: true })).allowed
+      ).toBe(true);
+    });
 
-describe("checkRenterAccess — elevated", () => {
-  it("asks only for a confirmed email address", () => {
-    expect(
-      checkRenterAccess("elevated", renter({ emailVerified: true })).allowed
-    ).toBe(true);
+    it("refuses an unconfirmed address, and says so", () => {
+      const decision = checkRenterAccess(tier, nobody);
+
+      expect(decision.allowed).toBe(false);
+
+      if (!decision.allowed) {
+        expect(decision.unmet.map((u) => u.key)).toEqual(["email"]);
+      }
+    });
+
+    /** A long track record is not a substitute here: the requirement is reachability, not standing. */
+    it("does not accept a track record instead of a confirmed address", () => {
+      expect(
+        checkRenterAccess(tier, renter({ completedRentals: 50 })).allowed
+      ).toBe(false);
+    });
+  }
+);
+
+/**
+ * Where mail is not configured, nobody can confirm an address, so requiring one would be a gate
+ * nobody can clear.
+ */
+describe("checkRenterAccess — email not required", () => {
+  it("lets an unconfirmed renter through the lower tiers", () => {
+    expect(checkRenterAccess("open", nobody, false).allowed).toBe(true);
+    expect(checkRenterAccess("elevated", nobody, false).allowed).toBe(true);
   });
 
-  it("refuses an unconfirmed address, and says so", () => {
-    const decision = checkRenterAccess("elevated", nobody);
+  it("still applies the identity-or-history rule at the top tier", () => {
+    const decision = checkRenterAccess("high-value", nobody, false);
 
     expect(decision.allowed).toBe(false);
 
     if (!decision.allowed) {
-      expect(decision.unmet.map((u) => u.key)).toEqual(["email"]);
+      expect(decision.unmet.map((u) => u.key)).toEqual(["identity-or-history"]);
     }
-  });
-
-  /** A long track record is not a substitute here: the requirement is reachability, not standing. */
-  it("does not accept a track record instead of a confirmed address", () => {
-    expect(
-      checkRenterAccess("elevated", renter({ completedRentals: 50 })).allowed
-    ).toBe(false);
   });
 });
 
@@ -209,12 +228,13 @@ describe("checkRenterAccess — every refusal is actionable", () => {
 });
 
 describe("accessTierDescription", () => {
-  it("says nothing about an open listing", () => {
+  /** Their only requirement is the account-wide one, which is not a property of the listing. */
+  it("says nothing about tiers that ask nothing beyond a confirmed address", () => {
     expect(accessTierDescription("open")).toBeNull();
+    expect(accessTierDescription("elevated")).toBeNull();
   });
 
-  it("describes the gated tiers", () => {
-    expect(accessTierDescription("elevated")?.length ?? 0).toBeGreaterThan(20);
+  it("describes the high-value tier", () => {
     expect(accessTierDescription("high-value")?.length ?? 0).toBeGreaterThan(
       20
     );

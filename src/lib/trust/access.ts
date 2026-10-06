@@ -6,8 +6,9 @@
  * between them and a stranger is what is known about that stranger. On a PKR 800 drill that is fine.
  * On something worth six figures it is not, and "trust your judgement" is not a feature.
  *
- * SO ACCESS IS PROPORTIONAL TO WHAT IS AT STAKE. A booking request on a low-value item needs nothing
- * but an account. Higher up, the renter has to have shown something about themselves first.
+ * SO ACCESS IS PROPORTIONAL TO WHAT IS AT STAKE. Every booking request needs a confirmed email
+ * address - the floor, wherever transactional email is configured. Higher up, the renter has to have
+ * shown more about themselves first.
  *
  * FOUR PROPERTIES THIS PROTECTS.
  *
@@ -89,16 +90,18 @@ export type AccessDecision =
 /**
  * Whether this renter may request this listing.
  *
- * THE TIERS.
+ * THE FLOOR. Every tier asks for a confirmed email address. Cheap to clear, one click, and it is the
+ * difference between an account with a reachable person behind it and one made in ten seconds with a
+ * throwaway address. It used to apply from `elevated` up; it now applies to the whole marketplace, so
+ * `elevated` currently asks for nothing beyond it. The tier is kept so the deposit bands stay one
+ * place to add a requirement, rather than being re-derived the next time one is wanted.
  *
- * `open` asks for nothing beyond an account. Most of the marketplace is here, and adding friction to
- * a PKR 500 drill would cost far more in abandoned bookings than it could ever save.
+ * `emailConfirmationRequired` is false only where this deployment cannot send mail. Requiring a link
+ * that can never arrive would make every listing unbookable by anyone not already confirmed - property
+ * 1 above. Callers take it from `isEmailConfirmationRequired()`; it defaults to true so that a caller
+ * which forgets it errs towards the gate.
  *
- * `elevated` asks for a confirmed email address. Cheap to clear, one click, and it is the difference
- * between an account with a reachable person behind it and one made in ten seconds with a throwaway
- * address. That is most of the value in stopping casual abuse.
- *
- * `high-value` asks for a confirmed address AND either a verified identity or a real track record.
+ * `high-value` additionally asks for either a verified identity or a real track record.
  *
  * THE "OR" IS THE LOAD-BEARING PART. Requiring verification alone would be stricter on paper and
  * worse in practice: identity verification is granted by an administrator out of band, so at launch
@@ -109,20 +112,13 @@ export type AccessDecision =
  */
 export function checkRenterAccess(
   tier: AccessTier,
-  renter: RenterAccessSignals
+  renter: RenterAccessSignals,
+  emailConfirmationRequired = true
 ): AccessDecision {
-  if (tier === "open") {
-    return { allowed: true };
-  }
-
   const unmet: UnmetRequirement[] = [];
 
-  if (!renter.emailVerified) {
-    unmet.push({
-      key: "email",
-      label: "Your email address is not confirmed",
-      action: "Send yourself a confirmation link from your profile.",
-    });
+  if (emailConfirmationRequired && !renter.emailVerified) {
+    unmet.push(EMAIL_REQUIREMENT);
   }
 
   if (
@@ -142,6 +138,14 @@ export function checkRenterAccess(
   return unmet.length === 0 ? { allowed: true } : { allowed: false, unmet };
 }
 
+/** The confirmed-address requirement, worded for renting. Shared so the refusal reads the same everywhere. */
+const EMAIL_REQUIREMENT: UnmetRequirement = {
+  key: "email",
+  label: "Your email address is not confirmed",
+  action:
+    "SamaanShare asks every member to confirm their address before renting. Send yourself a confirmation link from your profile.",
+};
+
 /**
  * One sentence naming what a tier asks for, shown on the listing before anyone tries to book.
  *
@@ -151,11 +155,12 @@ export function checkRenterAccess(
  */
 export function accessTierDescription(tier: AccessTier): string | null {
   switch (tier) {
+    // A confirmed address is asked of every renter, so it is not a property of this listing and
+    // naming it here would suggest the owner chose it.
     case "open":
-      return null;
     case "elevated":
-      return "Because of the deposit on this item, the owner is only shown requests from members with a confirmed email address.";
+      return null;
     case "high-value":
-      return `Because of the deposit on this item, requests come only from members with a confirmed email address and either a verified identity or ${ESTABLISHED_RENTAL_COUNT} completed rentals.`;
+      return `Because of the deposit on this item, requests come only from members with either a verified identity or ${ESTABLISHED_RENTAL_COUNT} completed rentals.`;
   }
 }

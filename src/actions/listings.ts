@@ -2,6 +2,10 @@
 
 import { Prisma } from "@/generated/prisma/client";
 import { ListingStatus } from "@/generated/prisma/enums";
+import {
+  EMAIL_CONFIRMATION_REQUIRED_ERROR,
+  needsEmailConfirmation,
+} from "@/lib/auth/email-gate";
 import { getActiveUser } from "@/lib/auth/session";
 import { pendingUploadFolder } from "@/lib/cloudinary";
 import { verifyListingImages } from "@/lib/listings/images";
@@ -58,6 +62,23 @@ export async function createListing(
 
   if (!user) {
     return { success: false, error: UNAUTHENTICATED_ERROR };
+  }
+
+  /**
+   * A confirmed address before anything is published.
+   *
+   * `/listings/new` shows the confirmation prompt instead of the form, but that is a courtesy - this
+   * is a public endpoint and the check that holds. Checked ahead of the rate limit so a refused
+   * attempt does not spend one of the owner's ten.
+   */
+  try {
+    if (await needsEmailConfirmation(user.id)) {
+      return { success: false, error: EMAIL_CONFIRMATION_REQUIRED_ERROR };
+    }
+  } catch (error) {
+    console.error("createListing email confirmation check failed", error);
+
+    return { success: false, error: UNEXPECTED_ERROR };
   }
 
   const rate = checkRateLimit(`create-listing:${user.id}`, CREATE_RATE_LIMIT);
