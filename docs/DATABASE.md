@@ -113,17 +113,20 @@
 │ createdAt        │
 └──────────────────┘
 
-┌──────────────────┐       ┌──────────────────┐
-│  Conversation    │       │     Message      │
-├──────────────────┤       ├──────────────────┤
-│ id           PK  │───────│ id           PK  │
-│ listingId    FK  │       │ conversationId FK│
-│ participant1Id FK│       │ senderId     FK  │
-│ participant2Id FK│       │ content          │
-│ lastMessageAt    │       │ isRead           │
-│ createdAt        │       │ createdAt        │
-│ updatedAt        │       └──────────────────┘
-└──────────────────┘
+┌──────────────────┐       ┌──────────────────┐       ┌──────────────────┐
+│  Conversation    │       │     Message      │       │      Offer       │
+├──────────────────┤       ├──────────────────┤       ├──────────────────┤
+│ id           PK  │───────│ id           PK  │       │ id           PK  │
+│ listingId    FK  │ UK(1) │ conversationId FK│       │ conversationId FK│
+│ renterId     FK  │ UK(1) │ senderId  FK/null│       │ bookingId FK/null│
+│ ownerId      FK  │       │ kind             │       │ proposedById FK  │
+│ lastMessageAt    │       │ body             │       │ recipientId  FK  │
+│ renterLastReadAt │       │ offerId   FK/null│──────▶│ startDate/endDate│
+│ ownerLastReadAt  │       │ clientId         │       │ totalPrice       │
+│ createdAt        │       │ createdAt        │       │ securityDeposit  │
+│ updatedAt        │       └──────────────────┘       │ status, expiresAt│
+└──────────────────┘                                  │ respondedAt      │
+  Booking.conversationId FK/null, Booking.agreedOfferId FK/null UK        └──────────────────┘
 
 ┌──────────────────┐       ┌──────────────────┐
 │   SavedListing   │       │     Report       │
@@ -193,9 +196,7 @@ model User {
   reviewsGiven      Review[]           @relation("ReviewsGiven")
   reviewsReceived   Review[]           @relation("ReviewsReceived")
   savedListings     SavedListing[]
-  conversationsAsP1 Conversation[]     @relation("Participant1")
-  conversationsAsP2 Conversation[]     @relation("Participant2")
-  messagesSent      Message[]
+  // Chat relations: see section 10 and prisma/schema.prisma.
   reportsSubmitted  Report[]           @relation("ReportsSubmitted")
   reportsResolved   Report[]           @relation("ReportsResolved")
 
@@ -550,48 +551,10 @@ model Review {
   @@map("reviews")
 }
 
-// ==================== MESSAGING MODELS (Phase 2 - Future) ====================
-// Note: Real-time messaging is deferred from MVP. MVP uses booking notes only.
-
-model Conversation {
-  id             String    @id @default(cuid())
-  listingId      String
-  participant1Id String    // Usually the inquirer (renter)
-  participant2Id String    // Usually the owner
-
-  lastMessageAt  DateTime  @default(now())
-
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  listing        Listing   @relation(fields: [listingId], references: [id])
-  participant1   User      @relation("Participant1", fields: [participant1Id], references: [id])
-  participant2   User      @relation("Participant2", fields: [participant2Id], references: [id])
-  messages       Message[]
-
-  @@unique([listingId, participant1Id, participant2Id])
-  @@index([participant1Id])
-  @@index([participant2Id])
-  @@map("conversations")
-}
-
-model Message {
-  id             String       @id @default(cuid())
-  conversationId String
-  senderId       String
-
-  content        String       @db.Text
-  isRead         Boolean      @default(false)
-
-  createdAt      DateTime     @default(now())
-
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User         @relation(fields: [senderId], references: [id])
-
-  @@index([conversationId])
-  @@index([senderId])
-  @@map("messages")
-}
+// ==================== CHAT ====================
+// Built in October 2026 with a different design from the draft that stood here. The current
+// models - Conversation, Message, Offer - are in prisma/schema.prisma; see section 10 below for
+// the design and the database-enforced invariants.
 
 // ==================== SAVED/WISHLIST ====================
 
@@ -663,9 +626,11 @@ All `@id` fields are automatically indexed by Prisma/PostgreSQL.
 | payments | status | Payment status queries |
 | payments | provider | Provider-based filtering |
 | reviews | revieweeId | User's received reviews |
-| conversations | participant1Id | User's conversations |
-| conversations | participant2Id | User's conversations |
-| messages | conversationId | Conversation messages |
+| conversations | (listingId, renterId) unique | One thread per renter per listing |
+| conversations | (renterId, lastMessageAt), (ownerId, lastMessageAt) | Each side's inbox |
+| messages | (conversationId, createdAt) | Thread paging and unread counts |
+| messages | (senderId, clientId) unique | Idempotent retried sends |
+| offers | (conversationId, status) | The open offer in a thread |
 | reports | status | Pending reports for admin |
 | reports | type | Report type filtering |
 
@@ -961,6 +926,63 @@ await prisma.user.update({
   data: { status: 'SUSPENDED' }
 });
 ```
+
+---
+
+## 10. Chat (October 2026)
+
+Owner and renter talk before booking, after booking, during the rental and after return. The
+models are in `prisma/schema.prisma` under CHAT; this section records the design decisions and the
+invariants the database enforces.
+
+### Models
+
+- **Conversation** - one renter, one owner, one listing: unique on `(listingId, renterId)`.
+  Renter and owner rather than symmetric participants, because every rule is asymmetric. Read
+  state is two cursors (`renterLastReadAt`, `ownerLastReadAt`); a message is unread when it is
+  from the other side (or a SYSTEM line) and newer than the reader's cursor.
+- **Message** - `kind` is TEXT, OFFER or SYSTEM. Append-only: no edit, no delete, because a thread
+  is evidence in claims and reports. `(senderId, clientId)` is unique so a retried send is
+  written once.
+- **Offer** - structured terms: dates, `totalPrice`, `securityDeposit`. Free text never sets a
+  price; only an offer the other party accepted reaches a booking. `bookingId` is NULL for an
+  offer made before booking and set for a renegotiation of an existing booking (same dates only).
+  Expires 48 hours after proposal; an accepted pre-booking offer must be booked within 48 hours.
+- **Booking.conversationId** links each booking to its thread. **Booking.agreedOfferId** (unique)
+  names the accepted offer whose terms the booking carries; the terms are still copied into the
+  booking's own columns.
+- **AdminAction.conversationId** with `VIEW_CONVERSATION` records every administrator read.
+
+### Invariants enforced by triggers
+
+Migrations `20261006120000_chat_and_offers` and `20261006140000_payment_matches_booking_terms`.
+Every violation raises an error whose message starts `TERMS_LOCKED`.
+
+| Rule | Enforced by |
+|------|-------------|
+| An offer's terms never change after insert; it leaves PENDING once and is then frozen | `offers_guard` |
+| An ACCEPTED offer cannot be deleted while a booking carries its terms | `offers_guard` |
+| A booking naming `agreedOfferId` carries exactly that offer's rent, deposit and dates, for the same listing and renter | `bookings_terms_guard` |
+| A booking's terms change only together with a newly named accepted offer | `bookings_terms_guard` |
+| Once a payment row is attached, the booking's terms and payment are final | `bookings_terms_guard` |
+| A payment can be attached only if its amounts equal the booking's terms | `bookings_terms_guard` |
+| A payment's amounts never change | `payments_amount_guard` |
+
+Terms lock when the payment row is created (APPROVED → PAYMENT_PENDING), which is before payment
+verification. Listing edits never reach agreed terms: neither bookings nor offers read the
+listing after they are written.
+
+### Access
+
+Only the two participants can read a conversation. Administrators may read one, read-only, only on
+a stated ground - a deposit claim or disputed handover on one of the pair's bookings, or a USER
+report between them that is pending or resolved - and each page read writes a `VIEW_CONVERSATION`
+audit row before any message is returned.
+
+### Deleting test data
+
+`offers.bookingId` cascades from bookings (the only cascade in chat), so cleanup deletes messages,
+then bookings, then the remaining offers, then conversations. See `tests/e2e/fixtures/db.ts`.
 
 ---
 

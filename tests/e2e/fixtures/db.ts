@@ -255,7 +255,61 @@ async function create(): Promise<void> {
     select: { id: true },
   });
 
+  /**
+   * The chat cast. Its own people and listing, for the reason the realtime cast has its own: the
+   * chat test accepts an offer and books, which no other project should find already done.
+   * Confirmed addresses, because first contact and booking are both behind the email gate.
+   */
+  const chatPeople = await Promise.all(
+    (["Owner", "Renter", "Stranger"] as const).map(async (role) => {
+      const credentials = newAccountCredentials();
+      const created = await prisma.user.create({
+        data: {
+          email: credentials.email,
+          name: `E2E Chat ${role}`,
+          password: await hashPassword(credentials.password),
+          emailVerified: new Date(),
+          city: "karachi",
+        },
+        select: { id: true },
+      });
+
+      return { ...credentials, id: created.id };
+    })
+  );
+  const [chatOwner, chatRenter, chatStranger] = chatPeople as [
+    (typeof chatPeople)[number],
+    (typeof chatPeople)[number],
+    (typeof chatPeople)[number],
+  ];
+
+  const chatListing = await prisma.listing.create({
+    data: {
+      ownerId: chatOwner.id,
+      title: "E2E Chat Listing",
+      description:
+        "Created by the end-to-end chat test. If you are reading this in a real database, a run was interrupted before its teardown.",
+      categoryId: category.id,
+      condition: "GOOD",
+      pricePerDay: 500,
+      securityDeposit: 2000,
+      city: "karachi",
+      status: "ACTIVE",
+    },
+    select: { id: true },
+  });
+
   writeAccount({
+    chatOwnerEmail: chatOwner.email,
+    chatOwnerPassword: chatOwner.password,
+    chatOwnerId: chatOwner.id,
+    chatRenterEmail: chatRenter.email,
+    chatRenterPassword: chatRenter.password,
+    chatRenterId: chatRenter.id,
+    chatStrangerEmail: chatStranger.email,
+    chatStrangerPassword: chatStranger.password,
+    chatStrangerId: chatStranger.id,
+    chatListingId: chatListing.id,
     userId: user.id,
     listingId: listing.id,
     email,
@@ -302,6 +356,7 @@ async function destroy(): Promise<void> {
     account.listingId,
     account.journeyListingId,
     account.realtimeListingId,
+    account.chatListingId,
   ];
 
   /**
@@ -320,6 +375,9 @@ async function destroy(): Promise<void> {
     account.journeyAdminId,
     account.realtimeOwnerId,
     account.realtimeRenterId,
+    account.chatOwnerId,
+    account.chatRenterId,
+    account.chatStrangerId,
   ];
 
   if (journeyRenter) {
@@ -375,7 +433,36 @@ async function destroy(): Promise<void> {
   await prisma.unavailableDate.deleteMany({
     where: { listingId: { in: listingIds } },
   });
+
+  /**
+   * Chat. Nothing in it cascades except an offer from its booking, so it is unpicked in three
+   * steps around the booking delete: messages first (they reference offers), then the bookings
+   * (which cascade the offers made against them), then the remaining offers, and the conversations
+   * last of all, after the audit rows that may name them.
+   *
+   * An accepted offer cannot be deleted while a booking carries its terms - a database trigger -
+   * which is why the offers wait for the bookings.
+   */
+  const conversationIds = (
+    await prisma.conversation.findMany({
+      where: {
+        OR: [
+          { listingId: { in: listingIds } },
+          { renterId: { in: userIds } },
+          { ownerId: { in: userIds } },
+        ],
+      },
+      select: { id: true },
+    })
+  ).map((conversation) => conversation.id);
+
+  await prisma.message.deleteMany({
+    where: { conversationId: { in: conversationIds } },
+  });
   await prisma.booking.deleteMany({ where: { id: { in: bookingIds } } });
+  await prisma.offer.deleteMany({
+    where: { conversationId: { in: conversationIds } },
+  });
   await prisma.payment.deleteMany({ where: { id: { in: paymentIds } } });
   /**
    * The audit rows the journey's administrator writes when they verify a payment.
@@ -386,8 +473,15 @@ async function destroy(): Promise<void> {
    */
   await prisma.adminAction.deleteMany({
     where: {
-      OR: [{ actorId: { in: userIds } }, { subjectId: { in: userIds } }],
+      OR: [
+        { actorId: { in: userIds } },
+        { subjectId: { in: userIds } },
+        { conversationId: { in: conversationIds } },
+      ],
     },
+  });
+  await prisma.conversation.deleteMany({
+    where: { id: { in: conversationIds } },
   });
   await prisma.notification.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.savedListing.deleteMany({ where: { userId: { in: userIds } } });

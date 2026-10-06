@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { BookingActions } from "@/components/bookings/booking-actions";
+import { OpenBookingChatButton } from "@/components/chat/open-booking-chat-button";
 import { ClaimPanel } from "@/components/claims/claim-panel";
 import { HandoverRecordList } from "@/components/handover/handover-record-list";
 import { Badge } from "@/components/ui/badge";
@@ -154,6 +155,18 @@ function BookingCard({ booking, side }: BookingCardProps) {
           )}
 
           <BookingActions booking={booking} side={side} />
+
+          {/*
+            Chat, at every status - before approval to agree details, during the rental for usage
+            help or problems, after return for the deposit. Separate from the lifecycle actions,
+            which change the booking; this only talks about it.
+          */}
+          <div>
+            <OpenBookingChatButton
+              bookingId={booking.id}
+              counterpartRole={side === "renter" ? "owner" : "renter"}
+            />
+          </div>
         </div>
       </div>
     </Card>

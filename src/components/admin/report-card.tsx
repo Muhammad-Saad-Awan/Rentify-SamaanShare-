@@ -17,6 +17,7 @@ import {
   REPORT_REASON_LABELS,
   RESOLUTION_NOTE_MAX,
 } from "@/lib/reports/rules";
+import { adminConversationHref } from "@/lib/chat/routes";
 import { formatDate } from "@/lib/utils/date";
 
 import type { ReportSummary, ReportTarget } from "@/lib/queries/reports";
@@ -122,6 +123,26 @@ function ReportCard({ report }: ReportCardProps) {
           Reported by {report.reporter.name?.trim() || "a member"} on{" "}
           {formatDate(report.createdAt)}
         </p>
+
+        {/*
+          Where the two of them talked. A link grants nothing - the conversation screen asks for this
+          report as the ground and a reason, and logs the read. Dismissed reports are not grounds,
+          so the screen will say so.
+        */}
+        {report.conversations.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <span className="text-muted-foreground">Their conversations:</span>
+            {report.conversations.map((conversation) => (
+              <Link
+                key={conversation.id}
+                href={adminConversationHref(conversation.id)}
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                {conversation.listingTitle}
+              </Link>
+            ))}
+          </div>
+        )}
 
         {!isPending && (
           <div className="text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 text-xs leading-relaxed">

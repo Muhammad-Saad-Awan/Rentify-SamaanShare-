@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { HandoverConfirmation } from "@/generated/prisma/enums";
 import { getActiveUser } from "@/lib/auth/session";
 import { canConfirmHandover } from "@/lib/handover/rules";
+import { postBookingThreadLine } from "@/lib/chat/booking-events";
 import { createNotifications } from "@/lib/notifications/create";
 import { buildHandoverNotifications } from "@/lib/notifications/handover-messages";
 import { prisma } from "@/lib/prisma";
@@ -146,6 +147,15 @@ export async function confirmHandover(input: unknown): Promise<ActionResult> {
        * different: it is the other party contesting a written account of their conduct, and the
        * person who wrote it needs to know while the item is still in front of them.
        */
+      // The thread follows the same rule: a dispute is a line, agreement is not.
+      if (outcome === HandoverConfirmation.DISPUTED) {
+        await postBookingThreadLine(tx, {
+          bookingId: record.booking.id,
+          event: { event: "handover-disputed" },
+          actorId: user.id,
+        });
+      }
+
       return createNotifications(
         tx,
         buildHandoverNotifications({

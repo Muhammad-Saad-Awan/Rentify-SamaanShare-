@@ -492,8 +492,7 @@ no listing, booking, search, review or admin functionality was implemented.
 - [x] Show pricing breakdown (PKR)
 - [x] Show security deposit
 - [x] Display owner profile card
-- [ ] Add contact owner button — no messaging system exists to hang it off;
-      `Conversation`/`Message` are deferred to Phase 2 of the roadmap
+- [x] Add contact owner button — "Message the owner", Phase 10
 - [x] Add save to wishlist button
 - [x] Add share button (WhatsApp focus)
 - [x] Show similar listings
@@ -2064,6 +2063,50 @@ was missing was any way for the server to reach a browser that was not asking.
 
 ---
 
+## Phase 10 – Chat (6-7 October 2026)
+
+Owner and renter can talk before booking, after booking, during the rental and after return.
+Design and database invariants: `docs/DATABASE.md` section 10.
+
+### Done
+
+- [x] `Conversation` per renter per listing, linked to every booking made since; `Message` with
+      TEXT / OFFER / SYSTEM kinds; read state as two cursors
+- [x] Structured offers. Free text never sets a price - only an accepted `Offer` reaches a booking,
+      before booking or as a renegotiation while PENDING/APPROVED
+- [x] Accepted terms are a permanent snapshot; listing edits never reach them; terms lock when the
+      payment row is created. All enforced by triggers as well as by the rules (`TERMS_LOCKED`)
+- [x] Fixed a race the renegotiation path opened: a payment could be created at the old price.
+      `selectPaymentMethod` now re-checks under a row lock, and the database refuses a mismatch
+- [x] Only participants can read a thread - real 404 for anyone else (layout check, no
+      `loading.tsx` above it)
+- [x] Administrator reads only on a claim, disputed handover or report between the two members,
+      read-only, one `VIEW_CONVERSATION` audit row per page read. Reached from the admin booking
+      page and from USER reports
+- [x] Rate limits: 30 messages/min per user, 8 per 10s per thread, 15 new conversations/hour,
+      10 offers/hour per thread
+- [x] Realtime over the existing per-member channel - no new subscription, no new authorization.
+      The open thread renders from the event; badges and offers re-render from the database
+- [x] Unread badge in the header, separate from notifications; "Seen" receipts
+- [x] Booking events written into the thread as SYSTEM lines (request, approval, decline,
+      cancellation, pickup details, payment chosen and verified, pickup, return, claim filed and
+      resolved, handover disputed), unread for everyone but the person who caused them
+- [x] `verify:chat` (database), unit tests, `chat` Playwright project (two browsers plus a refused
+      stranger), axe scans of the inbox and a thread
+
+### Left
+
+- [ ] Run both chat migrations on staging: `npm run db:migrate:deploy` with the staging env
+- [ ] Expiry is not written into the thread: the sweep batches its writes and cannot tell which
+      rows it moved when two sweeps race. The booking card shows it
+- [ ] Reporting a single conversation - there is no CONVERSATION report type yet; members report
+      the other member, which is a ground for an administrator to read their threads
+- [ ] Attachments (photos in chat) - handover and claim photos already have their own flows
+- [ ] Email digest for unread messages - decided against for now
+- [ ] Rate limits are per server instance (see `lib/rate-limit.ts`); Upstash is the upgrade path
+
+---
+
 ## Future Features (Post-MVP)
 
 ### Phase 2: Trust & Payments
@@ -2073,12 +2116,7 @@ was missing was any way for the server to reach a browser that was not asking.
 - [ ] Safepay integration
 - [ ] PayFast integration
 - [ ] Phone OTP verification (+92)
-- [ ] Real-time messaging system. The transport now exists — private channels,
-      authorization and a subscriber — so this is the `Conversation` and
-      `Message` models, a screen, and one `publishAfterCommit`. Worth knowing
-      that a chat probably wants the message text in the payload rather than a
-      refresh nudge, which is a deliberate departure from the rule the
-      notification layer follows
+- [x] Real-time messaging system — Phase 10
 - [ ] CNIC verification (NADRA)
 - [ ] Escrow payment system
 - [ ] Platform fee implementation

@@ -288,4 +288,7 @@ export const ADMIN_ACTION_LABELS: Readonly<Record<AdminActionType, string>> = {
     "Payment verification reversed",
   [AdminActionType.SETTLE_BOOKING]: "Booking settled",
   [AdminActionType.RECORD_REFUND]: "Refund recorded",
+  // Chat. Reading a private conversation is recorded on the history of the member the grounds
+  // concern - see `src/lib/chat/admin-access.ts`.
+  [AdminActionType.VIEW_CONVERSATION]: "Conversation read",
 };

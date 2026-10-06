@@ -15,7 +15,7 @@ import {
   transitionBooking,
 } from "@/lib/bookings/guard";
 import { canTransition } from "@/lib/bookings/lifecycle";
-import { emitBookingNotifications } from "@/lib/notifications/create";
+import { emitBookingEvent } from "@/lib/chat/booking-events";
 import { publishAfterCommit } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -153,6 +153,29 @@ export async function selectPaymentMethod(
        * confirm because there is no payment to confirm, or an orphaned payment row attached to
        * nothing. Both would need manual repair.
        */
+
+      /**
+       * The terms being copied must still be the booking's terms.
+       *
+       * Chat made rent and deposit renegotiable while a booking is APPROVED, and the read above
+       * happened before this transaction. Locking the row and comparing closes the gap: an offer
+       * accepted in between makes this a concurrent change, and one accepted after waits on the
+       * lock and then finds a payment attached, which ends renegotiation. The `bookings` trigger
+       * refuses a mismatched payment regardless; this turns that into a message the renter can act
+       * on.
+       */
+      const [current] = await tx.$queryRaw<
+        { totalPrice: number; securityDeposit: number }[]
+      >`SELECT "totalPrice", "securityDeposit" FROM "bookings" WHERE "id" = ${booking.id} FOR UPDATE`;
+
+      if (
+        !current ||
+        current.totalPrice !== booking.totalPrice ||
+        current.securityDeposit !== booking.securityDeposit
+      ) {
+        return null;
+      }
+
       const payment = await tx.payment.create({
         data: {
           provider: PaymentProvider.OFFLINE,
@@ -177,14 +200,18 @@ export async function selectPaymentMethod(
         return null;
       }
 
-      return emitBookingNotifications(tx, {
-        event: "payment-selected",
-        bookingId: booking.id,
-        listingTitle: booking.listing.title,
-        parties: { renterId: booking.renterId, ownerId: booking.ownerId },
-        method,
-        amount: booking.totalPrice,
-      });
+      return emitBookingEvent(
+        tx,
+        {
+          event: "payment-selected",
+          bookingId: booking.id,
+          listingTitle: booking.listing.title,
+          parties: { renterId: booking.renterId, ownerId: booking.ownerId },
+          method,
+          amount: booking.totalPrice,
+        },
+        { actorId: renter.id }
+      );
     });
 
     if (!created) {

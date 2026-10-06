@@ -8,7 +8,9 @@ import {
   canFileClaim,
   canRespondToClaim,
   canWithdrawClaim,
+  CLAIM_REASON_LABELS,
 } from "@/lib/claims/rules";
+import { postBookingThreadLine } from "@/lib/chat/booking-events";
 import { createNotifications } from "@/lib/notifications/create";
 import { publishAfterCommit } from "@/lib/realtime/publish";
 import { buildClaimNotifications } from "@/lib/notifications/claim-messages";
@@ -259,6 +261,16 @@ export async function fileDamageClaim(input: unknown): Promise<ActionResult> {
           event: { event: "filed", amountClaimed },
         })
       );
+
+      // Into the thread, where the two of them may still sort it out between themselves.
+      await postBookingThreadLine(tx, {
+        bookingId: booking.id,
+        event: {
+          event: "claim-filed",
+          reasonLabel: CLAIM_REASON_LABELS[reason],
+        },
+        actorId: owner.id,
+      });
 
       return notifications;
     });

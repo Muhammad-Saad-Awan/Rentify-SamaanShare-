@@ -49,6 +49,7 @@ export default async function DashboardLayout({
       {realtime && (
         <RealtimeNotifications
           channel={realtime.channel}
+          userId={user.id}
           pusherKey={realtime.pusherKey}
           cluster={realtime.cluster}
         />

@@ -44,6 +44,8 @@ export interface AdminActionInput {
    * without the owner's unrelated actions mixed in.
    */
   listingId?: string | undefined;
+  /** The conversation read, for VIEW_CONVERSATION. */
+  conversationId?: string | undefined;
 }
 
 export async function writeAdminAction(
@@ -57,6 +59,7 @@ export async function writeAdminAction(
     newValue,
     reportId,
     listingId,
+    conversationId,
   }: AdminActionInput
 ): Promise<void> {
   await client.adminAction.create({
@@ -69,6 +72,7 @@ export async function writeAdminAction(
       ...(newValue ? { newValue } : {}),
       ...(reportId ? { reportId } : {}),
       ...(listingId ? { listingId } : {}),
+      ...(conversationId ? { conversationId } : {}),
     },
     select: { id: true },
   });

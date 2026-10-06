@@ -14,6 +14,7 @@ import {
   LIFECYCLE_RATE_LIMIT,
   loadBookingForParty,
 } from "@/lib/bookings/guard";
+import { postBookingThreadLine } from "@/lib/chat/booking-events";
 import { createNotifications } from "@/lib/notifications/create";
 import { buildPaymentNotifications } from "@/lib/notifications/payment-messages";
 import { computeCommission } from "@/lib/payments/commission";
@@ -390,6 +391,13 @@ export async function verifyPayment(
      * notification here. The owner's copy is the one that matters most: the handover is gated on
      * this payment, so this is what tells them they may hand the item over.
      */
+    // Into the thread too: the owner may now hand over, and both are usually arranging it there.
+    await postBookingThreadLine(tx, {
+      bookingId: booking.id,
+      event: { event: "payment-verified" },
+      actorId: null,
+    });
+
     return createNotifications(
       tx,
       buildPaymentNotifications({

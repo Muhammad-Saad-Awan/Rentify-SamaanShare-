@@ -4,8 +4,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { NOTIFICATION_EVENT } from "@/lib/realtime/channels";
+import { conversationHref } from "@/lib/chat/routes";
+import {
+  CHAT_MESSAGE_EVENT,
+  CHAT_READ_EVENT,
+  NOTIFICATION_EVENT,
+} from "@/lib/realtime/channels";
+import { emitChat, isActiveConversation } from "@/lib/realtime/chat-bus";
 
+import type { ChatMessageEvent, ChatReadEvent } from "@/lib/realtime/channels";
 import type { Channel } from "pusher-js";
 
 /**
@@ -38,6 +45,11 @@ import type { Channel } from "pusher-js";
 interface RealtimeNotificationsProps {
   /** `private-user-{id}`, built by the layout from the session. */
   channel: string;
+  /**
+   * The signed-in member, so a chat event can be told apart as their own (another tab) or the
+   * other party's. Display only - the channel above is what the server authorizes.
+   */
+  userId: string;
   pusherKey: string;
   cluster: string;
 }
@@ -67,6 +79,7 @@ interface IncomingNotification {
 
 function RealtimeNotifications({
   channel,
+  userId,
   pusherKey,
   cluster,
 }: RealtimeNotificationsProps) {
@@ -168,6 +181,73 @@ function RealtimeNotifications({
           scheduleRefresh();
         }
       );
+
+      /**
+       * Chat. The one place the payload IS rendered from - see `ChatMessageEvent` for why - and
+       * it is handed to the open thread through the bus rather than drawn here.
+       *
+       * Every message still refreshes, debounced with everything else: the inbox order, the unread
+       * badge and any offer card are Server Components and must come from the database. An open
+       * thread keeps its own state across that refresh.
+       *
+       * A toast only for the other party's message, and only when its thread is not on screen.
+       */
+      subscription.bind(
+        CHAT_MESSAGE_EVENT,
+        (payload: ChatMessageEvent | undefined) => {
+          if (!payload?.id || seen.current.has(payload.id)) {
+            return;
+          }
+
+          if (seen.current.size >= SEEN_LIMIT) {
+            seen.current.clear();
+          }
+
+          seen.current.add(payload.id);
+          emitChat({ type: "message", data: payload });
+
+          if (
+            payload.senderId !== userId &&
+            !isActiveConversation(payload.conversationId)
+          ) {
+            toast(
+              payload.kind === "OFFER" ? "New offer received" : "New message",
+              {
+                action: {
+                  label: "Open",
+                  onClick: () =>
+                    router.push(conversationHref(payload.conversationId)),
+                },
+              }
+            );
+          }
+
+          scheduleRefresh();
+        }
+      );
+
+      /**
+       * A read cursor moved. The thread uses the other party's for "Seen"; the reader's own other
+       * tabs refresh so their badge clears too.
+       */
+      subscription.bind(
+        CHAT_READ_EVENT,
+        (payload: ChatReadEvent | undefined) => {
+          if (!payload?.conversationId) {
+            return;
+          }
+
+          emitChat({ type: "read", data: payload });
+
+          // Not in the tab that has this thread open: it marked the read and refreshed itself.
+          if (
+            payload.readerId === userId &&
+            !isActiveConversation(payload.conversationId)
+          ) {
+            scheduleRefresh();
+          }
+        }
+      );
     })();
 
     return () => {
@@ -182,7 +262,7 @@ function RealtimeNotifications({
       clientRef?.unsubscribe(channel);
       clientRef?.disconnect();
     };
-  }, [channel, pusherKey, cluster, router]);
+  }, [channel, userId, pusherKey, cluster, router]);
 
   /**
    * Hidden, and present only so a test can wait for the socket before acting.

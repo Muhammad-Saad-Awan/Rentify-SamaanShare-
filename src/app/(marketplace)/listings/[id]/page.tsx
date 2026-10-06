@@ -2,6 +2,7 @@ import { CalendarClockIcon, MapPinIcon } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { BookingRequestForm } from "@/components/bookings/booking-request-form";
+import { MessageOwnerButton } from "@/components/chat/message-owner-button";
 import { ListingBreadcrumbs } from "@/components/marketplace/listing-breadcrumbs";
 import { ListingGallery } from "@/components/marketplace/listing-gallery";
 import { ListingPricing } from "@/components/marketplace/listing-pricing";
@@ -269,6 +270,17 @@ export default async function ListingPage({ params }: ListingPageProps) {
                   {accessTierDescription(accessTier)}
                 </p>
               )}
+
+            {/*
+              Questions before booking - condition, what is included, pickup - go to the owner
+              here. Not offered to the owner, who has nobody to message about their own item.
+            */}
+            {user?.id !== listing.owner.id && (
+              <MessageOwnerButton
+                listingId={listing.id}
+                isAuthenticated={user !== null}
+              />
+            )}
 
             {/* Save and share sit together beneath the booking panel. */}
             <div className="flex flex-wrap items-center gap-2">

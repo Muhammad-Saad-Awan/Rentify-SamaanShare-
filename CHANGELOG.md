@@ -176,6 +176,29 @@ stays unreleased; `TODO.md` holds what remains.
 - A two-browser test that watches one page change because of another's action,
   and which was confirmed to fail with the refresh disabled
 
+#### Chat (6-7 October 2026)
+
+- Conversations between a renter and an owner about one listing, open before
+  booking, during the rental and after return. Every booking is linked to its
+  thread; "Message the owner" on listings and "Message owner/renter" on every
+  booking card
+- Structured offers for rent, deposit and dates. Chat text never sets a price:
+  only an offer the other side accepted reaches a booking - before booking, or as
+  a renegotiation while the booking is pending or approved
+- Accepted terms are a permanent snapshot that listing edits cannot reach, and a
+  booking's terms are final once its payment row exists. Enforced by database
+  triggers as well as by the application (`docs/DATABASE.md` section 10)
+- Unread badge in the dashboard header, "Seen" receipts, and booking events
+  written into the thread as neutral system lines
+- Realtime over the existing per-member Pusher channel: the open thread renders
+  the message from the event; badges, offers and booking terms re-render from
+  the database
+- Rate limits on messages, new conversations and offers
+- Administrators may read a conversation only on a claim, a disputed handover or
+  a report between the two members - read-only, with one audit row per page read
+- `verify:chat`, a two-browser `chat` Playwright project with a refused third
+  member, and axe scans of the inbox and a thread
+
 #### Smaller additions
 
 - A show-password toggle on the sign-in form and on both settings password forms
@@ -207,6 +230,10 @@ stays unreleased; `TODO.md` holds what remains.
 
 ### Fixed
 
+- A payment could record the old price if an offer renegotiated the booking
+  between the renter choosing a method and the payment row being written.
+  `selectPaymentMethod` now re-checks the booking under a row lock, and the
+  database refuses to attach a payment whose amounts differ from the booking's
 - Google's `email_verified` claim is carried onto `User.emailVerified`, and
   persisted through the `linkAccount` event rather than only at first sign-in
 - The upload cleanup job was deleting handover and claim photos, which are not
