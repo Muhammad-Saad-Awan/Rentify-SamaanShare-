@@ -28,7 +28,7 @@ talk to has the columns the code selects.
 |---|---|---|---|
 | 1 | A **separate** Neon project or branch for staging, with pooled + direct connection strings | Stage A ran three migrations against the dev database. Staging must not share it, or a bad migration takes both down and test bookings pollute real data. | Minutes |
 | 2 | A Vercel project linked to this repo | | Minutes |
-| 3 | A Resend **verified sending domain** | `EMAIL_FROM` currently falls back to `onboarding@resend.dev`, which delivers **only** to the Resend account owner. Password reset is unusable for anyone else until this exists. | **Hours to days (DNS)** |
+| 3 | ~~A Resend **verified sending domain**~~ — done: `samaanshare.me`, sender `SamaanShare <no-reply@samaanshare.me>` | Without it `EMAIL_FROM` falls back to `onboarding@resend.dev`, which delivers **only** to the Resend account owner. | **Hours to days (DNS)** |
 | 4 | A staging `AUTH_SECRET` — a *different* one from dev | Reusing it means a dev session cookie is valid in staging. | Seconds (`openssl rand -base64 32`) |
 | 5 | Decision: Google OAuth in staging? | If yes, add `https://<staging-host>/api/auth/callback/google` as an authorised redirect URI. If no, leave both vars unset — the button and provider disappear cleanly. | Minutes |
 | 6 | Decision: Cloudinary — same account as dev, or separate folder? | Same account is fine; uploads are namespaced per user. A separate account keeps staging junk out of production media. | Minutes |
@@ -333,8 +333,8 @@ production.
 ## 7. Order of operations
 
 1. ~~You: create the staging Neon project and the Vercel project (§1).~~ — done.
-2. You: start Resend domain verification — longest lead time (§1 item 3). **Still
-   outstanding**, and §5c cannot be checked until it lands.
+2. ~~You: start Resend domain verification (§1 item 3).~~ — done: `samaanshare.me`.
+   Set `EMAIL_FROM` on the deploy, then check §5c.
 3. ~~Me: remove `picsum.photos`~~ — done (§4).
 4. You: set environment variables in Vercel (§2). Two to re-check now:
    **`DIRECT_URL`**, which the build command needs (§2, §3), and the three
