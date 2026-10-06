@@ -128,13 +128,19 @@ export async function getUnreadTotal(userId: string): Promise<number> {
 export interface ConversationSummary {
   id: string;
   role: ParticipantRole;
-  listing: { id: string; title: string };
-  counterparty: { id: string; name: string | null; image: string | null };
+  listing: { id: string; title: string; imageUrl: string | null };
+  counterparty: {
+    id: string;
+    name: string | null;
+    image: string | null;
+    isVerified: boolean;
+  };
   lastMessageAt: Date;
   lastMessage: {
     kind: MessageKind;
     body: string | null;
     senderId: string | null;
+    createdAt: Date;
   } | null;
   unread: number;
 }
@@ -144,8 +150,18 @@ const counterpartySelect = {
   name: true,
   image: true,
   avatarUrl: true,
+  isVerified: true,
   status: true,
   deletedAt: true,
+} as const;
+
+/** The listing's cover photo - its first image - for thumbnails in the inbox and thread. */
+const coverImageSelect = {
+  images: {
+    orderBy: { order: "asc" },
+    take: 1,
+    select: { url: true },
+  },
 } as const;
 
 /**
@@ -173,13 +189,13 @@ export async function listConversations(
         renterId: true,
         ownerId: true,
         lastMessageAt: true,
-        listing: { select: { id: true, title: true } },
+        listing: { select: { id: true, title: true, ...coverImageSelect } },
         renter: { select: counterpartySelect },
         owner: { select: counterpartySelect },
         messages: {
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: 1,
-          select: { kind: true, body: true, senderId: true },
+          select: { kind: true, body: true, senderId: true, createdAt: true },
         },
       },
     }),
@@ -199,11 +215,16 @@ export async function listConversations(
       {
         id: row.id,
         role,
-        listing: row.listing,
+        listing: {
+          id: row.listing.id,
+          title: row.listing.title,
+          imageUrl: row.listing.images[0]?.url ?? null,
+        },
         counterparty: {
           id: other.id,
           name: other.name,
           image: other.avatarUrl ?? other.image,
+          isVerified: other.isVerified,
         },
         lastMessageAt: row.lastMessageAt,
         lastMessage: row.messages[0] ?? null,
@@ -254,11 +275,16 @@ export interface ConversationDetail {
     pricePerWeek: number | null;
     pricePerMonth: number | null;
     securityDeposit: number;
+    city: string;
+    area: string | null;
+    imageUrl: string | null;
   };
   counterparty: {
     id: string;
     name: string | null;
     image: string | null;
+    isVerified: boolean;
+    memberSince: Date;
     /** False once suspended or deleted. The thread is then read-only. */
     active: boolean;
   };
@@ -303,10 +329,13 @@ export async function getConversationForParticipant(
           pricePerWeek: true,
           pricePerMonth: true,
           securityDeposit: true,
+          city: true,
+          area: true,
+          ...coverImageSelect,
         },
       },
-      renter: { select: counterpartySelect },
-      owner: { select: counterpartySelect },
+      renter: { select: { ...counterpartySelect, createdAt: true } },
+      owner: { select: { ...counterpartySelect, createdAt: true } },
       offers: {
         orderBy: { createdAt: "desc" },
         select: {
@@ -358,11 +387,24 @@ export async function getConversationForParticipant(
   return {
     id: row.id,
     role,
-    listing: row.listing,
+    listing: {
+      id: row.listing.id,
+      title: row.listing.title,
+      status: row.listing.status,
+      pricePerDay: row.listing.pricePerDay,
+      pricePerWeek: row.listing.pricePerWeek,
+      pricePerMonth: row.listing.pricePerMonth,
+      securityDeposit: row.listing.securityDeposit,
+      city: row.listing.city,
+      area: row.listing.area,
+      imageUrl: row.listing.images[0]?.url ?? null,
+    },
     counterparty: {
       id: other.id,
       name: other.name,
       image: other.avatarUrl ?? other.image,
+      isVerified: other.isVerified,
+      memberSince: other.createdAt,
       active: isActiveAccount(other),
     },
     counterpartyLastReadAt: lastReadAtFor(

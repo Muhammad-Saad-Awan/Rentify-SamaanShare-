@@ -19,16 +19,19 @@ export const metadata: Metadata = {
  * One message for both cases, so the route cannot be used to learn whether an id is real.
  */
 export default function ConversationNotFound() {
+  // Centred in the thread pane, which is where a layout-level 404 renders.
   return (
-    <EmptyState
-      icon={MessagesSquareIcon}
-      title="Conversation not found"
-      description="This conversation does not exist, or you are not part of it."
-      action={
-        <Button size="sm" render={<Link href={MESSAGES_ROUTE} />}>
-          Back to messages
-        </Button>
-      }
-    />
+    <div className="m-auto w-full max-w-md p-6">
+      <EmptyState
+        icon={MessagesSquareIcon}
+        title="Conversation not found"
+        description="This conversation does not exist, or you are not part of it."
+        action={
+          <Button size="sm" render={<Link href={MESSAGES_ROUTE} />}>
+            Back to messages
+          </Button>
+        }
+      />
+    </div>
   );
 }

@@ -1,9 +1,6 @@
 import { Suspense } from "react";
 
-import {
-  MessagesButton,
-  MessagesButtonFallback,
-} from "@/components/chat/messages-button";
+import { MessagesButton } from "@/components/chat/messages-button";
 import { DashboardBreadcrumbs } from "@/components/dashboard/dashboard-breadcrumbs";
 import { DashboardMobileNav } from "@/components/dashboard/dashboard-mobile-nav";
 import {
@@ -13,9 +10,14 @@ import {
 import { UserMenu } from "@/components/dashboard/user-menu";
 
 import type { Session } from "next-auth";
+import type { ReactNode } from "react";
 
 interface DashboardHeaderProps {
   user: Session["user"];
+  /** Nav badges, for the mobile drawer - see `DashboardNav`. */
+  navBadges?: Readonly<Record<string, ReactNode>> | undefined;
+  /** Unread messages, counted once by the layout. */
+  unreadMessages: number;
 }
 
 /**
@@ -29,19 +31,20 @@ interface DashboardHeaderProps {
  * `z-30` sits below the drawer and dropdown popups (`z-50`) so an open overlay
  * is never painted behind the header.
  */
-function DashboardHeader({ user }: DashboardHeaderProps) {
+function DashboardHeader({
+  user,
+  navBadges,
+  unreadMessages,
+}: DashboardHeaderProps) {
   return (
     <header className="bg-background/95 supports-backdrop-filter:bg-background/80 sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur lg:px-6">
-      <DashboardMobileNav role={user.role} />
+      <DashboardMobileNav role={user.role} badges={navBadges} />
 
       <DashboardBreadcrumbs className="min-w-0 flex-1" />
 
       <div className="flex shrink-0 items-center gap-0.5">
         {/* Suspended on its own so the two notification queries never hold up the header. */}
-        {/* Its own boundary too: the unread aggregate must not wait on, or delay, the bell. */}
-        <Suspense fallback={<MessagesButtonFallback />}>
-          <MessagesButton userId={user.id} />
-        </Suspense>
+        <MessagesButton unread={unreadMessages} />
 
         <Suspense fallback={<NotificationBellFallback />}>
           <NotificationBell userId={user.id} />

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils/cn";
 import { isNavItemActive, visibleNavSections } from "@/lib/utils/navigation";
 
 import type { UserRole } from "@/generated/prisma/enums";
+import type { ReactNode } from "react";
 
 interface DashboardNavProps {
   role: UserRole;
@@ -15,6 +16,11 @@ interface DashboardNavProps {
    * the desktop sidebar omits it entirely.
    */
   onNavigate?: () => void;
+  /**
+   * Extra content after an item's label, keyed by its href - the unread messages count. Server
+   * Components passed in as nodes, so a count never makes the whole nav wait for its query.
+   */
+  badges?: Readonly<Record<string, ReactNode>> | undefined;
 }
 
 /**
@@ -26,7 +32,7 @@ interface DashboardNavProps {
  * section change re-renders this list without a round trip, while the layout
  * above it stays static.
  */
-function DashboardNav({ role, onNavigate }: DashboardNavProps) {
+function DashboardNav({ role, onNavigate, badges }: DashboardNavProps) {
   const pathname = usePathname();
   const sections = visibleNavSections(role);
 
@@ -66,6 +72,7 @@ function DashboardNav({ role, onNavigate }: DashboardNavProps) {
                   >
                     <Icon className="size-4 shrink-0" aria-hidden="true" />
                     <span className="truncate">{item.title}</span>
+                    {badges?.[item.href]}
                   </Link>
                 </li>
               );

@@ -2,9 +2,12 @@ import { DashboardBrand } from "@/components/dashboard/dashboard-brand";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 
 import type { UserRole } from "@/generated/prisma/enums";
+import type { ReactNode } from "react";
 
 interface DashboardSidebarProps {
   role: UserRole;
+  /** See `DashboardNav`. */
+  badges?: Readonly<Record<string, ReactNode>> | undefined;
 }
 
 /**
@@ -18,14 +21,14 @@ interface DashboardSidebarProps {
  * flex row, so the content column needs no compensating margin and cannot slide
  * underneath it.
  */
-function DashboardSidebar({ role }: DashboardSidebarProps) {
+function DashboardSidebar({ role, badges }: DashboardSidebarProps) {
   return (
     <aside className="bg-sidebar hidden shrink-0 border-r lg:sticky lg:top-0 lg:flex lg:h-svh lg:w-64 lg:flex-col">
       <div className="flex h-14 shrink-0 items-center border-b px-4">
         <DashboardBrand />
       </div>
 
-      <DashboardNav role={role} />
+      <DashboardNav role={role} badges={badges} />
     </aside>
   );
 }

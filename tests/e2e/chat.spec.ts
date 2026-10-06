@@ -138,7 +138,7 @@ test("message, negotiate, and book - and a stranger is refused", async ({
     ).toBeVisible({ timeout: 30_000 });
 
     // ------------------------------------------------------------------ the offer
-    await owner.page.getByRole("button", { name: "Propose terms" }).click();
+    await owner.page.getByRole("button", { name: "Make an offer" }).click();
     await owner.page.getByLabel("From").fill(isoDaysFromNow(40));
     await owner.page.getByLabel("Until").fill(isoDaysFromNow(42));
     await owner.page.getByLabel("Total rent (Rs.)").fill(AGREED_RENT);

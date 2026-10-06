@@ -1,3 +1,4 @@
+import { UnreadMessagesBadge } from "@/components/chat/messages-button";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { RealtimeNotifications } from "@/components/dashboard/realtime-notifications";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
@@ -6,6 +7,8 @@ import {
   SkipToContent,
 } from "@/components/shared/skip-to-content";
 import { requireUser } from "@/lib/auth/session";
+import { MESSAGES_ROUTE } from "@/lib/chat/routes";
+import { getUnreadTotal } from "@/lib/queries/chat";
 import { realtimeClientConfig } from "@/lib/realtime/server";
 
 import type { ReactNode } from "react";
@@ -44,6 +47,18 @@ export default async function DashboardLayout({
    */
   const realtime = realtimeClientConfig(user.id);
 
+  /**
+   * Unread messages, counted once and shared by the header button and the sidebar badge.
+   *
+   * Awaited here rather than suspended: an async Server Component inside a Suspense boundary in this
+   * shell made the Base UI ids after it differ between server and client - see `MessagesButton`. One
+   * indexed aggregate is a small price for a shell that hydrates cleanly.
+   */
+  const unreadMessages = await getUnreadTotal(user.id);
+  const navBadges = {
+    [MESSAGES_ROUTE]: <UnreadMessagesBadge unread={unreadMessages} />,
+  };
+
   return (
     <div className="flex flex-1">
       {realtime && (
@@ -62,7 +77,7 @@ export default async function DashboardLayout({
       */}
       <SkipToContent />
 
-      <DashboardSidebar role={user.role} />
+      <DashboardSidebar role={user.role} badges={navBadges} />
 
       {/*
         `min-w-0` is load-bearing. Without it this flex child adopts its
@@ -71,7 +86,11 @@ export default async function DashboardLayout({
         whole page to scroll horizontally instead of scrolling inside itself.
       */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <DashboardHeader user={user} />
+        <DashboardHeader
+          user={user}
+          navBadges={navBadges}
+          unreadMessages={unreadMessages}
+        />
 
         {/*
           `tabIndex={-1}` makes the skip link's target focusable: following a fragment link

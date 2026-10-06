@@ -213,6 +213,15 @@ function RealtimeNotifications({
             toast(
               payload.kind === "OFFER" ? "New offer received" : "New message",
               {
+                // The text is already on this member's own channel - see `ChatMessageEvent`.
+                ...(payload.kind === "TEXT" && payload.body
+                  ? {
+                      description:
+                        payload.body.length > 90
+                          ? `${payload.body.slice(0, 90)}…`
+                          : payload.body,
+                    }
+                  : {}),
                 action: {
                   label: "Open",
                   onClick: () =>

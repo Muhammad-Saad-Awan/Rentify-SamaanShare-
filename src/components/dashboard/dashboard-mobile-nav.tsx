@@ -15,9 +15,12 @@ import {
 } from "@/components/ui/sheet";
 
 import type { UserRole } from "@/generated/prisma/enums";
+import type { ReactNode } from "react";
 
 interface DashboardMobileNavProps {
   role: UserRole;
+  /** See `DashboardNav`. */
+  badges?: Readonly<Record<string, ReactNode>> | undefined;
 }
 
 /**
@@ -28,7 +31,7 @@ interface DashboardMobileNavProps {
  * uncontrolled Sheet would stay open over the newly rendered page. `onNavigate`
  * closes it explicitly.
  */
-function DashboardMobileNav({ role }: DashboardMobileNavProps) {
+function DashboardMobileNav({ role, badges }: DashboardMobileNavProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -51,7 +54,11 @@ function DashboardMobileNav({ role }: DashboardMobileNavProps) {
           <DashboardBrand />
         </SheetHeader>
 
-        <DashboardNav role={role} onNavigate={() => setOpen(false)} />
+        <DashboardNav
+          role={role}
+          badges={badges}
+          onNavigate={() => setOpen(false)}
+        />
       </SheetContent>
     </Sheet>
   );
