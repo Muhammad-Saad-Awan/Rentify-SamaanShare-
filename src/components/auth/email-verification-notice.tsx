@@ -29,8 +29,10 @@ interface EmailVerificationNoticeProps {
  * and it is what earns the badge on a public profile. Copy that implied one led to the other would
  * have people believing they were verified when they had only clicked a link.
  *
- * NOT A BLOCKER. Nothing on SamaanShare is gated on a confirmed address, so this is a card rather
- * than an interstitial. It affects the trust score, and the honest way to say that is to say it.
+ * A CARD, NOT AN INTERSTITIAL. Renting and listing both need a confirmed address (see
+ * `lib/auth/email-gate.ts`), but browsing, messaging and managing existing bookings do not, so the
+ * prompt sits where it is relevant rather than blocking the whole app. The copy says what is gated
+ * because a requirement discovered only at the moment of refusal reads as a judgement.
  */
 function EmailVerificationNotice({
   isVerified,
@@ -77,9 +79,10 @@ function EmailVerificationNotice({
         </p>
 
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Confirming it tells other members we can reach you, and it counts
-          towards your trust score. It is not the same as identity verification,
-          which SamaanShare grants separately.
+          You need a confirmed address to rent items or list your own. It also
+          tells other members we can reach you, and counts towards your trust
+          score. It is not the same as identity verification, which SamaanShare
+          grants separately.
         </p>
 
         {canSend ? (

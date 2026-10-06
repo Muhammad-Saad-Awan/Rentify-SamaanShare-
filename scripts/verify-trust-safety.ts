@@ -609,8 +609,8 @@ async function main() {
   );
 
   check(
-    "an everyday item is open to them",
-    checkRenterAccess(accessTierFor(2_000), await asRead()).allowed
+    "not even an everyday item is open to them before they confirm",
+    !checkRenterAccess(accessTierFor(2_000), await asRead()).allowed
   );
 
   check(
@@ -627,6 +627,11 @@ async function main() {
     where: { id: newcomer.id },
     data: { emailVerified: new Date() },
   });
+
+  check(
+    "confirming the address opens an everyday item",
+    checkRenterAccess(accessTierFor(2_000), await asRead()).allowed
+  );
 
   check(
     "confirming the address opens the elevated tier",

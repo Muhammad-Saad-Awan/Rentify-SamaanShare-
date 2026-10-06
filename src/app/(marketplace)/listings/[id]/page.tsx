@@ -16,6 +16,7 @@ import { ShareListing } from "@/components/marketplace/share-listing";
 import { JsonLd } from "@/components/shared/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { ReportType } from "@/generated/prisma/enums";
+import { isEmailConfirmationRequired } from "@/lib/auth/email-gate";
 import { getCurrentUser } from "@/lib/auth/session";
 import { listingJsonLd } from "@/lib/marketplace/structured-data";
 import { getRenterAccessSignals } from "@/lib/queries/renter-access";
@@ -142,7 +143,11 @@ export default async function ListingPage({ params }: ListingPageProps) {
   const accessTier = accessTierFor(listing.securityDeposit);
   const access =
     user && user.id !== listing.owner.id
-      ? checkRenterAccess(accessTier, await getRenterAccessSignals(user.id))
+      ? checkRenterAccess(
+          accessTier,
+          await getRenterAccessSignals(user.id),
+          isEmailConfirmationRequired()
+        )
       : null;
 
   return (
@@ -258,11 +263,12 @@ export default async function ListingPage({ params }: ListingPageProps) {
               An owner sees it too, deliberately: setting a large deposit narrows who may ask to rent
               the item, and that consequence should not be discovered through an empty inbox.
             */}
-            {accessTier !== "open" && !(access && !access.allowed) && (
-              <p className="text-muted-foreground text-xs leading-relaxed">
-                {accessTierDescription(accessTier)}
-              </p>
-            )}
+            {accessTierDescription(accessTier) &&
+              !(access && !access.allowed) && (
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  {accessTierDescription(accessTier)}
+                </p>
+              )}
 
             {/* Save and share sit together beneath the booking panel. */}
             <div className="flex flex-wrap items-center gap-2">

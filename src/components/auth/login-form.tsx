@@ -45,6 +45,11 @@ function LoginForm({ callbackUrl, showForgotPassword }: LoginFormProps) {
    * one was wrong.
    */
   const [formError, setFormError] = useState<string | null>(null);
+  /**
+   * Whether the failure was a wrong email or password, as opposed to a suspended account or an
+   * outage. Only that one is answered by resetting the password, so only that one offers it.
+   */
+  const [wrongCredentials, setWrongCredentials] = useState(false);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -55,6 +60,7 @@ function LoginForm({ callbackUrl, showForgotPassword }: LoginFormProps) {
 
   async function onSubmit(values: LoginInput) {
     setFormError(null);
+    setWrongCredentials(false);
 
     /**
      * `redirect: false` keeps us on the page so a bad password can be shown
@@ -69,6 +75,7 @@ function LoginForm({ callbackUrl, showForgotPassword }: LoginFormProps) {
 
     if (!result || result.error) {
       setFormError(getAuthErrorMessage(result?.error));
+      setWrongCredentials(result?.error === "CredentialsSignin");
       return;
     }
 
@@ -91,6 +98,21 @@ function LoginForm({ callbackUrl, showForgotPassword }: LoginFormProps) {
             className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
           >
             {formError}
+            {/*
+              The moment someone most needs the reset link is right after a wrong password, and the
+              small one beside the label is easy to miss from here.
+            */}
+            {wrongCredentials && showForgotPassword && (
+              <>
+                {" "}
+                <Link
+                  href="/forgot-password"
+                  className="font-medium underline underline-offset-4"
+                >
+                  Forgot your password?
+                </Link>
+              </>
+            )}
           </div>
         )}
 

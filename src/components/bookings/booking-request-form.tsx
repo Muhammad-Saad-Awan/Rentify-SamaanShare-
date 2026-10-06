@@ -135,9 +135,12 @@ function BookingRequestForm({
             few things first
           </p>
 
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            {accessTierDescription(accessTier)}
-          </p>
+          {/* Absent for tiers whose only requirement is the account-wide one. */}
+          {accessTierDescription(accessTier) && (
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              {accessTierDescription(accessTier)}
+            </p>
+          )}
 
           <ul className="flex flex-col gap-2.5">
             {access.unmet.map((requirement) => (
