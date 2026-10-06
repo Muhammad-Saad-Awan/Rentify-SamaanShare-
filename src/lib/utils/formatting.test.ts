@@ -7,7 +7,9 @@ import {
 import { formatPKR, formatPKRPerDay } from "@/lib/utils/currency";
 import {
   formatDate,
+  formatDayLabel,
   formatRelativeTime,
+  formatTime,
   todayInKarachi,
 } from "@/lib/utils/date";
 import { CONDITION_LABELS, formatCity } from "@/lib/utils/listing";
@@ -205,5 +207,34 @@ describe("formatRelativeTime", () => {
     const old = ago(30 * DAY);
 
     expect(formatRelativeTime(old, now)).toBe(formatDate(old));
+  });
+});
+
+describe("chat day labels and times", () => {
+  // 7 Oct 2026, 10:00 in Karachi (UTC+5).
+  const now = new Date("2026-10-07T05:00:00.000Z");
+
+  it("names today and yesterday by Karachi calendar day", () => {
+    expect(formatDayLabel(new Date("2026-10-06T19:30:00.000Z"), now)).toBe(
+      "Today"
+    );
+    expect(formatDayLabel(new Date("2026-10-06T18:30:00.000Z"), now)).toBe(
+      "Yesterday"
+    );
+  });
+
+  it("uses a weekday within the week and a date beyond it", () => {
+    expect(formatDayLabel(new Date("2026-10-04T08:00:00.000Z"), now)).toBe(
+      "Sunday"
+    );
+    expect(formatDayLabel(new Date("2026-09-20T08:00:00.000Z"), now)).toBe(
+      formatDate(new Date("2026-09-20T08:00:00.000Z"))
+    );
+  });
+
+  it("shows the time in Karachi", () => {
+    expect(
+      formatTime(new Date("2026-10-07T11:35:00.000Z")).toLowerCase()
+    ).toMatch(/^04:35\s?pm$/);
   });
 });

@@ -1,27 +1,19 @@
-import { ArrowLeftIcon, LockIcon } from "lucide-react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { ChatThread } from "@/components/chat/chat-thread";
-import { OfferForm } from "@/components/chat/offer-form";
-import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { RentalDetails } from "@/components/chat/rental-details";
+import { ThreadHeader } from "@/components/chat/thread-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth/session";
-import { BOOKING_STATUS_LABELS } from "@/lib/bookings/timeline";
-import { MESSAGES_ROUTE } from "@/lib/chat/routes";
+import { quickRepliesFor, rentalStage } from "@/lib/chat/quick-replies";
 import {
   getConversationForParticipant,
   getMessagesPage,
 } from "@/lib/queries/chat";
-import { formatPKR } from "@/lib/utils/currency";
-import { formatDate, todayInKarachi } from "@/lib/utils/date";
-import { getDisplayName, getInitials } from "@/lib/utils/user";
+import { todayInKarachi } from "@/lib/utils/date";
+import { getDisplayName } from "@/lib/utils/user";
 
-import type { ConversationDetail } from "@/lib/queries/chat";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -30,10 +22,14 @@ export const metadata: Metadata = {
 
 interface ConversationPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ draft?: string | string[] }>;
 }
 
+/** A carried-over question longer than this is not a question; it is dropped. */
+const DRAFT_MAX = 500;
+
 /**
- * One conversation.
+ * One conversation, in the right-hand pane of the messenger.
  *
  * The layout has already refused anyone who is not a participant, with a real 404. The skeleton is an
  * in-page `<Suspense>` keyed by the id, so it reappears when moving between threads without a
@@ -41,17 +37,26 @@ interface ConversationPageProps {
  */
 export default async function ConversationPage({
   params,
+  searchParams,
 }: ConversationPageProps) {
-  const { id } = await params;
+  const [{ id }, { draft }] = await Promise.all([params, searchParams]);
+  const initialDraft =
+    typeof draft === "string" && draft.length <= DRAFT_MAX ? draft : undefined;
 
   return (
-    <Suspense key={id} fallback={<DashboardPageSkeleton cards={2} />}>
-      <Conversation id={id} />
+    <Suspense key={id} fallback={<ThreadSkeleton />}>
+      <Conversation id={id} initialDraft={initialDraft} />
     </Suspense>
   );
 }
 
-async function Conversation({ id }: { id: string }) {
+async function Conversation({
+  id,
+  initialDraft,
+}: {
+  id: string;
+  initialDraft: string | undefined;
+}) {
   const user = await requireUser();
 
   const [detail, page] = await Promise.all([
@@ -64,70 +69,24 @@ async function Conversation({ id }: { id: string }) {
     notFound();
   }
 
-  const name = getDisplayName({ name: detail.counterparty.name });
   const today = todayInKarachi();
-  const amendable = detail.bookings.filter((booking) => booking.termsAmendable);
+  const rates = {
+    pricePerDay: detail.listing.pricePerDay,
+    pricePerWeek: detail.listing.pricePerWeek,
+    pricePerMonth: detail.listing.pricePerMonth,
+  };
 
   return (
     <>
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          render={<Link href={MESSAGES_ROUTE} />}
-          aria-label="Back to messages"
-        >
-          <ArrowLeftIcon />
-        </Button>
-        <Avatar className="size-10 shrink-0">
-          {detail.counterparty.image && (
-            <AvatarImage src={detail.counterparty.image} alt="" />
-          )}
-          <AvatarFallback>
-            {getInitials({ name: detail.counterparty.name })}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex min-w-0 flex-col">
-          <h1 className="font-heading truncate text-lg font-medium">
-            <Link
-              href={`/users/${detail.counterparty.id}`}
-              className="hover:underline"
-            >
-              {name}
-            </Link>
-          </h1>
-          <p className="text-muted-foreground truncate text-sm">
-            {detail.role === "renter" ? "Owner of " : "Interested in your "}
-            <Link
-              href={`/listings/${detail.listing.id}`}
-              className="hover:underline"
-            >
-              {detail.listing.title}
-            </Link>
-          </p>
-        </div>
-      </div>
-
-      <BookingsPanel detail={detail} />
-
-      {detail.counterparty.active && (
-        <OfferForm
-          conversationId={detail.id}
-          rates={{
-            pricePerDay: detail.listing.pricePerDay,
-            pricePerWeek: detail.listing.pricePerWeek,
-            pricePerMonth: detail.listing.pricePerMonth,
-          }}
-          listingDeposit={detail.listing.securityDeposit}
-          amendableBookings={amendable}
-          today={today}
-        />
-      )}
-
+      <ThreadHeader detail={detail} />
+      <RentalDetails detail={detail} />
       <ChatThread
         conversationId={detail.id}
         viewerId={user.id}
-        counterpartyName={name}
+        counterparty={{
+          name: getDisplayName({ name: detail.counterparty.name }),
+          image: detail.counterparty.image,
+        }}
         canWrite={detail.counterparty.active}
         initialMessages={page.messages}
         initialHasOlder={page.hasOlder}
@@ -138,73 +97,51 @@ async function Conversation({ id }: { id: string }) {
           listingId: detail.listing.id,
           viewerIsRenter: detail.role === "renter",
           today,
+          rates,
         }}
+        offerForm={{
+          conversationId: detail.id,
+          rates,
+          listingDeposit: detail.listing.securityDeposit,
+          amendableBookings: detail.bookings.filter(
+            (booking) => booking.termsAmendable
+          ),
+          today,
+        }}
+        quickReplies={quickRepliesFor(
+          detail.role,
+          rentalStage(detail.bookings)
+        )}
+        initialDraft={initialDraft}
       />
     </>
   );
 }
 
-/**
- * The bookings between these two people for this listing, with their official terms.
- *
- * Shown above the chat because these numbers - not anything said below - are what the rental costs.
- * Each one says whether its terms can still be renegotiated with an offer or are final.
- */
-function BookingsPanel({ detail }: { detail: ConversationDetail }) {
-  if (detail.bookings.length === 0) {
-    return null;
-  }
-
-  const bookingsHref =
-    detail.role === "renter" ? "/dashboard/bookings" : "/dashboard/requests";
-
+/** The thread's shape while it loads: header, a few bubbles, the composer. */
+function ThreadSkeleton() {
   return (
-    <Card className="gap-3 py-4">
-      <div className="flex items-center justify-between gap-2 px-(--card-spacing)">
-        <h2 className="font-heading text-sm font-medium">
-          {detail.bookings.length === 1 ? "Booking" : "Bookings"}
-        </h2>
-        <Button
-          variant="link"
-          size="xs"
-          className="h-auto p-0"
-          render={<Link href={bookingsHref} />}
-        >
-          {detail.role === "renter" ? "My bookings" : "Requests"}
-        </Button>
+    <div
+      className="flex flex-1 flex-col"
+      aria-busy="true"
+      aria-label="Loading conversation"
+    >
+      <div className="flex items-center gap-3 border-b px-4 py-3">
+        <Skeleton className="size-10 rounded-full" />
+        <div className="flex flex-col gap-1.5">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-3 w-48" />
+        </div>
       </div>
-      <ul className="flex flex-col divide-y">
-        {detail.bookings.map((booking) => (
-          <li
-            key={booking.id}
-            className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-(--card-spacing) py-2 text-sm"
-          >
-            <div className="flex flex-col">
-              <span>
-                {formatDate(booking.startDate)} to {formatDate(booking.endDate)}
-              </span>
-              <span className="text-muted-foreground text-xs">
-                {formatPKR(booking.totalPrice)} rent ·{" "}
-                {booking.securityDeposit === 0
-                  ? "no deposit"
-                  : `${formatPKR(booking.securityDeposit)} deposit`}
-                {booking.agreedOfferId && " · agreed by offer"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {!booking.termsAmendable && (
-                <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                  <LockIcon className="size-3" aria-hidden="true" />
-                  Terms final
-                </span>
-              )}
-              <Badge variant="outline">
-                {BOOKING_STATUS_LABELS[booking.status]}
-              </Badge>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </Card>
+      <div className="flex flex-1 flex-col justify-end gap-3 p-5">
+        <Skeleton className="h-9 w-2/5 rounded-2xl" />
+        <Skeleton className="h-9 w-1/3 self-end rounded-2xl" />
+        <Skeleton className="h-28 w-72 rounded-2xl" />
+        <Skeleton className="h-9 w-1/2 self-end rounded-2xl" />
+      </div>
+      <div className="border-t p-3">
+        <Skeleton className="h-11 w-full rounded-3xl" />
+      </div>
+    </div>
   );
 }

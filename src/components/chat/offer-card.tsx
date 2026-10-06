@@ -1,20 +1,29 @@
 "use client";
 
-import { HandshakeIcon, Loader2Icon } from "lucide-react";
+import {
+  CalendarDaysIcon,
+  CheckCircle2Icon,
+  ClockIcon,
+  HandshakeIcon,
+  Loader2Icon,
+  ShieldIcon,
+  XCircleIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { createBookingRequest } from "@/actions/bookings";
 import { respondToOffer, withdrawOffer } from "@/actions/chat";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OfferStatus } from "@/generated/prisma/enums";
+import { calculateRentalPrice, countRentalDays } from "@/lib/bookings/pricing";
 import { ACCEPTED_OFFER_VALID_HOURS, toCalendarDay } from "@/lib/chat/offers";
-import { formatPKR } from "@/lib/utils/currency";
-import { formatDate, formatDateTime } from "@/lib/utils/date";
 import { cn } from "@/lib/utils/cn";
+import { formatPKR } from "@/lib/utils/currency";
+import { formatDate } from "@/lib/utils/date";
 
+import type { RateCard } from "@/lib/bookings/pricing";
 import type { OfferView } from "@/lib/queries/chat";
 
 /** What an offer card needs to know about the conversation it sits in. */
@@ -24,18 +33,59 @@ export interface OfferContext {
   viewerIsRenter: boolean;
   /** The market's today, `YYYY-MM-DD`, resolved on the server. */
   today: string;
+  /** The listing's rates, to show how an offer compares. Absent where that is not wanted. */
+  rates?: RateCard;
 }
 
-const STATUS_LABELS: Record<OfferStatus, string> = {
-  [OfferStatus.PENDING]: "Awaiting answer",
-  [OfferStatus.ACCEPTED]: "Accepted",
-  [OfferStatus.DECLINED]: "Declined",
-  [OfferStatus.WITHDRAWN]: "Withdrawn",
-  [OfferStatus.SUPERSEDED]: "Replaced by a newer offer",
-  [OfferStatus.EXPIRED]: "Expired",
+const HOUR_MS = 3_600_000;
+
+const STATUS: Record<
+  OfferStatus,
+  { label: string; className: string; icon: typeof ClockIcon }
+> = {
+  [OfferStatus.PENDING]: {
+    label: "Awaiting answer",
+    className:
+      "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
+    icon: ClockIcon,
+  },
+  [OfferStatus.ACCEPTED]: {
+    label: "Accepted",
+    className:
+      "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+    icon: CheckCircle2Icon,
+  },
+  [OfferStatus.DECLINED]: {
+    label: "Declined",
+    className: "bg-muted text-muted-foreground",
+    icon: XCircleIcon,
+  },
+  [OfferStatus.WITHDRAWN]: {
+    label: "Withdrawn",
+    className: "bg-muted text-muted-foreground",
+    icon: XCircleIcon,
+  },
+  [OfferStatus.SUPERSEDED]: {
+    label: "Replaced",
+    className: "bg-muted text-muted-foreground",
+    icon: XCircleIcon,
+  },
+  [OfferStatus.EXPIRED]: {
+    label: "Expired",
+    className: "bg-muted text-muted-foreground",
+    icon: ClockIcon,
+  },
 };
 
-const HOUR_MS = 3_600_000;
+/** "2 days", "5 hours", "under an hour" - how long is left to answer. */
+function remaining(until: Date, now: number): string {
+  const hours = Math.floor((until.getTime() - now) / HOUR_MS);
+
+  if (hours >= 48) return `${Math.floor(hours / 24)} days`;
+  if (hours >= 1) return `${hours} hour${hours === 1 ? "" : "s"}`;
+
+  return "under an hour";
+}
 
 interface OfferCardProps {
   offer: OfferView | null;
@@ -60,7 +110,7 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
 
   if (!offer) {
     return (
-      <div className="bg-muted/50 text-muted-foreground flex w-full max-w-sm items-center gap-2 rounded-xl border px-3 py-3 text-sm">
+      <div className="bg-card text-muted-foreground flex w-full max-w-sm items-center gap-2 rounded-2xl border px-4 py-4 text-sm">
         <Loader2Icon className="size-4 animate-spin" aria-hidden="true" />
         Loading offer…
       </div>
@@ -68,19 +118,33 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
   }
 
   const current = offer;
+  const now = Date.now();
   const isRecipient = current.recipientId === viewerId;
   const isProposer = current.proposedById === viewerId;
   const isOpen = current.status === OfferStatus.PENDING;
   const isAccepted = current.status === OfferStatus.ACCEPTED;
+  const isClosed = !isOpen && !isAccepted;
+  const status = STATUS[current.status];
+  const StatusIcon = status.icon;
 
   const startDay = toCalendarDay(current.startDate);
+  const endDay = toCalendarDay(current.endDate);
+  const days = countRentalDays(startDay, endDay);
+  const listingTotal = context.rates
+    ? calculateRentalPrice(days, context.rates).total
+    : null;
+  const saving =
+    listingTotal && listingTotal > current.totalPrice
+      ? Math.round(((listingTotal - current.totalPrice) / listingTotal) * 100)
+      : 0;
+
   const bookable =
     isAccepted &&
     context.viewerIsRenter &&
     current.bookingId === null &&
     current.agreedByBookingId === null &&
     current.respondedAt !== null &&
-    Date.now() - current.respondedAt.getTime() <
+    now - current.respondedAt.getTime() <
       ACCEPTED_OFFER_VALID_HOURS * HOUR_MS &&
     startDay >= context.today;
 
@@ -102,22 +166,12 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
     });
   }
 
-  function respond(response: "accept" | "decline") {
-    act(response === "accept" ? "Offer accepted." : "Offer declined.", () =>
-      respondToOffer({ offerId: current.id, response })
-    );
-  }
-
-  function withdraw() {
-    act("Offer withdrawn.", () => withdrawOffer({ offerId: current.id }));
-  }
-
   function book() {
     startTransition(async () => {
       const result = await createBookingRequest({
         listingId: context.listingId,
         startDate: startDay,
-        endDate: toCalendarDay(current.endDate),
+        endDate: endDay,
         offerId: current.id,
       });
 
@@ -132,100 +186,158 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
     });
   }
 
+  const heading =
+    proposerName === "You" ? "Your offer" : `${proposerName}'s offer`;
+
   return (
-    <div
+    <article
+      aria-label={heading}
       className={cn(
-        "bg-card flex w-full max-w-sm flex-col gap-3 rounded-xl border px-3 py-3",
-        isAccepted && "border-primary/40"
+        "bg-card w-full max-w-sm overflow-hidden rounded-2xl border shadow-xs",
+        isAccepted && "border-emerald-300 dark:border-emerald-800",
+        isOpen && isRecipient && "border-amber-300 dark:border-amber-800",
+        isClosed && "opacity-75"
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="flex items-center gap-1.5 text-sm font-medium">
-          <HandshakeIcon className="size-4" aria-hidden="true" />
-          {proposerName === "You" ? "Your offer" : `${proposerName}'s offer`}
+      <header className="bg-muted/60 flex items-center justify-between gap-2 border-b px-4 py-2.5">
+        <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
+          <HandshakeIcon className="size-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">{heading}</span>
         </p>
-        <Badge
-          variant={isAccepted ? "default" : isOpen ? "secondary" : "outline"}
+        <span
+          className={cn(
+            "flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
+            status.className
+          )}
         >
-          {STATUS_LABELS[current.status]}
-        </Badge>
-      </div>
+          <StatusIcon className="size-3.5" aria-hidden="true" />
+          {status.label}
+        </span>
+      </header>
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-        <dt className="text-muted-foreground">Dates</dt>
-        <dd>
-          {formatDate(current.startDate)} to {formatDate(current.endDate)}
-        </dd>
-        <dt className="text-muted-foreground">Rent</dt>
-        <dd className="font-medium tabular-nums">
-          {formatPKR(current.totalPrice)}
-        </dd>
-        <dt className="text-muted-foreground">Deposit</dt>
-        <dd className="tabular-nums">
-          {current.securityDeposit === 0
-            ? "None"
-            : formatPKR(current.securityDeposit)}
-        </dd>
-      </dl>
+      <div className="flex flex-col gap-3 px-4 py-3.5">
+        <div>
+          <p className="font-heading text-2xl font-semibold tabular-nums">
+            {formatPKR(current.totalPrice)}
+          </p>
+          <p className="text-muted-foreground text-xs">
+            {days} day{days === 1 ? "" : "s"} ·{" "}
+            {formatPKR(Math.round(current.totalPrice / days))} per day
+            {saving > 0 && (
+              <span className="text-emerald-700 dark:text-emerald-300">
+                {" "}
+                · {saving}% below listing price
+              </span>
+            )}
+          </p>
+        </div>
 
-      <p className="text-muted-foreground text-xs leading-relaxed">
-        {current.bookingId
-          ? "For an existing booking. Accepting changes its rent and deposit."
-          : "Before booking. Once accepted, the renter can book these dates at these terms."}
-        {isOpen && ` Answer by ${formatDateTime(current.expiresAt)}.`}
-        {current.agreedByBookingId && " These terms are now on a booking."}
-      </p>
+        <dl className="flex flex-col gap-1.5 text-sm">
+          <div className="flex items-center gap-2">
+            <dt>
+              <CalendarDaysIcon
+                className="text-muted-foreground size-4"
+                aria-hidden="true"
+              />
+              <span className="sr-only">Dates</span>
+            </dt>
+            <dd>
+              {formatDate(current.startDate)} to {formatDate(current.endDate)}
+            </dd>
+          </div>
+          <div className="flex items-center gap-2">
+            <dt>
+              <ShieldIcon
+                className="text-muted-foreground size-4"
+                aria-hidden="true"
+              />
+              <span className="sr-only">Security deposit</span>
+            </dt>
+            <dd className="tabular-nums">
+              {current.securityDeposit === 0
+                ? "No deposit"
+                : `${formatPKR(current.securityDeposit)} refundable deposit`}
+            </dd>
+          </div>
+        </dl>
 
-      {isOpen && isRecipient && (
-        <div className="flex flex-wrap gap-2">
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          {current.agreedByBookingId
+            ? "These terms are now on a booking."
+            : current.bookingId
+              ? "For your existing booking - accepting changes its rent and deposit."
+              : isAccepted
+                ? bookable
+                  ? `Agreed. Request the booking within ${ACCEPTED_OFFER_VALID_HOURS} hours of acceptance.`
+                  : "Agreed before booking."
+                : "Before booking. Once accepted, the renter can book these dates at these terms."}
+          {isOpen && (
+            <span className="text-foreground font-medium">
+              {" "}
+              {isRecipient ? "Answer" : "Expires"} within{" "}
+              {remaining(current.expiresAt, now)}.
+            </span>
+          )}
+        </p>
+
+        {isOpen && isRecipient && (
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              onClick={() =>
+                act("Offer accepted.", () =>
+                  respondToOffer({ offerId: current.id, response: "accept" })
+                )
+              }
+              aria-busy={isPending}
+              disabled={isPending}
+            >
+              Accept
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                act("Offer declined.", () =>
+                  respondToOffer({ offerId: current.id, response: "decline" })
+                )
+              }
+              disabled={isPending}
+            >
+              Decline
+            </Button>
+          </div>
+        )}
+
+        {isOpen && isProposer && (
           <Button
             type="button"
+            variant="outline"
             size="sm"
-            onClick={() => respond("accept")}
+            onClick={() =>
+              act("Offer withdrawn.", () =>
+                withdrawOffer({ offerId: current.id })
+              )
+            }
+            disabled={isPending}
+          >
+            Withdraw offer
+          </Button>
+        )}
+
+        {bookable && (
+          <Button
+            type="button"
+            onClick={book}
             aria-busy={isPending}
             disabled={isPending}
           >
-            Accept
+            {isPending && <Loader2Icon className="animate-spin" />}
+            Request booking at these terms
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => respond("decline")}
-            disabled={isPending}
-          >
-            Decline
-          </Button>
-        </div>
-      )}
-
-      {isOpen && isProposer && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="self-start"
-          onClick={withdraw}
-          disabled={isPending}
-        >
-          Withdraw offer
-        </Button>
-      )}
-
-      {bookable && (
-        <Button
-          type="button"
-          size="sm"
-          className="self-start"
-          onClick={book}
-          aria-busy={isPending}
-          disabled={isPending}
-        >
-          {isPending && <Loader2Icon className="animate-spin" />}
-          Request booking at these terms
-        </Button>
-      )}
-    </div>
+        )}
+      </div>
+    </article>
   );
 }
 

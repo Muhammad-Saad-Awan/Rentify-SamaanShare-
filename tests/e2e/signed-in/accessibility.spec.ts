@@ -59,7 +59,7 @@ test("conversation with the offer form open", async ({ page }) => {
     timeout: 15_000,
   });
 
-  await page.getByRole("button", { name: "Propose terms" }).click();
+  await page.getByRole("button", { name: "Make an offer" }).click();
   await expect(page.getByLabel("Total rent (Rs.)")).toBeVisible();
 
   await expectNoViolations(page);

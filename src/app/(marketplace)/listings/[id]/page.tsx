@@ -278,6 +278,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
             {user?.id !== listing.owner.id && (
               <MessageOwnerButton
                 listingId={listing.id}
+                ownerName={listing.owner.name?.trim() || "the owner"}
                 isAuthenticated={user !== null}
               />
             )}

@@ -101,3 +101,55 @@ export function formatDateTime(date: Date): string {
     hour12: true,
   }).format(date);
 }
+
+/** e.g. `04:35 pm`. The time alone, for a chat bubble whose day is shown by a separator. */
+export function formatTime(date: Date): string {
+  return new Intl.DateTimeFormat("en-PK", {
+    timeZone: LOCALE_CONFIG.timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date);
+}
+
+/** The calendar day a moment falls on in Asia/Karachi, as `YYYY-MM-DD`. */
+export function karachiDay(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: LOCALE_CONFIG.timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+/**
+ * A chat day separator: "Today", "Yesterday", a weekday within the last week, else the date.
+ *
+ * Compared as Karachi calendar days, not as 24-hour spans - a message at 11pm and one at 1am the
+ * next morning are on different days even though they are two hours apart.
+ */
+export function formatDayLabel(date: Date, now: Date = new Date()): string {
+  const day = karachiDay(date);
+  const today = karachiDay(now);
+  const daysAgo = Math.round(
+    (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`)) /
+      86_400_000
+  );
+
+  if (daysAgo === 0) {
+    return "Today";
+  }
+
+  if (daysAgo === 1) {
+    return "Yesterday";
+  }
+
+  if (daysAgo > 1 && daysAgo < 7) {
+    return new Intl.DateTimeFormat("en-PK", {
+      timeZone: LOCALE_CONFIG.timezone,
+      weekday: "long",
+    }).format(date);
+  }
+
+  return formatDate(date);
+}

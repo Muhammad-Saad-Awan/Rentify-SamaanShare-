@@ -1,8 +1,16 @@
 "use client";
 
-import { Loader2Icon, SendHorizontalIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  HandshakeIcon,
+  Loader2Icon,
+  LockIcon,
+  SendHorizontalIcon,
+  SparklesIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
+  Fragment,
   useCallback,
   useEffect,
   useId,
@@ -19,14 +27,17 @@ import {
   sendMessage,
 } from "@/actions/chat";
 import { MessageItem } from "@/components/chat/message-item";
+import { OfferSheet } from "@/components/chat/offer-form";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { MessageKind } from "@/generated/prisma/enums";
 import { MESSAGE_BODY_MAX } from "@/lib/chat/rules";
 import { setActiveConversation, subscribeChat } from "@/lib/realtime/chat-bus";
+import { cn } from "@/lib/utils/cn";
+import { formatDayLabel, karachiDay } from "@/lib/utils/date";
 import { UNAUTHENTICATED_ERROR } from "@/types";
 
+import type { OfferFormProps } from "@/components/chat/offer-form";
 import type { OfferContext } from "@/components/chat/offer-card";
-import type { MessageKind } from "@/generated/prisma/enums";
 import type { ChatMessageView, OfferView } from "@/lib/queries/chat";
 
 /**
@@ -49,7 +60,7 @@ import type { ChatMessageView, OfferView } from "@/lib/queries/chat";
 interface ChatThreadProps {
   conversationId: string;
   viewerId: string;
-  counterpartyName: string;
+  counterparty: { name: string; image: string | null };
   /** False once the other member is suspended or deleted. The composer is then closed. */
   canWrite: boolean;
   initialMessages: ChatMessageView[];
@@ -60,6 +71,12 @@ interface ChatThreadProps {
   counterpartyLastReadAt: Date | null;
   offers: OfferView[];
   offerContext: OfferContext;
+  /** Everything the offer sheet needs. `null` when no offer can be made here. */
+  offerForm: OfferFormProps | null;
+  /** Suggested openers for the composer, chosen by the server for this stage of the rental. */
+  quickReplies: string[];
+  /** A question carried over from the listing page, placed in the composer to edit or send. */
+  initialDraft?: string | undefined;
 }
 
 interface PendingMessage {
@@ -74,24 +91,11 @@ const MAX_LOADED_MESSAGES = 600;
 /** The least time between two read marks. A burst of messages becomes one write. */
 const MARK_READ_INTERVAL_MS = 2000;
 
-/** When the newest message not written by this viewer was sent, or `null` if there is none. */
-function newestIncoming(
-  messages: readonly ChatMessageView[],
-  viewerId: string
-): Date | null {
-  let newest: Date | null = null;
+/** Messages from one sender this close together read as one run. */
+const GROUP_WINDOW_MS = 5 * 60_000;
 
-  for (const message of messages) {
-    if (
-      message.senderId !== viewerId &&
-      (!newest || message.createdAt > newest)
-    ) {
-      newest = message.createdAt;
-    }
-  }
-
-  return newest;
-}
+/** How tall the composer may grow before it scrolls. */
+const COMPOSER_MAX_PX = 160;
 
 function byTime(a: ChatMessageView, b: ChatMessageView): number {
   return (
@@ -112,10 +116,45 @@ function merge(
   return next;
 }
 
+/** When the newest message not written by this viewer was sent, or `null` if there is none. */
+function newestIncoming(
+  messages: readonly ChatMessageView[],
+  viewerId: string
+): Date | null {
+  let newest: Date | null = null;
+
+  for (const message of messages) {
+    if (
+      message.senderId !== viewerId &&
+      (!newest || message.createdAt > newest)
+    ) {
+      newest = message.createdAt;
+    }
+  }
+
+  return newest;
+}
+
+/** Whether two adjacent messages belong to one visual run. SYSTEM lines always stand alone. */
+function sameRun(
+  a: ChatMessageView | undefined,
+  b: ChatMessageView | undefined
+): boolean {
+  return (
+    !!a &&
+    !!b &&
+    a.kind !== MessageKind.SYSTEM &&
+    b.kind !== MessageKind.SYSTEM &&
+    a.senderId === b.senderId &&
+    Math.abs(b.createdAt.getTime() - a.createdAt.getTime()) < GROUP_WINDOW_MS &&
+    karachiDay(a.createdAt) === karachiDay(b.createdAt)
+  );
+}
+
 function ChatThread({
   conversationId,
   viewerId,
-  counterpartyName,
+  counterparty,
   canWrite,
   initialMessages,
   initialHasOlder,
@@ -123,21 +162,28 @@ function ChatThread({
   counterpartyLastReadAt,
   offers,
   offerContext,
+  offerForm,
+  quickReplies,
+  initialDraft,
 }: ChatThreadProps) {
   const router = useRouter();
   const composerId = useId();
-  const closedNoteId = useId();
+  const hintId = useId();
 
   const [messages, setMessages] = useState(() =>
     merge(new Map(), initialMessages)
   );
   const [hasOlder, setHasOlder] = useState(initialHasOlder);
   const [pending, setPending] = useState<PendingMessage[]>([]);
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialDraft ?? "");
   const [seenAt, setSeenAt] = useState(counterpartyLastReadAt);
+  const [offerOpen, setOfferOpen] = useState(false);
+  const [atBottom, setAtBottom] = useState(true);
+  const [missed, setMissed] = useState(0);
   const [isLoadingOlder, startLoadingOlder] = useTransition();
 
   const logRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
   const stickToBottom = useRef(true);
   const lastMarkedAt = useRef(0);
   const deferredMark = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -147,6 +193,23 @@ function ChatThread({
   const newestIncomingAt = useRef<Date | null>(
     newestIncoming(initialMessages, viewerId)
   );
+
+  /**
+   * Where "New messages" goes: the first unread message when the thread was opened. Fixed for the
+   * life of the page, so marking the thread read does not make the divider jump or vanish while the
+   * person is still reading below it.
+   */
+  const [firstUnreadId] = useState(() => {
+    const first = [...initialMessages]
+      .sort(byTime)
+      .find(
+        (message) =>
+          message.senderId !== viewerId &&
+          (!lastReadAt || message.createdAt > lastReadAt)
+      );
+
+    return first?.id ?? null;
+  });
 
   // A refresh brings the server's newest page again. Merge it rather than replace: older pages and
   // realtime arrivals the refresh does not include must survive it.
@@ -177,9 +240,6 @@ function ChatThread({
    *
    * A call inside the throttle window is DEFERRED to its end, not dropped: a message arriving a
    * second after the thread opened must still be marked read.
-   *
-   * Not awaited and not reported: a missed read receipt is a badge that clears on the next mark,
-   * never a lost message.
    */
   const markRead = useCallback(() => {
     if (document.visibilityState !== "visible") {
@@ -210,7 +270,7 @@ function ChatThread({
     readCursor.current = newestIncomingAt.current;
 
     void markConversationRead({ conversationId }).then((result) => {
-      // The header badge is a Server Component.
+      // The header badge, the sidebar badge and the list are Server Components.
       if (result.success && result.data.readAt) {
         router.refresh();
       }
@@ -289,6 +349,10 @@ function ChatThread({
           newestIncomingAt.current = message.createdAt;
         }
 
+        if (!stickToBottom.current) {
+          setMissed((count) => count + 1);
+        }
+
         markRead();
       }
     });
@@ -314,21 +378,78 @@ function ChatThread({
     return pending.filter((item) => !delivered.has(item.clientId));
   }, [ordered, pending]);
 
-  // Follow new messages, unless the reader has scrolled up to read history.
-  useEffect(() => {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
     const log = logRef.current;
 
-    if (log && stickToBottom.current) {
-      log.scrollTop = log.scrollHeight;
+    if (log) {
+      log.scrollTo({ top: log.scrollHeight, behavior });
     }
-  }, [ordered.length, visiblePending.length]);
+  }, []);
+
+  // Open at the first unread message if there is one, else at the bottom.
+  useEffect(() => {
+    const divider = firstUnreadId
+      ? logRef.current?.querySelector("[data-unread-divider]")
+      : null;
+
+    if (divider instanceof HTMLElement && logRef.current) {
+      logRef.current.scrollTop = Math.max(0, divider.offsetTop - 80);
+    } else {
+      scrollToBottom();
+    }
+    // Once, on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Follow new messages, unless the reader has scrolled up to read history.
+  useEffect(() => {
+    if (stickToBottom.current) {
+      scrollToBottom();
+    }
+  }, [ordered.length, visiblePending.length, scrollToBottom]);
+
+  // A question carried over from a listing: ready to edit, with the cursor at its end.
+  useEffect(() => {
+    if (!initialDraft) {
+      return;
+    }
+
+    const composer = composerRef.current;
+
+    composer?.focus();
+    composer?.setSelectionRange(initialDraft.length, initialDraft.length);
+
+    // Drop `?draft=` so a refresh does not put it back after it has been sent.
+    const url = new URL(window.location.href);
+
+    url.searchParams.delete("draft");
+    window.history.replaceState(window.history.state, "", url);
+  }, [initialDraft]);
+
+  // Grow the composer with its content, up to a limit.
+  useEffect(() => {
+    const composer = composerRef.current;
+
+    if (composer) {
+      composer.style.height = "auto";
+      composer.style.height = `${Math.min(composer.scrollHeight, COMPOSER_MAX_PX)}px`;
+    }
+  }, [draft]);
 
   function onScroll() {
     const log = logRef.current;
 
-    if (log) {
-      stickToBottom.current =
-        log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+    if (!log) {
+      return;
+    }
+
+    const bottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+
+    stickToBottom.current = bottom;
+    setAtBottom(bottom);
+
+    if (bottom) {
+      setMissed(0);
     }
   }
 
@@ -337,22 +458,9 @@ function ChatThread({
     [offers]
   );
 
-  // "Seen" goes under the newest of the viewer's own messages the other side has read.
-  const lastSeenOwnId = useMemo(() => {
-    if (!seenAt) {
-      return null;
-    }
-
-    for (let index = ordered.length - 1; index >= 0; index -= 1) {
-      const message = ordered[index]!;
-
-      if (message.senderId === viewerId && message.createdAt <= seenAt) {
-        return message.id;
-      }
-    }
-
-    return null;
-  }, [ordered, seenAt, viewerId]);
+  /** Whether the other side has read a message of the viewer's. */
+  const isSeen = (message: ChatMessageView) =>
+    seenAt !== null && message.createdAt <= seenAt;
 
   function loadOlder() {
     const oldest = ordered[0];
@@ -429,6 +537,7 @@ function ChatThread({
     setDraft("");
     setPending((current) => [...current, item]);
     void deliver(item);
+    composerRef.current?.focus();
   }
 
   /** Retries with the SAME clientId, so a send that actually landed is not written twice. */
@@ -439,6 +548,11 @@ function ChatThread({
       current.map((entry) => (entry.clientId === item.clientId ? again : entry))
     );
     void deliver(again);
+  }
+
+  function applyQuickReply(text: string) {
+    setDraft(text);
+    composerRef.current?.focus();
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -453,25 +567,28 @@ function ChatThread({
     }
   }
 
+  const remaining = MESSAGE_BODY_MAX - draft.length;
+
   return (
-    <div className="bg-card flex min-h-[28rem] flex-col rounded-xl border">
+    <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         ref={logRef}
         onScroll={onScroll}
         role="log"
-        aria-label={`Conversation with ${counterpartyName}`}
+        aria-label={`Conversation with ${counterparty.name}`}
         aria-live="polite"
         aria-relevant="additions"
         // Focusable so keyboard users can scroll the history.
         tabIndex={0}
-        className="focus-visible:ring-ring flex max-h-[60vh] min-h-72 flex-1 flex-col gap-3 overflow-y-auto px-3 py-4 outline-none focus-visible:ring-2 sm:px-4"
+        className="bg-muted/20 focus-visible:ring-ring min-h-0 flex-1 overflow-y-auto px-3 pt-4 pb-6 outline-none focus-visible:ring-2 focus-visible:ring-inset sm:px-5"
       >
         {hasOlder && ordered.length < MAX_LOADED_MESSAGES && (
-          <div className="flex justify-center">
+          <div className="mb-2 flex justify-center">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="sm"
+              className="rounded-full"
               onClick={loadOlder}
               aria-busy={isLoadingOlder}
             >
@@ -482,35 +599,92 @@ function ChatThread({
         )}
 
         {ordered.length === 0 && visiblePending.length === 0 && (
-          <p className="text-muted-foreground m-auto max-w-sm text-center text-sm">
-            No messages yet. Ask about the item, agree on pickup, or propose
-            terms below.
-          </p>
+          <div className="mx-auto flex max-w-sm flex-col items-center gap-3 py-10 text-center">
+            <span className="bg-background flex size-12 items-center justify-center rounded-full border shadow-xs">
+              <SparklesIcon
+                className="text-muted-foreground size-5"
+                aria-hidden="true"
+              />
+            </span>
+            <p className="text-sm font-medium">Start the conversation</p>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Ask about the item&apos;s condition, what&apos;s included, or
+              where to pick it up. When you agree on a price, send it as an
+              offer.
+            </p>
+          </div>
         )}
 
-        {ordered.map((message) => (
-          <MessageItem
-            key={message.id}
-            message={message}
-            viewerId={viewerId}
-            counterpartyName={counterpartyName}
-            offer={
-              message.offerId ? (offersById.get(message.offerId) ?? null) : null
-            }
-            offerContext={offerContext}
-            seen={message.id === lastSeenOwnId}
-          />
-        ))}
+        {ordered.map((message, index) => {
+          const previous = ordered[index - 1];
+          const next = ordered[index + 1];
+          const newDay =
+            !previous ||
+            karachiDay(previous.createdAt) !== karachiDay(message.createdAt);
+
+          return (
+            <Fragment key={message.id}>
+              {newDay && (
+                <div
+                  className="my-4 flex items-center gap-3"
+                  role="presentation"
+                >
+                  <span className="bg-border h-px flex-1" />
+                  <span className="text-muted-foreground bg-background rounded-full border px-3 py-0.5 text-[11px] font-medium">
+                    {formatDayLabel(message.createdAt)}
+                  </span>
+                  <span className="bg-border h-px flex-1" />
+                </div>
+              )}
+              {message.id === firstUnreadId && (
+                <div
+                  data-unread-divider
+                  className="my-3 flex items-center gap-3"
+                >
+                  <span className="h-px flex-1 bg-sky-500/60" />
+                  <span className="text-xs font-semibold text-sky-700 dark:text-sky-300">
+                    New messages
+                  </span>
+                  <span className="h-px flex-1 bg-sky-500/60" />
+                </div>
+              )}
+              <MessageItem
+                message={message}
+                viewerId={viewerId}
+                counterparty={counterparty}
+                offer={
+                  message.offerId
+                    ? (offersById.get(message.offerId) ?? null)
+                    : null
+                }
+                offerContext={offerContext}
+                isFirstInGroup={newDay || !sameRun(previous, message)}
+                isLastInGroup={!sameRun(message, next)}
+                isSeen={isSeen(message)}
+              />
+            </Fragment>
+          );
+        })}
 
         {visiblePending.map((item) => (
-          <div key={item.clientId} className="flex flex-col items-end gap-1">
-            <p className="bg-primary/70 text-primary-foreground max-w-[85%] rounded-2xl rounded-br-sm px-3 py-2 text-sm break-words whitespace-pre-wrap sm:max-w-[70%]">
+          <div
+            key={item.clientId}
+            className="mt-3 flex flex-col items-end gap-1"
+          >
+            <p
+              className={cn(
+                "bg-primary text-primary-foreground max-w-[85%] rounded-2xl rounded-br-md px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap sm:max-w-[70%]",
+                item.status === "sending" ? "opacity-70" : "opacity-50"
+              )}
+            >
               {item.body}
             </p>
             {item.status === "sending" ? (
-              <span className="text-muted-foreground text-xs">Sending…</span>
+              <span className="text-muted-foreground pr-1 text-[11px]">
+                Sending…
+              </span>
             ) : (
-              <span className="text-destructive flex items-center gap-2 text-xs">
+              <span className="text-destructive flex items-center gap-2 pr-1 text-xs">
                 Not sent.
                 <Button
                   type="button"
@@ -527,52 +701,128 @@ function ChatThread({
         ))}
       </div>
 
-      <form
-        className="flex flex-col gap-2 border-t p-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          send();
-        }}
-      >
-        <label htmlFor={composerId} className="sr-only">
-          Message {counterpartyName}
-        </label>
-        {!canWrite && (
-          <p id={closedNoteId} className="text-muted-foreground text-xs">
-            This member&apos;s account is no longer active, so the conversation
-            is closed. You can still read it.
-          </p>
+      {!atBottom && (
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          className="absolute right-4 bottom-36 z-10 rounded-full shadow-md"
+          onClick={() => {
+            stickToBottom.current = true;
+            setMissed(0);
+            scrollToBottom("smooth");
+          }}
+        >
+          <ArrowDownIcon />
+          {missed > 0
+            ? `${missed} new message${missed === 1 ? "" : "s"}`
+            : "Latest"}
+        </Button>
+      )}
+
+      <div className="bg-background border-t px-3 pt-2.5 pb-3 sm:px-4">
+        {canWrite && draft.length === 0 && quickReplies.length > 0 && (
+          <div
+            className="mb-2.5 flex gap-2 overflow-x-auto pb-0.5"
+            role="group"
+            aria-label="Suggested messages"
+          >
+            {quickReplies.map((text) => (
+              <button
+                key={text}
+                type="button"
+                onClick={() => applyQuickReply(text)}
+                className="text-foreground hover:bg-muted focus-visible:ring-ring shrink-0 rounded-full border px-3 py-1.5 text-xs transition-colors outline-none focus-visible:ring-2"
+              >
+                {text}
+              </button>
+            ))}
+          </div>
         )}
-        <div className="flex items-end gap-2">
-          <Textarea
-            id={composerId}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={onKeyDown}
-            maxLength={MESSAGE_BODY_MAX}
-            rows={2}
-            placeholder={
-              canWrite ? `Message ${counterpartyName}` : "Conversation closed"
-            }
-            disabled={!canWrite}
-            aria-describedby={canWrite ? undefined : closedNoteId}
-            className="max-h-40 min-h-11 flex-1 resize-y"
-          />
+
+        <form
+          className="flex items-end gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            send();
+          }}
+        >
+          {offerForm && canWrite && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 shrink-0 rounded-full"
+              onClick={() => setOfferOpen(true)}
+              aria-label="Make an offer"
+            >
+              <HandshakeIcon />
+              <span className="hidden sm:inline">Make an offer</span>
+            </Button>
+          )}
+
+          <div className="bg-muted/50 focus-within:ring-ring flex min-h-11 flex-1 items-end rounded-3xl border px-4 py-2.5 focus-within:ring-2">
+            <label htmlFor={composerId} className="sr-only">
+              Message {counterparty.name}
+            </label>
+            <textarea
+              ref={composerRef}
+              id={composerId}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={onKeyDown}
+              maxLength={MESSAGE_BODY_MAX}
+              rows={1}
+              placeholder={
+                canWrite
+                  ? `Message ${counterparty.name}`
+                  : "Conversation closed"
+              }
+              disabled={!canWrite}
+              aria-describedby={hintId}
+              className="placeholder:text-muted-foreground max-h-40 w-full resize-none bg-transparent text-sm leading-6 outline-none disabled:cursor-not-allowed"
+            />
+          </div>
+
           <Button
             type="submit"
             size="icon"
+            className="size-11 shrink-0 rounded-full"
             disabled={!canWrite || draft.trim().length === 0}
             aria-label="Send message"
           >
             <SendHorizontalIcon />
           </Button>
-        </div>
-        <p className="text-muted-foreground text-xs">
-          Prices agreed here are not binding. Use{" "}
-          <span className="font-medium">Propose terms</span> to make an offer
-          the other side can accept.
+        </form>
+
+        <p
+          id={hintId}
+          className="text-muted-foreground mt-2 flex items-center gap-1.5 text-[11px]"
+        >
+          {canWrite ? (
+            <>
+              <LockIcon className="size-3 shrink-0" aria-hidden="true" />
+              <span>
+                Only an accepted offer changes the price. Keep payments on
+                SamaanShare.
+                {remaining < 200 && ` ${remaining} characters left.`}
+              </span>
+            </>
+          ) : (
+            <span>
+              This member&apos;s account is no longer active, so the
+              conversation is closed. You can still read it.
+            </span>
+          )}
         </p>
-      </form>
+      </div>
+
+      {offerForm && (
+        <OfferSheet
+          {...offerForm}
+          open={offerOpen}
+          onOpenChange={setOfferOpen}
+        />
+      )}
     </div>
   );
 }
