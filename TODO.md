@@ -684,9 +684,10 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
       including when rate-limited, since a distinct 429 would be the same leak.
       Suspended and soft-deleted accounts are refused at request *and* at
       redemption, because an account can be suspended inside the 1-hour window.
-      - [ ] **Verified sending domain still needed.** `EMAIL_FROM` defaults to
-            `onboarding@resend.dev`, which only delivers to the Resend account
-            owner's own address. Set a verified domain before staging.
+      - [x] **Verified sending domain** — closed 6 October 2026. `samaanshare.me`
+            is verified with Resend; `EMAIL_FROM` is
+            `SamaanShare <no-reply@samaanshare.me>`. Without it the default,
+            `onboarding@resend.dev`, delivers only to the Resend account owner.
       - [x] **Session invalidation on password change** — closed 7 September 2026,
             alongside in-app password change. `User.tokenVersion`, incremented by
             `changePassword` and by `resetPassword`, compared against the token in
@@ -789,9 +790,8 @@ Between Phase 4 and Trust & Safety. Approved 12 August 2026.
             platform that overwrites the forwarded address, so it takes a botnet,
             by which point a per-IP limit is not the control that matters
       - [ ] Walk the eight post-deploy verifications in `docs/DEPLOYMENT.md` —
-            two of them (password reset, email verification) cannot pass until
-            A2's verified sending domain is set, since `onboarding@resend.dev`
-            delivers only to the Resend account owner
+            two of them (password reset, email verification) need `EMAIL_FROM`
+            set on the deploy; the domain (`samaanshare.me`) is now verified
 
 ### Left open in Phase 4, deliberately
 
@@ -1936,7 +1936,7 @@ unless the note says otherwise.
 - [x] Set up PostgreSQL — Neon, with `DIRECT_URL` alongside `DATABASE_URL` for
       migrations. Its cold-start behaviour is what Stage A4 was about
 - 🚧 Configure environment variables — done for staging; the production set,
-      including a verified `EMAIL_FROM` domain, is not
+      including `EMAIL_FROM` (domain `samaanshare.me` is verified), is not
 - [ ] Configure Cloudinary — works in development; never confirmed on a deploy
 - [ ] Set up custom domain
 - [ ] Configure SSL
