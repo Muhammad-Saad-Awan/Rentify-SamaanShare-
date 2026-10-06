@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { Prisma } from "@/generated/prisma/client";
-import { BookingStatus } from "@/generated/prisma/enums";
+import { BookingStatus, MessageKind } from "@/generated/prisma/enums";
 import { isEmailConfirmationRequired } from "@/lib/auth/email-gate";
 import { getActiveUser } from "@/lib/auth/session";
 import { expireStalePendingBookings } from "@/lib/bookings/expire";
@@ -18,8 +18,22 @@ import {
   enumerateRentalDays,
   MAX_BOOKING_DAYS,
 } from "@/lib/bookings/pricing";
+import { bookingRequestedText } from "@/lib/chat/messages";
+import {
+  accessDepositFor,
+  bookingTermsFromOffer,
+  checkOfferForBooking,
+  OFFER_NOT_FOUND_ERROR,
+  toCalendarDay,
+} from "@/lib/chat/offers";
+import { ensureConversation } from "@/lib/chat/write";
+import { emitBookingEvent } from "@/lib/chat/booking-events";
 import { emitBookingNotifications } from "@/lib/notifications/create";
-import { publishAfterCommit } from "@/lib/realtime/publish";
+import { chatMessageDeliveries } from "@/lib/realtime/channels";
+import {
+  publishAfterCommit,
+  publishChatAfterCommit,
+} from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getRenterAccessSignals } from "@/lib/queries/renter-access";
@@ -51,6 +65,9 @@ const REQUEST_RATE_LIMIT = { limit: 20, windowMs: 60 * 60 * 1000 };
 const DECISION_RATE_LIMIT = { limit: 100, windowMs: 60 * 60 * 1000 };
 
 const UNEXPECTED_ERROR = "Something went wrong. Please try again.";
+
+/** Thrown inside the request transaction to roll it back when the offer was used concurrently. */
+class OfferAlreadyUsedError extends Error {}
 
 const DATES_TAKEN_ERROR =
   "Some of those dates were just taken. Please pick another range.";
@@ -137,7 +154,7 @@ export async function createBookingRequest(
     };
   }
 
-  const { listingId, startDate, endDate, notes } = parsed.data;
+  const { listingId, startDate, endDate, notes, offerId } = parsed.data;
 
   // A past start date is refused against the market's today, not the server's: on a UTC host
   // it is still "yesterday" in Karachi until 05:00, which would let a renter book a day that
@@ -190,6 +207,55 @@ export async function createBookingRequest(
     }
 
     /**
+     * The accepted offer this request is made with, if any.
+     *
+     * Checked before the access gate, because the agreed deposit feeds into it. Everything the
+     * booking will carry is read from the stored offer below; the request only has to match it.
+     */
+    const agreed = offerId
+      ? await prisma.offer.findUnique({
+          where: { id: offerId },
+          select: {
+            id: true,
+            status: true,
+            bookingId: true,
+            startDate: true,
+            endDate: true,
+            totalPrice: true,
+            securityDeposit: true,
+            respondedAt: true,
+            conversation: {
+              select: { id: true, listingId: true, renterId: true },
+            },
+            agreedBy: { select: { id: true } },
+          },
+        })
+      : null;
+
+    if (offerId) {
+      const usable = agreed
+        ? checkOfferForBooking({
+            offer: {
+              ...agreed,
+              startDate: toCalendarDay(agreed.startDate),
+              endDate: toCalendarDay(agreed.endDate),
+            },
+            alreadyUsed: agreed.agreedBy !== null,
+            renterId: renter.id,
+            listingId: listing.id,
+            startDate,
+            endDate,
+            now: new Date(),
+            today: todayInKarachi(),
+          })
+        : { allowed: false as const, reason: OFFER_NOT_FOUND_ERROR };
+
+      if (!usable.allowed) {
+        return { success: false, error: usable.reason };
+      }
+    }
+
+    /**
      * Value-gated access, and THIS is the boundary.
      *
      * The listing page hides the booking form when a renter cannot clear the gate, but that is a
@@ -201,7 +267,11 @@ export async function createBookingRequest(
      * re-read from the *database* rather than the session for a less obvious one: verification can
      * be withdrawn, and a JWT minted before that would keep clearing this gate for up to 24 hours.
      */
-    const tier = accessTierFor(listing.securityDeposit);
+    // The higher of the listing's and the agreed deposit: negotiating the deposit down must not
+    // lower the bar - see `accessDepositFor`.
+    const tier = accessTierFor(
+      accessDepositFor(listing.securityDeposit, agreed?.securityDeposit ?? null)
+    );
     const access = checkRenterAccess(
       tier,
       await getRenterAccessSignals(renter.id),
@@ -246,29 +316,66 @@ export async function createBookingRequest(
     }
 
     /**
-     * Price computed from the listing's own rates, never from the request.
+     * The terms: the accepted offer's, or else computed from the listing's own rates. Never from
+     * the request.
      *
      * The form shows the same figure, but only so the renter is not surprised - the number
-     * written to the booking is this one.
+     * written to the booking is this one. Both are captured on the booking, so a later change to
+     * the listing does not rewrite what this renter agreed to.
      */
-    const quote = calculateRentalPrice(days, {
-      pricePerDay: listing.pricePerDay,
-      pricePerWeek: listing.pricePerWeek,
-      pricePerMonth: listing.pricePerMonth,
-    });
+    const terms = agreed
+      ? bookingTermsFromOffer(agreed)
+      : {
+          agreedOfferId: null,
+          startDate: toUtcDate(startDate),
+          endDate: toUtcDate(endDate),
+          totalPrice: calculateRentalPrice(days, {
+            pricePerDay: listing.pricePerDay,
+            pricePerWeek: listing.pricePerWeek,
+            pricePerMonth: listing.pricePerMonth,
+          }).total,
+          securityDeposit: listing.securityDeposit,
+        };
+
+    /**
+     * Every booking is linked to the conversation between its renter and owner about this
+     * listing, created here if they never messaged. Outside the transaction - see
+     * `ensureConversation` for why a create race must not happen inside it.
+     */
+    const conversation = agreed
+      ? { id: agreed.conversation.id }
+      : await ensureConversation({
+          listingId: listing.id,
+          renterId: renter.id,
+          ownerId: listing.ownerId,
+        });
 
     const booking = await prisma.$transaction(async (tx) => {
+      if (agreed) {
+        /**
+         * One booking per accepted offer, decided under a lock on the offer row. The unique index
+         * on `agreedOfferId` would also refuse a second booking, but as a P2002 - which this
+         * action reports as a date clash. The lock turns that race into the right message.
+         */
+        await tx.$queryRaw`SELECT "id" FROM "offers" WHERE "id" = ${agreed.id} FOR UPDATE`;
+
+        const used = await tx.booking.findFirst({
+          where: { agreedOfferId: agreed.id },
+          select: { id: true },
+        });
+
+        if (used) {
+          throw new OfferAlreadyUsedError();
+        }
+      }
+
       const created = await tx.booking.create({
         data: {
           listingId: listing.id,
           renterId: renter.id,
           ownerId: listing.ownerId,
-          startDate: toUtcDate(startDate),
-          endDate: toUtcDate(endDate),
-          totalPrice: quote.total,
-          // Captured at booking time, so a later change to the listing does not rewrite what
-          // this renter agreed to.
-          securityDeposit: listing.securityDeposit,
+          conversationId: conversation.id,
+          ...terms,
           status: BookingStatus.PENDING,
           ...(notes ? { notes } : {}),
         },
@@ -298,7 +405,36 @@ export async function createBookingRequest(
         endDate: toUtcDate(endDate),
       });
 
-      return { booking: created, notifications };
+      // Where the booking enters the thread. The renter wrote it, so it is not unread for them.
+      const message = await tx.message.create({
+        data: {
+          conversationId: conversation.id,
+          kind: MessageKind.SYSTEM,
+          body: bookingRequestedText(terms, { fromOffer: agreed !== null }),
+          ...(agreed ? { offerId: agreed.id } : {}),
+        },
+        select: {
+          id: true,
+          conversationId: true,
+          senderId: true,
+          kind: true,
+          body: true,
+          offerId: true,
+          clientId: true,
+          createdAt: true,
+        },
+      });
+
+      await tx.conversation.update({
+        where: { id: conversation.id },
+        data: {
+          lastMessageAt: message.createdAt,
+          renterLastReadAt: message.createdAt,
+        },
+        select: { id: true },
+      });
+
+      return { booking: created, notifications, message };
     });
 
     /**
@@ -307,11 +443,23 @@ export async function createBookingRequest(
      * race then rolled back.
      */
     publishAfterCommit(booking.notifications);
+    publishChatAfterCommit(
+      chatMessageDeliveries({ renterId: renter.id, ownerId: listing.ownerId }, [
+        booking.message,
+      ])
+    );
 
     revalidateBookingPaths(listing.id);
 
     return { success: true, data: { id: booking.booking.id } };
   } catch (error) {
+    if (error instanceof OfferAlreadyUsedError) {
+      return {
+        success: false,
+        error: "That offer has already been used for a booking.",
+      };
+    }
+
     // Another request claimed one of these days between the check and the write. The expected
     // outcome of the race, not a fault - so it gets a clear message rather than a generic one.
     if (isDateConflict(error)) {
@@ -461,12 +609,16 @@ export async function updateBookingInstructions(
         return null;
       }
 
-      return emitBookingNotifications(tx, {
-        event: "instructions-updated",
-        bookingId: booking.id,
-        listingTitle: booking.listing.title,
-        parties: { renterId: booking.renterId, ownerId: owner.id },
-      });
+      return emitBookingEvent(
+        tx,
+        {
+          event: "instructions-updated",
+          bookingId: booking.id,
+          listingTitle: booking.listing.title,
+          parties: { renterId: booking.renterId, ownerId: owner.id },
+        },
+        { actorId: owner.id }
+      );
     });
 
     if (!created) {
@@ -594,14 +746,18 @@ async function decide({
         });
       }
 
-      return emitBookingNotifications(tx, {
-        bookingId: booking.id,
-        listingTitle: booking.listing.title,
-        parties: { renterId: booking.renterId, ownerId: owner.id },
-        ...(to === BookingStatus.APPROVED
-          ? ({ event: "approved" } as const)
-          : ({ event: "declined", reason: statusReason ?? null } as const)),
-      });
+      return emitBookingEvent(
+        tx,
+        {
+          bookingId: booking.id,
+          listingTitle: booking.listing.title,
+          parties: { renterId: booking.renterId, ownerId: owner.id },
+          ...(to === BookingStatus.APPROVED
+            ? ({ event: "approved" } as const)
+            : ({ event: "declined", reason: statusReason ?? null } as const)),
+        },
+        { actorId: owner.id }
+      );
     });
 
     if (!created) {

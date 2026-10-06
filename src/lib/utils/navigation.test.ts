@@ -165,3 +165,21 @@ describe("adminNavItems", () => {
     expect(isNavItemActive("/admin/listings/abc123", listings!)).toBe(true);
   });
 });
+
+describe("conversation breadcrumbs", () => {
+  it("names a conversation id rather than title-casing it", () => {
+    expect(
+      buildBreadcrumbs("/dashboard/messages/cmux18omu000u70mkarjxclyc").map(
+        (crumb) => crumb.label
+      )
+    ).toEqual(["Dashboard", "Messages", "Conversation"]);
+  });
+
+  it("does the same on the administrator's side", () => {
+    expect(
+      buildBreadcrumbs("/admin/conversations/cmux18omu000u70mkarjxclyc").map(
+        (crumb) => crumb.label
+      )
+    ).toEqual(["Dashboard", "Admin", "Conversations", "Conversation"]);
+  });
+});

@@ -138,6 +138,29 @@ async function main() {
 
     await tx.notification.deleteMany({ where: { userId: { in: userIds } } });
 
+    /**
+     * Chat about the demo listings or between demo users. Messages reference offers, and offers and
+     * messages reference the conversation, so they go in that order. This does not delete bookings,
+     * and neither did anything before it - a demo listing with a booking was never removable here -
+     * so an offer that a booking carries still stops the transaction, by design.
+     */
+    const conversationWhere = {
+      OR: [
+        { listingId: { in: listingIds } },
+        { renterId: { in: userIds } },
+        { ownerId: { in: userIds } },
+      ],
+    };
+
+    await tx.message.deleteMany({
+      where: { conversation: conversationWhere },
+    });
+    await tx.offer.deleteMany({ where: { conversation: conversationWhere } });
+    await tx.adminAction.deleteMany({
+      where: { conversation: conversationWhere },
+    });
+    await tx.conversation.deleteMany({ where: conversationWhere });
+
     await tx.passwordResetToken.deleteMany({
       where: { userId: { in: userIds } },
     });

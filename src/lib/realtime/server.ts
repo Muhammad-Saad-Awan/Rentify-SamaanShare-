@@ -3,7 +3,7 @@ import Pusher from "pusher";
 import { env } from "@/config/env";
 import { NOTIFICATION_EVENT, userChannel } from "@/lib/realtime/channels";
 
-import type { NotificationEvent } from "@/lib/realtime/channels";
+import type { ChatDelivery, NotificationEvent } from "@/lib/realtime/channels";
 
 /**
  * The server half of realtime delivery.
@@ -105,6 +105,51 @@ export async function publishNotifications(
      * how the product behaved before this layer existed.
      */
     console.error("Realtime publish failed", error);
+
+    return false;
+  }
+}
+
+/** Pusher's ceiling on events in one `triggerBatch` call. */
+const BATCH_LIMIT = 10;
+
+/**
+ * Sends chat events to each recipient's own channel.
+ *
+ * The same contract as `publishNotifications`: the same per-member channels, so the same
+ * authorization boundary; failures swallowed and logged, because the message is already committed
+ * and will appear on the next load. Chunked, since one message goes to both participants and a
+ * future fan-out should not trip the batch ceiling.
+ */
+export async function publishChatEvents(
+  events: readonly ChatDelivery[]
+): Promise<boolean> {
+  if (events.length === 0) {
+    return true;
+  }
+
+  const pusher = getClient();
+
+  if (!pusher) {
+    return false;
+  }
+
+  try {
+    for (let start = 0; start < events.length; start += BATCH_LIMIT) {
+      await pusher.triggerBatch(
+        events
+          .slice(start, start + BATCH_LIMIT)
+          .map(({ userId, name, data }) => ({
+            channel: userChannel(userId),
+            name,
+            data,
+          }))
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Realtime chat publish failed", error);
 
     return false;
   }

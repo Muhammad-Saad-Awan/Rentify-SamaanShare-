@@ -1,9 +1,10 @@
 import { after } from "next/server";
 
 import { notificationEvents } from "@/lib/realtime/channels";
-import { publishNotifications } from "@/lib/realtime/server";
+import { publishChatEvents, publishNotifications } from "@/lib/realtime/server";
 
 import type { CreatedNotification } from "@/lib/notifications/create";
+import type { ChatDelivery } from "@/lib/realtime/channels";
 
 /**
  * The bridge from a written notification to a published event.
@@ -50,4 +51,20 @@ export function publishAfterCommit(
   const events = notificationEvents(created);
 
   after(() => publishNotifications(events));
+}
+
+/**
+ * The chat counterpart: publishes message and read deliveries once the response has been sent.
+ *
+ * Same reasoning as `publishAfterCommit` - called after `$transaction` resolves, never inside it, so
+ * a message the transaction then rolled back is never announced.
+ */
+export function publishChatAfterCommit(
+  deliveries: readonly ChatDelivery[]
+): void {
+  if (deliveries.length === 0) {
+    return;
+  }
+
+  after(() => publishChatEvents(deliveries));
 }

@@ -1,3 +1,5 @@
+import { execSync } from "node:child_process";
+
 import { expect, test } from "@playwright/test";
 
 import { readAccount, STORAGE_STATE } from "./fixtures/account";
@@ -142,6 +144,15 @@ test("register, book, pay, hand over, return and review", async ({
           `  original:      ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`
       );
     }
+
+    /**
+     * The address, confirmed as if the emailed link had been clicked - see `confirmJourneyEmail`.
+     * Renting requires it wherever mail can be sent, and the link goes to a real inbox.
+     */
+    execSync(
+      "npx tsx --env-file=.env.local tests/e2e/fixtures/db.ts confirm-email",
+      { stdio: "inherit" }
+    );
 
     // ---------------------------------------------------------------- 2. request to book
     await gotoReady(renter, `/listings/${account?.journeyListingId}`);

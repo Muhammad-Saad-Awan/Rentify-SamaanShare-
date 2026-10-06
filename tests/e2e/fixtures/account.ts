@@ -76,6 +76,21 @@ export interface TestAccount {
   realtimeRenterId: string;
   realtimeListingId: string;
   realtimeBookingId: string;
+
+  /**
+   * The chat cast: an owner with a listing, a renter who messages them, and a stranger who must be
+   * refused the conversation. No booking - the chat test makes one from an accepted offer.
+   */
+  chatOwnerEmail: string;
+  chatOwnerPassword: string;
+  chatOwnerId: string;
+  chatRenterEmail: string;
+  chatRenterPassword: string;
+  chatRenterId: string;
+  chatStrangerEmail: string;
+  chatStrangerPassword: string;
+  chatStrangerId: string;
+  chatListingId: string;
 }
 
 const STATE_DIR = "tests/e2e/.auth";

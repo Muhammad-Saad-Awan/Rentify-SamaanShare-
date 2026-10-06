@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   authorizeUserChannel,
+  CHAT_MESSAGE_EVENT,
+  CHAT_READ_EVENT,
+  chatMessageDeliveries,
+  chatReadDeliveries,
   NOTIFICATION_EVENT,
   userChannel,
 } from "@/lib/realtime/channels";
@@ -114,5 +118,54 @@ describe("the event name", () => {
   /** Shared so the publisher and subscriber cannot drift; asserted so neither renames it alone. */
   it("is stable", () => {
     expect(NOTIFICATION_EVENT).toBe("notification");
+  });
+});
+
+describe("chat deliveries", () => {
+  const participants = { renterId: USER, ownerId: OTHER };
+  const message = {
+    id: "m1",
+    conversationId: "c1",
+    senderId: USER,
+    kind: "OFFER",
+    body: null,
+    offerId: "o1",
+    clientId: null,
+    createdAt: new Date("2026-10-06T10:00:00.000Z"),
+  };
+
+  it("sends a message to both participants and nobody else", () => {
+    const deliveries = chatMessageDeliveries(participants, [message]);
+
+    expect(deliveries.map((d) => d.userId).sort()).toEqual(
+      [USER, OTHER].sort()
+    );
+    expect(deliveries.every((d) => d.name === CHAT_MESSAGE_EVENT)).toBe(true);
+  });
+
+  it("carries an offer by reference, never its amounts", () => {
+    const [delivery] = chatMessageDeliveries(participants, [message]);
+
+    expect(delivery?.data).toEqual({
+      id: "m1",
+      conversationId: "c1",
+      senderId: USER,
+      kind: "OFFER",
+      body: null,
+      offerId: "o1",
+      clientId: null,
+      createdAt: "2026-10-06T10:00:00.000Z",
+    });
+  });
+
+  it("tells both participants when a cursor moves", () => {
+    const deliveries = chatReadDeliveries(participants, {
+      conversationId: "c1",
+      readerId: OTHER,
+      readAt: new Date("2026-10-06T10:00:00.000Z"),
+    });
+
+    expect(deliveries).toHaveLength(2);
+    expect(deliveries.every((d) => d.name === CHAT_READ_EVENT)).toBe(true);
   });
 });

@@ -1,5 +1,9 @@
 import { Suspense } from "react";
 
+import {
+  MessagesButton,
+  MessagesButtonFallback,
+} from "@/components/chat/messages-button";
 import { DashboardBreadcrumbs } from "@/components/dashboard/dashboard-breadcrumbs";
 import { DashboardMobileNav } from "@/components/dashboard/dashboard-mobile-nav";
 import {
@@ -34,6 +38,11 @@ function DashboardHeader({ user }: DashboardHeaderProps) {
 
       <div className="flex shrink-0 items-center gap-0.5">
         {/* Suspended on its own so the two notification queries never hold up the header. */}
+        {/* Its own boundary too: the unread aggregate must not wait on, or delay, the bell. */}
+        <Suspense fallback={<MessagesButtonFallback />}>
+          <MessagesButton userId={user.id} />
+        </Suspense>
+
         <Suspense fallback={<NotificationBellFallback />}>
           <NotificationBell userId={user.id} />
         </Suspense>

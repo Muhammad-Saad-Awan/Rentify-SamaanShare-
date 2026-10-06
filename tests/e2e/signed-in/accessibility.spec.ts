@@ -42,6 +42,29 @@ test("profile", async ({ page }) => {
   await expectNoViolations(page);
 });
 
+test("messages inbox", async ({ page }) => {
+  await page.goto("/dashboard/messages");
+  await expectNoViolations(page);
+});
+
+/**
+ * A conversation, reached the way an owner reaches one: from a request. Scanned with the offer
+ * form open, because that is the densest state of the page - a select, two dates and two amounts
+ * beside the message log and the composer.
+ */
+test("conversation with the offer form open", async ({ page }) => {
+  await page.goto("/dashboard/requests");
+  await page.getByRole("button", { name: "Message renter" }).first().click();
+  await expect(page).toHaveURL(/\/dashboard\/messages\/[^/]+$/, {
+    timeout: 15_000,
+  });
+
+  await page.getByRole("button", { name: "Propose terms" }).click();
+  await expect(page.getByLabel("Total rent (Rs.)")).toBeVisible();
+
+  await expectNoViolations(page);
+});
+
 /**
  * Named assertions for the two violations axe found on 16 September.
  *

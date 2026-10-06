@@ -40,6 +40,7 @@
     "verify:phase5": "tsx --env-file=.env.local scripts/verify-phase5.ts",
     "verify:trust-safety": "tsx --env-file=.env.local scripts/verify-trust-safety.ts",
     "verify:handover": "tsx --env-file=.env.local scripts/verify-handover.ts",
+    "verify:chat": "tsx --env-file=.env.local scripts/verify-chat.ts",
     "verify:claims": "tsx --env-file=.env.local scripts/verify-claims.ts",
     "verify:claims:ui": "tsx --env-file=.env.local scripts/verify-claims-ui.ts",
     "verify:admin-users": "tsx --env-file=.env.local scripts/verify-admin-users.ts",

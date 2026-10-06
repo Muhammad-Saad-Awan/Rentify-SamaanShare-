@@ -1,5 +1,6 @@
 import {
   DASHBOARD_NAV,
+  CHILD_SEGMENT_LABELS,
   PATH_LABELS,
   SEGMENT_LABELS,
 } from "@/config/navigation";
@@ -122,6 +123,13 @@ function labelForPath(path: string, segment: string): string {
 
   if (byPath) {
     return byPath;
+  }
+
+  // An id under a known parent - see `CHILD_SEGMENT_LABELS`.
+  const byParent = CHILD_SEGMENT_LABELS[path.slice(0, path.lastIndexOf("/"))];
+
+  if (byParent) {
+    return byParent;
   }
 
   const mapped = SEGMENT_LABELS[segment];

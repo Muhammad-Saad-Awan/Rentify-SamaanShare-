@@ -14,9 +14,8 @@
 //     getCityLabel() from src/config/cities.ts
 //   - Users and listings are soft-deleted via deletedAt; nothing financial
 //     cascades. Queries must filter deletedAt: null
-//
-// Deferred to Phase 2: Conversation and Message (real-time messaging).
-// Their definitions remain in docs/DATABASE.md section 2.
+//   - Some invariants are enforced by triggers the schema cannot express. See
+//     the CHAT section and migration 20261006120000_chat_and_offers.
 // ============================================================================
 
 generator client {
@@ -200,6 +199,29 @@ enum AdminActionType {
   REVERSE_PAYMENT_VERIFICATION
   SETTLE_BOOKING
   RECORD_REFUND
+  // Chat. Reading a private conversation is itself an action, and it is logged like one. An
+  // administrator may only do it on stated grounds - a claim, a report between the two members, or
+  // a disputed handover - and `AdminAction.conversationId` records which conversation.
+  VIEW_CONVERSATION
+}
+
+// Chat. What a message is, so that nothing has to guess from its text.
+enum MessageKind {
+  TEXT // Free text from a participant. Never parsed for terms.
+  OFFER // Announces an Offer. The terms live on the Offer row, not in `body`.
+  SYSTEM // Written by the platform - a booking event, an offer being accepted.
+}
+
+// Chat. An offer moves out of PENDING exactly once and is frozen from then on - see the `offers`
+// trigger. There is no USED state: a pre-booking offer being applied is recorded on the booking
+// (`Booking.agreedOfferId`), so the offer row itself never has to change after acceptance.
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN // The proposer took it back.
+  SUPERSEDED // A newer offer in the same conversation replaced it.
+  EXPIRED // Nobody answered within OFFER_EXPIRY_HOURS.
 }
 
 enum ReportType {
@@ -471,6 +493,13 @@ model User {
   verifiedBy    User?  @relation("IdentityVerifications", fields: [verifiedById], references: [id])
   verifiedUsers User[] @relation("IdentityVerifications")
 
+  // Chat.
+  conversationsAsRenter Conversation[] @relation("ConversationRenter")
+  conversationsAsOwner  Conversation[] @relation("ConversationOwner")
+  messagesSent          Message[]      @relation("MessagesSent")
+  offersProposed        Offer[]        @relation("OffersProposed")
+  offersReceived        Offer[]        @relation("OffersReceived")
+
   @@index([status]) // P5: admin user filtering - API.md:432
   @@index([city]) // P5: usersByCity stat - API.md:390
   @@index([deletedAt]) // D3: exclude soft-deleted users
@@ -697,6 +726,7 @@ model Listing {
   savedBy          SavedListing[]
   // Moderation history for this listing - removals, restorations and edits.
   adminActions     AdminAction[]
+  conversations    Conversation[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -800,6 +830,9 @@ model Payment {
    * /**
    * /**
    * /**
+   * /**
+   * /**
+   * /**
    * When the renter declared they had paid.
    * Distinct from `createdAt`, which is when the payment row was created as the renter chose a
    * method, and from `confirmedAt`, which is when an administrator agreed the money had arrived.
@@ -834,6 +867,9 @@ model Payment {
 
   // ---------------------------------------------------------------- reversal of collection
   /**
+   * /**
+   * /**
+   * /**
    * /**
    * /**
    * /**
@@ -896,6 +932,9 @@ model Settlement {
    * /**
    * /**
    * /**
+   * /**
+   * /**
+   * /**
    * /** What the renter was charged for the rental, excluding the deposit.
    */
   rentalAmount Int
@@ -945,6 +984,9 @@ model Settlement {
 
   // ---------------------------------------------------------------- authorship
   /**
+   * /**
+   * /**
+   * /**
    * /**
    * /**
    * /**
@@ -1041,6 +1083,29 @@ model Booking {
   cancelledById String?
   cancelledBy   User?   @relation("BookingsCancelled", fields: [cancelledById], references: [id])
 
+  /**
+   * Chat: the conversation between this renter and owner about this listing.
+   * Nullable only because bookings made before chat existed have none until someone opens one.
+   * Every booking created since is linked when it is written.
+   */
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+
+  /**
+   * Chat: the accepted offer whose terms this booking carries, or NULL for listing-rate terms.
+   * THE TERMS ARE STILL COPIED INTO `totalPrice`, `securityDeposit` AND THE DATES. Everything
+   * downstream already reads those columns, and a copy cannot drift from a listing edit. This
+   * pointer records where they came from, and the `bookings` trigger makes the database refuse a
+   * booking whose columns differ from the offer it names.
+   * UNIQUE, so one accepted offer governs at most one booking.
+   * LOCKED, along with the terms, once `paymentId` is set - see the `bookings` trigger.
+   */
+  agreedOfferId String? @unique
+  agreedOffer   Offer?  @relation("BookingAgreedOffer", fields: [agreedOfferId], references: [id], onDelete: Restrict)
+
+  // Offers made against this booking while its terms could still change.
+  offers Offer[] @relation("BookingOffers")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1070,6 +1135,7 @@ model Booking {
   @@index([status])
   @@index([listingId, status]) // P6: availability + listing booking history
   @@index([cancelledById])
+  @@index([conversationId])
   // Phase 4: the deposit-return queue - completed rentals whose deposit is still
   // outstanding, ordered by how overdue they are.
   @@index([ownerId, status, completedAt])
@@ -1483,6 +1549,13 @@ model AdminAction {
    */
   listingId String?
 
+  /**
+   * The conversation an administrator read, for VIEW_CONVERSATION. NULL otherwise.
+   * The subject is the participant the grounds concern - the claim's respondent, the reported
+   * member, the party who disputed a handover - by the same rule as the payment actions.
+   */
+  conversationId String?
+
   createdAt DateTime @default(now())
 
   actor   User?    @relation("AdminActionsTaken", fields: [actorId], references: [id])
@@ -1501,12 +1574,16 @@ model AdminAction {
    */
   listing Listing? @relation(fields: [listingId], references: [id], onDelete: Restrict)
 
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+
   // The history shown on one account's detail screen, newest first.
   @@index([subjectId, createdAt])
   @@index([actorId])
   @@index([reportId])
   // The same, for one listing's detail screen.
   @@index([listingId, createdAt])
+  // Who has read this conversation, and when.
+  @@index([conversationId, createdAt])
   @@map("admin_actions")
 }
 
@@ -1548,9 +1625,167 @@ model Report {
   @@map("reports")
 }
 
-// ============================================================================
-// DEFERRED TO PHASE 2 (D6): Conversation and Message.
-// Removed from the MVP schema entirely per your decision. Their definitions
-// remain in docs/DATABASE.md section 2 and will be reintroduced by a later
-// migration when real-time messaging is built (ROADMAP 2.5).
-// ============================================================================
+// ==================== CHAT ====================
+// ROADMAP 2.5, reintroducing what D6 deferred - redesigned rather than restored. The draft in
+// docs/DATABASE.md had symmetric `participant1`/`participant2` and a per-message `isRead`; both
+// were replaced, for the reasons on each model.
+
+/**
+ * One renter talking to one owner about one listing.
+ * KEYED ON (listing, renter), not on the pair of people. A renter asking about two of an owner's
+ * items has two conversations, because the questions, the offers and the bookings are about
+ * different things. A renter who books the same item twice keeps one thread, which is what lets
+ * the second rental start from what was said about the first.
+ * RENTER AND OWNER, NOT PARTICIPANT 1 AND 2. Every rule that matters here is asymmetric - who may
+ * open a conversation, whose booking it is - and a symmetric pair would have every query work out
+ * which is which. `ownerId` is copied from the listing; listings never change hands.
+ * READ STATE IS TWO TIMESTAMPS, NOT A FLAG PER MESSAGE. "Unread" is "from the other party and newer
+ * than my cursor", one indexed count. Marking a thread read is one UPDATE rather than one per
+ * message, and a message cannot be left half-read by a write that failed part way.
+ * NOTHING HERE CASCADES. Conversations are evidence in a claim or a report, and users and listings
+ * are soft-deleted anyway.
+ */
+model Conversation {
+  id String @id @default(cuid())
+
+  listingId String
+  renterId  String
+  ownerId   String
+
+  /**
+   * Ordering for the inbox, and the time a cursor is compared against.
+   * Moved by every message, inside the same transaction. That UPDATE also takes the row lock which
+   * serializes concurrent offers on one conversation.
+   */
+  lastMessageAt DateTime @default(now())
+
+  // Read cursors. NULL means this side has never opened the thread.
+  renterLastReadAt DateTime?
+  ownerLastReadAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  renter  User    @relation("ConversationRenter", fields: [renterId], references: [id], onDelete: Restrict)
+  owner   User    @relation("ConversationOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+
+  messages     Message[]
+  offers       Offer[]
+  bookings     Booking[]
+  adminActions AdminAction[]
+
+  @@unique([listingId, renterId])
+  // The two inboxes, most recent first.
+  @@index([renterId, lastMessageAt])
+  @@index([ownerId, lastMessageAt])
+  @@map("conversations")
+}
+
+/**
+ * One message. Append-only: there is no edit and no delete, because a thread that either side can
+ * rewrite is no use as evidence when a claim or a report depends on it.
+ */
+model Message {
+  id             String @id @default(cuid())
+  conversationId String
+
+  // NULL only for SYSTEM messages, which have no author.
+  senderId String?
+
+  kind MessageKind @default(TEXT)
+
+  // Required for TEXT, may be empty for SYSTEM. NULL for OFFER, whose content is the Offer row.
+  body String? @db.Text
+
+  // The offer this message announces or reports on. OFFER messages always have one.
+  offerId String?
+
+  /**
+   * The sender's own id for this message, generated in the browser.
+   * Unique per sender, so a send retried after a dropped response finds the first copy instead of
+   * writing a second one. Also how a tab matches its optimistic message to the realtime echo.
+   */
+  clientId String?
+
+  createdAt DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  sender       User?        @relation("MessagesSent", fields: [senderId], references: [id], onDelete: Restrict)
+  offer        Offer?       @relation(fields: [offerId], references: [id], onDelete: Restrict)
+
+  @@unique([senderId, clientId])
+  // The thread, paged backwards from the newest. Also serves the unread count.
+  @@index([conversationId, createdAt])
+  @@index([offerId])
+  @@map("messages")
+}
+
+/**
+ * Proposed rental terms: the dates, the rent and the deposit, as structured values.
+ * WHY THIS EXISTS. Free-text chat cannot set a price. "Can you do 3000?" "ok" is a conversation,
+ * not an agreement - nobody can say afterwards which message was the offer or whether "ok"
+ * accepted it. The only route from negotiation to the money a booking carries is an Offer that
+ * the other party explicitly accepted.
+ * THE ROW IS THE SNAPSHOT. The terms are written once, at proposal, and the `offers` trigger
+ * refuses any later change to them. The row may move out of PENDING once and is then frozen
+ * entirely, and an ACCEPTED offer cannot be deleted. A listing edited afterwards changes nothing
+ * here, because nothing here was ever read from the listing.
+ * TWO KINDS, told apart by `bookingId`:
+ * - NULL: proposed before any booking. Once accepted, the renter may make one booking with it,
+ * on exactly these dates, which records the offer in `Booking.agreedOfferId`.
+ * - set: proposed against an existing booking while its terms could still change (PENDING or
+ * APPROVED, no payment). The dates must equal the booking's - changing dates means moving
+ * calendar holds, which is a cancel and rebook, not a negotiation.
+ */
+model Offer {
+  id             String  @id @default(cuid())
+  conversationId String
+  bookingId      String?
+
+  proposedById String
+  // The only person who may accept or decline. Always the other participant.
+  recipientId  String
+
+  // The terms. Immutable from insert - see the trigger.
+  startDate       DateTime @db.Date
+  endDate         DateTime @db.Date
+  totalPrice      Int // PKR, for the whole rental
+  securityDeposit Int // PKR
+
+  status OfferStatus @default(PENDING)
+
+  /**
+   * The deadline for an answer. Fixed at proposal: OFFER_EXPIRY_HOURS.
+   * A PENDING offer past this is treated as expired by every rule, whether or not anything has
+   * written EXPIRED to it yet.
+   */
+  expiresAt   DateTime
+  // When it left PENDING, by whatever route.
+  respondedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  /**
+   * CASCADE, the one exception in this section, and it never fires in the app - bookings are never
+   * deleted. It exists because this relation and `Booking.agreedOffer` point at each other, so with
+   * RESTRICT on both a booking renegotiated through an offer could never be removed by test or demo
+   * cleanup at all. The `offers` trigger still refuses to delete an accepted offer while any booking
+   * carries its terms.
+   */
+  booking      Booking?     @relation("BookingOffers", fields: [bookingId], references: [id], onDelete: Cascade)
+  proposedBy   User         @relation("OffersProposed", fields: [proposedById], references: [id], onDelete: Restrict)
+  recipient    User         @relation("OffersReceived", fields: [recipientId], references: [id], onDelete: Restrict)
+
+  // The booking that carries these terms, when one does.
+  agreedBy Booking?  @relation("BookingAgreedOffer")
+  messages Message[]
+
+  // The open offer in a thread, and the thread's offer history.
+  @@index([conversationId, status])
+  @@index([bookingId])
+  @@index([proposedById])
+  @@index([recipientId])
+  @@map("offers")
+}

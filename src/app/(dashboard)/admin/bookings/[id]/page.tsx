@@ -1,4 +1,9 @@
-import { ClockAlertIcon, PackageIcon, ScaleIcon } from "lucide-react";
+import {
+  ClockAlertIcon,
+  MessagesSquareIcon,
+  PackageIcon,
+  ScaleIcon,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -22,7 +27,9 @@ import {
   HANDOVER_CONDITION_LABELS,
   handoverStanding,
 } from "@/lib/handover/rules";
+import { adminConversationHref } from "@/lib/chat/routes";
 import { getAdminBookingDetail } from "@/lib/queries/admin-bookings";
+import { findConversationIdForRental } from "@/lib/queries/chat";
 import { formatPKR } from "@/lib/utils/currency";
 import { formatDate, formatDateTime } from "@/lib/utils/date";
 import { formatCity } from "@/lib/utils/listing";
@@ -61,6 +68,11 @@ export default async function AdminBookingPage({
   if (!booking) {
     notFound();
   }
+
+  const conversationId = await findConversationIdForRental(
+    booking.listing.id,
+    booking.renter.id
+  );
 
   return (
     <>
@@ -202,6 +214,20 @@ export default async function AdminBookingPage({
               >
                 <ScaleIcon aria-hidden="true" />
                 Claims queue
+              </Button>
+            )}
+            {/*
+              Offered whenever the two members have a conversation. Whether it may actually be read
+              is decided on the next screen, against the grounds - this link grants nothing.
+            */}
+            {conversationId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                render={<Link href={adminConversationHref(conversationId)} />}
+              >
+                <MessagesSquareIcon aria-hidden="true" />
+                Conversation
               </Button>
             )}
           </div>

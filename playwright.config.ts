@@ -120,6 +120,8 @@ export default defineConfig({
          * "nothing is unread yet", which reads like a delivery problem and is not one.
          */
         /realtime-delivery\.spec\.ts/,
+        // Chat writes too - it opens a conversation, accepts an offer and books - so it runs once.
+        /chat\.spec\.ts/,
       ],
       /**
        * Depends on `setup` for its DATA, not for a session - these tests stay signed out, and no
@@ -164,6 +166,17 @@ export default defineConfig({
     {
       name: "realtime",
       testMatch: /realtime-delivery\.spec\.ts/,
+      dependencies: ["setup"],
+      use: { ...VIEWPORT },
+    },
+
+    /**
+     * Chat, with its own owner, renter, stranger and listing. Two browsers like `realtime`, plus a
+     * third that must be refused - and the only suite that drives an offer from proposal to booking.
+     */
+    {
+      name: "chat",
+      testMatch: /chat\.spec\.ts/,
       dependencies: ["setup"],
       use: { ...VIEWPORT },
     },

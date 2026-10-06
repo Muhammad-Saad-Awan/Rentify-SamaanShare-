@@ -31,6 +31,45 @@ export function userChannel(userId: string): string {
 /** Event names, kept here so the publisher and the subscriber cannot drift apart. */
 export const NOTIFICATION_EVENT = "notification";
 
+/** A message was written to a conversation the recipient is part of. */
+export const CHAT_MESSAGE_EVENT = "chat-message";
+
+/** A participant's read cursor moved. Clears badges in their other tabs, and is a read receipt. */
+export const CHAT_READ_EVENT = "chat-read";
+
+/**
+ * A chat message, as the browser is told about it.
+ *
+ * THE DELIBERATE DEPARTURE from `NotificationEvent`, flagged in TODO.md when the transport landed. A
+ * notification event is a nudge and the page refetches; a chat that refetched on every message would
+ * cost a server render per line typed. So the open thread renders straight from this payload, and
+ * the text goes through Pusher.
+ *
+ * WHAT STILL HOLDS from the notification rule:
+ *   - It goes only to the two participants' own private channels, signed by `/api/realtime/auth`.
+ *   - It carries no terms. An OFFER event has `offerId` and no amounts; the client fetches the offer.
+ *     A SYSTEM body may restate terms in words, but nothing reads amounts from it.
+ *   - The database stays the source of truth. A dropped event means the message appears on the next
+ *     load, and `id` lets a duplicate be ignored.
+ */
+export interface ChatMessageEvent {
+  id: string;
+  conversationId: string;
+  senderId: string | null;
+  kind: string;
+  body: string | null;
+  offerId: string | null;
+  /** The sender's own id for the message, so their tab can match its optimistic copy. */
+  clientId: string | null;
+  createdAt: string;
+}
+
+export interface ChatReadEvent {
+  conversationId: string;
+  readerId: string;
+  readAt: string;
+}
+
 /**
  * What the browser is told.
  *
@@ -119,4 +158,65 @@ export function authorizeUserChannel({
   }
 
   return { ok: true, channel: allowed };
+}
+
+/** A chat message row, as far as the realtime payload needs it. */
+export interface PublishableMessage {
+  id: string;
+  conversationId: string;
+  senderId: string | null;
+  kind: string;
+  body: string | null;
+  offerId: string | null;
+  clientId: string | null;
+  createdAt: Date;
+}
+
+/** One pending chat delivery: an event name, a payload, and whose channel it goes to. */
+export type ChatDelivery =
+  | { userId: string; name: typeof CHAT_MESSAGE_EVENT; data: ChatMessageEvent }
+  | { userId: string; name: typeof CHAT_READ_EVENT; data: ChatReadEvent };
+
+/**
+ * The deliveries for messages just written: each one to BOTH participants.
+ *
+ * The sender too, deliberately. Their other open tabs learn about the message the same way the
+ * recipient does, and the tab that sent it recognises its own copy by `clientId`.
+ */
+export function chatMessageDeliveries(
+  participants: { renterId: string; ownerId: string },
+  messages: readonly PublishableMessage[]
+): ChatDelivery[] {
+  return messages.flatMap((message) =>
+    [participants.renterId, participants.ownerId].map((userId) => ({
+      userId,
+      name: CHAT_MESSAGE_EVENT,
+      data: {
+        id: message.id,
+        conversationId: message.conversationId,
+        senderId: message.senderId,
+        kind: message.kind,
+        body: message.body,
+        offerId: message.offerId,
+        clientId: message.clientId,
+        createdAt: message.createdAt.toISOString(),
+      },
+    }))
+  );
+}
+
+/** A read cursor moving, told to both participants - see `CHAT_READ_EVENT`. */
+export function chatReadDeliveries(
+  participants: { renterId: string; ownerId: string },
+  read: { conversationId: string; readerId: string; readAt: Date }
+): ChatDelivery[] {
+  return [participants.renterId, participants.ownerId].map((userId) => ({
+    userId,
+    name: CHAT_READ_EVENT,
+    data: {
+      conversationId: read.conversationId,
+      readerId: read.readerId,
+      readAt: read.readAt.toISOString(),
+    },
+  }));
 }

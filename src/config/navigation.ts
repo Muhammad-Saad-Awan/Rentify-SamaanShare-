@@ -10,6 +10,7 @@ import {
   HomeIcon,
   InboxIcon,
   LayoutDashboardIcon,
+  MessagesSquareIcon,
   PackageIcon,
   PackageSearchIcon,
   ScaleIcon,
@@ -108,6 +109,12 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
       // The owner's side of the same system. Separate entry rather than a tab, because the
       // two answer different questions: what have I rented, versus what is being asked of me.
       { title: "Requests", href: "/dashboard/requests", icon: InboxIcon },
+      // Chat with owners and renters, before, during and after a rental.
+      {
+        title: "Messages",
+        href: "/dashboard/messages",
+        icon: MessagesSquareIcon,
+      },
       { title: "Saved Listings", href: "/saved", icon: HeartIcon },
     ],
   },
@@ -193,6 +200,19 @@ export const PATH_LABELS: Readonly<Record<string, string>> = {
   // listed here so the breadcrumb says the same word as the sidebar.
   "/admin/payments": "Payments",
   "/admin/settlements": "Settlements",
+  "/admin/conversations": "Conversations",
+};
+
+/**
+ * Labels for an id segment, keyed by the path it sits under.
+ *
+ * An id is otherwise title-cased into the trail like any other segment, which reads as noise. A
+ * conversation has no single name to show instead - it is between two people about one listing -
+ * so it is simply called what it is.
+ */
+export const CHILD_SEGMENT_LABELS: Readonly<Record<string, string>> = {
+  "/dashboard/messages": "Conversation",
+  "/admin/conversations": "Conversation",
 };
 
 export const SEGMENT_LABELS: Readonly<Record<string, string>> = {
@@ -202,6 +222,7 @@ export const SEGMENT_LABELS: Readonly<Record<string, string>> = {
   saved: "Saved Listings",
   requests: "Requests",
   notifications: "Notifications",
+  messages: "Messages",
   profile: "Profile",
   settings: "Settings",
   admin: "Admin",

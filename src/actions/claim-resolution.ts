@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { ClaimStatus } from "@/generated/prisma/enums";
 import { getActiveAdmin } from "@/lib/auth/session";
 import { canResolveClaim } from "@/lib/claims/rules";
+import { postBookingThreadLine } from "@/lib/chat/booking-events";
 import { createNotifications } from "@/lib/notifications/create";
 import { buildClaimNotifications } from "@/lib/notifications/claim-messages";
 import { prisma } from "@/lib/prisma";
@@ -123,6 +124,12 @@ export async function resolveDamageClaim(
        * Telling each side only their own half is how a settled dispute restarts: the two would go
        * on to describe different outcomes to each other.
        */
+      await postBookingThreadLine(tx, {
+        bookingId: claim.booking.id,
+        event: { event: "claim-resolved" },
+        actorId: null,
+      });
+
       return createNotifications(
         tx,
         buildClaimNotifications({

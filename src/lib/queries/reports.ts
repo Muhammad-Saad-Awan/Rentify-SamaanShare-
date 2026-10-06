@@ -68,6 +68,12 @@ export interface ReportSummary {
    * memory across pages.
    */
   otherReportsOnTarget: number;
+  /**
+   * For a report about a member: the conversations between the reporter and that member, one per
+   * listing they talked about. Links only - opening one asks for the report as the ground and logs
+   * the read. Empty for listing and review reports, and for two members who never messaged.
+   */
+  conversations: { id: string; listingTitle: string }[];
 }
 
 interface ReportPageOptions {
@@ -118,6 +124,7 @@ export async function getReports({
 
   const targets = await hydrateTargets(rows);
   const counts = await countReportsPerTarget(rows);
+  const conversations = await conversationsForUserReports(rows);
 
   return {
     items: rows.map((row) => ({
@@ -140,6 +147,10 @@ export async function getReports({
         0,
         (counts.get(targetKey(row.type, row.targetId)) ?? 1) - 1
       ),
+      conversations:
+        row.type === ReportType.USER
+          ? (conversations.get(pairKey(row.reporter.id, row.targetId)) ?? [])
+          : [],
     })),
     total,
     page: currentPage,
@@ -270,4 +281,64 @@ async function countReportsPerTarget(
       group._count._all,
     ])
   );
+}
+
+/** The same key for a pair of members whichever of them is the reporter. */
+function pairKey(a: string, b: string): string {
+  return a < b ? `${a}:${b}` : `${b}:${a}`;
+}
+
+/**
+ * Conversations between each USER report's reporter and target, in one query for the page.
+ *
+ * In either direction - the reporter may have been the renter or the owner. Ids and listing titles
+ * only; no message is read here.
+ */
+async function conversationsForUserReports(
+  rows: readonly {
+    type: ReportType;
+    targetId: string;
+    reporter: { id: string };
+  }[]
+): Promise<Map<string, { id: string; listingTitle: string }[]>> {
+  const pairs = rows
+    .filter(
+      (row) => row.type === ReportType.USER && row.reporter.id !== row.targetId
+    )
+    .map((row) => [row.reporter.id, row.targetId] as const);
+
+  const byPair = new Map<string, { id: string; listingTitle: string }[]>();
+
+  if (pairs.length === 0) {
+    return byPair;
+  }
+
+  const found = await prisma.conversation.findMany({
+    where: {
+      OR: pairs.flatMap(([a, b]) => [
+        { renterId: a, ownerId: b },
+        { renterId: b, ownerId: a },
+      ]),
+    },
+    orderBy: { lastMessageAt: "desc" },
+    select: {
+      id: true,
+      renterId: true,
+      ownerId: true,
+      listing: { select: { title: true } },
+    },
+  });
+
+  for (const conversation of found) {
+    const key = pairKey(conversation.renterId, conversation.ownerId);
+    const list = byPair.get(key) ?? [];
+
+    list.push({
+      id: conversation.id,
+      listingTitle: conversation.listing.title,
+    });
+    byPair.set(key, list);
+  }
+
+  return byPair;
 }

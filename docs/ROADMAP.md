@@ -274,7 +274,10 @@ Phase 4 (Scale)         →  Enterprise features, expansion
 | 2.4.3 | Two-factor authentication | Could | High |
 | 2.4.4 | Login alerts | Could | Medium |
 
-### 2.5 Real-time Messaging (Deferred from MVP)
+### 2.5 Real-time Messaging (Delivered October 2026)
+
+All seven items shipped as chat (TODO.md Phase 10), plus structured offers for negotiating rent and
+deposit. 2.5.7 is the unread badge and toasts rather than notification rows, by design.
 
 | # | Feature | Priority | Complexity |
 |---|---------|----------|------------|

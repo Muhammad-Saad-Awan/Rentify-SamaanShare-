@@ -23,6 +23,12 @@ export const createBookingRequestSchema = z
     startDate: calendarDateSchema,
     endDate: calendarDateSchema,
     notes: z.string().trim().max(NOTES_MAX).optional(),
+    /**
+     * An accepted offer from the renter's conversation about this listing. When present, the
+     * booking takes its rent, deposit and dates from the stored offer - the request still carries
+     * dates, and they must match - and never from anything else in the request.
+     */
+    offerId: listingIdSchema.optional(),
   })
   .superRefine((value, ctx) => {
     // String comparison is safe because both are validated `YYYY-MM-DD`, which sorts

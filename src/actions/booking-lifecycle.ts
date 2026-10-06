@@ -17,6 +17,7 @@ import {
   canTransition,
 } from "@/lib/bookings/lifecycle";
 import { prepareHandover, writeHandoverRecord } from "@/lib/handover/write";
+import { emitBookingEvent } from "@/lib/chat/booking-events";
 import { emitBookingNotifications } from "@/lib/notifications/create";
 import { publishAfterCommit } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
@@ -161,12 +162,16 @@ export async function startBooking(
        * physically out - releasing them here would let the listing be booked for days it cannot
        * be delivered on.
        */
-      return emitBookingNotifications(tx, {
-        event: "picked-up",
-        bookingId: booking.id,
-        listingTitle: booking.listing.title,
-        parties: { renterId: booking.renterId, ownerId: booking.ownerId },
-      });
+      return emitBookingEvent(
+        tx,
+        {
+          event: "picked-up",
+          bookingId: booking.id,
+          listingTitle: booking.listing.title,
+          parties: { renterId: booking.renterId, ownerId: booking.ownerId },
+        },
+        { actorId: owner.id }
+      );
     });
 
     if (!created) {
@@ -300,12 +305,16 @@ export async function completeBooking(
       // block on an overlapping day survives.
       await releaseHeldDates(tx, booking.id);
 
-      const returned = await emitBookingNotifications(tx, {
-        event: "returned",
-        bookingId: booking.id,
-        listingTitle: booking.listing.title,
-        parties: { renterId: booking.renterId, ownerId: booking.ownerId },
-      });
+      const returned = await emitBookingEvent(
+        tx,
+        {
+          event: "returned",
+          bookingId: booking.id,
+          listingTitle: booking.listing.title,
+          parties: { renterId: booking.renterId, ownerId: booking.ownerId },
+        },
+        { actorId: owner.id }
+      );
 
       /**
        * The review prompt, to both sides.
@@ -432,14 +441,18 @@ export async function cancelBooking(
 
       await releaseHeldDates(tx, booking.id);
 
-      return emitBookingNotifications(tx, {
-        event: "cancelled",
-        by: "renter",
-        bookingId: booking.id,
-        listingTitle: booking.listing.title,
-        parties: { renterId: booking.renterId, ownerId: booking.ownerId },
-        reason: reason ?? null,
-      });
+      return emitBookingEvent(
+        tx,
+        {
+          event: "cancelled",
+          by: "renter",
+          bookingId: booking.id,
+          listingTitle: booking.listing.title,
+          parties: { renterId: booking.renterId, ownerId: booking.ownerId },
+          reason: reason ?? null,
+        },
+        { actorId: renter.id }
+      );
     });
 
     if (!created) {
