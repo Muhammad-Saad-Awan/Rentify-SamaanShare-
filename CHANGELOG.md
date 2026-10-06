@@ -234,6 +234,9 @@ stays unreleased; `TODO.md` holds what remains.
   between the renter choosing a method and the payment row being written.
   `selectPaymentMethod` now re-checks the booking under a row lock, and the
   database refuses to attach a payment whose amounts differ from the booking's
+- The end-to-end journey stopped at the booking form after a confirmed email
+  became a requirement for renting; the test now confirms its new renter's
+  address the way the emailed link would
 - Google's `email_verified` claim is carried onto `User.emailVerified`, and
   persisted through the `linkAccount` event rather than only at first sign-in
 - The upload cleanup job was deleting handover and claim photos, which are not

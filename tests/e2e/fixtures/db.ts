@@ -489,6 +489,35 @@ async function destroy(): Promise<void> {
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 }
 
+/**
+ * Confirms the journey renter's address, standing in for the link in the confirmation email.
+ *
+ * The journey registers through the real form, so the account starts unconfirmed - and since renting
+ * requires a confirmed address wherever mail can be sent, the booking form would never appear. The
+ * link itself cannot be clicked here: it goes to a real inbox through Resend. What the journey tests
+ * is renting; confirming an address has its own tests in `lib/auth/email-verification`.
+ *
+ * Only ever the journey's own address, read from the account file - never an argument.
+ */
+async function confirmJourneyEmail(): Promise<void> {
+  const account = readAccount();
+
+  if (!account) {
+    throw new Error("No test account - run `create` first.");
+  }
+
+  const updated = await prisma.user.updateMany({
+    where: { email: account.journeyEmail, emailVerified: null },
+    data: { emailVerified: new Date() },
+  });
+
+  if (updated.count !== 1) {
+    throw new Error(
+      `Expected to confirm one unconfirmed journey account, confirmed ${updated.count}.`
+    );
+  }
+}
+
 const command = process.argv[2];
 
 async function main(): Promise<void> {
@@ -496,8 +525,12 @@ async function main(): Promise<void> {
     await create();
   } else if (command === "destroy") {
     await destroy();
+  } else if (command === "confirm-email") {
+    await confirmJourneyEmail();
   } else {
-    throw new Error(`Unknown command: ${String(command)}. Use create|destroy.`);
+    throw new Error(
+      `Unknown command: ${String(command)}. Use create|destroy|confirm-email.`
+    );
   }
 }
 
