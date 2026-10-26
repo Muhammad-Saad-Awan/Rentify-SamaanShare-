@@ -42,6 +42,7 @@ import {
   PaymentStatus,
 } from "@/generated/prisma/enums";
 import { useFocusReturn } from "@/hooks/use-focus-return";
+import { ownerPaymentNote, ownerPaymentView } from "@/lib/payments/owner-view";
 import { formatPKR } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import {
@@ -200,6 +201,12 @@ function BookingActions({ booking, side }: BookingActionsProps) {
   const { payment, deposit, eligibility } = booking;
   const isPaymentConfirmed = payment?.status === PaymentStatus.COMPLETED;
   const isCardPayment = payment?.provider === PaymentProvider.STRIPE;
+
+  /** The owner's payment wording, from the payment's own provider and status. */
+  const ownerNote = ownerPaymentNote(ownerPaymentView(payment), {
+    totalPrice: booking.totalPrice,
+    securityDeposit: booking.securityDeposit,
+  });
 
   /**
    * Test mode is said on the button itself. Nobody should reach Stripe's page believing a real
@@ -416,10 +423,8 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             </Note>
           )}
 
-          <Note>
-            Waiting for the renter to choose how they will pay you. You will be
-            notified when they do.
-          </Note>
+          {/* From the payment row, not the booking status - see `ownerPaymentView`. */}
+          <Note>{ownerNote}</Note>
 
           {instructionsEditor}
           {editInstructionsButton}
@@ -428,7 +433,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
     }
 
     if (booking.status === BookingStatus.PAYMENT_PENDING && payment) {
-      // Money not yet acknowledged: the only thing to do is say whether it arrived.
+      // Money not yet acknowledged: the only thing to do is say where it stands.
       if (!isPaymentConfirmed) {
         return (
           <div className="flex flex-col gap-2">
@@ -438,13 +443,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
               not in a position to say it arrived - they never see it. Leaving them a button
               would have been asking them to vouch for something they cannot observe.
             */}
-            <Note>
-              The renter pays SamaanShare {formatPKR(booking.totalPrice)}
-              {booking.securityDeposit > 0 &&
-                ` plus a ${formatPKR(booking.securityDeposit)} deposit`}
-              . We will tell you the moment it is confirmed, and you keep the
-              item until then.
-            </Note>
+            <Note>{ownerNote}</Note>
 
             {instructionsEditor}
             {editInstructionsButton}
@@ -455,10 +454,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
       // Paid and acknowledged: the next physical event is the handover.
       return (
         <div className="flex flex-col gap-2">
-          <Note>
-            Payment confirmed. Mark the item as collected when the renter has it
-            in hand.
-          </Note>
+          <Note>{ownerNote}</Note>
 
           {/*
             The condition record is not optional, so the button opens the form rather than

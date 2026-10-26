@@ -218,8 +218,12 @@ export async function startCardCheckout(
       listingTitle: booking.listing.title,
     });
 
+    // The owner's requests page too: starting checkout moves the booking to PAYMENT_PENDING, and
+    // the bank-transfer path already refreshes it - see `revalidateBookingPaths` in `payments.ts`.
     revalidatePath("/dashboard/bookings", "page");
+    revalidatePath("/dashboard/requests", "page");
     revalidatePath("/admin/payments", "page");
+    revalidatePath("/dashboard", "layout");
 
     return url;
   } catch (error) {
