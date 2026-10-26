@@ -116,6 +116,19 @@ export const recordRefundSchema = z.object({
 
 export type RecordRefundInput = z.infer<typeof recordRefundSchema>;
 
+/**
+ * Starting card payment for a booking.
+ *
+ * THE BOOKING AND NOTHING ELSE. No amount, no currency, no description: the charge is derived on
+ * the server from the `Payment` row, which the database holds to the booking's terms. A client
+ * that could name a figure here could pay ₨1 for a ₨30,000 rental.
+ */
+export const startCardCheckoutSchema = z.object({
+  bookingId: listingIdSchema,
+});
+
+export type StartCardCheckoutInput = z.infer<typeof startCardCheckoutSchema>;
+
 export type SubmitPaymentEvidenceInput = z.infer<
   typeof submitPaymentEvidenceSchema
 >;

@@ -88,6 +88,41 @@ export const serverEnvSchema = z.object({
   PUSHER_SECRET: z.string().trim().optional(),
   PUSHER_CLUSTER: z.string().trim().optional(),
 
+  /**
+   * Stripe, for card payment of a booking through hosted Checkout. TEST MODE ONLY.
+   *
+   * A LIVE KEY IS A STARTUP FAILURE, not a warning. This integration collects into SamaanShare's
+   * own account with no Connect, no payouts and no production review behind it; a live key would
+   * take real money through code that has only ever been exercised with test cards. Only the two
+   * test prefixes are accepted - `rk_test_` (a restricted key, which Stripe recommends) and
+   * `sk_test_` - so a pasted `sk_live_` or `rk_live_` stops the boot naming the variable.
+   *
+   * NO PUBLISHABLE KEY. The flow is a redirect to Stripe-hosted Checkout created on the server;
+   * nothing in the browser loads Stripe.js, so there is nothing for one to configure.
+   *
+   * BOTH OR NEITHER, decided in `isStripeEnabled()` rather than here. Either alone boots - a
+   * developer adds the key before running `stripe listen` - but card payment is offered only with
+   * both, because a key without a signing secret takes money the webhook can never record.
+   */
+  STRIPE_SECRET_KEY: z
+    .string()
+    .trim()
+    .regex(
+      /^(sk|rk)_test_[A-Za-z0-9]+$/,
+      "STRIPE_SECRET_KEY must be a Stripe TEST key (sk_test_... or rk_test_...). Live keys are refused: card payments are test-mode only."
+    )
+    .optional(),
+
+  /** The signing secret of the webhook endpoint, from `stripe listen` or the Dashboard. */
+  STRIPE_WEBHOOK_SECRET: z
+    .string()
+    .trim()
+    .regex(
+      /^whsec_[A-Za-z0-9]+$/,
+      "STRIPE_WEBHOOK_SECRET must be a webhook signing secret (whsec_...)."
+    )
+    .optional(),
+
   /** Resend API key. Absent means no transactional email, and no password reset offered. */
   RESEND_API_KEY: z.string().optional(),
 

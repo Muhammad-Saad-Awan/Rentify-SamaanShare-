@@ -4,6 +4,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type {
   BookingStatus,
   PaymentMethod,
+  PaymentProvider,
   PaymentStatus,
 } from "@/generated/prisma/enums";
 
@@ -46,6 +47,8 @@ export interface BookingForAction {
     id: string;
     status: PaymentStatus;
     method: PaymentMethod;
+    /** Who is collecting it - `STRIPE` once the renter has started card checkout. */
+    provider: PaymentProvider;
     amount: number;
     securityDeposit: number;
     confirmedAt: Date | null;
@@ -72,6 +75,7 @@ const bookingForActionSelect = {
       id: true,
       status: true,
       method: true,
+      provider: true,
       amount: true,
       securityDeposit: true,
       confirmedAt: true,

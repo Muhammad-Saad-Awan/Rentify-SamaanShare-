@@ -12,6 +12,13 @@ interface PaymentInstructionsProps {
   securityDeposit: number;
   /** Whether an administrator has confirmed the money arrived. */
   isConfirmed: boolean;
+  /**
+   * Whether this is being paid by card through Stripe Checkout.
+   *
+   * The bank accounts are then not shown at all: a renter mid-way through card checkout who also
+   * sees "send ₨X to this account" has been given two instructions and will follow one of them twice.
+   */
+  byCard?: boolean;
 }
 
 /**
@@ -37,6 +44,7 @@ function PaymentInstructions({
   amount,
   securityDeposit,
   isConfirmed,
+  byCard = false,
 }: PaymentInstructionsProps) {
   const total = amount + securityDeposit;
 
@@ -44,7 +52,7 @@ function PaymentInstructions({
     <div className="bg-muted/50 flex flex-col gap-2 rounded-lg px-3 py-2.5">
       <p className="flex items-center gap-1.5 text-xs font-medium">
         <ShieldCheckIcon className="size-3.5 shrink-0" aria-hidden="true" />
-        Paying SamaanShare
+        {byCard ? "Paying SamaanShare by card" : "Paying SamaanShare"}
       </p>
 
       <dl className="text-muted-foreground grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
@@ -63,11 +71,19 @@ function PaymentInstructions({
           </>
         )}
 
-        <dt>Total to send</dt>
+        <dt>{byCard ? "Total charged" : "Total to send"}</dt>
         <dd className="text-foreground font-medium">{formatPKR(total)}</dd>
       </dl>
 
-      {!isConfirmed && isPaymentCollectionConfigured() && (
+      {!isConfirmed && byCard && (
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          Card payments are in Stripe test mode: use a Stripe test card such as
+          4242 4242 4242 4242. No real card is charged. The owner hands the item
+          over once Stripe has confirmed the payment.
+        </p>
+      )}
+
+      {!isConfirmed && !byCard && isPaymentCollectionConfigured() && (
         <>
           <ul className="flex flex-col gap-2">
             {PLATFORM_PAYMENT_ACCOUNTS.map((account) => (
@@ -107,7 +123,7 @@ function PaymentInstructions({
         </>
       )}
 
-      {!isConfirmed && !isPaymentCollectionConfigured() && (
+      {!isConfirmed && !byCard && !isPaymentCollectionConfigured() && (
         <p className="text-muted-foreground text-xs leading-relaxed">
           Payment is not available yet — SamaanShare has no receiving account
           set up. Nothing is owed until it is, and this booking will wait.

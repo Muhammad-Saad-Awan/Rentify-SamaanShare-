@@ -6,6 +6,7 @@ import { COMMISSION_RATE_BPS } from "@/config/commission";
 import {
   AdminActionType,
   BookingStatus,
+  PaymentProvider,
   PaymentStatus,
 } from "@/generated/prisma/enums";
 import { writeAdminAction } from "@/lib/admin/log";
@@ -123,7 +124,9 @@ async function loadBookingForAdmin(bookingId: string) {
           id: true,
           status: true,
           method: true,
+          provider: true,
           amount: true,
+          securityDeposit: true,
           transactionRef: true,
           commissionRateBps: true,
         },
@@ -404,7 +407,11 @@ export async function verifyPayment(
         bookingId: booking.id,
         listingTitle: booking.listing.title,
         parties: { renterId: booking.renterId, ownerId: booking.ownerId },
-        event: { event: "verified", amount: payment.amount },
+        event: {
+          event: "verified",
+          amount: payment.amount,
+          securityDeposit: payment.securityDeposit,
+        },
       })
     );
   });
@@ -569,6 +576,19 @@ export async function reverseVerification(
       success: false,
       error:
         "The rental has already moved on from payment. Record a refund or open a claim instead.",
+    };
+  }
+
+  /**
+   * A card payment was not verified by a person, so there is no human judgement to undo. Returning
+   * it to the queue would ask an administrator to look for a bank transfer that never happened
+   * while Stripe still holds the money - a refund is the only honest reversal.
+   */
+  if (payment.provider === PaymentProvider.STRIPE) {
+    return {
+      success: false,
+      error:
+        "Stripe confirmed this card payment, so it cannot be returned to the queue. Refund it in Stripe and record the refund instead.",
     };
   }
 

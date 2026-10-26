@@ -1,8 +1,9 @@
 import { PaymentStatus } from "@/generated/prisma/enums";
 import { computeCommission } from "@/lib/payments/commission";
+import { readStripeMetadata } from "@/lib/payments/stripe";
 import { prisma } from "@/lib/prisma";
 
-import type { PaymentMethod } from "@/generated/prisma/enums";
+import type { PaymentMethod, PaymentProvider } from "@/generated/prisma/enums";
 import type { PaginatedResult } from "@/types";
 
 /**
@@ -34,6 +35,13 @@ export interface AdminPaymentSummary {
   paymentId: string;
   status: PaymentStatus;
   method: PaymentMethod;
+  /** `STRIPE` for a card payment through Checkout (test mode), `OFFLINE` for a bank transfer. */
+  provider: PaymentProvider;
+  /**
+   * Paid Checkout Sessions Stripe took that could not be applied to this payment - a second
+   * collection, or one for a payment already withdrawn. Each is money owed back.
+   */
+  unappliedCardPayments: { checkoutSessionId: string; reason: string }[];
   /** The rental charge. The deposit is separate and is never commissioned. */
   amount: number;
   securityDeposit: number;
@@ -113,6 +121,8 @@ export async function getPaymentQueue({
             id: true,
             status: true,
             method: true,
+            provider: true,
+            metadata: true,
             amount: true,
             securityDeposit: true,
             transactionRef: true,
@@ -155,6 +165,13 @@ export async function getPaymentQueue({
         paymentId: payment.id,
         status: payment.status,
         method: payment.method,
+        provider: payment.provider,
+        unappliedCardPayments: (
+          readStripeMetadata(payment.metadata).unapplied ?? []
+        ).map(({ checkoutSessionId, reason }) => ({
+          checkoutSessionId,
+          reason,
+        })),
         amount: payment.amount,
         securityDeposit: payment.securityDeposit,
         transactionRef: payment.transactionRef,

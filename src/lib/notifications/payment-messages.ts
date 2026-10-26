@@ -33,8 +33,12 @@ import type {
  */
 
 export type PaymentEvent =
-  /** An administrator agreed the money arrived. Both parties: it unblocks the handover. */
-  | { event: "verified"; amount: number }
+  /**
+   * The money arrived - an administrator agreed, or Stripe confirmed a card payment. Both parties:
+   * it unblocks the handover. Rent and deposit are both carried, because the renter paid both and
+   * a figure that leaves one out does not match their statement.
+   */
+  | { event: "verified"; amount: number; securityDeposit: number }
   /** An administrator could not match it. The renter has to act. */
   | { event: "rejected"; reason: string }
   /** A verification undone. Rare, and the renter must not discover it by accident. */
@@ -114,10 +118,17 @@ export function buildPaymentNotifications({
      */
     case "verified":
       return [
+        /**
+         * THE TOTAL IN THE TITLE, the split in the body. The title used to state the rent alone,
+         * so a renter who paid rent plus deposit was told a smaller figure than the one on their
+         * statement - exactly what this file promises a money notification never does.
+         */
         toRenter(
           NotificationType.PAYMENT_CONFIRMED,
-          `Your ${formatPKR(event.amount)} payment for ${item} is confirmed`,
-          "SamaanShare is holding it until the rental is finished."
+          `Your ${formatPKR(event.amount + event.securityDeposit)} payment for ${item} is confirmed`,
+          event.securityDeposit > 0
+            ? `That is ${formatPKR(event.amount)} rent and a ${formatPKR(event.securityDeposit)} refundable deposit. SamaanShare holds both until the rental is finished.`
+            : "SamaanShare is holding it until the rental is finished."
         ),
         toOwner(
           NotificationType.PAYMENT_CONFIRMED,

@@ -109,6 +109,9 @@ export default auth((req) => {
  * Excluded, in order:
  *   - `api/auth/*`  Auth.js's own endpoints. Guarding them would break the
  *                   OAuth callback and the CSRF handshake.
+ *   - `api/webhooks/*` provider callbacks (Stripe). They carry no session and
+ *                   authenticate by signature; a redirect would read as a failed
+ *                   delivery.
  *   - `_next/*`     build output and the image optimizer.
  *   - static assets by extension, plus the well-known root files.
  *
@@ -117,6 +120,6 @@ export default auth((req) => {
  */
 export const config = {
   matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff2?|ttf)$).*)",
+    "/((?!api/auth|api/webhooks|_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff2?|ttf)$).*)",
   ],
 };
