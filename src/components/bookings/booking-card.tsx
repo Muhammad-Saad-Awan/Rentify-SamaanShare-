@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { BookingStatus } from "@/generated/prisma/enums";
 import { PENDING_EXPIRY_HOURS } from "@/lib/bookings/lifecycle";
+import { bookingBadge } from "@/lib/bookings/status-badge";
 import { formatPKR } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import { formatCity } from "@/lib/utils/listing";
@@ -63,7 +64,7 @@ function BookingCard({ booking, side }: BookingCardProps) {
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status={booking.status} />
+              <StatusBadge status={booking.status} payment={booking.payment} />
               {awaitingDecision && side === "owner" && (
                 <span className="text-muted-foreground flex items-center gap-1 text-xs">
                   <ClockIcon className="size-3.5" aria-hidden="true" />
@@ -175,37 +176,17 @@ function BookingCard({ booking, side }: BookingCardProps) {
 
 interface StatusBadgeProps {
   status: BookingStatus;
+  payment: BookingSummary["payment"];
 }
 
 /**
- * Booking status in plain language.
+ * Booking status in plain language, refined by the payment.
  *
- * A total map over the enum, so adding a state fails at the type level rather than rendering
- * `PAYMENT_PENDING` to a renter.
+ * The mapping lives in `bookingBadge`, which reads the payment as well as the status - a paid
+ * booking is still `PAYMENT_PENDING` until the handover, and must not be labelled as unpaid.
  */
-function StatusBadge({ status }: StatusBadgeProps) {
-  const presentation: Record<
-    BookingStatus,
-    {
-      label: string;
-      variant: "default" | "secondary" | "outline" | "destructive";
-    }
-  > = {
-    [BookingStatus.PENDING]: { label: "Awaiting owner", variant: "secondary" },
-    [BookingStatus.APPROVED]: { label: "Approved", variant: "default" },
-    [BookingStatus.PAYMENT_PENDING]: {
-      label: "Awaiting payment",
-      variant: "secondary",
-    },
-    [BookingStatus.ACTIVE]: { label: "Rented out", variant: "default" },
-    [BookingStatus.COMPLETED]: { label: "Completed", variant: "outline" },
-    [BookingStatus.REVIEWED]: { label: "Reviewed", variant: "outline" },
-    [BookingStatus.DECLINED]: { label: "Declined", variant: "destructive" },
-    [BookingStatus.CANCELLED]: { label: "Cancelled", variant: "outline" },
-    [BookingStatus.EXPIRED]: { label: "Expired", variant: "outline" },
-  };
-
-  const { label, variant } = presentation[status];
+function StatusBadge({ status, payment }: StatusBadgeProps) {
+  const { label, variant } = bookingBadge(status, payment);
 
   return <Badge variant={variant}>{label}</Badge>;
 }
