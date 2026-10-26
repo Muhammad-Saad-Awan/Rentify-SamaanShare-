@@ -76,6 +76,18 @@ export function isRealtimeEnabled(): boolean {
   );
 }
 
+/**
+ * Whether card payment through Stripe Checkout can be offered.
+ *
+ * Both or nothing, like realtime - but here a partial configuration would cost money rather than a
+ * failed subscription. A secret key without a signing secret creates sessions renters can pay,
+ * while the webhook rejects every event that would record it: the renter is charged and the
+ * booking never learns. So the button appears only when both are present.
+ */
+export function isStripeEnabled(): boolean {
+  return Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET);
+}
+
 /** Whether Cloudinary uploads are configured. */
 export function isCloudinaryEnabled(): boolean {
   return Boolean(

@@ -203,6 +203,77 @@ describe("parseServerEnv", () => {
   });
 });
 
+/**
+ * Stripe: test mode only.
+ *
+ * The fixtures are assembled from parts so that no string in the repository looks like a real key
+ * to a secret scanner - a literal `sk_live_` here would be exactly what a pre-commit hook should
+ * refuse.
+ */
+describe("parseServerEnv - Stripe", () => {
+  const key = (prefix: string, mode: string) =>
+    [prefix, mode, "51AbCdEfGh0123456789"].join("_");
+
+  it("boots without Stripe - card payment is simply not offered", () => {
+    expect(parseServerEnv(minimal).success).toBe(true);
+  });
+
+  it("accepts test secret keys and restricted test keys", () => {
+    for (const value of [key("sk", "test"), key("rk", "test")]) {
+      expect(
+        parseServerEnv({ ...minimal, STRIPE_SECRET_KEY: value }).success
+      ).toBe(true);
+    }
+  });
+
+  /** A live key would take real money through code only ever exercised with test cards. */
+  it("refuses live keys, naming the variable", () => {
+    for (const value of [key("sk", "live"), key("rk", "live")]) {
+      const result = parseServerEnv({ ...minimal, STRIPE_SECRET_KEY: value });
+
+      expect(result.success).toBe(false);
+
+      if (!result.success) {
+        expect(result.errors.join(" ")).toContain("STRIPE_SECRET_KEY");
+      }
+    }
+  });
+
+  /** The browser never loads Stripe.js; a publishable key in this slot is a paste mistake. */
+  it("refuses a publishable key in the secret slot", () => {
+    expect(
+      parseServerEnv({ ...minimal, STRIPE_SECRET_KEY: key("pk", "test") })
+        .success
+    ).toBe(false);
+  });
+
+  it("accepts a webhook signing secret and refuses anything else there", () => {
+    expect(
+      parseServerEnv({
+        ...minimal,
+        STRIPE_WEBHOOK_SECRET: ["whsec", "abc123DEF456"].join("_"),
+      }).success
+    ).toBe(true);
+    expect(
+      parseServerEnv({
+        ...minimal,
+        STRIPE_WEBHOOK_SECRET: key("sk", "test"),
+      }).success
+    ).toBe(false);
+  });
+
+  /** A blank dashboard field is "not configured", not a malformed key. */
+  it("treats a blank value as absent", () => {
+    expect(
+      parseServerEnv({
+        ...minimal,
+        STRIPE_SECRET_KEY: "",
+        STRIPE_WEBHOOK_SECRET: "  ",
+      }).success
+    ).toBe(true);
+  });
+});
+
 describe("parsePublicEnv", () => {
   it("defaults the app URL for local development", () => {
     const result = parsePublicEnv({});

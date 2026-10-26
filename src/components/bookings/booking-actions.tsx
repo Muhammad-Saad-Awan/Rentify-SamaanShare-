@@ -2,6 +2,7 @@
 
 import {
   CheckIcon,
+  CreditCardIcon,
   LandmarkIcon,
   Loader2Icon,
   MapPinIcon,
@@ -23,6 +24,7 @@ import {
   declineBooking,
   updateBookingInstructions,
 } from "@/actions/bookings";
+import { startCardCheckout } from "@/actions/card-checkout";
 import { selectPaymentMethod } from "@/actions/payments";
 import { confirmDepositReturn } from "@/actions/deposit";
 import { PaymentInstructions } from "@/components/bookings/payment-instructions";
@@ -36,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   BookingStatus,
   HandoverType,
+  PaymentProvider,
   PaymentStatus,
 } from "@/generated/prisma/enums";
 import { useFocusReturn } from "@/hooks/use-focus-return";
@@ -143,6 +146,39 @@ function BookingActions({ booking, side }: BookingActionsProps) {
   }
 
   /**
+   * Sends the renter to Stripe-hosted Checkout.
+   *
+   * The action returns the URL rather than redirecting, so a refusal arrives as a toast. The
+   * transition stays pending through the navigation, which keeps the button disabled - a second
+   * click would only be collapsed by the idempotency key anyway, but it should not look possible.
+   */
+  function payByCard() {
+    startTransition(async () => {
+      const result = await startCardCheckout({ bookingId: booking.id });
+
+      if (!result.success) {
+        toast.error(result.error);
+
+        return;
+      }
+
+      window.location.assign(result.data.url);
+    });
+  }
+
+  /** Back to bank transfer from a card attempt, or the first choice of it. */
+  function payByBankTransfer(successMessage: string) {
+    run(
+      () =>
+        selectPaymentMethod({
+          bookingId: booking.id,
+          method: "BANK_TRANSFER",
+        }),
+      successMessage
+    );
+  }
+
+  /**
    * Backing out of a panel, as distinct from completing one.
    *
    * Only the dismissal path returns focus. After a successful action the booking has changed
@@ -163,6 +199,28 @@ function BookingActions({ booking, side }: BookingActionsProps) {
 
   const { payment, deposit, eligibility } = booking;
   const isPaymentConfirmed = payment?.status === PaymentStatus.COMPLETED;
+  const isCardPayment = payment?.provider === PaymentProvider.STRIPE;
+
+  /**
+   * Test mode is said on the button itself. Nobody should reach Stripe's page believing a real
+   * card will be charged, or enter one.
+   */
+  const cardButton = (label: string, variant: "default" | "outline") => (
+    <Button
+      size="sm"
+      variant={variant}
+      onClick={payByCard}
+      disabled={isPending}
+      aria-busy={isPending}
+    >
+      {isPending ? (
+        <Loader2Icon className="animate-spin" />
+      ) : (
+        <CreditCardIcon />
+      )}
+      {label}
+    </Button>
+  );
 
   const cancelPanel = (confirmLabel: string, successMessage: string) => (
     <EditPanel
@@ -657,13 +715,9 @@ function BookingActions({ booking, side }: BookingActionsProps) {
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
+            variant={eligibility.renterCanPayByCard ? "outline" : "default"}
             onClick={() =>
-              run(
-                () =>
-                  selectPaymentMethod({
-                    bookingId: booking.id,
-                    method: "BANK_TRANSFER",
-                  }),
+              payByBankTransfer(
                 "Next: send the transfer and record its reference."
               )
             }
@@ -675,8 +729,13 @@ function BookingActions({ booking, side }: BookingActionsProps) {
             ) : (
               <LandmarkIcon />
             )}
-            Continue to payment
+            {eligibility.renterCanPayByCard
+              ? "Pay by bank transfer"
+              : "Continue to payment"}
           </Button>
+
+          {eligibility.renterCanPayByCard &&
+            cardButton("Pay by card (test mode)", "default")}
         </div>
 
         {panel === "cancel" ? (
@@ -704,6 +763,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
           amount={booking.totalPrice}
           securityDeposit={booking.securityDeposit}
           isConfirmed={isPaymentConfirmed}
+          byCard={isCardPayment}
         />
 
         {isPaymentConfirmed ? (
@@ -717,18 +777,67 @@ function BookingActions({ booking, side }: BookingActionsProps) {
               Waiting, not idle. A renter who has recorded a payment and hears nothing assumes
               it is lost; saying who is looking and roughly when closes that gap.
             */}
-            {payment.status === PaymentStatus.PENDING_VERIFICATION ? (
+            {/*
+              Card in progress or failed. Nothing here says "paid": only the Stripe webhook can,
+              and until it does the honest statement is that we have not heard yet.
+            */}
+            {isCardPayment ? (
+              <>
+                <Note
+                  tone={
+                    payment.status === PaymentStatus.FAILED
+                      ? "warning"
+                      : "default"
+                  }
+                >
+                  {payment.status === PaymentStatus.FAILED
+                    ? "Your card payment did not go through. Nothing was taken - try again, or pay by bank transfer."
+                    : "Card payment started. If you finished paying on Stripe, this updates within a minute. If not, continue where you left off."}
+                </Note>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {eligibility.renterCanPayByCard &&
+                    cardButton(
+                      payment.status === PaymentStatus.FAILED
+                        ? "Try card again (test mode)"
+                        : "Continue card payment (test mode)",
+                      "default"
+                    )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      payByBankTransfer(
+                        "Switched to bank transfer. Send it and record the reference."
+                      )
+                    }
+                    disabled={isPending}
+                  >
+                    <LandmarkIcon />
+                    Pay by bank transfer instead
+                  </Button>
+                </div>
+              </>
+            ) : payment.status === PaymentStatus.PENDING_VERIFICATION ? (
               <Note>
                 We are checking your payment against our account, usually the
                 same day. You will hear either way. Nothing else is needed from
                 you.
               </Note>
             ) : (
-              <RecordPaymentForm
-                bookingId={booking.id}
-                transactionRef={payment.transactionRef}
-                rejectionReason={payment.rejectionReason}
-              />
+              <>
+                <RecordPaymentForm
+                  bookingId={booking.id}
+                  transactionRef={payment.transactionRef}
+                  rejectionReason={payment.rejectionReason}
+                />
+
+                {eligibility.renterCanPayByCard && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {cardButton("Pay by card instead (test mode)", "outline")}
+                  </div>
+                )}
+              </>
             )}
 
             {panel === "cancel"

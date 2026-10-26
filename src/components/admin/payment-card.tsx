@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { PaymentStatus } from "@/generated/prisma/enums";
+import { PaymentProvider, PaymentStatus } from "@/generated/prisma/enums";
 import { paymentMethodLabel } from "@/lib/notifications/messages";
 import { formatPKR } from "@/lib/utils/currency";
 import { formatDateTime } from "@/lib/utils/date";
@@ -98,6 +98,7 @@ function PaymentCard({ payment }: PaymentCardProps) {
   const awaitingDecision =
     payment.status === PaymentStatus.PENDING_VERIFICATION;
   const verified = payment.status === PaymentStatus.COMPLETED;
+  const byCard = payment.provider === PaymentProvider.STRIPE;
 
   /**
    * Reversal is offered only while nothing has been built on the verification.
@@ -106,14 +107,20 @@ function PaymentCard({ payment }: PaymentCardProps) {
    * exists, so hiding the control here is presentation rather than protection - but offering a
    * button whose only outcome is a refusal is its own kind of lie.
    */
-  const reversible = verified && !payment.settled && !payment.refundedAt;
+  const refundOpen = verified && !payment.settled && !payment.refundedAt;
+
+  /**
+   * A card payment was confirmed by Stripe, not by an administrator, so there is no verification
+   * to reverse - only a refund. The action refuses it too; see `reverseVerification`.
+   */
+  const reversible = refundOpen && !byCard;
 
   /**
    * Refundable on exactly the same conditions, because it is the same question: is this money
    * still ours to move? `refundReadiness` decides for real - it refuses a settled booking and an
    * already-refunded payment - and this only decides whether to offer the control.
    */
-  const refundable = reversible;
+  const refundable = refundOpen;
 
   async function run(
     action: () => Promise<ActionResult<unknown>>,
@@ -153,7 +160,10 @@ function PaymentCard({ payment }: PaymentCardProps) {
           </span>
         </div>
 
-        <StatusBadge status={payment.status} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          {byCard && <Badge variant="outline">Stripe · test</Badge>}
+          <StatusBadge status={payment.status} />
+        </div>
       </div>
 
       {/*
@@ -169,7 +179,9 @@ function PaymentCard({ payment }: PaymentCardProps) {
           {formatPKR(payment.securityDeposit)} deposit
         </span>
         <span className="text-muted-foreground text-xs">
-          {paymentMethodLabel(payment.method)}
+          {byCard
+            ? "card via Stripe Checkout"
+            : paymentMethodLabel(payment.method)}
         </span>
         {payment.transactionRef && (
           <span className="font-mono text-xs break-all">
@@ -190,7 +202,11 @@ function PaymentCard({ payment }: PaymentCardProps) {
             <dt className="inline font-medium">Verified: </dt>
             <dd className="inline">
               {formatDateTime(payment.confirmedAt)}
-              {payment.confirmedByName ? ` by ${payment.confirmedByName}` : ""}
+              {payment.confirmedByName
+                ? ` by ${payment.confirmedByName}`
+                : byCard
+                  ? " by Stripe"
+                  : ""}
             </dd>
           </div>
         )}
@@ -201,6 +217,28 @@ function PaymentCard({ payment }: PaymentCardProps) {
           </div>
         )}
       </dl>
+
+      {/*
+        Money Stripe took that this payment could not accept. Red and above the actions, because
+        each line is a refund somebody owes and nothing else in the app will raise it.
+      */}
+      {payment.unappliedCardPayments.length > 0 && (
+        <div className="border-destructive/40 text-destructive flex flex-col gap-1 rounded-lg border px-3 py-2 text-xs">
+          <p className="font-medium">
+            Card payment not applied - refund it in the Stripe Dashboard
+          </p>
+          <ul className="flex flex-col gap-0.5">
+            {payment.unappliedCardPayments.map((entry) => (
+              <li key={entry.checkoutSessionId}>
+                <span className="font-mono break-all">
+                  {entry.checkoutSessionId}
+                </span>
+                {`: ${entry.reason}`}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {payment.rejectionReason && (
         <p className="text-muted-foreground text-xs leading-relaxed">
@@ -417,6 +455,10 @@ function StatusBadge({ status }: { status: PaymentStatus }) {
       return <Badge variant="destructive">Not found</Badge>;
     case PaymentStatus.REFUNDED:
       return <Badge variant="outline">Refunded</Badge>;
+    case PaymentStatus.PROCESSING:
+      return <Badge variant="secondary">Card in progress</Badge>;
+    case PaymentStatus.FAILED:
+      return <Badge variant="destructive">Card failed</Badge>;
     default:
       return <Badge variant="outline">Not yet recorded</Badge>;
   }

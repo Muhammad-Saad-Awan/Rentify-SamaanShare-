@@ -237,7 +237,12 @@ export function buildBookingNotifications(
         toOwner(
           NotificationType.PAYMENT_PENDING,
           `Payment arranged for ${item}`,
-          `The renter will pay ${formatPKR(input.amount)} by ${paymentMethodLabel(input.method)}. Confirm once you have received it.`
+          /**
+           * NO "CONFIRM ONCE YOU HAVE RECEIVED IT". That was the offline flow, where the renter paid
+           * the owner and the owner vouched for it. The money now goes to SamaanShare and is
+           * verified there, so the owner has nothing to confirm - what they need is to wait.
+           */
+          `The renter is paying SamaanShare for the ${formatPKR(input.amount)} rental by ${paymentMethodLabel(input.method)}. You will be told when the payment is confirmed - do not hand the item over before then.`
         ),
       ];
 

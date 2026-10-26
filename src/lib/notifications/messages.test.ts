@@ -147,6 +147,22 @@ describe("buildBookingNotifications addressing", () => {
   });
 
   /**
+   * The money goes to SamaanShare now, so the owner has nothing to confirm. The old copy asked
+   * them to, which invited an owner to "confirm" a transfer they never see.
+   */
+  it("tells the owner to wait for confirmation, not to confirm it", () => {
+    const [owner] = build({
+      event: "payment-selected",
+      method: "CREDIT_CARD",
+      amount: 7500,
+    });
+
+    expect(owner?.body).not.toMatch(/confirm once/i);
+    expect(owner?.body).toMatch(/do not hand the item over/i);
+    expect(owner?.body).toContain("7,500");
+  });
+
+  /**
    * Pickup details are the only channel between the two parties in this phase, so a change to
    * them has to reach the renter - who may already have travelled on the old address. The owner
    * made the edit, so they are not told about it.

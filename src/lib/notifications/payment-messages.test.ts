@@ -26,7 +26,11 @@ function build(event: PaymentEvent) {
 
 describe("verified", () => {
   it("tells both parties, renter first", () => {
-    const drafts = build({ event: "verified", amount: 4999 });
+    const drafts = build({
+      event: "verified",
+      amount: 4999,
+      securityDeposit: 25000,
+    });
 
     expect(drafts).toHaveLength(2);
     expect(drafts[0]?.userId).toBe("renter-1");
@@ -36,22 +40,49 @@ describe("verified", () => {
     ).toBe(true);
   });
 
-  it("states the amount to the renter", () => {
-    const [renter] = build({ event: "verified", amount: 4999 });
+  /** The renter paid rent AND deposit; a title naming only the rent contradicts their statement. */
+  it("states the total the renter paid, then the split", () => {
+    const [renter] = build({
+      event: "verified",
+      amount: 4999,
+      securityDeposit: 25000,
+    });
+
+    expect(renter?.title).toContain("29,999");
+    expect(renter?.body).toContain("4,999");
+    expect(renter?.body).toContain("25,000");
+    expect(renter?.body).toMatch(/refundable deposit/i);
+  });
+
+  it("leaves the deposit out when there is none", () => {
+    const [renter] = build({
+      event: "verified",
+      amount: 4999,
+      securityDeposit: 0,
+    });
 
     expect(renter?.title).toContain("4,999");
+    expect(renter?.body).not.toMatch(/deposit/i);
   });
 
   /** The owner's copy is the one that unblocks the handover, so it has to say so. */
   it("tells the owner they can hand over", () => {
-    const [, owner] = build({ event: "verified", amount: 4999 });
+    const [, owner] = build({
+      event: "verified",
+      amount: 4999,
+      securityDeposit: 25000,
+    });
 
     expect(owner?.body).toMatch(/hand the item over/i);
   });
 
   /** Each side's deep link points at their own screen. */
   it("points each side at their own dashboard", () => {
-    const [renter, owner] = build({ event: "verified", amount: 4999 });
+    const [renter, owner] = build({
+      event: "verified",
+      amount: 4999,
+      securityDeposit: 25000,
+    });
 
     expect(renter?.entityType).toBe("booking");
     expect(owner?.entityType).toBe("booking-request");

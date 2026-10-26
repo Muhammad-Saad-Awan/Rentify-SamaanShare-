@@ -1,4 +1,4 @@
-import { CalendarCheckIcon } from "lucide-react";
+import { CalendarCheckIcon, CreditCardIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -20,7 +20,11 @@ export const metadata: Metadata = {
 };
 
 interface BookingsPageProps {
-  searchParams: Promise<{ page?: string | string[] }>;
+  searchParams: Promise<{
+    page?: string | string[];
+    /** Set by Stripe Checkout's return URLs - see `checkoutReturnUrls`. */
+    checkout?: string | string[];
+  }>;
 }
 
 /**
@@ -37,15 +41,49 @@ interface BookingsPageProps {
 export default async function MyBookingsPage({
   searchParams,
 }: BookingsPageProps) {
-  const { page: rawPage } = await searchParams;
+  const { page: rawPage, checkout } = await searchParams;
 
   return (
-    <Suspense
-      key={String(rawPage ?? 1)}
-      fallback={<DashboardPageSkeleton cards={3} />}
+    <>
+      <CheckoutReturnNotice
+        outcome={Array.isArray(checkout) ? checkout[0] : checkout}
+      />
+
+      <Suspense
+        key={String(rawPage ?? 1)}
+        fallback={<DashboardPageSkeleton cards={3} />}
+      >
+        <RenterBookings rawPage={rawPage} />
+      </Suspense>
+    </>
+  );
+}
+
+/**
+ * What the renter is told on returning from Stripe Checkout.
+ *
+ * DELIBERATELY NOT A CONFIRMATION. Anybody can type `?checkout=success`, and a renter who really
+ * paid may land here before Stripe's webhook has. So this never says "paid": it says what happens
+ * next, and the booking card below - which reads the database - is the only thing that states the
+ * payment's status. Nothing on this page writes anything.
+ */
+function CheckoutReturnNotice({ outcome }: { outcome: string | undefined }) {
+  if (outcome !== "success" && outcome !== "cancelled") {
+    return null;
+  }
+
+  return (
+    <div
+      role="status"
+      className="bg-muted/50 mb-4 flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm"
     >
-      <RenterBookings rawPage={rawPage} />
-    </Suspense>
+      <CreditCardIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <p>
+        {outcome === "success"
+          ? "Thanks - Stripe is confirming your card payment. The booking below shows it as confirmed as soon as we hear back, usually within a minute."
+          : "Card payment cancelled. Nothing was charged. You can try again or pay by bank transfer below."}
+      </p>
+    </div>
   );
 }
 

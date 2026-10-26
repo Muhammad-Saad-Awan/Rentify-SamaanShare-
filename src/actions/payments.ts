@@ -12,10 +12,11 @@ import { expireStalePendingBookings } from "@/lib/bookings/expire";
 import {
   LIFECYCLE_RATE_LIMIT,
   loadBookingForParty,
-  transitionBooking,
 } from "@/lib/bookings/guard";
 import { canTransition } from "@/lib/bookings/lifecycle";
-import { emitBookingEvent } from "@/lib/chat/booking-events";
+import { attachPaymentToBooking } from "@/lib/payments/attach";
+import { CARD_CHECKOUT_FROM } from "@/lib/payments/stripe";
+import { expireOpenCheckout } from "@/lib/payments/stripe-client";
 import { publishAfterCommit } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -125,10 +126,39 @@ export async function selectPaymentMethod(
         return { success: true, data: { status: booking.status } };
       }
 
-      await prisma.payment.update({
-        where: { id: booking.payment.id },
-        data: { method },
-      });
+      /**
+       * Back from card to bank transfer: the payment becomes an offline one again.
+       *
+       * Guarded on the statuses card checkout may be in, so a webhook that completes the payment at
+       * the same moment wins rather than being overwritten. The open Checkout Session is closed
+       * after the commit, best effort - if the renter still pays it, the webhook applies it anyway.
+       */
+      if (booking.payment.provider === PaymentProvider.STRIPE) {
+        const switched = await prisma.payment.updateMany({
+          where: {
+            id: booking.payment.id,
+            provider: PaymentProvider.STRIPE,
+            status: { in: [...CARD_CHECKOUT_FROM] },
+          },
+          data: {
+            provider: PaymentProvider.OFFLINE,
+            method,
+            status: PaymentStatus.AWAITING_CONFIRMATION,
+            transactionRef: null,
+          },
+        });
+
+        if (switched.count !== 1) {
+          return { success: false, error: CONCURRENT_CHANGE_ERROR };
+        }
+
+        await expireOpenCheckout(booking.payment.id);
+      } else {
+        await prisma.payment.update({
+          where: { id: booking.payment.id },
+          data: { method },
+        });
+      }
 
       revalidateBookingPaths(booking.listingId);
 
@@ -145,74 +175,25 @@ export async function selectPaymentMethod(
       };
     }
 
-    const created = await prisma.$transaction(async (tx) => {
-      /**
-       * The payment row and the status change are one transaction.
-       *
-       * Separately, a crash between them leaves either a PAYMENT_PENDING booking the owner cannot
-       * confirm because there is no payment to confirm, or an orphaned payment row attached to
-       * nothing. Both would need manual repair.
-       */
-
-      /**
-       * The terms being copied must still be the booking's terms.
-       *
-       * Chat made rent and deposit renegotiable while a booking is APPROVED, and the read above
-       * happened before this transaction. Locking the row and comparing closes the gap: an offer
-       * accepted in between makes this a concurrent change, and one accepted after waits on the
-       * lock and then finds a payment attached, which ends renegotiation. The `bookings` trigger
-       * refuses a mismatched payment regardless; this turns that into a message the renter can act
-       * on.
-       */
-      const [current] = await tx.$queryRaw<
-        { totalPrice: number; securityDeposit: number }[]
-      >`SELECT "totalPrice", "securityDeposit" FROM "bookings" WHERE "id" = ${booking.id} FOR UPDATE`;
-
-      if (
-        !current ||
-        current.totalPrice !== booking.totalPrice ||
-        current.securityDeposit !== booking.securityDeposit
-      ) {
-        return null;
-      }
-
-      const payment = await tx.payment.create({
-        data: {
+    /**
+     * The payment row and the status change are one transaction.
+     *
+     * Separately, a crash between them leaves either a PAYMENT_PENDING booking with no payment to
+     * verify, or an orphaned payment row attached to nothing. Both would need manual repair. The
+     * lock and terms check live in `attachPaymentToBooking`, shared with card checkout.
+     */
+    const created = await prisma.$transaction((tx) =>
+      attachPaymentToBooking(
+        tx,
+        booking,
+        {
           provider: PaymentProvider.OFFLINE,
           method,
           status: PaymentStatus.AWAITING_CONFIRMATION,
-          // Copied from the booking, which captured them at request time - not re-read from the
-          // listing, whose prices may have changed since.
-          amount: booking.totalPrice,
-          securityDeposit: booking.securityDeposit,
         },
-        select: { id: true },
-      });
-
-      const moved = await transitionBooking(tx, {
-        bookingId: booking.id,
-        from: booking.status,
-        to: BookingStatus.PAYMENT_PENDING,
-        relations: { payment: { connect: { id: payment.id } } },
-      });
-
-      if (!moved) {
-        return null;
-      }
-
-      return emitBookingEvent(
-        tx,
-        {
-          event: "payment-selected",
-          bookingId: booking.id,
-          listingTitle: booking.listing.title,
-          parties: { renterId: booking.renterId, ownerId: booking.ownerId },
-          method,
-          amount: booking.totalPrice,
-        },
-        { actorId: renter.id }
-      );
-    });
+        renter.id
+      )
+    );
 
     if (!created) {
       return { success: false, error: CONCURRENT_CHANGE_ERROR };

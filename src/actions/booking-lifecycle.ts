@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
-import { BookingStatus, HandoverType } from "@/generated/prisma/enums";
+import {
+  BookingStatus,
+  HandoverType,
+  PaymentProvider,
+} from "@/generated/prisma/enums";
 import { getActiveUser } from "@/lib/auth/session";
 import { expireStalePendingBookings } from "@/lib/bookings/expire";
 import {
@@ -19,6 +23,7 @@ import {
 import { prepareHandover, writeHandoverRecord } from "@/lib/handover/write";
 import { emitBookingEvent } from "@/lib/chat/booking-events";
 import { emitBookingNotifications } from "@/lib/notifications/create";
+import { expireOpenCheckout } from "@/lib/payments/stripe-client";
 import { publishAfterCommit } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -460,6 +465,12 @@ export async function cancelBooking(
     }
 
     publishAfterCommit(created);
+
+    // A Checkout tab left open must not take money for a cancelled booking. Best effort, after the
+    // commit - see `expireOpenCheckout`.
+    if (booking.payment?.provider === PaymentProvider.STRIPE) {
+      await expireOpenCheckout(booking.payment.id);
+    }
 
     revalidateBookingPaths(booking.listingId);
 

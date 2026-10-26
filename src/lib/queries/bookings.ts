@@ -1,7 +1,9 @@
+import { isStripeEnabled } from "@/config/env";
 import { BookingStatus } from "@/generated/prisma/enums";
 import { depositState } from "@/lib/bookings/deposit";
 import { expireStalePendingBookings } from "@/lib/bookings/expire";
 import { canRenterCancel, canStartBooking } from "@/lib/bookings/lifecycle";
+import { canStartCardCheckout } from "@/lib/payments/stripe";
 import { releaseDueReviews } from "@/lib/reviews/release";
 import { canReviewBooking } from "@/lib/reviews/rules";
 import { prisma } from "@/lib/prisma";
@@ -23,6 +25,7 @@ import type {
   HandoverCondition,
   HandoverType,
   PaymentMethod,
+  PaymentProvider,
   PaymentStatus,
 } from "@/generated/prisma/enums";
 import type { PaginatedResult } from "@/types";
@@ -59,6 +62,8 @@ export interface BookingSummary {
   /** `null` until the renter has chosen how to pay. */
   payment: {
     method: PaymentMethod;
+    /** `STRIPE` while card checkout is in progress or once a card payment has landed. */
+    provider: PaymentProvider;
     status: PaymentStatus;
     confirmedAt: Date | null;
     /** What the renter told us they sent, so they can correct it rather than retype it. */
@@ -84,6 +89,13 @@ export interface BookingSummary {
   eligibility: {
     renterCanCancel: CancelEligibility;
     ownerCanStart: CancelEligibility;
+    /**
+     * Whether the renter is offered card payment through Stripe Checkout (test mode).
+     *
+     * False whenever Stripe is not fully configured - see `isStripeEnabled` - so an unconfigured
+     * deployment shows bank transfer exactly as before.
+     */
+    renterCanPayByCard: boolean;
   };
   /** Pickup and return condition records, oldest first. At most one of each. */
   handovers: HandoverSnapshot[];
@@ -217,6 +229,7 @@ const bookingSelect = {
   payment: {
     select: {
       method: true,
+      provider: true,
       status: true,
       confirmedAt: true,
       securityDeposit: true,
@@ -324,6 +337,7 @@ type BookingRow = {
   owner: { name: string | null };
   payment: {
     method: PaymentMethod;
+    provider: PaymentProvider;
     status: PaymentStatus;
     confirmedAt: Date | null;
     securityDeposit: number;
@@ -430,6 +444,7 @@ function toSummary(
     payment: row.payment
       ? {
           method: row.payment.method,
+          provider: row.payment.provider,
           status: row.payment.status,
           confirmedAt: row.payment.confirmedAt,
           transactionRef: row.payment.transactionRef,
@@ -469,6 +484,13 @@ function toSummary(
     eligibility: {
       renterCanCancel: canRenterCancel({ status: row.status, paymentStatus }),
       ownerCanStart: canStartBooking({ status: row.status, paymentStatus }),
+      renterCanPayByCard:
+        side === "renter" &&
+        isStripeEnabled() &&
+        (row.status === BookingStatus.APPROVED ||
+          (row.status === BookingStatus.PAYMENT_PENDING &&
+            paymentStatus !== null &&
+            canStartCardCheckout(paymentStatus))),
     },
     claim: row.claim
       ? {

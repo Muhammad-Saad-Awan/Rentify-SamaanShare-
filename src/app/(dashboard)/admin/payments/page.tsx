@@ -44,6 +44,13 @@ const STATUS_TABS = [
     label: "Not yet recorded",
     href: "/admin/payments?status=awaiting",
   },
+  // Card checkouts started and not yet confirmed by Stripe (test mode). Nothing to decide - the
+  // webhook does - but "where is that payment" needs an answer for these too.
+  {
+    status: PaymentStatus.PROCESSING,
+    label: "Card in progress",
+    href: "/admin/payments?status=card",
+  },
   {
     status: PaymentStatus.COMPLETED,
     label: "Verified",
@@ -68,6 +75,8 @@ function parseStatusParam(raw: string | string[] | undefined): PaymentStatus {
   switch (value) {
     case "awaiting":
       return PaymentStatus.AWAITING_CONFIRMATION;
+    case "card":
+      return PaymentStatus.PROCESSING;
     case "verified":
       return PaymentStatus.COMPLETED;
     case "rejected":
