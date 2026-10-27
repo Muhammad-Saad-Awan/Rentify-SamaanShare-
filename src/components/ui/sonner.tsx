@@ -29,9 +29,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
+          // Inverted: feedback appears as a black slip over a white page, which is
+          // unmistakable without needing a colour per outcome.
+          "--normal-bg": "var(--foreground)",
+          "--normal-text": "var(--background)",
+          "--normal-border": "var(--foreground)",
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }

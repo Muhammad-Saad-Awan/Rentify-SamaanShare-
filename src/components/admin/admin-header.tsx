@@ -34,13 +34,17 @@ function AdminHeader() {
   const items = adminNavItems();
 
   return (
-    <div className="flex flex-col gap-2.5 border-b pb-4">
+    <div className="flex flex-col gap-3 border-b pb-4">
       <div className="flex flex-wrap items-center gap-2">
-        <ShieldIcon
-          className="text-muted-foreground size-4 shrink-0"
+        <span
+          className="bg-primary text-primary-foreground flex size-6 shrink-0 items-center justify-center rounded-md"
           aria-hidden="true"
-        />
-        <span className="font-heading text-sm font-medium">Administration</span>
+        >
+          <ShieldIcon className="size-3.5" />
+        </span>
+        <span className="font-heading text-sm font-semibold">
+          Administration
+        </span>
         <Badge variant="secondary">Restricted</Badge>
         <p className="text-muted-foreground text-xs">
           Actions here affect other people&apos;s accounts, listings and money,
@@ -69,10 +73,10 @@ function AdminHeader() {
               // background colour alone.
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "focus-visible:ring-ring flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition-colors outline-none focus-visible:ring-2",
+                "focus-visible:ring-ring flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors outline-none focus-visible:ring-2",
                 isActive
-                  ? "bg-accent text-accent-foreground font-medium"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-accent-foreground"
+                  ? "bg-primary text-primary-foreground border-primary font-medium"
+                  : "text-muted-foreground hover:border-foreground hover:text-foreground border-border"
               )}
             >
               <Icon className="size-3.5 shrink-0" aria-hidden="true" />

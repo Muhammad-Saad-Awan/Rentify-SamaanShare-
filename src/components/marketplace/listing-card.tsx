@@ -5,7 +5,6 @@ import Link from "next/link";
 import { SaveListingButton } from "@/components/marketplace/save-listing-button";
 import { HighlightText } from "@/components/shared/highlight-text";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { formatPKRPerDay } from "@/lib/utils/currency";
 import { CONDITION_LABELS, formatCity } from "@/lib/utils/listing";
 
@@ -50,8 +49,8 @@ function ListingCard({
   isAuthenticated = false,
 }: ListingCardProps) {
   const body = (
-    <Card className="h-full gap-0 pt-0 transition-shadow hover:shadow-md">
-      <div className="bg-muted relative aspect-4/3 w-full overflow-hidden rounded-t-xl">
+    <div className="flex h-full flex-col gap-3">
+      <div className="bg-muted relative aspect-4/3 w-full overflow-hidden rounded-xl">
         {listing.imageUrl ? (
           <Image
             src={listing.imageUrl}
@@ -63,7 +62,7 @@ function ListingCard({
             // Mirrors the grid's breakpoints below, so the browser does not
             // download a full-width image for a quarter-width slot.
             sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover"
+            className="object-cover transition-transform duration-500 ease-out group-hover/listing:scale-[1.03]"
             priority={priority}
           />
         ) : (
@@ -79,14 +78,14 @@ function ListingCard({
 
         <Badge
           variant="secondary"
-          className="absolute top-2 right-2 shadow-sm backdrop-blur"
+          className="bg-background/95 absolute top-2.5 right-2.5 border-transparent"
         >
           {CONDITION_LABELS[listing.condition]}
         </Badge>
       </div>
 
-      <div className="flex flex-col gap-2 px-(--card-spacing) pt-(--card-spacing)">
-        <div className="flex flex-col gap-1">
+      <div className="flex flex-1 flex-col gap-1.5 px-0.5">
+        <div className="flex flex-col gap-0.5">
           <p className="text-muted-foreground text-xs">
             {listing.categoryName}
           </p>
@@ -96,7 +95,7 @@ function ListingCard({
             an unclamped one pushes the price row down, leaving a grid of cards
             whose prices no longer line up across a row.
           */}
-          <h3 className="font-heading line-clamp-2 min-h-10 text-sm leading-snug font-medium">
+          <h3 className="font-heading group-hover/listing:decoration-foreground/40 line-clamp-2 min-h-10 text-[0.9375rem] leading-snug font-semibold group-hover/listing:underline group-hover/listing:underline-offset-2">
             <HighlightText text={listing.title} term={searchTerm} />
           </h3>
         </div>
@@ -115,8 +114,8 @@ function ListingCard({
           </p>
         )}
 
-        <div className="flex items-end justify-between gap-2">
-          <span className="font-heading text-sm font-semibold tracking-tight">
+        <div className="mt-auto flex items-baseline justify-between gap-2 pt-1">
+          <span className="font-heading text-base font-bold tracking-tight">
             {formatPKRPerDay(listing.pricePerDay)}
           </span>
 
@@ -126,7 +125,7 @@ function ListingCard({
           </span>
         </div>
       </div>
-    </Card>
+    </div>
   );
 
   return (
@@ -137,7 +136,7 @@ function ListingCard({
     <div className="relative h-full">
       <Link
         href={`/listings/${listing.id}`}
-        className="focus-visible:ring-ring block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+        className="group/listing focus-visible:ring-ring block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-offset-4"
       >
         {body}
       </Link>
@@ -148,7 +147,7 @@ function ListingCard({
         listingTitle={listing.title}
         isSaved={isSaved}
         isAuthenticated={isAuthenticated}
-        className="absolute top-2 left-2 z-10"
+        className="absolute top-2.5 left-2.5 z-10"
       />
     </div>
   );

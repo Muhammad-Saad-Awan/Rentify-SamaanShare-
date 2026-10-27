@@ -6,7 +6,7 @@ import { BookingActions } from "@/components/bookings/booking-actions";
 import { OpenBookingChatButton } from "@/components/chat/open-booking-chat-button";
 import { ClaimPanel } from "@/components/claims/claim-panel";
 import { HandoverRecordList } from "@/components/handover/handover-record-list";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Card } from "@/components/ui/card";
 import { BookingStatus } from "@/generated/prisma/enums";
 import { PENDING_EXPIRY_HOURS } from "@/lib/bookings/lifecycle";
@@ -41,14 +41,14 @@ function BookingCard({ booking, side }: BookingCardProps) {
 
   return (
     <Card>
-      <div className="flex flex-col gap-4 px-(--card-spacing) sm:flex-row">
-        <div className="bg-muted relative aspect-4/3 w-full shrink-0 overflow-hidden rounded-lg sm:w-32">
+      <div className="flex flex-col gap-5 px-(--card-spacing) sm:flex-row">
+        <div className="bg-muted relative aspect-4/3 w-full shrink-0 overflow-hidden rounded-lg sm:w-36">
           {booking.listing.imageUrl ? (
             <Image
               src={booking.listing.imageUrl}
               alt=""
               fill
-              sizes="(min-width: 640px) 8rem, 100vw"
+              sizes="(min-width: 640px) 9rem, 100vw"
               className="object-cover"
             />
           ) : (
@@ -61,8 +61,8 @@ function BookingCard({ booking, side }: BookingCardProps) {
           )}
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={booking.status} payment={booking.payment} />
               {awaitingDecision && side === "owner" && (
@@ -73,13 +73,13 @@ function BookingCard({ booking, side }: BookingCardProps) {
               )}
             </div>
 
-            <h3 className="font-heading text-sm leading-snug font-medium">
+            <h3 className="font-heading text-base leading-snug font-semibold">
               {/* Linked only for the renter: an owner's own listing may be paused, and its
                   public page would 404. */}
               {side === "renter" ? (
                 <Link
                   href={`/listings/${booking.listing.id}`}
-                  className="hover:underline"
+                  className="decoration-foreground/30 hover:underline hover:underline-offset-4"
                 >
                   {booking.listing.title}
                 </Link>
@@ -88,28 +88,30 @@ function BookingCard({ booking, side }: BookingCardProps) {
               )}
             </h3>
 
-            <p className="text-muted-foreground text-xs">
-              {formatDate(booking.startDate)} to {formatDate(booking.endDate)} ·{" "}
+            <p className="text-muted-foreground text-sm">
+              {formatDate(booking.startDate)} to {formatDate(booking.endDate)},{" "}
               {formatCity(booking.listing.city)}
             </p>
           </div>
 
-          <dl className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-            <div className="flex items-center gap-1.5">
-              <dt>Rental</dt>
-              <dd className="text-foreground font-medium">
+          <dl className="grid grid-cols-3 divide-x rounded-lg border text-xs">
+            <div className="flex min-w-0 flex-col gap-0.5 px-3 py-2.5">
+              <dt className="text-muted-foreground">Rental</dt>
+              <dd className="font-heading text-sm font-semibold">
                 {formatPKR(booking.totalPrice)}
               </dd>
             </div>
-            <div className="flex items-center gap-1.5">
-              <dt>Deposit</dt>
-              <dd className="text-foreground font-medium">
+            <div className="flex min-w-0 flex-col gap-0.5 px-3 py-2.5">
+              <dt className="text-muted-foreground">Deposit</dt>
+              <dd className="font-heading text-sm font-semibold">
                 {formatPKR(booking.securityDeposit)}
               </dd>
             </div>
-            <div className="flex items-center gap-1.5">
-              <dt>{side === "renter" ? "Owner" : "Renter"}</dt>
-              <dd className="text-foreground font-medium">
+            <div className="flex min-w-0 flex-col gap-0.5 px-3 py-2.5">
+              <dt className="text-muted-foreground">
+                {side === "renter" ? "Owner" : "Renter"}
+              </dt>
+              <dd className="truncate text-sm font-medium">
                 {/* Name only - the query never selects an email, so there is nothing to leak. */}
                 {booking.counterparty.name ?? "SamaanShare member"}
               </dd>
@@ -117,20 +119,21 @@ function BookingCard({ booking, side }: BookingCardProps) {
           </dl>
 
           {booking.notes && (
-            <p className="text-muted-foreground text-xs">
-              <span className="font-medium">Note:</span> {booking.notes}
+            <p className="text-muted-foreground text-sm">
+              <span className="text-foreground font-medium">Note:</span>{" "}
+              {booking.notes}
             </p>
           )}
 
           {booking.pickupInstructions && (
-            <p className="bg-muted/50 rounded-lg px-3 py-2 text-xs">
+            <p className="bg-muted/60 rounded-lg px-3 py-2.5 text-sm">
               <span className="font-medium">Pickup:</span>{" "}
               {booking.pickupInstructions}
             </p>
           )}
 
           {booking.statusReason && (
-            <p className="text-muted-foreground text-xs">
+            <p className="text-muted-foreground border-l-2 pl-3 text-sm">
               {booking.statusReason}
             </p>
           )}
@@ -162,7 +165,7 @@ function BookingCard({ booking, side }: BookingCardProps) {
             help or problems, after return for the deposit. Separate from the lifecycle actions,
             which change the booking; this only talks about it.
           */}
-          <div>
+          <div className="border-t pt-4">
             <OpenBookingChatButton
               bookingId={booking.id}
               counterpartRole={side === "renter" ? "owner" : "renter"}
@@ -188,7 +191,7 @@ interface StatusBadgeProps {
 function StatusBadge({ status, payment }: StatusBadgeProps) {
   const { label, variant } = bookingBadge(status, payment);
 
-  return <Badge variant={variant}>{label}</Badge>;
+  return <StatusLabel label={label} variant={variant} />;
 }
 
 export { BookingCard };

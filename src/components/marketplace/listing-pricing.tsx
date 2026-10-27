@@ -33,10 +33,16 @@ function ListingPricing({
 }: ListingPricingProps) {
   return (
     <Card>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <div className="flex flex-col gap-2">
-          <PriceRow label="Per day" amount={pricePerDay} />
+      <div className="flex flex-col gap-4 px-(--card-spacing)">
+        {/* The day rate leads: it is the number every other figure on the page is compared to. */}
+        <p className="flex items-baseline gap-1.5">
+          <span className="font-heading text-3xl font-extrabold tracking-[-0.03em]">
+            {formatPKR(pricePerDay)}
+          </span>
+          <span className="text-muted-foreground text-sm">per day</span>
+        </p>
 
+        <div className="flex flex-col gap-2 empty:hidden">
           {pricePerWeek !== null && (
             <PriceRow
               label="Per week"
@@ -63,7 +69,7 @@ function ListingPricing({
           </span>
 
           <div className="flex flex-col items-end">
-            <span className="font-heading text-sm font-medium">
+            <span className="font-heading text-base font-semibold">
               {formatPKR(securityDeposit)}
             </span>
             <span className="text-muted-foreground text-xs">

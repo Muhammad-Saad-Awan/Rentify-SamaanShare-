@@ -45,14 +45,12 @@ const STATUS: Record<
 > = {
   [OfferStatus.PENDING]: {
     label: "Awaiting answer",
-    className:
-      "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
+    className: "border border-foreground/25 bg-background text-foreground",
     icon: ClockIcon,
   },
   [OfferStatus.ACCEPTED]: {
     label: "Accepted",
-    className:
-      "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+    className: "bg-foreground text-background",
     icon: CheckCircle2Icon,
   },
   [OfferStatus.DECLINED]: {
@@ -217,14 +215,14 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
 
       <div className="flex flex-col gap-3 px-4 py-3.5">
         <div>
-          <p className="font-heading text-2xl font-semibold tabular-nums">
+          <p className="font-heading text-2xl font-semibold">
             {formatPKR(current.totalPrice)}
           </p>
           <p className="text-muted-foreground text-xs">
             {days} day{days === 1 ? "" : "s"} ·{" "}
             {formatPKR(Math.round(current.totalPrice / days))} per day
             {saving > 0 && (
-              <span className="text-emerald-700 dark:text-emerald-300">
+              <span className="text-foreground font-medium">
                 {" "}
                 · {saving}% below listing price
               </span>

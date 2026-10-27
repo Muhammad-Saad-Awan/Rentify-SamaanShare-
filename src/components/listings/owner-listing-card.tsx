@@ -20,7 +20,7 @@ import {
   deleteListing,
   updateListingStatus,
 } from "@/actions/listing-management";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ListingStatus } from "@/generated/prisma/enums";
@@ -264,7 +264,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
 
   const { label, variant } = presentation[status];
 
-  return <Badge variant={variant}>{label}</Badge>;
+  return <StatusLabel label={label} variant={variant} />;
 }
 
 interface StatProps {

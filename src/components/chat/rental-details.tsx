@@ -16,10 +16,10 @@ import { formatDate } from "@/lib/utils/date";
 
 import type { ConversationDetail } from "@/lib/queries/chat";
 
-const LIVE_TONE =
-  "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200";
+/** Monochrome by design: a filled mark means live, a ruled one waiting, a wash finished. */
+const LIVE_TONE = "bg-foreground text-background";
 const WAITING_TONE =
-  "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200";
+  "border border-foreground/25 bg-background text-foreground";
 const QUIET_TONE = "bg-muted text-muted-foreground";
 
 function toneFor(status: BookingStatus): string {

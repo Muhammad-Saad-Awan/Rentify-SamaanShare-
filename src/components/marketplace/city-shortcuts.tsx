@@ -34,7 +34,7 @@ interface CityShortcutsProps {
  */
 function CityShortcuts({ counts }: CityShortcutsProps) {
   return (
-    <ul className="grid gap-3 sm:grid-cols-3">
+    <ul className="grid gap-3 sm:grid-cols-3 sm:gap-4">
       {PAKISTANI_CITIES.map((city) => {
         const count = counts.get(city.value) ?? 0;
 
@@ -42,19 +42,25 @@ function CityShortcuts({ counts }: CityShortcutsProps) {
           <li key={city.value}>
             <Link
               href={buildListingsHref(NO_FILTERS, { city: city.value })}
-              className="bg-card hover:bg-muted/50 focus-visible:ring-ring ring-foreground/10 group flex items-center justify-between gap-3 rounded-xl px-4 py-3 ring-1 transition-colors outline-none focus-visible:ring-2"
+              className="bg-card hover:border-foreground focus-visible:ring-ring group flex items-end justify-between gap-3 rounded-xl border p-5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             >
-              <span className="flex min-w-0 flex-col">
-                <span className="font-heading text-sm font-medium">
-                  Rent in {city.label}
+              <span className="flex min-w-0 flex-col gap-1">
+                <span className="text-muted-foreground text-sm">
+                  {city.province}
                 </span>
-                <span className="text-muted-foreground text-xs">
-                  {city.province} · {count === 1 ? "1 item" : `${count} items`}
+                <span className="font-heading text-2xl leading-none font-bold tracking-[-0.025em]">
+                  <span className="sr-only">Rent in </span>
+                  {city.label}
+                </span>
+                <span className="text-muted-foreground mt-2 text-sm tabular-nums">
+                  {count === 1
+                    ? "1 item available"
+                    : `${count} items available`}
                 </span>
               </span>
 
               <ArrowRightIcon
-                className="text-muted-foreground size-4 shrink-0 transition-transform group-hover:translate-x-0.5"
+                className="text-muted-foreground group-hover:text-foreground size-5 shrink-0 transition-[color,transform] group-hover:translate-x-0.5"
                 aria-hidden="true"
               />
             </Link>

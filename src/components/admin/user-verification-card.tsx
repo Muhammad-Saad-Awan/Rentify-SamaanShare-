@@ -6,6 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { setIdentityVerified } from "@/actions/identity-verification";
+import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -72,7 +73,7 @@ function UserVerificationCard({ user, adminId }: UserVerificationCardProps) {
           */}
           <Link
             href={`/admin/users/${user.id}`}
-            className="font-heading text-sm font-medium underline-offset-4 hover:underline"
+            className="font-heading decoration-foreground/30 text-base leading-snug font-semibold underline-offset-4 hover:underline"
           >
             {user.name?.trim() || "Unnamed member"}
           </Link>
@@ -85,7 +86,7 @@ function UserVerificationCard({ user, adminId }: UserVerificationCardProps) {
           )}
 
           {user.status !== UserStatus.ACTIVE && (
-            <Badge variant="outline">{user.status.toLowerCase()}</Badge>
+            <StatusLabel variant="outline" label={user.status.toLowerCase()} />
           )}
 
           {user.isDeleted && <Badge variant="outline">deleted</Badge>}
@@ -102,7 +103,7 @@ function UserVerificationCard({ user, adminId }: UserVerificationCardProps) {
             <MailCheckIcon
               className={
                 user.emailVerified
-                  ? "size-3.5 shrink-0 text-emerald-600"
+                  ? "text-foreground size-3.5 shrink-0"
                   : "size-3.5 shrink-0"
               }
               aria-hidden="true"

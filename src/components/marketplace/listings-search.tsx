@@ -11,6 +11,11 @@ import type { ListingFilters } from "@/lib/marketplace/filters";
 
 interface ListingsSearchProps {
   filters: ListingFilters;
+  /**
+   * `hero` is the homepage's oversized field - the first thing a visitor uses, so it is drawn
+   * at touch size with a heavier rule. `toolbar` is the compact one beside browse filters.
+   */
+  size?: "toolbar" | "hero";
   className?: string;
 }
 
@@ -26,17 +31,31 @@ interface ListingsSearchProps {
  * freely while the URL changes only on submit. A controlled one would mean a
  * state round trip per keystroke.
  */
-function ListingsSearch({ filters, className }: ListingsSearchProps) {
+function ListingsSearch({
+  filters,
+  size = "toolbar",
+  className,
+}: ListingsSearchProps) {
+  const isHero = size === "hero";
+
   return (
     <FilterForm
       role="search"
-      className={cn("flex min-w-0 items-center gap-2", className)}
+      className={cn(
+        "flex min-w-0 items-center gap-2",
+        isHero &&
+          "border-foreground bg-background focus-within:ring-foreground/10 gap-1.5 rounded-xl border-2 p-1.5 focus-within:ring-4",
+        className
+      )}
     >
       <HiddenFilterFields filters={filters} owned={[FILTER_PARAM.q]} />
 
       <div className="relative min-w-0 flex-1">
         <SearchIcon
-          className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
+          className={cn(
+            "text-muted-foreground pointer-events-none absolute top-1/2 size-4 -translate-y-1/2",
+            isHero ? "left-3 size-5" : "left-3"
+          )}
           aria-hidden="true"
         />
 
@@ -49,11 +68,19 @@ function ListingsSearch({ filters, className }: ListingsSearchProps) {
           // The visible label would duplicate the placeholder in this toolbar,
           // so the accessible name is supplied directly.
           aria-label="Search listings"
-          className="pl-8"
+          className={cn(
+            "pl-9",
+            isHero &&
+              "h-11 border-0 pl-10 text-base shadow-none focus-visible:ring-0 sm:text-base"
+          )}
         />
       </div>
 
-      <Button type="submit" size="sm" className="shrink-0">
+      <Button
+        type="submit"
+        size={isHero ? "lg" : "default"}
+        className="shrink-0"
+      >
         Search
       </Button>
     </FilterForm>

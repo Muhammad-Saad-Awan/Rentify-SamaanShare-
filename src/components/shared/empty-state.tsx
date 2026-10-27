@@ -34,13 +34,13 @@ function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <Card className={cn("bg-card", className)}>
-      <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+    <Card className={cn("bg-card border-dashed", className)}>
+      <div className="flex flex-col items-center gap-4 px-6 py-14 text-center sm:py-16">
         <span
-          className="bg-muted text-muted-foreground flex size-10 items-center justify-center rounded-full"
+          className="bg-background text-foreground flex size-12 items-center justify-center rounded-xl border"
           aria-hidden="true"
         >
-          <Icon className="size-5" />
+          <Icon className="size-5" strokeWidth={1.75} />
         </span>
 
         <div className="flex flex-col items-center gap-1.5">
@@ -48,13 +48,19 @@ function EmptyState({
             `h2` not `h3`: an empty state replaces a page's content region, and
             the page's own `h1` is the only heading above it.
           */}
-          <h2 className="font-heading text-sm font-medium">{title}</h2>
-          <p className="text-muted-foreground max-w-sm text-sm">
+          <h2 className="font-heading text-lg font-semibold tracking-tight">
+            {title}
+          </h2>
+          <p className="text-muted-foreground max-w-[42ch] text-sm leading-relaxed">
             {description}
           </p>
         </div>
 
-        {action && <div className="mt-1 flex items-center gap-2">{action}</div>}
+        {action && (
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+            {action}
+          </div>
+        )}
       </div>
     </Card>
   );

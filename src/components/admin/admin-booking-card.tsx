@@ -1,6 +1,7 @@
 import { ClockAlertIcon, ScaleIcon } from "lucide-react";
 import Link from "next/link";
 
+import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { BookingStatus, UserStatus } from "@/generated/prisma/enums";
@@ -35,16 +36,16 @@ interface AdminBookingCardProps {
 function AdminBookingCard({ booking }: AdminBookingCardProps) {
   return (
     <Card>
-      <div className="flex flex-col gap-2 px-(--card-spacing)">
+      <div className="flex flex-col gap-3 px-(--card-spacing)">
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/admin/bookings/${booking.id}`}
-            className="font-heading text-sm font-medium underline-offset-4 hover:underline"
+            className="font-heading decoration-foreground/30 text-base leading-snug font-semibold underline-offset-4 hover:underline"
           >
             {booking.listing.title}
           </Link>
 
-          <Badge
+          <StatusLabel
             variant={
               booking.status === BookingStatus.ACTIVE
                 ? "default"
@@ -52,9 +53,8 @@ function AdminBookingCard({ booking }: AdminBookingCardProps) {
                   ? "secondary"
                   : "outline"
             }
-          >
-            {BOOKING_STATUS_LABELS[booking.status]}
-          </Badge>
+            label={BOOKING_STATUS_LABELS[booking.status]}
+          />
 
           {/*
             A request the 48-hour window has already passed. Reported rather than swept: expiring it
@@ -76,17 +76,19 @@ function AdminBookingCard({ booking }: AdminBookingCardProps) {
           )}
         </div>
 
-        <div className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 text-xs">
+        <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
           <span>
             {formatDate(booking.startDate)} — {formatDate(booking.endDate)}
           </span>
           <span>{formatCity(booking.listing.city)}</span>
-          <span>{formatPKR(booking.totalPrice)}</span>
+          <span className="text-foreground font-medium">
+            {formatPKR(booking.totalPrice)}
+          </span>
           <span>deposit {formatPKR(booking.securityDeposit)}</span>
           <span>requested {formatDate(booking.createdAt)}</span>
         </div>
 
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-sm">
           <PartyLink party={booking.renter} role="renter" /> renting from{" "}
           <PartyLink party={booking.owner} role="owner" />
         </p>

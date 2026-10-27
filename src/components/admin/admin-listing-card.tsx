@@ -64,7 +64,7 @@ function AdminListingCard({ listing }: AdminListingCardProps) {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/admin/listings/${listing.id}`}
-              className="font-heading text-sm font-medium underline-offset-4 hover:underline"
+              className="font-heading decoration-foreground/30 text-base leading-snug font-semibold underline-offset-4 hover:underline"
             >
               {listing.title}
             </Link>

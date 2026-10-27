@@ -12,6 +12,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { resolveDamageClaim } from "@/actions/claim-resolution";
+import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -98,12 +99,12 @@ function ClaimCard({ claim }: ClaimCardProps) {
             {formatPKR(claim.amountClaimed)} of{" "}
             {formatPKR(claim.securityDeposit)}
           </Badge>
-          <span className="font-heading text-sm font-medium">
+          <span className="font-heading text-base font-semibold">
             {CLAIM_REASON_LABELS[claim.reason]}
           </span>
 
           {claim.status !== ClaimStatus.DISPUTED && (
-            <Badge variant="outline">{claim.status.toLowerCase()}</Badge>
+            <StatusLabel variant="outline" label={claim.status.toLowerCase()} />
           )}
 
           {escalatedBySilence && (

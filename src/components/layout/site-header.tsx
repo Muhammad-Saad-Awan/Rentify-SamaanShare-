@@ -30,14 +30,14 @@ async function SiteHeader() {
   const user = await getCurrentUser();
 
   return (
-    <header className="bg-background/95 supports-backdrop-filter:bg-background/80 sticky top-0 z-30 border-b backdrop-blur">
-      <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-3 px-4 lg:px-6">
+    <header className="bg-background sticky top-0 z-30 border-b">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-4 sm:gap-5 lg:px-6">
         <Brand href="/" />
 
         <nav aria-label="Marketplace" className="hidden shrink-0 sm:flex">
           <Link
             href="/listings"
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-lg px-2 py-1.5 text-sm font-medium outline-none focus-visible:ring-2"
+            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-md px-2 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2"
           >
             Browse
           </Link>
@@ -59,7 +59,7 @@ async function SiteHeader() {
             <div className="hidden min-w-0 flex-1 sm:block sm:max-w-sm">
               <div className="relative">
                 <SearchIcon
-                  className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
+                  className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
                   aria-hidden="true"
                 />
                 <Input
@@ -67,7 +67,7 @@ async function SiteHeader() {
                   disabled
                   placeholder="Search listings..."
                   aria-label="Search listings"
-                  className="pl-8"
+                  className="bg-muted h-9 border-transparent pl-9"
                 />
               </div>
             </div>
@@ -76,14 +76,14 @@ async function SiteHeader() {
           <HeaderSearch className="hidden flex-1 sm:block sm:max-w-sm" />
         </Suspense>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {/*
             The small-screen stand-in for the search field. A link, not a control
             that expands one, so it needs no state and works before hydration.
           */}
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             className="sm:hidden"
             render={<Link href="/listings" />}
           >
@@ -92,19 +92,15 @@ async function SiteHeader() {
           </Button>
 
           {user ? (
-            <Button size="sm" render={<Link href={DEFAULT_LOGIN_REDIRECT} />}>
+            <Button render={<Link href={DEFAULT_LOGIN_REDIRECT} />}>
               Dashboard
             </Button>
           ) : (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                render={<Link href={LOGIN_ROUTE} />}
-              >
+              <Button variant="ghost" render={<Link href={LOGIN_ROUTE} />}>
                 Sign in
               </Button>
-              <Button size="sm" render={<Link href="/register" />}>
+              <Button render={<Link href="/register" />}>
                 {/* Shortened below `sm` - "Create account" wraps the row. */}
                 <span className="hidden sm:inline">Create account</span>
                 <span className="sm:hidden">Sign up</span>

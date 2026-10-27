@@ -34,10 +34,7 @@ function PlaceholderCard({
 }: PlaceholderCardProps) {
   return (
     <Card
-      className={cn(
-        "border-border border-2 border-dashed bg-transparent ring-0",
-        className
-      )}
+      className={cn("border-border border-dashed bg-transparent", className)}
     >
       <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
         <span

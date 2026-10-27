@@ -1,4 +1,4 @@
-import { Inter } from "next/font/google";
+import { Inter, Schibsted_Grotesk } from "next/font/google";
 
 /**
  * Application typography.
@@ -26,9 +26,26 @@ export const fontSans = Inter({
 });
 
 /**
+ * Schibsted Grotesk — headings and prices.
+ *
+ * A grotesk drawn for a newspaper: sturdy at heavy weights and compact enough
+ * for a price beside a title. In a black-and-white identity the headings carry
+ * the personality colour would otherwise carry, so they get their own face
+ * while Inter keeps body text and form controls quiet.
+ */
+export const fontHeading = Schibsted_Grotesk({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-schibsted",
+});
+
+/**
  * Font CSS variables to apply to the root `<html>` element.
  *
  * Kept as a single joined string so additional families can be added here
  * without touching the root layout.
  */
-export const fontVariables = [fontSans.variable].join(" ");
+export const fontVariables = [fontSans.variable, fontHeading.variable].join(
+  " "
+);

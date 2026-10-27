@@ -641,11 +641,11 @@ function ChatThread({
                   data-unread-divider
                   className="my-3 flex items-center gap-3"
                 >
-                  <span className="h-px flex-1 bg-sky-500/60" />
-                  <span className="text-xs font-semibold text-sky-700 dark:text-sky-300">
+                  <span className="bg-foreground h-px flex-1" />
+                  <span className="bg-foreground text-background rounded-full px-2.5 py-0.5 text-xs font-semibold">
                     New messages
                   </span>
-                  <span className="h-px flex-1 bg-sky-500/60" />
+                  <span className="bg-foreground h-px flex-1" />
                 </div>
               )}
               <MessageItem

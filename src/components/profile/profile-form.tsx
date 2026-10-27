@@ -29,7 +29,7 @@ import type { ProfileFormValues } from "@/lib/validations/profile";
 
 /** Matches `Input`'s tokens so the native select sits flush beside one. */
 const SELECT_CLASS =
-  "border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 h-8 w-full rounded-lg border bg-transparent px-2 py-1 text-sm transition-colors outline-none focus-visible:ring-3";
+  "border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 dark:bg-input/30 h-10 w-full rounded-lg border bg-background px-3 py-1 text-sm transition-colors outline-none focus-visible:ring-3";
 
 interface ProfileFormProps {
   /** Current values, straight from the database rather than the session. */

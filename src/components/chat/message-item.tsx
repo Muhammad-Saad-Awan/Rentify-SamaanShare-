@@ -48,7 +48,7 @@ function MessageItem({
   if (message.kind === MessageKind.SYSTEM) {
     return (
       <div className="my-2 flex justify-center px-2">
-        <p className="bg-muted/80 text-muted-foreground flex max-w-md items-start gap-2 rounded-xl px-3 py-2 text-xs leading-relaxed">
+        <p className="text-muted-foreground flex max-w-md items-start gap-2 rounded-lg border border-dashed px-3 py-2 text-xs leading-relaxed">
           <InfoIcon className="mt-px size-3.5 shrink-0" aria-hidden="true" />
           <span>
             {message.body}
@@ -73,8 +73,9 @@ function MessageItem({
       {isOwn &&
         (isSeen ? (
           <>
+            {/* Seen is the darker, doubled tick - legible without colour. */}
             <CheckCheckIcon
-              className="size-3.5 text-sky-600 dark:text-sky-400"
+              className="text-foreground size-3.5"
               aria-hidden="true"
             />
             <span className="sr-only">Seen</span>
@@ -125,13 +126,13 @@ function MessageItem({
         ) : (
           <p
             className={cn(
-              "rounded-2xl px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap shadow-xs",
+              "rounded-[1.125rem] px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap",
               isOwn
                 ? "bg-primary text-primary-foreground"
-                : "bg-muted text-foreground",
+                : "bg-background text-foreground border",
               // The tail: the corner nearest the sender squares off on the last bubble of a run.
-              isOwn && isLastInGroup && "rounded-br-md",
-              !isOwn && isLastInGroup && "rounded-bl-md"
+              isOwn && isLastInGroup && "rounded-br-sm",
+              !isOwn && isLastInGroup && "rounded-bl-sm"
             )}
           >
             <span className="sr-only">{sender}: </span>

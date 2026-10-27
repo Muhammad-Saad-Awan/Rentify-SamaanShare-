@@ -65,7 +65,7 @@ function ListingsGrid({
   }
 
   return (
-    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <ul className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {listings.map((listing, index) => (
         // A list, because that is what a results grid is - it lets a screen
         // reader announce "12 items" and skip the group as a unit.

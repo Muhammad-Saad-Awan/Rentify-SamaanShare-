@@ -133,7 +133,7 @@ function SaveListingButton({
           "transition-colors",
           // `fill-current` is the only difference between the two states, so the
           // toggle reads at a glance without relying on colour alone.
-          optimisticSaved && "fill-current text-red-500"
+          optimisticSaved && "fill-current"
         )}
       />
     </Button>
@@ -142,6 +142,6 @@ function SaveListingButton({
 
 /** Shared so the link and button variants are visually identical. */
 const HEART_BUTTON_CLASS =
-  "bg-background/80 hover:bg-background text-foreground shadow-sm backdrop-blur";
+  "bg-background/95 hover:bg-background text-foreground rounded-full border-transparent";
 
 export { SaveListingButton };

@@ -1,6 +1,7 @@
 import { CalendarClockIcon, MapPinIcon } from "lucide-react";
 import { notFound } from "next/navigation";
 
+import { RentalProtection } from "@/components/marketplace/rental-protection";
 import { BookingRequestForm } from "@/components/bookings/booking-request-form";
 import { MessageOwnerButton } from "@/components/chat/message-owner-button";
 import { ListingBreadcrumbs } from "@/components/marketplace/listing-breadcrumbs";
@@ -172,11 +173,11 @@ export default async function ListingPage({ params }: ListingPageProps) {
         })}
       />
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 lg:px-6 lg:py-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-6 lg:px-6 lg:py-10">
         <ListingBreadcrumbs category={listing.category} title={listing.title} />
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
-          <div className="flex min-w-0 flex-col gap-6">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-12">
+          <div className="flex min-w-0 flex-col gap-8">
             <ListingGallery images={listing.images} title={listing.title} />
 
             <div className="flex flex-col gap-3">
@@ -190,7 +191,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
                 )}
               </div>
 
-              <h1 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+              <h1 className="font-heading text-3xl font-bold tracking-[-0.025em] sm:text-4xl">
                 {listing.title}
               </h1>
 
@@ -211,15 +212,15 @@ export default async function ListingPage({ params }: ListingPageProps) {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <h2 className="font-heading text-base font-medium">
+            <div className="flex flex-col gap-3 border-t pt-8">
+              <h2 className="font-heading text-xl font-bold tracking-tight">
                 About this item
               </h2>
               {/*
                 `whitespace-pre-line` so the owner's paragraph breaks survive. The
                 text is rendered as a string, never as HTML - it is user input.
               */}
-              <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
+              <p className="text-foreground/80 max-w-[68ch] text-[0.9375rem] leading-relaxed whitespace-pre-line">
                 {listing.description}
               </p>
             </div>
@@ -235,7 +236,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
             `lg:sticky` keeps the price and owner in view while a long description
             scrolls. `top-20` clears the 14-unit sticky site header plus a gap.
           */}
-          <aside className="flex flex-col gap-4 lg:sticky lg:top-20 lg:self-start">
+          <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
             <ListingPricing
               pricePerDay={listing.pricePerDay}
               pricePerWeek={listing.pricePerWeek}
@@ -298,6 +299,8 @@ export default async function ListingPage({ params }: ListingPageProps) {
                 pricePerDay={listing.pricePerDay}
               />
             </div>
+
+            <RentalProtection />
 
             <OwnerCard owner={listing.owner} />
 

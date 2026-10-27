@@ -95,13 +95,13 @@ export default async function HomePage() {
       <JsonLd data={websiteJsonLd()} />
       <JsonLd data={organizationJsonLd()} />
 
-      <HeroSection listingCount={featured.total} />
+      <HeroSection listingCount={featured.total} categories={categories} />
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-14 px-4 py-14 lg:px-6">
-        <section className="flex flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 py-16 lg:px-6 lg:py-20">
+        <section className="flex flex-col gap-7">
           <SectionHeading
             title="Browse by category"
-            description="Every category below comes from the live catalogue, with the number of items currently available."
+            description="Each category shows how many items you can rent right now."
             actionHref="/listings"
             actionLabel="See all listings"
           />
@@ -116,7 +116,7 @@ export default async function HomePage() {
           they have looked at anything.
         */}
         {featured.items.length > 0 && (
-          <section className="flex flex-col gap-5">
+          <section className="flex flex-col gap-7">
             <SectionHeading
               title="Latest listings"
               description="The most recently published items across every city."
@@ -132,7 +132,7 @@ export default async function HomePage() {
           </section>
         )}
 
-        <section className="flex flex-col gap-5">
+        <section className="flex flex-col gap-7">
           <SectionHeading
             title="Rent in your city"
             description="SamaanShare is live in three cities to start with."
@@ -141,7 +141,8 @@ export default async function HomePage() {
           <CityShortcuts counts={cityCounts} />
         </section>
 
-        <section className="flex flex-col gap-5">
+        {/* Anchored so the footer's "How it works" link lands here. */}
+        <section id="how-it-works" className="flex scroll-mt-24 flex-col gap-7">
           <SectionHeading
             title="How it works"
             description="Three steps from finding an item to handing it back."
