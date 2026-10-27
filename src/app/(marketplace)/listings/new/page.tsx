@@ -1,7 +1,13 @@
+import { IdCardIcon } from "lucide-react";
+import Link from "next/link";
+
+import { EmptyState } from "@/components/shared/empty-state";
 import { EmailVerificationNotice } from "@/components/auth/email-verification-notice";
 import { CreateListingForm } from "@/components/listings/create-listing-form";
 import { needsEmailConfirmation } from "@/lib/auth/email-gate";
+import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/session";
+import { needsIdentityDocument } from "@/lib/identity/gate";
 import { getCategoryOptions } from "@/lib/queries/categories";
 
 import type { Metadata } from "next";
@@ -50,6 +56,36 @@ export default async function NewListingPage() {
 
         {/* Only reached when mail is configured, so the resend button always works here. */}
         <EmailVerificationNotice isVerified={false} canSend />
+      </div>
+    );
+  }
+
+  /**
+   * The CNIC, checked after the address and for the same reason: `createListing` refuses without it,
+   * and finding that out at the end of five steps would waste every one of them.
+   */
+  if (await needsIdentityDocument(user.id)) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 lg:px-6">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-heading text-3xl font-bold tracking-[-0.025em] sm:text-4xl">
+            List an item
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            One step before you start.
+          </p>
+        </div>
+
+        <EmptyState
+          icon={IdCardIcon}
+          title="Upload your CNIC to start listing"
+          description="SamaanShare asks every member for both sides of their CNIC before they list or rent. It is stored privately and only staff can see it."
+          action={
+            <Button render={<Link href="/profile#identity" />}>
+              Upload my CNIC
+            </Button>
+          }
+        />
       </div>
     );
   }

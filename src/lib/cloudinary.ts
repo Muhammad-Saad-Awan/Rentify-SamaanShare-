@@ -79,12 +79,37 @@ export function avatarUploadFolder(userId: string): string {
   return `samaanshare/avatars/${userId}`;
 }
 
+/**
+ * Where a member's CNIC images live.
+ *
+ * Outside the pending tree for the same reason as avatars - the cleanup job must never sweep them -
+ * and uploaded as `authenticated` rather than `upload`, which is the difference that matters: an
+ * `authenticated` asset has no public URL at all. See `IdentityDocument` in the schema.
+ */
+export function identityUploadFolder(userId: string): string {
+  return `samaanshare/identity/${userId}`;
+}
+
+/**
+ * Cloudinary's delivery type.
+ *
+ * `upload` is public - anyone with the URL can fetch it - and is right for listing photos and
+ * avatars. `authenticated` is fetched only through a signed request, and is the only acceptable
+ * home for an identity document.
+ */
+export type DeliveryType = "upload" | "authenticated";
+
 export interface SignedUploadParams {
   cloudName: string;
   apiKey: string;
   timestamp: number;
   signature: string;
   folder: string;
+  /**
+   * Present only for a private upload, and then the client MUST send it: it is part of the
+   * signature, so an upload that drops it to land somewhere public is refused by Cloudinary.
+   */
+  type?: "authenticated";
 }
 
 /**
@@ -105,7 +130,10 @@ export interface SignedUploadParams {
  * session; and every returned URL is re-validated against the Cloudinary host on
  * submit. Worth adding a preset before launch.
  */
-export function signUpload(folder: string): SignedUploadParams {
+export function signUpload(
+  folder: string,
+  type: DeliveryType = "upload"
+): SignedUploadParams {
   const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
 
   const timestamp = Math.floor(Date.now() / 1000);
@@ -113,11 +141,24 @@ export function signUpload(folder: string): SignedUploadParams {
   // Cloudinary's rule: signed parameters sorted by key, joined as `k=v&k=v`, with
   // the API secret appended - then SHA-1. Unsigned parameters (api_key, file) are
   // excluded, and including them here would produce a signature Cloudinary rejects.
+  // `type` sorts after `timestamp`, and is signed only when it is not the default.
+  const toSign =
+    type === "authenticated"
+      ? `folder=${folder}&timestamp=${timestamp}&type=authenticated`
+      : `folder=${folder}&timestamp=${timestamp}`;
+
   const signature = createHash("sha1")
-    .update(`folder=${folder}&timestamp=${timestamp}${apiSecret}`)
+    .update(`${toSign}${apiSecret}`)
     .digest("hex");
 
-  return { cloudName, apiKey, timestamp, signature, folder };
+  return {
+    cloudName,
+    apiKey,
+    timestamp,
+    signature,
+    folder,
+    ...(type === "authenticated" ? { type } : {}),
+  };
 }
 
 /** Root of every not-yet-attached upload, across all users. */
@@ -225,7 +266,8 @@ export interface UploadedImage {
  * Basic auth with the API secret - Admin API, so this must only ever run server-side.
  */
 export async function getUploadedImages(
-  publicIds: readonly string[]
+  publicIds: readonly string[],
+  type: DeliveryType = "upload"
 ): Promise<Map<string, UploadedImage>> {
   const found = new Map<string, UploadedImage>();
 
@@ -242,7 +284,7 @@ export async function getUploadedImages(
   }
 
   const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/resources/image/upload?${query.toString()}`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/resources/image/${type}?${query.toString()}`,
     {
       headers: {
         Authorization: `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString("base64")}`,
@@ -295,12 +337,19 @@ export async function getUploadedImages(
  * exist - is satisfied either way, and an already-deleted image should not surface an
  * error to the user.
  */
-export async function destroyImage(publicId: string): Promise<boolean> {
+export async function destroyImage(
+  publicId: string,
+  type: DeliveryType = "upload"
+): Promise<boolean> {
   const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
 
   const timestamp = Math.floor(Date.now() / 1000);
+  const toSign =
+    type === "authenticated"
+      ? `public_id=${publicId}&timestamp=${timestamp}&type=authenticated`
+      : `public_id=${publicId}&timestamp=${timestamp}`;
   const signature = createHash("sha1")
-    .update(`public_id=${publicId}&timestamp=${timestamp}${apiSecret}`)
+    .update(`${toSign}${apiSecret}`)
     .digest("hex");
 
   const body = new URLSearchParams({
@@ -308,6 +357,7 @@ export async function destroyImage(publicId: string): Promise<boolean> {
     api_key: apiKey,
     timestamp: String(timestamp),
     signature,
+    ...(type === "authenticated" ? { type } : {}),
   });
 
   const response = await fetch(
@@ -322,4 +372,43 @@ export async function destroyImage(publicId: string): Promise<boolean> {
   const result = (await response.json()) as { result?: string };
 
   return result.result === "ok" || result.result === "not found";
+}
+
+/**
+ * A short-lived download link for a private (`authenticated`) image.
+ *
+ * Cloudinary's private download endpoint, signed over every parameter that shapes the response and
+ * refused after `expires_at`. It is only ever fetched SERVER-SIDE, by the admin-only route that
+ * streams an identity document - the link itself never reaches a browser, so even its short life
+ * is a second line of defence rather than the first.
+ */
+export function privateDownloadUrl(
+  publicId: string,
+  format: string,
+  expiresInSeconds = 60
+): string {
+  const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const params: Record<string, string> = {
+    expires_at: String(timestamp + expiresInSeconds),
+    format,
+    public_id: publicId,
+    timestamp: String(timestamp),
+    type: "authenticated",
+  };
+
+  // Sorted by key, as for every other signature in this file.
+  const toSign = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${params[key]}`)
+    .join("&");
+
+  const signature = createHash("sha1")
+    .update(`${toSign}${apiSecret}`)
+    .digest("hex");
+
+  const query = new URLSearchParams({ ...params, api_key: apiKey, signature });
+
+  return `https://api.cloudinary.com/v1_1/${cloudName}/image/download?${query.toString()}`;
 }

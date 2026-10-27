@@ -138,6 +138,8 @@ describe("adminNavItems", () => {
       "/admin",
       "/admin/reports",
       "/admin/users",
+      // The CNIC review queue, beside the members it verifies.
+      "/admin/verifications",
       "/admin/listings",
       "/admin/bookings",
       "/admin/claims",

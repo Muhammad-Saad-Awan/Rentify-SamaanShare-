@@ -203,6 +203,9 @@ enum AdminActionType {
   // administrator may only do it on stated grounds - a claim, a report between the two members, or
   // a disputed handover - and `AdminAction.conversationId` records which conversation.
   VIEW_CONVERSATION
+  // Identity. Approving a CNIC reuses VERIFY_IDENTITY - it is the same grant, reached through the
+  // document queue. Rejecting one is its own action because it carries a reason the member is shown.
+  REJECT_IDENTITY_DOCUMENT
 }
 
 // Chat. What a message is, so that nothing has to guess from its text.
@@ -320,6 +323,11 @@ enum NotificationType {
   BOOKING_SETTLED
   OWNER_PAID
   REFUND_RECORDED
+
+  // Identity: the outcome of a CNIC review. Both transactional - a rejection blocks renting and
+  // listing until the member re-uploads, so it cannot be something a switch can silence.
+  IDENTITY_VERIFIED
+  IDENTITY_DOCUMENT_REJECTED
 }
 
 // ==================== AUTH.JS MODELS ====================
@@ -492,6 +500,10 @@ model User {
   // Payment.confirmedById and Report.resolvedBy: the row should say who vouched.
   verifiedBy    User?  @relation("IdentityVerifications", fields: [verifiedById], references: [id])
   verifiedUsers User[] @relation("IdentityVerifications")
+
+  // Identity: this member's CNIC submission, and the ones this admin has reviewed.
+  identityDocument          IdentityDocument?  @relation("IdentityDocumentOwner")
+  identityDocumentsReviewed IdentityDocument[] @relation("IdentityDocumentReviews")
 
   // Chat.
   conversationsAsRenter Conversation[] @relation("ConversationRenter")
@@ -833,6 +845,7 @@ model Payment {
    * /**
    * /**
    * /**
+   * /**
    * When the renter declared they had paid.
    * Distinct from `createdAt`, which is when the payment row was created as the renter chose a
    * method, and from `confirmedAt`, which is when an administrator agreed the money had arrived.
@@ -867,6 +880,7 @@ model Payment {
 
   // ---------------------------------------------------------------- reversal of collection
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -935,6 +949,7 @@ model Settlement {
    * /**
    * /**
    * /**
+   * /**
    * /** What the renter was charged for the rental, excluding the deposit.
    */
   rentalAmount Int
@@ -984,6 +999,7 @@ model Settlement {
 
   // ---------------------------------------------------------------- authorship
   /**
+   * /**
    * /**
    * /**
    * /**
@@ -1788,4 +1804,59 @@ model Offer {
   @@index([proposedById])
   @@index([recipientId])
   @@map("offers")
+}
+
+// ==================== IDENTITY ====================
+
+/**
+ * Where a CNIC submission stands.
+ * PENDING is enough to rent and list: the requirement is that a member has handed over their
+ * identity, not that an administrator has got round to it. A human review queue must not become
+ * a queue in front of the whole marketplace. REJECTED is not enough - the member has to re-upload.
+ */
+enum IdentityDocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/**
+ * A member's CNIC, front and back, for manual review. Trust & Safety.
+ * ONE ROW PER MEMBER (`userId @unique`). A re-upload replaces the images in place and returns the
+ * row to PENDING; the history of decisions lives in AdminAction, as with every other review.
+ * THE IMAGES ARE PRIVATE. Uploaded to Cloudinary as `type: authenticated`, so no public URL exists.
+ * Only public ids and formats are stored - never a URL - and an administrator sees an image through
+ * an admin-only route that fetches it with a short-lived signed download link on every request.
+ * `cnicNumber` IS UNIQUE. One national identity, one account: a second account presenting the same
+ * number is the pattern this whole feature exists to catch. Stored as `12345-1234567-1`.
+ * No NADRA check exists yet. Approval is an administrator comparing the number, the photo and the
+ * profile by eye, and it sets `User.isVerified` through the same path as a manual grant.
+ */
+model IdentityDocument {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  cnicNumber String @unique
+
+  frontPublicId String
+  frontFormat   String
+  backPublicId  String
+  backFormat    String
+
+  status          IdentityDocumentStatus @default(PENDING)
+  rejectionReason String?
+
+  submittedAt  DateTime  @default(now())
+  reviewedAt   DateTime?
+  reviewedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User  @relation("IdentityDocumentOwner", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("IdentityDocumentReviews", fields: [reviewedById], references: [id])
+
+  @@index([status, submittedAt]) // The review queue: pending, oldest first.
+  @@index([reviewedById])
+  @@map("identity_documents")
 }

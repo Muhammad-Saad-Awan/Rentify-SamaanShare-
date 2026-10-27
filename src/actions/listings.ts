@@ -7,6 +7,10 @@ import {
   needsEmailConfirmation,
 } from "@/lib/auth/email-gate";
 import { getActiveUser } from "@/lib/auth/session";
+import {
+  IDENTITY_DOCUMENT_REQUIRED_ERROR,
+  needsIdentityDocument,
+} from "@/lib/identity/gate";
 import { pendingUploadFolder } from "@/lib/cloudinary";
 import { verifyListingImages } from "@/lib/listings/images";
 import { revalidateListingPaths } from "@/lib/listings/revalidate";
@@ -77,6 +81,17 @@ export async function createListing(
     }
   } catch (error) {
     console.error("createListing email confirmation check failed", error);
+
+    return { success: false, error: UNEXPECTED_ERROR };
+  }
+
+  // The CNIC, for the same reason and in the same place as the address above.
+  try {
+    if (await needsIdentityDocument(user.id)) {
+      return { success: false, error: IDENTITY_DOCUMENT_REQUIRED_ERROR };
+    }
+  } catch (error) {
+    console.error("createListing identity document check failed", error);
 
     return { success: false, error: UNEXPECTED_ERROR };
   }

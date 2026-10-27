@@ -72,12 +72,17 @@ export interface RenterAccessSignals {
   isVerified: boolean;
   /** Rentals they have carried to completion, on either side. */
   completedRentals: number;
+  /**
+   * Whether their CNIC is on file and not rejected - submitted is enough, see `lib/identity/gate.ts`.
+   * Distinct from `isVerified`, which is an administrator's conclusion about that document.
+   */
+  hasIdentityDocument: boolean;
 }
 
 /** A requirement the renter has not met, and how to meet it. */
 export interface UnmetRequirement {
   /** Stable key, so the UI can attach a link without matching on prose. */
-  key: "email" | "identity-or-history";
+  key: "email" | "identity-document" | "identity-or-history";
   /** What is missing, addressed to the renter. */
   label: string;
   /** What to do about it. */
@@ -113,12 +118,22 @@ export type AccessDecision =
 export function checkRenterAccess(
   tier: AccessTier,
   renter: RenterAccessSignals,
-  emailConfirmationRequired = true
+  emailConfirmationRequired = true,
+  identityDocumentRequired = true
 ): AccessDecision {
   const unmet: UnmetRequirement[] = [];
 
   if (emailConfirmationRequired && !renter.emailVerified) {
     unmet.push(EMAIL_REQUIREMENT);
+  }
+
+  /**
+   * The CNIC, at every tier, like the email floor. Callers take the flag from
+   * `isIdentityDocumentRequired()`, which is false only where uploads are not configured - the same
+   * reasoning as `emailConfirmationRequired`, and the same default towards the gate.
+   */
+  if (identityDocumentRequired && !renter.hasIdentityDocument) {
+    unmet.push(IDENTITY_DOCUMENT_REQUIREMENT);
   }
 
   if (
@@ -144,6 +159,14 @@ const EMAIL_REQUIREMENT: UnmetRequirement = {
   label: "Your email address is not confirmed",
   action:
     "SamaanShare asks every member to confirm their address before renting. Send yourself a confirmation link from your profile.",
+};
+
+/** The CNIC requirement, worded for renting. */
+const IDENTITY_DOCUMENT_REQUIREMENT: UnmetRequirement = {
+  key: "identity-document",
+  label: "Your CNIC is not on file",
+  action:
+    "SamaanShare asks every member to upload both sides of their CNIC before renting. Add it from your profile - it takes a minute.",
 };
 
 /**

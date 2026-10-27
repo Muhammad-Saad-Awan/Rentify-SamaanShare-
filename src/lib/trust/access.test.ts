@@ -20,10 +20,15 @@ import type { AccessTier, RenterAccessSignals } from "@/lib/trust/access";
  * the person.
  */
 
+/**
+ * `hasIdentityDocument` starts true so the tier assertions below stay about the tiers; the CNIC floor
+ * is asserted on its own at the end of the file.
+ */
 const nobody: RenterAccessSignals = {
   emailVerified: false,
   isVerified: false,
   completedRentals: 0,
+  hasIdentityDocument: true,
 };
 
 const renter = (overrides: Partial<RenterAccessSignals>) => ({
@@ -259,5 +264,34 @@ describe("accessTierDescription", () => {
     ]) {
       expect(copy).not.toContain(promise);
     }
+  });
+});
+
+describe("the CNIC requirement", () => {
+  const confirmed = renter({ emailVerified: true, hasIdentityDocument: false });
+
+  it("applies at every tier", () => {
+    for (const tier of ALL_TIERS) {
+      const decision = checkRenterAccess(tier, confirmed);
+
+      expect(decision.allowed).toBe(false);
+      expect(
+        decision.allowed
+          ? []
+          : decision.unmet.map((requirement) => requirement.key)
+      ).toContain("identity-document");
+    }
+  });
+
+  it("is cleared by having a document on file", () => {
+    expect(
+      checkRenterAccess("open", renter({ emailVerified: true })).allowed
+    ).toBe(true);
+  });
+
+  it("is not asked for where uploads cannot be made", () => {
+    expect(checkRenterAccess("open", confirmed, true, false).allowed).toBe(
+      true
+    );
   });
 });
