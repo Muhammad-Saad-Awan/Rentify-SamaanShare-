@@ -67,7 +67,7 @@ function VerifyEmailForm({ token }: VerifyEmailFormProps) {
       <div className="flex flex-col gap-3">
         <p className="flex items-center gap-2 text-sm font-medium">
           <CheckCircle2Icon
-            className="size-4 text-emerald-600"
+            className="text-foreground size-4"
             aria-hidden="true"
           />
           Your email address is confirmed.

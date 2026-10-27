@@ -39,11 +39,11 @@ function DashboardNav({ role, onNavigate, badges }: DashboardNavProps) {
   return (
     <nav
       aria-label="Dashboard"
-      className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-4"
+      className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 pt-2 pb-6"
     >
       {sections.map((section) => (
         <div key={section.title} className="flex flex-col gap-1">
-          <h2 className="text-muted-foreground px-2 text-xs font-medium tracking-wide uppercase">
+          <h2 className="text-muted-foreground px-2.5 pb-1 text-xs font-medium">
             {section.title}
           </h2>
 
@@ -64,10 +64,10 @@ function DashboardNav({ role, onNavigate, badges }: DashboardNavProps) {
                     // cannot infer it from the background colour alone.
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "focus-visible:ring-sidebar-ring flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors outline-none focus-visible:ring-2",
+                      "group/nav focus-visible:ring-sidebar-ring relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm transition-colors outline-none focus-visible:ring-2",
                       isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
+                        : "text-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     )}
                   >
                     <Icon className="size-4 shrink-0" aria-hidden="true" />

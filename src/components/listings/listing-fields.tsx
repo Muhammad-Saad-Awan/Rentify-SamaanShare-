@@ -33,7 +33,7 @@ import type { UseFormReturn } from "react-hook-form";
 
 /** Matches `Input`'s tokens so native selects sit flush beside one. */
 const SELECT_CLASS =
-  "border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 h-8 w-full rounded-lg border bg-transparent px-2 py-1 text-sm transition-colors outline-none focus-visible:ring-3";
+  "border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 dark:bg-input/30 h-10 w-full rounded-lg border bg-background px-3 py-1 text-sm transition-colors outline-none focus-visible:ring-3";
 
 interface FieldGroupProps {
   form: UseFormReturn<ListingFormValues>;
@@ -86,7 +86,7 @@ function ListingBasicsFields({ form, disabled, categories }: BasicsProps) {
           placeholder="Condition, what is included, and anything a renter should know."
           aria-invalid={Boolean(errors.description)}
           disabled={disabled}
-          className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 w-full rounded-lg border bg-transparent px-2.5 py-2 text-sm transition-colors outline-none focus-visible:ring-3"
+          className="border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 dark:bg-input/30 w-full rounded-lg border bg-transparent px-2.5 py-2 text-sm transition-colors outline-none focus-visible:ring-3"
           {...form.register("description")}
         />
         <FieldDescription>

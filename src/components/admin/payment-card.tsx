@@ -18,6 +18,7 @@ import {
   verifyPayment,
 } from "@/actions/payment-verification";
 import { recordRefund } from "@/actions/refund";
+import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -146,22 +147,22 @@ function PaymentCard({ payment }: PaymentCardProps) {
   }
 
   return (
-    <Card className="flex flex-col gap-3 px-(--card-spacing) py-3">
+    <Card className="flex flex-col gap-4 px-(--card-spacing)">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex flex-col gap-0.5">
           <Link
             href={`/admin/bookings/${payment.bookingId}`}
-            className="text-sm font-medium underline-offset-4 hover:underline"
+            className="font-heading decoration-foreground/30 text-base leading-snug font-semibold underline-offset-4 hover:underline"
           >
             {payment.listing.title}
           </Link>
-          <span className="text-muted-foreground text-xs">
+          <span className="text-muted-foreground text-sm">
             {payment.renter.name ?? payment.renter.email} → {payment.owner.name}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
-          {byCard && <Badge variant="outline">Stripe · test</Badge>}
+          {byCard && <Badge variant="outline">Stripe test mode</Badge>}
           <StatusBadge status={payment.status} />
         </div>
       </div>
@@ -170,8 +171,8 @@ function PaymentCard({ payment }: PaymentCardProps) {
         The reconciliation line. Monospace on the reference because it is read character by
         character against another screen, and a proportional font makes that materially harder.
       */}
-      <div className="bg-muted/40 flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-lg px-3 py-2">
-        <span className="text-sm font-medium">
+      <div className="bg-muted/60 flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-lg px-4 py-3">
+        <span className="font-heading text-xl font-bold tracking-tight">
           {formatPKR(payment.amount + payment.securityDeposit)}
         </span>
         <span className="text-muted-foreground text-xs">
@@ -184,7 +185,7 @@ function PaymentCard({ payment }: PaymentCardProps) {
             : paymentMethodLabel(payment.method)}
         </span>
         {payment.transactionRef && (
-          <span className="font-mono text-xs break-all">
+          <span className="bg-background rounded border px-1.5 py-0.5 font-mono text-xs break-all">
             {payment.transactionRef}
           </span>
         )}
@@ -448,19 +449,19 @@ function PaymentCard({ payment }: PaymentCardProps) {
 function StatusBadge({ status }: { status: PaymentStatus }) {
   switch (status) {
     case PaymentStatus.PENDING_VERIFICATION:
-      return <Badge variant="secondary">Awaiting check</Badge>;
+      return <StatusLabel variant="secondary" label="Awaiting check" />;
     case PaymentStatus.COMPLETED:
-      return <Badge>Verified</Badge>;
+      return <StatusLabel variant="default" label="Verified" />;
     case PaymentStatus.REJECTED:
-      return <Badge variant="destructive">Not found</Badge>;
+      return <StatusLabel variant="destructive" label="Not found" />;
     case PaymentStatus.REFUNDED:
-      return <Badge variant="outline">Refunded</Badge>;
+      return <StatusLabel variant="outline" label="Refunded" />;
     case PaymentStatus.PROCESSING:
-      return <Badge variant="secondary">Card in progress</Badge>;
+      return <StatusLabel variant="secondary" label="Card in progress" />;
     case PaymentStatus.FAILED:
-      return <Badge variant="destructive">Card failed</Badge>;
+      return <StatusLabel variant="destructive" label="Card failed" />;
     default:
-      return <Badge variant="outline">Not yet recorded</Badge>;
+      return <StatusLabel variant="outline" label="Not yet recorded" />;
   }
 }
 

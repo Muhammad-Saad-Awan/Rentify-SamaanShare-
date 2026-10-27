@@ -119,7 +119,7 @@ export default async function AdminListingPage({
           */}
           <p className="text-xs">
             {publiclyVisible ? (
-              <span className="text-emerald-700 dark:text-emerald-400">
+              <span className="text-foreground font-medium">
                 Publicly visible on the marketplace.
               </span>
             ) : (

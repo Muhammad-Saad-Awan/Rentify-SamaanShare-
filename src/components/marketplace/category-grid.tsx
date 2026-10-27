@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { Card } from "@/components/ui/card";
 import { categoryIcon } from "@/lib/utils/category-icon";
 
 import type { FeaturedCategory } from "@/lib/queries/categories";
@@ -26,7 +25,7 @@ function CategoryGrid({ categories }: CategoryGridProps) {
   }
 
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
       {categories.map((category) => {
         const Icon = categoryIcon(category.icon);
 
@@ -34,29 +33,25 @@ function CategoryGrid({ categories }: CategoryGridProps) {
           <li key={category.slug}>
             <Link
               href={`/categories/${category.slug}`}
-              className="focus-visible:ring-ring block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              className="group bg-card hover:border-foreground focus-visible:ring-ring flex h-full flex-col justify-between gap-8 rounded-xl border p-5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             >
-              <Card className="h-full transition-shadow hover:shadow-md">
-                <div className="flex h-full flex-col items-start gap-3 px-(--card-spacing)">
-                  <span
-                    className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg"
-                    aria-hidden="true"
-                  >
-                    <Icon className="size-4.5" />
-                  </span>
+              <span
+                className="bg-muted group-hover:bg-primary group-hover:text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors"
+                aria-hidden="true"
+              >
+                <Icon className="size-5" strokeWidth={1.75} />
+              </span>
 
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-heading text-sm font-medium">
-                      {category.name}
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      {category.listingCount === 1
-                        ? "1 item"
-                        : `${category.listingCount} items`}
-                    </span>
-                  </div>
-                </div>
-              </Card>
+              <span className="flex flex-col gap-0.5">
+                <span className="font-heading text-base leading-snug font-semibold">
+                  {category.name}
+                </span>
+                <span className="text-muted-foreground text-sm tabular-nums">
+                  {category.listingCount === 1
+                    ? "1 item"
+                    : `${category.listingCount} items`}
+                </span>
+              </span>
             </Link>
           </li>
         );

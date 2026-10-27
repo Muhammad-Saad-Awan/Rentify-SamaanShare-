@@ -7,15 +7,15 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* Typography — `--font-inter` is injected on <html> by src/config/fonts.ts.
+  /* Typography — `--font-inter` and `--font-schibsted` are injected on <html> by src/config/fonts.ts.
      Each stack is written out in full rather than referencing another token,
      so a missing webfont degrades to the system UI font instead of nothing. */
   --font-sans:
     var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     sans-serif;
   --font-heading:
-    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    sans-serif;
+    var(--font-schibsted), var(--font-inter), ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
   /* No webfont is loaded for mono — it appears rarely enough that the extra
      download is not worth it. */
   --font-mono:
@@ -71,48 +71,53 @@
    =========================================================================== */
 
 :root {
+  /*
+   * Monochrome identity: true black ink on white paper. Hierarchy comes from
+   * weight, size and the grey ramp below - never from hue. The only chromatic
+   * token is `--destructive`, reserved for failure and irreversible actions,
+   * so red always means "something went wrong" and nothing else.
+   */
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover-foreground: oklch(0 0 0);
   /* BRAND: primary action colour (buttons, links, focus emphasis) */
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  --primary: oklch(0 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.965 0 0);
+  --secondary-foreground: oklch(0 0 0);
   --muted: oklch(0.97 0 0);
   /**
    * 0.556 until axe measured it. Muted text on a muted surface - the dashboard shell, every
    * card footer, the calendar legend - came to 4.34:1 at 12px, against the 4.5:1 that WCAG AA
-   * requires for normal text. Close enough to look fine and to have survived every review.
+   * requires for normal text.
    *
-   * 0.545 gives 4.55:1 on this background, a change of three steps in sRGB (#737373 to #6f6f6f)
-   * that is invisible next to the old value and is the difference between conforming and not.
-   * Only the light theme was short: the dark pair below measures 5.83:1.
+   * Now 0.5, which clears AA on both the white page and the `--muted` wash with room to spare
+   * (about 5.6:1 on white), so secondary text stays legible at the 12px it is often set in.
    */
-  --muted-foreground: oklch(0.545 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.96 0 0);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0.55 0.22 27);
+  --border: oklch(0.91 0 0);
+  --input: oklch(0.86 0 0);
+  --ring: oklch(0 0 0);
+  --chart-1: oklch(0 0 0);
+  --chart-2: oklch(0.35 0 0);
+  --chart-3: oklch(0.55 0 0);
+  --chart-4: oklch(0.72 0 0);
+  --chart-5: oklch(0.86 0 0);
+  --radius: 0.5rem;
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-primary: oklch(0 0 0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.945 0 0);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(0.91 0 0);
+  --sidebar-ring: oklch(0 0 0);
 }
 
 .dark {
@@ -142,8 +147,8 @@
   --chart-5: oklch(0.269 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
@@ -156,8 +161,31 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings:
+      "cv11" 1,
+      "ss01" 1;
+    text-rendering: optimizeLegibility;
   }
   html {
     @apply font-sans;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  ::selection {
+    background: var(--foreground);
+    color: var(--background);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

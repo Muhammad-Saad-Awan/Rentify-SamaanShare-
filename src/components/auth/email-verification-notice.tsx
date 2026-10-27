@@ -45,7 +45,7 @@ function EmailVerificationNotice({
     return (
       <p className="text-muted-foreground flex items-center gap-2 text-sm">
         <CheckCircle2Icon
-          className="size-4 shrink-0 text-emerald-600"
+          className="text-foreground size-4 shrink-0"
           aria-hidden="true"
         />
         Your email address is confirmed.

@@ -24,7 +24,7 @@ interface DashboardSidebarProps {
 function DashboardSidebar({ role, badges }: DashboardSidebarProps) {
   return (
     <aside className="bg-sidebar hidden shrink-0 border-r lg:sticky lg:top-0 lg:flex lg:h-svh lg:w-64 lg:flex-col">
-      <div className="flex h-14 shrink-0 items-center border-b px-4">
+      <div className="flex h-16 shrink-0 items-center px-5">
         <DashboardBrand />
       </div>
 

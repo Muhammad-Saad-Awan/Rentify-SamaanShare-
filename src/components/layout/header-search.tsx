@@ -70,7 +70,7 @@ function HeaderSearch({ className }: HeaderSearchProps) {
     >
       <div className="relative">
         <SearchIcon
-          className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
+          className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
           aria-hidden="true"
         />
 
@@ -86,7 +86,7 @@ function HeaderSearch({ className }: HeaderSearchProps) {
           maxLength={MAX_QUERY_LENGTH}
           placeholder="Search listings..."
           aria-label="Search listings"
-          className="pl-8"
+          className="bg-muted focus-visible:bg-background h-9 border-transparent pl-9"
         />
       </div>
     </form>

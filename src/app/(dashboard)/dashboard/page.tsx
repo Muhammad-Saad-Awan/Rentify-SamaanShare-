@@ -149,13 +149,13 @@ async function DashboardOverview() {
         <Card>
           <div className="flex flex-col gap-3 px-(--card-spacing)">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-heading text-base font-medium">
+              <h2 className="font-heading text-lg font-semibold tracking-tight">
                 Your listings
               </h2>
               {isOwner && (
                 <Link
                   href="/dashboard/listings"
-                  className="text-muted-foreground text-xs underline-offset-4 hover:underline"
+                  className="text-foreground decoration-foreground/30 hover:decoration-foreground text-sm font-medium underline underline-offset-4"
                 >
                   Manage all {overview.totalListings}
                 </Link>
@@ -195,12 +195,12 @@ async function DashboardOverview() {
         <Card>
           <div className="flex flex-col gap-3 px-(--card-spacing)">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-heading text-base font-medium">
+              <h2 className="font-heading text-lg font-semibold tracking-tight">
                 Recent activity
               </h2>
               <Link
                 href="/dashboard/notifications"
-                className="text-muted-foreground text-xs underline-offset-4 hover:underline"
+                className="text-foreground decoration-foreground/30 hover:decoration-foreground text-sm font-medium underline underline-offset-4"
               >
                 All notifications
               </Link>

@@ -126,7 +126,7 @@ async function AdminHome() {
       <Card>
         <div className="flex flex-col gap-3 px-(--card-spacing)">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-heading text-base font-medium">
+            <h2 className="font-heading text-lg font-semibold tracking-tight">
               {decisions === 0
                 ? "Nothing is waiting on you"
                 : decisions === 1

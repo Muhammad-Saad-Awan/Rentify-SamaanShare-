@@ -29,17 +29,17 @@ function SectionHeading({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-end justify-between gap-x-4 gap-y-2",
+        "flex flex-wrap items-end justify-between gap-x-6 gap-y-2",
         className
       )}
     >
       <div className="flex min-w-0 flex-col gap-1">
-        <h2 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
+        <h2 className="font-heading text-2xl font-bold tracking-[-0.025em] sm:text-3xl">
           {title}
         </h2>
 
         {description && (
-          <p className="text-muted-foreground max-w-2xl text-sm">
+          <p className="text-muted-foreground max-w-[60ch] text-sm leading-relaxed sm:text-[0.9375rem]">
             {description}
           </p>
         )}
@@ -48,7 +48,7 @@ function SectionHeading({
       {actionHref && actionLabel && (
         <Link
           href={actionHref}
-          className="text-primary focus-visible:ring-ring shrink-0 rounded text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2"
+          className="text-foreground decoration-foreground/30 hover:decoration-foreground focus-visible:ring-ring shrink-0 rounded text-sm font-medium underline underline-offset-4 transition-colors outline-none focus-visible:ring-2"
         >
           {actionLabel}
         </Link>

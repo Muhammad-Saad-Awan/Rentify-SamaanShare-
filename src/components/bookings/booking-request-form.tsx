@@ -249,7 +249,7 @@ function BookingRequestForm({
             onChange={(event) => setNotes(event.target.value)}
             disabled={isPending}
             placeholder="When you would collect, what you need it for."
-            className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 w-full rounded-lg border bg-transparent px-2.5 py-2 text-sm transition-colors outline-none focus-visible:ring-3"
+            className="border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 dark:bg-input/30 w-full rounded-lg border bg-transparent px-2.5 py-2 text-sm transition-colors outline-none focus-visible:ring-3"
           />
         </Field>
 

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { dismissReport, resolveReport } from "@/actions/moderation";
+import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -86,16 +87,19 @@ function ReportCard({ report }: ReportCardProps) {
       <div className="flex flex-col gap-3 px-(--card-spacing)">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{report.type}</Badge>
-          <span className="font-heading text-sm font-medium">
+          <span className="font-heading text-base font-semibold">
             {REPORT_REASON_LABELS[report.reason]}
           </span>
 
           {!isPending && (
-            <Badge variant="outline">
-              {report.status === ReportStatus.RESOLVED
-                ? "Resolved"
-                : "Dismissed"}
-            </Badge>
+            <StatusLabel
+              variant="outline"
+              label={
+                report.status === ReportStatus.RESOLVED
+                  ? "Resolved"
+                  : "Dismissed"
+              }
+            />
           )}
 
           {/*
@@ -114,7 +118,7 @@ function ReportCard({ report }: ReportCardProps) {
         <TargetPreview target={report.target} />
 
         {report.description && (
-          <p className="text-muted-foreground border-muted border-l-2 pl-3 text-sm leading-relaxed">
+          <p className="text-foreground/80 border-foreground border-l-2 pl-3 text-sm leading-relaxed">
             {report.description}
           </p>
         )}
@@ -187,7 +191,7 @@ function ReportCard({ report }: ReportCardProps) {
                   setAction(event.target.value as ReportAction | "")
                 }
                 disabled={pending !== null}
-                className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-8 w-full rounded-lg border bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:ring-3 disabled:opacity-50"
+                className="border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 bg-background h-10 w-full rounded-lg border px-3 py-1 text-sm outline-none focus-visible:ring-3 disabled:opacity-50"
               >
                 <option value="">Choose an action…</option>
                 {permitted.map((value) => (

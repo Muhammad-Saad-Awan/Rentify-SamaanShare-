@@ -27,9 +27,9 @@ interface StatCardProps {
  */
 function StatCard({ label, value, icon: Icon, hint }: StatCardProps) {
   return (
-    <Card>
+    <Card className="gap-3">
       <CardHeader className="flex-row items-center justify-between gap-2">
-        <CardTitle className="text-muted-foreground text-sm font-normal">
+        <CardTitle className="text-muted-foreground font-sans text-sm font-medium tracking-normal">
           {label}
         </CardTitle>
         <Icon
@@ -39,7 +39,7 @@ function StatCard({ label, value, icon: Icon, hint }: StatCardProps) {
       </CardHeader>
 
       <CardContent className="flex flex-col gap-0.5">
-        <span className="font-heading text-2xl font-semibold tracking-tight">
+        <span className="font-heading text-3xl font-bold tracking-[-0.025em]">
           {value}
         </span>
         {hint && <span className="text-muted-foreground text-xs">{hint}</span>}

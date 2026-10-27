@@ -104,7 +104,7 @@ function ReviewForm({ bookingId, side, onDone, onCancel }: ReviewFormProps) {
                   className={cn(
                     "size-6 transition-colors",
                     selected
-                      ? "fill-amber-400 text-amber-400"
+                      ? "fill-foreground text-foreground"
                       : "text-muted-foreground/40"
                   )}
                   aria-hidden="true"

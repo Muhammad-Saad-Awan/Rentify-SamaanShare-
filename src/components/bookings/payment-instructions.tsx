@@ -49,30 +49,36 @@ function PaymentInstructions({
   const total = amount + securityDeposit;
 
   return (
-    <div className="bg-muted/50 flex flex-col gap-2 rounded-lg px-3 py-2.5">
-      <p className="flex items-center gap-1.5 text-xs font-medium">
-        <ShieldCheckIcon className="size-3.5 shrink-0" aria-hidden="true" />
+    <div className="bg-background flex flex-col gap-3 rounded-xl border p-4">
+      <p className="font-heading flex items-center gap-2 text-sm font-semibold">
+        <ShieldCheckIcon className="size-4 shrink-0" aria-hidden="true" />
         {byCard ? "Paying SamaanShare by card" : "Paying SamaanShare"}
       </p>
 
-      <dl className="text-muted-foreground grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+      <dl className="text-muted-foreground grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-sm">
         <dt>Rent</dt>
-        <dd className="text-foreground font-medium">{formatPKR(amount)}</dd>
+        <dd className="text-foreground text-right font-medium tabular-nums">
+          {formatPKR(amount)}
+        </dd>
 
         {securityDeposit > 0 && (
           <>
             <dt>Deposit</dt>
-            <dd className="text-foreground font-medium">
+            <dd className="text-foreground text-right font-medium tabular-nums">
               {formatPKR(securityDeposit)}{" "}
-              <span className="text-muted-foreground font-normal">
+              <span className="text-muted-foreground text-xs font-normal">
                 refundable
               </span>
             </dd>
           </>
         )}
 
-        <dt>{byCard ? "Total charged" : "Total to send"}</dt>
-        <dd className="text-foreground font-medium">{formatPKR(total)}</dd>
+        <dt className="text-foreground border-foreground mt-1 border-t pt-2 font-medium">
+          {byCard ? "Total charged" : "Total to send"}
+        </dt>
+        <dd className="font-heading text-foreground border-foreground mt-1 border-t pt-2 text-right text-base font-bold">
+          {formatPKR(total)}
+        </dd>
       </dl>
 
       {!isConfirmed && byCard && (
@@ -89,7 +95,7 @@ function PaymentInstructions({
             {PLATFORM_PAYMENT_ACCOUNTS.map((account) => (
               <li
                 key={`${account.provider}-${account.accountNumber}`}
-                className="bg-background/60 flex flex-col gap-0.5 rounded-lg border px-2.5 py-2"
+                className="bg-muted/60 flex flex-col gap-0.5 rounded-lg px-3 py-2.5"
               >
                 <span className="flex items-center gap-1.5 text-xs font-medium">
                   <LandmarkIcon
@@ -105,7 +111,7 @@ function PaymentInstructions({
                   Monospace and breakable: an account number is copied digit by digit into
                   another app, and a proportional font makes that materially harder to get right.
                 */}
-                <span className="font-mono text-xs break-all">
+                <span className="font-mono text-sm tracking-wide break-all select-all">
                   {account.accountNumber}
                 </span>
                 {account.note && (

@@ -215,7 +215,7 @@ function HandoverRecordCard({ handover }: { handover: HandoverSnapshot }) {
 function Standing({ confirmation }: { confirmation: HandoverConfirmation }) {
   if (confirmation === HandoverConfirmation.AGREED) {
     return (
-      <span className="flex items-center gap-1 text-xs text-emerald-600">
+      <span className="text-foreground flex items-center gap-1 text-xs font-medium">
         <CheckCircle2Icon className="size-3.5" aria-hidden="true" />
         Both parties agreed
       </span>

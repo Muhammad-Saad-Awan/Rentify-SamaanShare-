@@ -10,7 +10,7 @@ import {
   recordOwnerPayout,
   settleBooking,
 } from "@/actions/settlement";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -77,16 +77,16 @@ function SettlementCard({ row }: SettlementCardProps) {
     settled ?? (row.pending?.ready ? row.pending.breakdown : null);
 
   return (
-    <Card className="flex flex-col gap-3 px-(--card-spacing) py-3">
+    <Card className="flex flex-col gap-4 px-(--card-spacing)">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex flex-col gap-0.5">
           <Link
             href={`/admin/bookings/${row.bookingId}`}
-            className="text-sm font-medium underline-offset-4 hover:underline"
+            className="font-heading decoration-foreground/30 text-base leading-snug font-semibold underline-offset-4 hover:underline"
           >
             {row.listing.title}
           </Link>
-          <span className="text-muted-foreground text-xs">
+          <span className="text-muted-foreground text-sm">
             {row.renter.name} → {row.owner.name}
             {row.completedAt
               ? ` · returned ${formatDate(row.completedAt)}`
@@ -96,12 +96,12 @@ function SettlementCard({ row }: SettlementCardProps) {
 
         {settled ? (
           settled.complete ? (
-            <Badge>Settled and sent</Badge>
+            <StatusLabel variant="default" label="Settled and sent" />
           ) : (
-            <Badge variant="secondary">Sending</Badge>
+            <StatusLabel variant="secondary" label="Sending" />
           )
         ) : (
-          <Badge variant="outline">To settle</Badge>
+          <StatusLabel variant="secondary" label="To settle" />
         )}
       </div>
 
@@ -109,7 +109,7 @@ function SettlementCard({ row }: SettlementCardProps) {
         Four figures, never their sum. See the note on the component.
       */}
       {figures && (
-        <dl className="text-muted-foreground grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-xs">
+        <dl className="text-muted-foreground grid grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 rounded-lg border px-4 py-3 text-sm [&_dd]:text-right [&_dd]:font-medium [&_dd]:tabular-nums">
           <dt>Rental</dt>
           <dd className="text-foreground">{formatPKR(figures.rentalAmount)}</dd>
 

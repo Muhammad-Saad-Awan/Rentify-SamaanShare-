@@ -46,7 +46,7 @@ function RatingStars({
             className={cn(
               starSize,
               index < filled
-                ? "fill-amber-400 text-amber-400"
+                ? "fill-foreground text-foreground"
                 : "text-muted-foreground/30"
             )}
           />

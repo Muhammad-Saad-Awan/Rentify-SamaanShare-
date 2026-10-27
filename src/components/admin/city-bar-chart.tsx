@@ -50,7 +50,7 @@ function CityBarChart({ title, caption, rows }: CityBarChartProps) {
   if (rows.length === 0) {
     return (
       <div className="flex flex-col gap-1">
-        <h3 className="font-heading text-sm font-medium">{title}</h3>
+        <h3 className="font-heading text-base font-semibold">{title}</h3>
         <p className="text-muted-foreground text-xs">Nothing recorded yet.</p>
       </div>
     );
@@ -62,7 +62,7 @@ function CityBarChart({ title, caption, rows }: CityBarChartProps) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-col gap-0.5">
-        <h3 className="font-heading text-sm font-medium">{title}</h3>
+        <h3 className="font-heading text-base font-semibold">{title}</h3>
         <p className="text-muted-foreground text-xs">{caption}</p>
       </div>
 

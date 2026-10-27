@@ -131,7 +131,7 @@ export default async function AdminUserPage({ params }: AdminUserPageProps) {
               <MailCheckIcon
                 className={
                   user.emailVerified
-                    ? "size-3.5 shrink-0 text-emerald-600"
+                    ? "text-foreground size-3.5 shrink-0"
                     : "size-3.5 shrink-0"
                 }
                 aria-hidden="true"

@@ -105,7 +105,7 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
 
       <DropdownMenuContent
         align="end"
-        className="w-80"
+        className="w-[22rem] max-w-[calc(100vw-2rem)]"
         aria-labelledby={headingId}
       >
         <div className="flex items-center justify-between gap-2 pr-1">
@@ -125,7 +125,7 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
           */}
           <p
             id={headingId}
-            className="text-muted-foreground px-1.5 py-1 text-xs font-medium"
+            className="font-heading px-1.5 py-1.5 text-sm font-semibold"
           >
             Notifications
           </p>
@@ -152,8 +152,9 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
         <DropdownMenuSeparator />
 
         {items.length === 0 ? (
-          <p className="text-muted-foreground px-1.5 py-6 text-center text-sm">
-            No notifications yet.
+          <p className="text-muted-foreground px-1.5 py-8 text-center text-sm">
+            No notifications yet. Updates about your bookings, payments and
+            messages appear here.
           </p>
         ) : (
           <ul>
@@ -161,8 +162,8 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
               <li key={item.id}>
                 <DropdownMenuItem
                   className={cn(
-                    "flex-col items-start gap-0.5 whitespace-normal",
-                    item.isUnread && "bg-accent/40"
+                    "flex-col items-start gap-1 px-2.5 py-2.5 whitespace-normal",
+                    item.isUnread && "bg-muted/70"
                   )}
                   onClick={() => markOne(item.id, item.isUnread)}
                   render={
@@ -174,12 +175,17 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
                   }
                 >
                   <span className="flex w-full items-start gap-2">
-                    <span className="flex-1 text-xs leading-snug font-medium">
+                    <span
+                      className={cn(
+                        "flex-1 text-[0.8125rem] leading-snug",
+                        item.isUnread ? "font-semibold" : "font-medium"
+                      )}
+                    >
                       {item.title}
                     </span>
                     {item.isUnread && (
                       <span
-                        className="bg-primary mt-1 size-1.5 shrink-0 rounded-full"
+                        className="bg-primary mt-1.5 size-2 shrink-0 rounded-full"
                         aria-label="Unread"
                       />
                     )}
@@ -202,7 +208,10 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem render={<Link href="/dashboard/notifications" />}>
+        <DropdownMenuItem
+          className="justify-center font-medium"
+          render={<Link href="/dashboard/notifications" />}
+        >
           View all notifications
         </DropdownMenuItem>
       </DropdownMenuContent>

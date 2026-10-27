@@ -66,7 +66,7 @@ function UnreadMessagesBadge({ unread }: UnreadProps) {
   }
 
   return (
-    <span className="bg-primary text-primary-foreground ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums">
+    <span className="bg-primary text-primary-foreground group-aria-[current=page]/nav:bg-background group-aria-[current=page]/nav:text-foreground ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums">
       {capped(unread)}
       <span className="sr-only"> unread</span>
     </span>

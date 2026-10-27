@@ -36,7 +36,7 @@ function OwnerCard({ owner }: OwnerCardProps) {
   return (
     <Card>
       <div className="flex items-start gap-3 px-(--card-spacing)">
-        <Avatar className="size-10 shrink-0">
+        <Avatar className="size-12 shrink-0">
           {avatarSrc && <AvatarImage src={avatarSrc} alt="" />}
           {/*
             Initials come from the resolved display name, so an owner with no name
@@ -55,14 +55,14 @@ function OwnerCard({ owner }: OwnerCardProps) {
             */}
             <Link
               href={`/users/${owner.id}`}
-              className="font-heading text-sm font-medium underline-offset-4 hover:underline"
+              className="font-heading decoration-foreground/30 text-base font-semibold underline-offset-4 hover:underline"
             >
               {name}
             </Link>
 
             {owner.isVerified && (
               <span
-                className="text-primary flex items-center gap-1 text-xs"
+                className="bg-primary text-primary-foreground flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
                 // The icon is decorative; the word carries the meaning.
                 title="Identity verified by SamaanShare"
               >
@@ -76,7 +76,7 @@ function OwnerCard({ owner }: OwnerCardProps) {
             {hasRating && (
               <span className="flex items-center gap-1">
                 <StarIcon
-                  className="size-3.5 fill-current text-amber-500"
+                  className="text-foreground size-3.5 fill-current"
                   aria-hidden="true"
                 />
                 {/*
