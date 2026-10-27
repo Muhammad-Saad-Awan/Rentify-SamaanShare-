@@ -1,13 +1,14 @@
 import {
   BanknoteIcon,
-  HandCoinsIcon,
   BarChart3Icon,
   BellIcon,
   CalendarCheckIcon,
   CalendarSearchIcon,
   FlagIcon,
+  HandCoinsIcon,
   HeartIcon,
   HomeIcon,
+  IdCardIcon,
   InboxIcon,
   LayoutDashboardIcon,
   MessagesSquareIcon,
@@ -137,6 +138,12 @@ export const DASHBOARD_NAV: readonly NavSection[] = [
       { title: "Admin", href: "/admin", icon: ShieldIcon, exact: true },
       { title: "Reports", href: "/admin/reports", icon: FlagIcon },
       { title: "Members", href: "/admin/users", icon: UsersIcon },
+      // The CNIC review queue, beside the members it verifies.
+      {
+        title: "Verifications",
+        href: "/admin/verifications",
+        icon: IdCardIcon,
+      },
       /**
        * Listing moderation. `/admin/listings` rather than a section of `/dashboard/listings`,
        * which is the owner's own inventory - the two look similar and answer opposite questions:
@@ -201,6 +208,7 @@ export const PATH_LABELS: Readonly<Record<string, string>> = {
   "/admin/payments": "Payments",
   "/admin/settlements": "Settlements",
   "/admin/conversations": "Conversations",
+  "/admin/verifications": "Verifications",
 };
 
 /**

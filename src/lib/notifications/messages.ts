@@ -52,7 +52,11 @@ export type BookingEntityType = "booking" | "booking-request";
  * has no page listing the reports they filed - so {@link notificationHref} deliberately returns
  * `null` for it and the row renders unclickable rather than linking somewhere unrelated.
  */
-export type NotificationEntityType = BookingEntityType | "report";
+export type NotificationEntityType =
+  | BookingEntityType
+  | "report"
+  /** A CNIC review outcome. Points at the member's own profile, where the document is managed. */
+  | "identity";
 
 /** Who the booking belongs to, so a draft can be addressed without another query. */
 export interface BookingParties {
@@ -386,6 +390,8 @@ export function notificationHref(
      */
     case "report":
       return null;
+    case "identity":
+      return "/profile";
     default:
       return null;
   }

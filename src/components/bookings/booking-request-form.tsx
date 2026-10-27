@@ -154,11 +154,20 @@ function BookingRequestForm({
           </ul>
 
           {/*
-            A link straight to the fix for the one requirement that has one. The other is cleared by
-            renting, which is not a button.
+            A link straight to the fix for each requirement that has one. Identity-or-history is
+            cleared by renting, which is not a button.
           */}
-          {access.unmet.some((requirement) => requirement.key === "email") && (
-            <div>
+          <div className="flex flex-wrap gap-2 empty:hidden">
+            {access.unmet.some(
+              (requirement) => requirement.key === "identity-document"
+            ) && (
+              <Button size="sm" render={<Link href="/profile#identity" />}>
+                Upload my CNIC
+              </Button>
+            )}
+            {access.unmet.some(
+              (requirement) => requirement.key === "email"
+            ) && (
               <Button
                 size="sm"
                 variant="outline"
@@ -166,8 +175,8 @@ function BookingRequestForm({
               >
                 Confirm my email
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </Card>
     );

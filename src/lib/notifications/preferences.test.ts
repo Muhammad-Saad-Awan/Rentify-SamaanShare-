@@ -196,6 +196,9 @@ describe("the set of mutable types", () => {
     NotificationType.BOOKING_SETTLED,
     NotificationType.OWNER_PAID,
     NotificationType.REFUND_RECORDED,
+    // A CNIC review outcome. A rejection blocks renting and listing until the member re-uploads.
+    NotificationType.IDENTITY_VERIFIED,
+    NotificationType.IDENTITY_DOCUMENT_REJECTED,
   ];
 
   const ADVISORY: NotificationType[] = [

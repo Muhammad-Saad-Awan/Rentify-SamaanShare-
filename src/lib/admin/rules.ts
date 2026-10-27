@@ -266,6 +266,7 @@ export const ADMIN_ACTION_LABELS: Readonly<Record<AdminActionType, string>> = {
   [AdminActionType.CHANGE_ROLE]: "Role changed",
   [AdminActionType.VERIFY_IDENTITY]: "Identity verified",
   [AdminActionType.WITHDRAW_VERIFICATION]: "Verification withdrawn",
+  [AdminActionType.REJECT_IDENTITY_DOCUMENT]: "CNIC rejected",
   // Listing moderation. These read back on the OWNER's history as well as the listing's - the
   // subject of the row is the account, which is what makes "two listings taken down" visible when
   // deciding about the person. See `src/lib/admin/listing-rules.ts`.

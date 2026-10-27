@@ -1,6 +1,7 @@
 import { cache } from "react";
 
 import { BookingStatus } from "@/generated/prisma/enums";
+import { isDocumentAccepted } from "@/lib/identity/gate";
 import { prisma } from "@/lib/prisma";
 
 import type { RenterAccessSignals } from "@/lib/trust/access";
@@ -23,7 +24,11 @@ export const getRenterAccessSignals = cache(
     const [user, completedRentals] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
-        select: { emailVerified: true, isVerified: true },
+        select: {
+          emailVerified: true,
+          isVerified: true,
+          identityDocument: { select: { status: true } },
+        },
       }),
       /**
        * Finished rentals on either side.
@@ -49,6 +54,7 @@ export const getRenterAccessSignals = cache(
         user?.emailVerified !== null && user?.emailVerified !== undefined,
       isVerified: user?.isVerified ?? false,
       completedRentals,
+      hasIdentityDocument: isDocumentAccepted(user?.identityDocument?.status),
     };
   }
 );

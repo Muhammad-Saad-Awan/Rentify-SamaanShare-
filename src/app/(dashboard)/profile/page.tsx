@@ -1,12 +1,14 @@
 import { EmailVerificationNotice } from "@/components/auth/email-verification-notice";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
+import { IdentityDocumentSection } from "@/components/profile/identity-document-section";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { isEmailEnabled } from "@/config/env";
 import { UserRole } from "@/generated/prisma/enums";
 import { requireUser } from "@/lib/auth/session";
+import { isIdentityDocumentRequired } from "@/lib/identity/gate";
 import { prisma } from "@/lib/prisma";
 import { getInitials } from "@/lib/utils/user";
 import { formatPhone } from "@/lib/validations/profile";
@@ -44,6 +46,14 @@ export default async function ProfilePage() {
       image: true,
       avatarUrl: true,
       emailVerified: true,
+      identityDocument: {
+        select: {
+          status: true,
+          cnicNumber: true,
+          rejectionReason: true,
+          submittedAt: true,
+        },
+      },
     },
   });
 
@@ -107,6 +117,11 @@ export default async function ProfilePage() {
         isVerified={current.emailVerified !== null}
         canSend={isEmailEnabled()}
       />
+
+      {/* Hidden where uploads are not configured - see `isIdentityDocumentRequired`. */}
+      {isIdentityDocumentRequired() && (
+        <IdentityDocumentSection document={current.identityDocument} />
+      )}
     </>
   );
 }

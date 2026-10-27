@@ -36,6 +36,7 @@ import {
 } from "@/lib/realtime/publish";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isIdentityDocumentRequired } from "@/lib/identity/gate";
 import { getRenterAccessSignals } from "@/lib/queries/renter-access";
 import { VISIBLE_LISTING_WHERE } from "@/lib/queries/visibility";
 import { accessTierFor, checkRenterAccess } from "@/lib/trust/access";
@@ -275,7 +276,8 @@ export async function createBookingRequest(
     const access = checkRenterAccess(
       tier,
       await getRenterAccessSignals(renter.id),
-      isEmailConfirmationRequired()
+      isEmailConfirmationRequired(),
+      isIdentityDocumentRequired()
     );
 
     if (!access.allowed) {

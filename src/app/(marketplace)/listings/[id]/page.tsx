@@ -21,6 +21,7 @@ import { ReportType } from "@/generated/prisma/enums";
 import { isEmailConfirmationRequired } from "@/lib/auth/email-gate";
 import { getCurrentUser } from "@/lib/auth/session";
 import { listingJsonLd } from "@/lib/marketplace/structured-data";
+import { isIdentityDocumentRequired } from "@/lib/identity/gate";
 import { getRenterAccessSignals } from "@/lib/queries/renter-access";
 import {
   accessTierDescription,
@@ -148,7 +149,8 @@ export default async function ListingPage({ params }: ListingPageProps) {
       ? checkRenterAccess(
           accessTier,
           await getRenterAccessSignals(user.id),
-          isEmailConfirmationRequired()
+          isEmailConfirmationRequired(),
+          isIdentityDocumentRequired()
         )
       : null;
 
