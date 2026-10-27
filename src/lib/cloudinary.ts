@@ -87,8 +87,11 @@ export function avatarUploadFolder(userId: string): string {
  * `authenticated` asset has no public URL at all. See `IdentityDocument` in the schema.
  */
 export function identityUploadFolder(userId: string): string {
-  return `samaanshare/identity/${userId}`;
+  return `${IDENTITY_UPLOAD_ROOT}/${userId}`;
 }
+
+/** Root of every member's CNIC images. Swept by `scripts/cleanup-identity-uploads.ts`. */
+export const IDENTITY_UPLOAD_ROOT = "samaanshare/identity";
 
 /**
  * Cloudinary's delivery type.
@@ -179,13 +182,14 @@ export interface ListedUpload {
  */
 export async function listUploadsByPrefix(
   prefix: string,
-  cursor?: string
+  cursor?: string,
+  type: DeliveryType = "upload"
 ): Promise<{ uploads: ListedUpload[]; nextCursor: string | undefined }> {
   const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
 
   const query = new URLSearchParams({
     prefix,
-    type: "upload",
+    type,
     max_results: "500",
   });
 
