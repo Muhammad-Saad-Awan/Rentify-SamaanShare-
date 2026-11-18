@@ -33,16 +33,18 @@ function CategoryGrid({ categories }: CategoryGridProps) {
           <li key={category.slug}>
             <Link
               href={`/categories/${category.slug}`}
-              className="group bg-card hover:border-foreground focus-visible:ring-ring flex h-full flex-col justify-between gap-8 rounded-xl border p-5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              // Stacked on a phone, where two columns leave no room beside the icon; a row from
+              // `sm` up, so a tile is as tall as its content rather than a mostly empty box.
+              className="group bg-card hover:border-foreground/40 focus-visible:ring-ring flex h-full flex-col gap-5 rounded-xl border p-4 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:flex-row sm:items-center sm:gap-4 sm:p-5"
             >
               <span
-                className="bg-muted group-hover:bg-primary group-hover:text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors"
+                className="bg-muted text-foreground group-hover:bg-primary group-hover:text-primary-foreground flex size-11 shrink-0 items-center justify-center rounded-lg transition-colors"
                 aria-hidden="true"
               >
                 <Icon className="size-5" strokeWidth={1.75} />
               </span>
 
-              <span className="flex flex-col gap-0.5">
+              <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="font-heading text-base leading-snug font-semibold">
                   {category.name}
                 </span>

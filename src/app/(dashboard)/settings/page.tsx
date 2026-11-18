@@ -1,5 +1,3 @@
-import { KeyRoundIcon } from "lucide-react";
-
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ConnectedAccounts } from "@/components/settings/connected-accounts";
 import {
@@ -38,6 +36,9 @@ export const metadata: Metadata = {
  * `isGoogleEnabled()` is called here, in a Server Component, because it reads unprefixed
  * environment variables that do not exist in the browser - the same rule the login page
  * follows.
+ *
+ * Card titles are real `h2`s inside `CardTitle`, which is a `div`: the preferences card has an `h3`
+ * for its notification group, and without them the outline jumped from the page's `h1` to it.
  */
 export default async function SettingsPage() {
   const user = await requireUser();
@@ -94,10 +95,9 @@ export default async function SettingsPage() {
       />
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <KeyRoundIcon className="size-4" aria-hidden="true" />
-            {hasPassword ? "Change your password" : "Set a password"}
+        <CardHeader className="border-b">
+          <CardTitle>
+            <h2>{hasPassword ? "Change your password" : "Set a password"}</h2>
           </CardTitle>
           <CardDescription>
             {hasPassword
@@ -111,8 +111,10 @@ export default async function SettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Connected accounts</CardTitle>
+        <CardHeader className="border-b">
+          <CardTitle>
+            <h2>Connected accounts</h2>
+          </CardTitle>
           <CardDescription>
             Other services you can use to sign in to SamaanShare.
           </CardDescription>
@@ -127,8 +129,10 @@ export default async function SettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Preferences</CardTitle>
+        <CardHeader className="border-b">
+          <CardTitle>
+            <h2>Preferences</h2>
+          </CardTitle>
           <CardDescription>
             Where browsing starts, and which optional notifications you get.
           </CardDescription>

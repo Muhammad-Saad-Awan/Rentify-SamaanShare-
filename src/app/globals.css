@@ -37,6 +37,18 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-bright: var(--brand-bright);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-foreground: var(--success-soft-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-foreground: var(--warning-soft-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -61,98 +73,116 @@
 /* ===========================================================================
    SAMAANSHARE BRAND TOKENS
    ---------------------------------------------------------------------------
-   No brand palette has been decided yet, so the shadcn `neutral` base colour
-   is in place as a deliberate placeholder. To brand the app, change only the
-   token pairs marked BRAND below (in both `:root` and `.dark`) — every
-   component reads these semantic tokens, so nothing else needs editing.
+   Deep Navy (#142B3B) + Emerald (#047857) on a cool off-white page (#F8FAFC).
 
-   Values are oklch(lightness chroma hue). Keep `*-foreground` contrast at
-   4.5:1 or better against its background to stay WCAG AA compliant.
+   Navy carries the identity: ink, primary actions, the active nav item, dark
+   bands. Emerald is spent sparingly, where something is good or trusted -
+   paid, verified, rented out, the focus ring - so it keeps meaning something.
+
+   `--accent` is NOT the brand accent. It is the hover/selected surface for
+   menus and ghost buttons, which is why it stays a neutral; emerald lives in
+   `--brand` and `--success`.
+
+   `#059669` (brand-bright) and `#D97706` (warning) are below 4.5:1 on white:
+   icons, borders, fills and large text only - never small text.
+
+   Every foreground/background pair here is measured, light and dark:
+     node .claude/skills/samaanshare-ui/scripts/contrast.mjs --tokens
+   Re-run it after any edit. Values are oklch(lightness chroma hue).
    =========================================================================== */
 
 :root {
-  /*
-   * Monochrome identity: true black ink on white paper. Hierarchy comes from
-   * weight, size and the grey ramp below - never from hue. The only chromatic
-   * token is `--destructive`, reserved for failure and irreversible actions,
-   * so red always means "something went wrong" and nothing else.
-   */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0 0 0);
+  --background: oklch(0.984 0.003 247.9); /* #F8FAFC */
+  --foreground: oklch(0.278 0.042 240.8); /* #142B3B deep navy */
+  --card: oklch(1 0 0); /* #FFFFFF */
+  --card-foreground: oklch(0.278 0.042 240.8);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0 0 0);
-  /* BRAND: primary action colour (buttons, links, focus emphasis) */
-  --primary: oklch(0 0 0);
+  --popover-foreground: oklch(0.278 0.042 240.8);
+  --primary: oklch(0.278 0.042 240.8); /* #142B3B */
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.965 0 0);
-  --secondary-foreground: oklch(0 0 0);
-  --muted: oklch(0.97 0 0);
-  /**
-   * 0.556 until axe measured it. Muted text on a muted surface - the dashboard shell, every
-   * card footer, the calendar legend - came to 4.34:1 at 12px, against the 4.5:1 that WCAG AA
-   * requires for normal text.
-   *
-   * Now 0.5, which clears AA on both the white page and the `--muted` wash with room to spare
-   * (about 5.6:1 on white), so secondary text stays legible at the 12px it is often set in.
-   */
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.96 0 0);
-  --accent-foreground: oklch(0 0 0);
+  --secondary: oklch(0.968 0.007 247.9); /* #F1F5F9 */
+  --secondary-foreground: oklch(0.278 0.042 240.8);
+  --muted: oklch(0.968 0.007 247.9); /* #F1F5F9 */
+  --muted-foreground: oklch(0.49 0.033 251.7); /* #536273 */
+  --accent: oklch(0.947 0.009 247.9); /* #E9EEF3 hover surface, NOT emerald */
+  --accent-foreground: oklch(0.278 0.042 240.8);
   --destructive: oklch(0.55 0.22 27);
-  --border: oklch(0.91 0 0);
-  --input: oklch(0.86 0 0);
-  --ring: oklch(0 0 0);
-  --chart-1: oklch(0 0 0);
-  --chart-2: oklch(0.35 0 0);
-  --chart-3: oklch(0.55 0 0);
-  --chart-4: oklch(0.72 0 0);
-  --chart-5: oklch(0.86 0 0);
+  --brand: oklch(0.508 0.105 165.6); /* #047857 emerald */
+  --brand-foreground: oklch(1 0 0);
+  --brand-hover: oklch(0.432 0.086 166.9); /* #065F46 */
+  --brand-bright: oklch(0.596 0.127 163.2); /* #059669 non-text only */
+  --success: oklch(0.508 0.105 165.6); /* #047857 */
+  --success-foreground: oklch(1 0 0);
+  --success-soft: oklch(0.979 0.021 166.1); /* #ECFDF5 */
+  --success-soft-foreground: oklch(0.432 0.086 166.9); /* #065F46 */
+  --warning: oklch(0.666 0.157 58.3); /* #D97706 */
+  --warning-foreground: oklch(0.278 0.042 240.8); /* navy on amber, 4.59:1 */
+  --warning-soft: oklch(0.987 0.021 95.3); /* #FFFBEB */
+  --warning-soft-foreground: oklch(0.473 0.125 46.2); /* #92400E */
+  --border: oklch(0.929 0.013 255.5); /* #E2E8F0 */
+  --input: oklch(0.627 0.03 250); /* #7B8A9A, 3:1 for control edges */
+  --ring: oklch(0.508 0.105 165.6); /* emerald focus */
+  --chart-1: oklch(0.278 0.042 240.8); /* navy */
+  --chart-2: oklch(0.508 0.105 165.6); /* emerald */
+  --chart-3: oklch(0.49 0.033 251.7); /* slate */
+  --chart-4: oklch(0.596 0.127 163.2); /* emerald 600 */
+  --chart-5: oklch(0.869 0.02 252.9); /* #CBD5E1 */
   --radius: 0.5rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0 0 0);
-  --sidebar-primary: oklch(0 0 0);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.278 0.042 240.8);
+  --sidebar-primary: oklch(0.278 0.042 240.8);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.945 0 0);
-  --sidebar-accent-foreground: oklch(0 0 0);
-  --sidebar-border: oklch(0.91 0 0);
-  --sidebar-ring: oklch(0 0 0);
+  --sidebar-accent: oklch(0.968 0.007 247.9);
+  --sidebar-accent-foreground: oklch(0.278 0.042 240.8);
+  --sidebar-border: oklch(0.929 0.013 255.5);
+  --sidebar-ring: oklch(0.508 0.105 165.6);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  /* BRAND: dark-theme counterpart of --primary (kept in sync when branding) */
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --background: oklch(0.21 0.029 239.3); /* #0B1A24 */
+  --foreground: oklch(0.968 0.007 247.9); /* #F1F5F9 */
+  --card: oklch(0.247 0.033 239.2); /* #11232F */
+  --card-foreground: oklch(0.968 0.007 247.9);
+  --popover: oklch(0.247 0.033 239.2);
+  --popover-foreground: oklch(0.968 0.007 247.9);
+  --primary: oklch(0.968 0.007 247.9);
+  --primary-foreground: oklch(0.278 0.042 240.8);
+  --secondary: oklch(0.32 0.043 237.2); /* #1C3646 */
+  --secondary-foreground: oklch(0.968 0.007 247.9);
+  --muted: oklch(0.32 0.043 237.2);
+  --muted-foreground: oklch(0.711 0.035 256.8); /* #94A3B8 */
+  --accent: oklch(0.32 0.043 237.2);
+  --accent-foreground: oklch(0.968 0.007 247.9);
+  /* Lighter than shadcn's 0.704: destructive text on its own /20 tint was 4.26:1 on navy cards. */
+  --destructive: oklch(0.75 0.16 22);
+  --brand: oklch(0.773 0.153 163.2); /* #34D399 */
+  --brand-foreground: oklch(0.21 0.029 239.3);
+  --brand-hover: oklch(0.845 0.13 165); /* #6EE7B7 */
+  --brand-bright: oklch(0.773 0.153 163.2);
+  --success: oklch(0.773 0.153 163.2);
+  --success-foreground: oklch(0.21 0.029 239.3);
+  --success-soft: oklch(0.319 0.052 173.1); /* #0F3B30 */
+  --success-soft-foreground: oklch(0.845 0.13 165); /* #6EE7B7 */
+  --warning: oklch(0.837 0.164 84.4); /* #FBBF24 */
+  --warning-foreground: oklch(0.21 0.029 239.3);
+  --warning-soft: oklch(0.297 0.05 80.3); /* #3A2A0C */
+  --warning-soft-foreground: oklch(0.879 0.153 91.6); /* #FCD34D */
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.985 0 0);
-  --sidebar-primary-foreground: oklch(0.145 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --input: oklch(0.564 0.038 247.1); /* #64788B */
+  --ring: oklch(0.773 0.153 163.2);
+  --chart-1: oklch(0.968 0.007 247.9);
+  --chart-2: oklch(0.773 0.153 163.2);
+  --chart-3: oklch(0.711 0.035 256.8);
+  --chart-4: oklch(0.845 0.13 165);
+  --chart-5: oklch(0.376 0.044 237.2);
+  --sidebar: oklch(0.247 0.033 239.2);
+  --sidebar-foreground: oklch(0.968 0.007 247.9);
+  --sidebar-primary: oklch(0.968 0.007 247.9);
+  --sidebar-primary-foreground: oklch(0.278 0.042 240.8);
+  --sidebar-accent: oklch(0.32 0.043 237.2);
+  --sidebar-accent-foreground: oklch(0.968 0.007 247.9);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.773 0.153 163.2);
 }
 
 @layer base {
@@ -173,6 +203,14 @@
   h2,
   h3 {
     text-wrap: balance;
+  }
+  /*
+   * A failed image otherwise prints its alt text over the frame - a listing title stamped
+   * across a grey box. Transparent text hides only that rendering; assistive tech still reads
+   * the alt, and every image frame already has a `bg-muted` fallback behind it.
+   */
+  img {
+    color: transparent;
   }
   ::selection {
     background: var(--foreground);

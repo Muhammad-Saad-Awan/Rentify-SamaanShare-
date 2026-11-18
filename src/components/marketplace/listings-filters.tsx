@@ -4,6 +4,7 @@ import { FilterForm } from "@/components/marketplace/filter-form";
 import { HiddenFilterFields } from "@/components/marketplace/hidden-filter-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { PAKISTANI_CITIES } from "@/config/cities";
 import { ItemCondition } from "@/generated/prisma/enums";
 import {
@@ -12,7 +13,6 @@ import {
   FILTER_PARAM,
   hasActiveFilters,
 } from "@/lib/marketplace/filters";
-import { cn } from "@/lib/utils/cn";
 import { CONDITION_LABELS } from "@/lib/utils/listing";
 
 import type { ListingFilters } from "@/lib/marketplace/filters";
@@ -35,10 +35,6 @@ const OWNED_PARAMS = [
   FILTER_PARAM.availableFrom,
   FILTER_PARAM.availableTo,
 ] as const;
-
-/** Matches `Input`'s tokens so a native select sits flush beside one. */
-const SELECT_CLASS =
-  "border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 dark:bg-input/30 h-10 w-full rounded-lg border bg-background px-3 py-1 text-sm transition-colors outline-none focus-visible:ring-3";
 
 interface ListingsFiltersProps {
   filters: ListingFilters;
@@ -103,11 +99,10 @@ function ListingsFilters({
       </div>
 
       <FilterGroup label="Category" htmlFor={`${idPrefix}-category`}>
-        <select
+        <NativeSelect
           id={`${idPrefix}-category`}
           name={FILTER_PARAM.category}
           defaultValue={filters.category ?? ""}
-          className={SELECT_CLASS}
         >
           <option value="">All categories</option>
           {categories.map((category) => (
@@ -115,7 +110,7 @@ function ListingsFilters({
               {category.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </FilterGroup>
 
       <FilterGroup
@@ -127,12 +122,11 @@ function ListingsFilters({
             : "Pick a category and apply to narrow further."
         }
       >
-        <select
+        <NativeSelect
           id={`${idPrefix}-subcategory`}
           name={FILTER_PARAM.subcategory}
           defaultValue={filters.subcategory ?? ""}
           disabled={!activeCategory}
-          className={cn(SELECT_CLASS, "disabled:opacity-50")}
         >
           <option value="">
             {activeCategory
@@ -144,15 +138,14 @@ function ListingsFilters({
               {subcategory.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </FilterGroup>
 
       <FilterGroup label="City" htmlFor={`${idPrefix}-city`}>
-        <select
+        <NativeSelect
           id={`${idPrefix}-city`}
           name={FILTER_PARAM.city}
           defaultValue={filters.city ?? CITY_ANYWHERE}
-          className={SELECT_CLASS}
         >
           {/*
             `all`, not an empty value. A member with a `defaultCity` is redirected from a
@@ -167,7 +160,7 @@ function ListingsFilters({
               {city.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </FilterGroup>
 
       {/*
@@ -211,11 +204,12 @@ function ListingsFilters({
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-xs font-medium">Condition</legend>
 
-        <div className="flex flex-col gap-1.5">
+        {/* `py-1.5` on each row: the label is the hit area, and a bare 16px box is too small to tap. */}
+        <div className="-my-1.5 flex flex-col">
           {Object.values(ItemCondition).map((condition) => (
             <label
               key={condition}
-              className="flex cursor-pointer items-center gap-2 text-sm"
+              className="flex cursor-pointer items-center gap-2.5 py-1.5 text-sm"
             >
               {/*
                 Native checkboxes: they submit as repeated `condition` values
@@ -261,7 +255,7 @@ function ListingsFilters({
         </p>
       </fieldset>
 
-      <Button type="submit" size="sm" className="w-full">
+      <Button type="submit" className="w-full">
         Apply filters
       </Button>
     </FilterForm>

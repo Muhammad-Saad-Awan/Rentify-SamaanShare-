@@ -41,11 +41,9 @@ function MessagesButton({ unread }: UnreadProps) {
       })}
     >
       <MessagesSquareIcon />
+      {/* Navy, matching the sidebar's count and the bell's: unread is news, not an error. */}
       {unread > 0 && (
-        <Badge
-          variant="destructive"
-          className="pointer-events-none absolute -top-0.5 -right-0.5 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] leading-none tabular-nums"
-        >
+        <Badge className="ring-background pointer-events-none absolute -top-0.5 -right-0.5 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] leading-none tabular-nums ring-2">
           {capped(unread)}
         </Badge>
       )}

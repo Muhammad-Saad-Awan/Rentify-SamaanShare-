@@ -31,8 +31,12 @@ async function SiteHeader() {
 
   return (
     <header className="bg-background sticky top-0 z-30 border-b">
-      <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-4 sm:gap-5 lg:px-6">
-        <Brand href="/" />
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-2 px-4 sm:gap-5 lg:px-6">
+        {/* A touch smaller below `sm` - see the note on the account actions below. */}
+        <Brand
+          href="/"
+          className="gap-1.5 text-base sm:gap-2 sm:text-[1.0625rem]"
+        />
 
         <nav aria-label="Marketplace" className="hidden shrink-0 sm:flex">
           <Link
@@ -76,7 +80,13 @@ async function SiteHeader() {
           <HeaderSearch className="hidden flex-1 sm:block sm:max-w-sm" />
         </Suspense>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        {/*
+          Tighter below `sm`: at 360px the wordmark, the search icon and both account actions
+          at desktop padding came to 385px and pushed every marketplace page into a sideways
+          scroll. Narrower horizontal padding (and the slightly smaller wordmark above) fit the
+          row inside the gutter; heights stay at 36px so the touch targets are not shrunk to do it.
+        */}
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
           {/*
             The small-screen stand-in for the search field. A link, not a control
             that expands one, so it needs no state and works before hydration.
@@ -97,10 +107,17 @@ async function SiteHeader() {
             </Button>
           ) : (
             <>
-              <Button variant="ghost" render={<Link href={LOGIN_ROUTE} />}>
+              <Button
+                variant="ghost"
+                className="px-2 sm:px-3.5"
+                render={<Link href={LOGIN_ROUTE} />}
+              >
                 Sign in
               </Button>
-              <Button render={<Link href="/register" />}>
+              <Button
+                className="px-2.5 sm:px-3.5"
+                render={<Link href="/register" />}
+              >
                 {/* Shortened below `sm` - "Create account" wraps the row. */}
                 <span className="hidden sm:inline">Create account</span>
                 <span className="sm:hidden">Sign up</span>

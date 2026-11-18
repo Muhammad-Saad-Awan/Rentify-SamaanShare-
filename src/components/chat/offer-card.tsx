@@ -1,20 +1,20 @@
 "use client";
 
 import {
-  CalendarDaysIcon,
   CheckCircle2Icon,
   ClockIcon,
   HandshakeIcon,
   Loader2Icon,
-  ShieldIcon,
+  MinusCircleIcon,
   XCircleIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { createBookingRequest } from "@/actions/bookings";
 import { respondToOffer, withdrawOffer } from "@/actions/chat";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OfferStatus } from "@/generated/prisma/enums";
 import { calculateRentalPrice, countRentalDays } from "@/lib/bookings/pricing";
@@ -39,41 +39,59 @@ export interface OfferContext {
 
 const HOUR_MS = 3_600_000;
 
+type BadgeVariant =
+  "success" | "warning" | "secondary" | "outline" | "destructive";
+
+/**
+ * How each state reads in the card's header pill. An icon and a word on every one, so the state
+ * never rests on colour: emerald only for an agreement, the destructive tint only for a refusal,
+ * and the closed states quiet.
+ */
 const STATUS: Record<
   OfferStatus,
-  { label: string; className: string; icon: typeof ClockIcon }
+  { label: string; variant: BadgeVariant; icon: typeof ClockIcon }
 > = {
   [OfferStatus.PENDING]: {
     label: "Awaiting answer",
-    className: "border border-foreground/25 bg-background text-foreground",
+    variant: "secondary",
     icon: ClockIcon,
   },
   [OfferStatus.ACCEPTED]: {
     label: "Accepted",
-    className: "bg-foreground text-background",
+    variant: "success",
     icon: CheckCircle2Icon,
   },
   [OfferStatus.DECLINED]: {
     label: "Declined",
-    className: "bg-muted text-muted-foreground",
+    variant: "destructive",
     icon: XCircleIcon,
   },
   [OfferStatus.WITHDRAWN]: {
     label: "Withdrawn",
-    className: "bg-muted text-muted-foreground",
-    icon: XCircleIcon,
+    variant: "outline",
+    icon: MinusCircleIcon,
   },
   [OfferStatus.SUPERSEDED]: {
     label: "Replaced",
-    className: "bg-muted text-muted-foreground",
-    icon: XCircleIcon,
+    variant: "outline",
+    icon: MinusCircleIcon,
   },
   [OfferStatus.EXPIRED]: {
     label: "Expired",
-    className: "bg-muted text-muted-foreground",
+    variant: "outline",
     icon: ClockIcon,
   },
 };
+
+/**
+ * An open offer seen by the person who must answer it. The one state that asks something of the
+ * reader, so it gets the warning treatment - "your move", not "something is wrong".
+ */
+const NEEDS_ANSWER = {
+  label: "Needs your answer",
+  variant: "warning",
+  icon: ClockIcon,
+} as const;
 
 /** "2 days", "5 hours", "under an hour" - how long is left to answer. */
 function remaining(until: Date, now: number): string {
@@ -105,10 +123,17 @@ interface OfferCardProps {
 function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  /** Which button started the pending work, so only that one shows the spinner. */
+  const [busyWith, setBusyWith] = useState<
+    "accept" | "decline" | "withdraw" | "book" | null
+  >(null);
 
   if (!offer) {
     return (
-      <div className="bg-card text-muted-foreground flex w-full max-w-sm items-center gap-2 rounded-2xl border px-4 py-4 text-sm">
+      <div
+        role="status"
+        className="bg-card text-muted-foreground flex w-full max-w-sm items-center gap-2 rounded-2xl border px-4 py-4 text-sm shadow-xs"
+      >
         <Loader2Icon className="size-4 animate-spin" aria-hidden="true" />
         Loading offer…
       </div>
@@ -122,7 +147,8 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
   const isOpen = current.status === OfferStatus.PENDING;
   const isAccepted = current.status === OfferStatus.ACCEPTED;
   const isClosed = !isOpen && !isAccepted;
-  const status = STATUS[current.status];
+  const needsAnswer = isOpen && isRecipient;
+  const status = needsAnswer ? NEEDS_ANSWER : STATUS[current.status];
   const StatusIcon = status.icon;
 
   const startDay = toCalendarDay(current.startDate);
@@ -147,9 +173,11 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
     startDay >= context.today;
 
   function act(
+    which: "accept" | "decline" | "withdraw",
     label: string,
     run: () => Promise<{ success: boolean; error?: string }>
   ) {
+    setBusyWith(which);
     startTransition(async () => {
       const result = await run();
 
@@ -165,6 +193,7 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
   }
 
   function book() {
+    setBusyWith("book");
     startTransition(async () => {
       const result = await createBookingRequest({
         listingId: context.listingId,
@@ -187,39 +216,50 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
   const heading =
     proposerName === "You" ? "Your offer" : `${proposerName}'s offer`;
 
+  const spinner = (which: typeof busyWith) =>
+    isPending && busyWith === which ? (
+      <Loader2Icon className="animate-spin" aria-hidden="true" />
+    ) : null;
+
   return (
     <article
       aria-label={heading}
       className={cn(
         "bg-card w-full max-w-sm overflow-hidden rounded-2xl border shadow-xs",
-        isAccepted && "border-emerald-300 dark:border-emerald-800",
-        isOpen && isRecipient && "border-amber-300 dark:border-amber-800",
-        isClosed && "opacity-75"
+        // Semantic tokens, not raw emerald/amber: the edge says "agreed" or "your move", and
+        // the status pill in the header says it in words.
+        isAccepted && "border-success/40",
+        needsAnswer && "border-warning/60"
       )}
     >
-      <header className="bg-muted/60 flex items-center justify-between gap-2 border-b px-4 py-2.5">
+      <header className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
         <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
-          <HandshakeIcon className="size-4 shrink-0" aria-hidden="true" />
+          <HandshakeIcon
+            className="text-muted-foreground size-4 shrink-0"
+            aria-hidden="true"
+          />
           <span className="truncate">{heading}</span>
         </p>
-        <span
-          className={cn(
-            "flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
-            status.className
-          )}
-        >
-          <StatusIcon className="size-3.5" aria-hidden="true" />
+        <Badge variant={status.variant} className="shrink-0">
+          <StatusIcon aria-hidden="true" />
           {status.label}
-        </span>
+        </Badge>
       </header>
 
-      <div className="flex flex-col gap-3 px-4 py-3.5">
-        <div>
-          <p className="font-heading text-2xl font-semibold">
+      <div className="flex flex-col gap-4 px-4 py-4">
+        {/* The headline is the rent; a closed offer's is struck through, since it no longer
+            stands - its pill says why. Muted rather than faded, so it stays readable. */}
+        <div className="flex flex-col gap-0.5">
+          <p className="text-muted-foreground text-xs">Total rent</p>
+          <p
+            className={cn(
+              "font-heading text-2xl font-bold tracking-tight tabular-nums",
+              isClosed && "text-muted-foreground line-through decoration-1"
+            )}
+          >
             {formatPKR(current.totalPrice)}
           </p>
           <p className="text-muted-foreground text-xs">
-            {days} day{days === 1 ? "" : "s"} ·{" "}
             {formatPKR(Math.round(current.totalPrice / days))} per day
             {saving > 0 && (
               <span className="text-foreground font-medium">
@@ -230,34 +270,43 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
           </p>
         </div>
 
-        <dl className="flex flex-col gap-1.5 text-sm">
-          <div className="flex items-center gap-2">
-            <dt>
-              <CalendarDaysIcon
-                className="text-muted-foreground size-4"
-                aria-hidden="true"
-              />
-              <span className="sr-only">Dates</span>
-            </dt>
-            <dd>
-              {formatDate(current.startDate)} to {formatDate(current.endDate)}
-            </dd>
-          </div>
-          <div className="flex items-center gap-2">
-            <dt>
-              <ShieldIcon
-                className="text-muted-foreground size-4"
-                aria-hidden="true"
-              />
-              <span className="sr-only">Security deposit</span>
-            </dt>
-            <dd className="tabular-nums">
-              {current.securityDeposit === 0
-                ? "No deposit"
-                : `${formatPKR(current.securityDeposit)} refundable deposit`}
-            </dd>
-          </div>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 border-t pt-3.5 text-sm">
+          <dt className="text-muted-foreground">Dates</dt>
+          <dd className="text-right">
+            {formatDate(current.startDate)} to {formatDate(current.endDate)}
+            <span className="text-muted-foreground block text-xs">
+              {days} day{days === 1 ? "" : "s"}
+            </span>
+          </dd>
+          <dt className="text-muted-foreground">Deposit</dt>
+          <dd className="text-right tabular-nums">
+            {current.securityDeposit === 0 ? (
+              "No deposit"
+            ) : (
+              <>
+                {formatPKR(current.securityDeposit)}
+                <span className="text-muted-foreground block text-xs">
+                  Refundable
+                </span>
+              </>
+            )}
+          </dd>
         </dl>
+
+        {isOpen && (
+          <p
+            className={cn(
+              "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium",
+              needsAnswer
+                ? "bg-warning-soft text-warning-soft-foreground"
+                : "bg-muted text-muted-foreground"
+            )}
+          >
+            <ClockIcon className="size-3.5 shrink-0" aria-hidden="true" />
+            {isRecipient ? "Answer" : "Expires"} within{" "}
+            {remaining(current.expiresAt, now)}.
+          </p>
+        )}
 
         <p className="text-muted-foreground text-xs leading-relaxed">
           {current.agreedByBookingId
@@ -269,39 +318,34 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
                   ? `Agreed. Request the booking within ${ACCEPTED_OFFER_VALID_HOURS} hours of acceptance.`
                   : "Agreed before booking."
                 : "Before booking. Once accepted, the renter can book these dates at these terms."}
-          {isOpen && (
-            <span className="text-foreground font-medium">
-              {" "}
-              {isRecipient ? "Answer" : "Expires"} within{" "}
-              {remaining(current.expiresAt, now)}.
-            </span>
-          )}
         </p>
 
-        {isOpen && isRecipient && (
+        {needsAnswer && (
           <div className="grid grid-cols-2 gap-2">
             <Button
               type="button"
               onClick={() =>
-                act("Offer accepted.", () =>
+                act("accept", "Offer accepted.", () =>
                   respondToOffer({ offerId: current.id, response: "accept" })
                 )
               }
               aria-busy={isPending}
               disabled={isPending}
             >
+              {spinner("accept")}
               Accept
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() =>
-                act("Offer declined.", () =>
+                act("decline", "Offer declined.", () =>
                   respondToOffer({ offerId: current.id, response: "decline" })
                 )
               }
               disabled={isPending}
             >
+              {spinner("decline")}
               Decline
             </Button>
           </div>
@@ -313,12 +357,13 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
             variant="outline"
             size="sm"
             onClick={() =>
-              act("Offer withdrawn.", () =>
+              act("withdraw", "Offer withdrawn.", () =>
                 withdrawOffer({ offerId: current.id })
               )
             }
             disabled={isPending}
           >
+            {spinner("withdraw")}
             Withdraw offer
           </Button>
         )}
@@ -330,7 +375,7 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
             aria-busy={isPending}
             disabled={isPending}
           >
-            {isPending && <Loader2Icon className="animate-spin" />}
+            {spinner("book")}
             Request booking at these terms
           </Button>
         )}

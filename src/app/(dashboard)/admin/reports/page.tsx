@@ -2,6 +2,7 @@ import { ShieldCheckIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { QueueTabs } from "@/components/admin/queue-tabs";
 import { ReportCard } from "@/components/admin/report-card";
 import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -100,23 +101,13 @@ async function ReportQueue({ rawPage, rawStatus }: ReportQueueProps) {
       {/*
         Links rather than a client-side filter, matching the sort control on /listings: each view
         stays shareable and reachable with the back button, which for a moderation queue also means
-        a decision can be linked to a colleague.
+        a decision can be linked to a colleague. `QueueTabs` owns only the look.
       */}
-      <nav aria-label="Report status" className="flex flex-wrap gap-2">
-        {STATUS_TABS.map((tab) => (
-          <Button
-            key={tab.status}
-            size="sm"
-            variant={tab.status === active.status ? "default" : "outline"}
-            render={<Link href={tab.href} />}
-            {...(tab.status === active.status
-              ? { "aria-current": "page" as const }
-              : {})}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </nav>
+      <QueueTabs
+        label="Report status"
+        tabs={STATUS_TABS.map((tab) => ({ ...tab, key: tab.status }))}
+        activeKey={active.status}
+      />
 
       {items.length > 0 && (
         <ul className="flex flex-col gap-4">

@@ -57,10 +57,13 @@ function ActiveFilters({ filters, categories }: ActiveFiltersProps) {
               // The visible text is the filter's value; on its own it reads as a
               // link *to* that filter rather than one that removes it.
               aria-label={`Remove filter: ${chip.label}`}
-              className="bg-muted text-foreground hover:bg-muted/70 focus-visible:ring-ring inline-flex items-center gap-1 rounded-full py-1 pr-1.5 pl-2.5 text-xs transition-colors outline-none focus-visible:ring-2"
+              className="bg-card text-foreground hover:border-foreground/30 focus-visible:ring-ring inline-flex h-8 items-center gap-1.5 rounded-full border pr-2.5 pl-3 text-sm transition-colors outline-none focus-visible:ring-2"
             >
               {chip.label}
-              <XIcon className="size-3 shrink-0" aria-hidden="true" />
+              <XIcon
+                className="text-muted-foreground size-3.5 shrink-0"
+                aria-hidden="true"
+              />
             </Link>
           </li>
         ))}

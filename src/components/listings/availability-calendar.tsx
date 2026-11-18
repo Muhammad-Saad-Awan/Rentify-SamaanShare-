@@ -150,16 +150,21 @@ function AvailabilityCalendar({
         </tbody>
       </table>
 
-      <ul className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-        <Legend className="bg-background ring-foreground/15 ring-1">
-          Available
-        </Legend>
-        <Legend className="bg-destructive/15 text-destructive ring-destructive/30 ring-1">
+      {/*
+        Blocked is navy and struck through, booked is emerald. Blocking used to be red, which read
+        as an error on a day the owner had chosen to keep for themselves; and a booked day is the
+        one outcome here that is good news, which is what emerald is for. The strike gives the
+        blocked state a mark that does not depend on telling two colours apart.
+      */}
+      <ul className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+        <Legend className="bg-card border-input border">Available</Legend>
+        <Legend className="bg-primary border-primary border">
           Blocked by you
         </Legend>
-        <Legend className="bg-muted text-muted-foreground ring-border ring-1">
+        <Legend className="bg-success-soft border-success/40 border">
           Booked
         </Legend>
+        <Legend className="border-primary border-2">Today</Legend>
       </ul>
     </div>
   );
@@ -220,17 +225,16 @@ function DayButton({
         onToggle(date, !isBlocked);
       }}
       className={cn(
-        "focus-visible:ring-ring flex aspect-square w-full items-center justify-center rounded-md text-sm transition-colors outline-none focus-visible:ring-2",
-        isHeldByBooking && "bg-muted text-muted-foreground ring-border ring-1",
+        "focus-visible:ring-ring flex aspect-square w-full items-center justify-center rounded-md border text-sm tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+        isHeldByBooking &&
+          "bg-success-soft text-success-soft-foreground border-success/40 font-medium",
         !isHeldByBooking &&
           isBlocked &&
-          "bg-destructive/15 text-destructive ring-destructive/30 ring-1",
-        !isHeldByBooking &&
-          !isBlocked &&
-          "bg-background ring-foreground/15 hover:bg-muted/60 ring-1",
+          "bg-primary text-primary-foreground border-primary font-medium line-through",
+        !isHeldByBooking && !isBlocked && "bg-card border-input hover:bg-muted",
         isPast && "opacity-40",
-        // Today gets a ring in the brand colour so the month has an anchor.
-        isToday && "ring-primary ring-2",
+        // Today gets a heavier navy edge so the month has an anchor.
+        isToday && "border-primary border-2",
         // Not `pointer-events-none`: that would suppress the cursor itself, and this is the
         // only signal a pointer user gets that the day is not theirs to change.
         unavailable && "cursor-not-allowed"
@@ -249,7 +253,10 @@ interface LegendProps {
 function Legend({ className, children }: LegendProps) {
   return (
     <li className="flex items-center gap-1.5">
-      <span className={cn("size-3 rounded", className)} aria-hidden="true" />
+      <span
+        className={cn("size-3.5 shrink-0 rounded", className)}
+        aria-hidden="true"
+      />
       {children}
     </li>
   );

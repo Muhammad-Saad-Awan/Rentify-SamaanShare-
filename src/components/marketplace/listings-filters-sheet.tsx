@@ -69,7 +69,13 @@ function ListingsFiltersSheet({
 
   return (
     <Sheet open={open} onOpenChange={(nextOpen) => setOpen(nextOpen)}>
+      {/*
+        An explicit id, like the header search's: Base UI derives one from React's `useId`, and
+        the browse page's server and client trees reached this trigger by different paths, so the
+        two ids disagreed and every load logged a hydration mismatch. There is one trigger per page.
+      */}
       <SheetTrigger
+        id="listings-filters-trigger"
         render={
           <Button variant="outline" size="sm" className="shrink-0 lg:hidden" />
         }

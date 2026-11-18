@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, Loader2Icon } from "lucide-react";
+import { CheckIcon, CircleAlertIcon, Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -78,17 +78,30 @@ function RecordPaymentForm({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="bg-card flex flex-col gap-4 rounded-lg border p-4">
+      {/*
+        Red because something did go wrong - the reference did not match - and it sits above the
+        field it is about, so the correction is made with the reason in view.
+      */}
       {rejectionReason && (
-        <p className="text-destructive text-xs leading-relaxed">
-          {rejectionReason}
-        </p>
+        <div className="border-destructive/20 bg-destructive/8 text-destructive flex items-start gap-2.5 rounded-md border px-3 py-2.5 text-sm">
+          <CircleAlertIcon
+            className="mt-0.5 size-4 shrink-0"
+            aria-hidden="true"
+          />
+          <p className="leading-relaxed">
+            <span className="font-medium">
+              We could not match your last payment.
+            </span>{" "}
+            {rejectionReason}
+          </p>
+        </div>
       )}
 
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor={`reference-${bookingId}`}
-          className="text-xs font-medium"
+          className="text-sm font-medium"
         >
           Transaction reference
         </label>
@@ -100,6 +113,7 @@ function RecordPaymentForm({
           disabled={isPending}
           onChange={(event) => setReference(event.target.value)}
           placeholder="e.g. 4482991 or IBFT-20260930-77"
+          autoComplete="off"
         />
 
         <p className="text-muted-foreground text-xs leading-relaxed">
@@ -109,7 +123,7 @@ function RecordPaymentForm({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium">Receipt (optional)</span>
+        <span className="text-sm font-medium">Receipt (optional)</span>
 
         {/*
           The listing uploader, at one photo. Not camera-only: a transfer receipt lives in a
@@ -120,9 +134,10 @@ function RecordPaymentForm({
         <ImageUploader images={receipt} onChange={setReceipt} max={1} />
       </div>
 
-      <div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Button
           size="sm"
+          className="w-full sm:w-auto"
           onClick={() => void submit()}
           disabled={!canSubmit}
           aria-busy={isPending}

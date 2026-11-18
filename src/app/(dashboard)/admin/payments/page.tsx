@@ -2,6 +2,7 @@ import { BanknoteIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { QueueTabs } from "@/components/admin/queue-tabs";
 import { PaymentCard } from "@/components/admin/payment-card";
 import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -157,21 +158,11 @@ async function PaymentQueue({ rawPage, rawStatus }: PaymentQueueProps) {
         Links rather than a client-side filter, matching the claims and reports queues: each view
         stays shareable, which for a queue means a payment can be handed to a colleague.
       */}
-      <nav aria-label="Payment status" className="flex flex-wrap gap-2">
-        {STATUS_TABS.map((tab) => (
-          <Button
-            key={tab.status}
-            size="sm"
-            variant={tab.status === active.status ? "default" : "outline"}
-            render={<Link href={tab.href} />}
-            {...(tab.status === active.status
-              ? { "aria-current": "page" as const }
-              : {})}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </nav>
+      <QueueTabs
+        label="Payment status"
+        tabs={STATUS_TABS.map((tab) => ({ ...tab, key: tab.status }))}
+        activeKey={active.status}
+      />
 
       {items.length > 0 && (
         <ul className="flex flex-col gap-4">
@@ -194,8 +185,21 @@ async function PaymentQueue({ rawPage, rawStatus }: PaymentQueueProps) {
           description={
             status === PaymentStatus.PENDING_VERIFICATION
               ? "When a renter records a payment, it appears here to be checked against the account."
-              : "Try another view."
+              : "Nothing is in this state. The payments waiting on you are in the first view."
           }
+          {...(status !== PaymentStatus.PENDING_VERIFICATION
+            ? {
+                action: (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    render={<Link href="/admin/payments" />}
+                  >
+                    Payments to check
+                  </Button>
+                ),
+              }
+            : {})}
         />
       )}
 

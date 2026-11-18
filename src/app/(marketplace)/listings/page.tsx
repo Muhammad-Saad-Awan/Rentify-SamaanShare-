@@ -185,7 +185,11 @@ async function BrowseResults({ filters }: BrowseResultsProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <ListingsSearch filters={filters} className="sm:flex-1" />
 
-        <div className="flex items-center justify-between gap-2 sm:justify-end">
+        {/*
+          `min-w-0` lets the sort group shrink and scroll inside itself at 360px rather than
+          widening the page; `sm:shrink-0` stops the search field squeezing it on wider screens.
+        */}
+        <div className="flex min-w-0 items-center justify-between gap-2 sm:shrink-0 sm:justify-end">
           {/*
             The drawer trigger is hidden at `lg`, where the sidebar below is
             visible instead. Both render the same form component; only the
@@ -210,9 +214,10 @@ async function BrowseResults({ filters }: BrowseResultsProps) {
         <aside className="hidden w-64 shrink-0 lg:block">
           {/*
             `sticky` so a long result grid does not scroll the filters out of
-            reach. `top-20` clears the 14-unit sticky site header plus a gap.
+            reach. `top-20` clears the 16-unit sticky site header plus a gap. A card,
+            so the filters read as one panel beside the grid rather than loose fields.
           */}
-          <div className="sticky top-20">
+          <div className="bg-card sticky top-20 rounded-xl border p-5">
             <ListingsFilters
               filters={filters}
               categories={categories}
@@ -306,11 +311,7 @@ function BrowseEmptyState({
             : "Nothing matched that term. Check the spelling, or try a broader word - “camera” rather than a model number."
         }
         action={
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href={clearHref} />}
-          >
+          <Button variant="outline" render={<Link href={clearHref} />}>
             {otherFiltersActive ? "Clear search and filters" : "Clear search"}
           </Button>
         }
@@ -327,11 +328,7 @@ function BrowseEmptyState({
         title="No listings match your filters"
         description="Nothing matched this combination. Try removing a filter, widening the price range, or searching for a different term."
         action={
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href={clearHref} />}
-          >
+          <Button variant="outline" render={<Link href={clearHref} />}>
             Clear all filters
           </Button>
         }
@@ -359,11 +356,7 @@ function BrowseEmptyState({
       title="No listings on this page"
       description={`There ${totalPages === 1 ? "is only 1 page" : `are only ${totalPages} pages`} of results.`}
       action={
-        <Button
-          variant="outline"
-          size="sm"
-          render={<Link href={firstPageHref} />}
-        >
+        <Button variant="outline" render={<Link href={firstPageHref} />}>
           Back to first page
         </Button>
       }

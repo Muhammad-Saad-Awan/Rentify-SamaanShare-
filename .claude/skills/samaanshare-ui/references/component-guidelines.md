@@ -28,10 +28,12 @@ this summary cannot.
 |---|---|---|
 | Any button or button-styled link | `Button` (`variant`, `size`, `render={<Link/>}`) | `components/ui/button.tsx` |
 | Container | `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent`, `CardFooter` | `ui/card.tsx` |
-| Pill | `Badge` | `ui/badge.tsx` |
+| Pill | `Badge` (`success` and `warning` variants for attribute pills that are good / need action) | `ui/badge.tsx` |
 | Lifecycle state (booking, payment, listing) | `StatusBadge` + mapper in `lib/bookings/status-badge.ts` | `shared/status-badge.tsx` |
 | Form layout | `FieldGroup`, `Field`, `FieldLabel`, `FieldDescription`, `FieldError`, `FieldSet`, `FieldLegend` | `ui/field.tsx` |
 | Inputs | `Input`, `PasswordInput`, `Textarea`, `Switch`, `Label` | `ui/*` |
+| Select | `NativeSelect` (styled native `<select>` + chevron, forwards ref for `register()`) | `ui/native-select.tsx` |
+| Form/page message | `FormAlert` (`tone`: error -> `role=alert`, success, warning -> `role=status`) | `ui/form-alert.tsx` |
 | Side panel / mobile drawer | `Sheet` (Base UI Dialog) | `ui/sheet.tsx` |
 | Menu | `DropdownMenu*` | `ui/dropdown-menu.tsx` |
 | Avatar | `Avatar`; in chat `MemberAvatar` (with verified tick) | `ui/avatar.tsx`, `chat/member-avatar.tsx` |
@@ -52,7 +54,7 @@ this summary cannot.
 | Skip link | `SkipToContent` + `MAIN_CONTENT_ID` | `shared/skip-to-content.tsx` |
 | Focus helpers | `useFocusOnMount`, `useFocusReturn` | `src/hooks/` |
 
-Not present yet: `Dialog`/`AlertDialog`, `Select`, `Tabs`, `Tooltip`, `Table`. If a design needs
+Not present yet: `Dialog`/`AlertDialog`, a custom `Select` listbox, `Tabs`, `Tooltip`, `Table`. If a design needs
 one, add it with the shadcn CLI so it matches the `base-nova` style
 (`npx shadcn@latest add dialog`), then read the generated file and align it with the local
 primitives (radius, focus ring, tokens). Do not hand-roll a modal with `fixed inset-0` divs - it
@@ -169,9 +171,8 @@ Pattern (see `profile-form.tsx`, `listing-fields.tsx`):
 - Every control has a visible `<FieldLabel htmlFor>`; placeholder is an example, not a label.
 - Errors: `aria-invalid` on the control, `data-invalid` on the `Field`, message via `FieldError`.
   Server errors from `ActionResult` go in the `role="alert"` block or a toast.
-- Selects are native `<select>` styled with `SELECT_CLASS` (currently duplicated in
-  `listing-fields.tsx` and `listings-filters.tsx` - if you need it a third time, extract a
-  `NativeSelect` primitive into `components/ui/` rather than a third copy).
+- Selects are `NativeSelect` (`components/ui/native-select.tsx`) - never a bare `<select>` or a
+  local class string; the old `SELECT_CLASS` copies were removed for drifting.
 - Group related fields with `FieldSet` + `FieldLegend`. Use `autoComplete` attributes.
 - Prices are PKR integers; show the currency in the label or as an inline prefix, and format
   display values with `formatPKR`.

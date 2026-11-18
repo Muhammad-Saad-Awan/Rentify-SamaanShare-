@@ -23,6 +23,7 @@ import {
 } from "@/lib/admin/rules";
 
 import type { AdminUserDetail } from "@/lib/queries/admin-users";
+import type { ReactNode } from "react";
 
 interface UserModerationPanelProps {
   user: AdminUserDetail;
@@ -110,8 +111,11 @@ function UserModerationPanel({
 
   const payload = () => ({ userId: user.id, reason: reason.trim() });
 
+  const hasAccessControl = suspendable.allowed || reinstatable.allowed;
+  const hasRoleControl = promotable.allowed || demotable.allowed;
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor={`reason-${user.id}`} className="text-xs font-medium">
           Reason — recorded permanently against this account
@@ -133,105 +137,132 @@ function UserModerationPanel({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {suspendable.allowed && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={pending !== null || !reasonReady}
-            aria-busy={pending === "suspend"}
-            onClick={() =>
-              run(
-                "suspend",
-                () => suspendUser(payload()),
-                "Account suspended. They can be reinstated."
-              )
-            }
-          >
-            {pending === "suspend" && <Loader2Icon className="animate-spin" />}
-            Suspend
-          </Button>
-        )}
+      {/*
+        Grouped by what the action changes - whether they can sign in, and what they can do once in -
+        with the ban apart from both. A ban sat in the same row as "Make administrator", one misread
+        away from it; it is the one control here that cannot be undone from this screen.
+      */}
+      {hasAccessControl && (
+        <ActionGroup label="Access">
+          {suspendable.allowed && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pending !== null || !reasonReady}
+              aria-busy={pending === "suspend"}
+              onClick={() =>
+                run(
+                  "suspend",
+                  () => suspendUser(payload()),
+                  "Account suspended. They can be reinstated."
+                )
+              }
+            >
+              {pending === "suspend" && (
+                <Loader2Icon className="animate-spin" />
+              )}
+              Suspend
+            </Button>
+          )}
 
-        {reinstatable.allowed && (
-          <Button
-            size="sm"
-            disabled={pending !== null || !reasonReady}
-            aria-busy={pending === "reinstate"}
-            onClick={() =>
-              run(
-                "reinstate",
-                () => reinstateUser(payload()),
-                "Account reinstated."
-              )
-            }
-          >
-            {pending === "reinstate" && (
-              <Loader2Icon className="animate-spin" />
-            )}
-            <ShieldCheckIcon aria-hidden="true" />
-            Reinstate
-          </Button>
-        )}
+          {reinstatable.allowed && (
+            <Button
+              size="sm"
+              disabled={pending !== null || !reasonReady}
+              aria-busy={pending === "reinstate"}
+              onClick={() =>
+                run(
+                  "reinstate",
+                  () => reinstateUser(payload()),
+                  "Account reinstated."
+                )
+              }
+            >
+              {pending === "reinstate" && (
+                <Loader2Icon className="animate-spin" />
+              )}
+              <ShieldCheckIcon aria-hidden="true" />
+              Reinstate
+            </Button>
+          )}
+        </ActionGroup>
+      )}
 
-        {bannable.allowed && (
-          <Button
-            size="sm"
-            variant="destructive"
-            disabled={pending !== null || !reasonReady}
-            aria-busy={pending === "ban"}
-            onClick={() =>
-              run(
-                "ban",
-                () => banUser(payload()),
-                "Account banned. This is not reversible from here."
-              )
-            }
-          >
-            {pending === "ban" && <Loader2Icon className="animate-spin" />}
-            <ShieldAlertIcon aria-hidden="true" />
-            Ban
-          </Button>
-        )}
+      {hasRoleControl && (
+        <ActionGroup label="Role">
+          {promotable.allowed && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pending !== null || !reasonReady}
+              aria-busy={pending === "promote"}
+              onClick={() =>
+                run(
+                  "promote",
+                  () =>
+                    changeUserRole({ ...payload(), newRole: UserRole.ADMIN }),
+                  "Now an administrator."
+                )
+              }
+            >
+              {pending === "promote" && (
+                <Loader2Icon className="animate-spin" />
+              )}
+              Make administrator
+            </Button>
+          )}
 
-        {promotable.allowed && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={pending !== null || !reasonReady}
-            aria-busy={pending === "promote"}
-            onClick={() =>
-              run(
-                "promote",
-                () => changeUserRole({ ...payload(), newRole: UserRole.ADMIN }),
-                "Now an administrator."
-              )
-            }
-          >
-            {pending === "promote" && <Loader2Icon className="animate-spin" />}
-            Make administrator
-          </Button>
-        )}
+          {demotable.allowed && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pending !== null || !reasonReady}
+              aria-busy={pending === "demote"}
+              onClick={() =>
+                run(
+                  "demote",
+                  () =>
+                    changeUserRole({ ...payload(), newRole: UserRole.USER }),
+                  "Administrator rights removed."
+                )
+              }
+            >
+              {pending === "demote" && <Loader2Icon className="animate-spin" />}
+              Remove administrator
+            </Button>
+          )}
+        </ActionGroup>
+      )}
 
-        {demotable.allowed && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={pending !== null || !reasonReady}
-            aria-busy={pending === "demote"}
-            onClick={() =>
-              run(
-                "demote",
-                () => changeUserRole({ ...payload(), newRole: UserRole.USER }),
-                "Administrator rights removed."
-              )
-            }
-          >
-            {pending === "demote" && <Loader2Icon className="animate-spin" />}
-            Remove administrator
-          </Button>
-        )}
-      </div>
+      {bannable.allowed && (
+        <div className="border-destructive/30 bg-destructive/5 flex flex-col gap-2 rounded-lg border p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-destructive text-xs font-medium">
+              Ban — not reversible from this screen
+            </p>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={pending !== null || !reasonReady}
+              aria-busy={pending === "ban"}
+              onClick={() =>
+                run(
+                  "ban",
+                  () => banUser(payload()),
+                  "Account banned. This is not reversible from here."
+                )
+              }
+            >
+              {pending === "ban" ? (
+                <Loader2Icon className="animate-spin" />
+              ) : (
+                <ShieldAlertIcon aria-hidden="true" />
+              )}
+              Ban
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/*
         Why an action is missing. Policy, not accident - and an administrator should not have to
@@ -251,6 +282,22 @@ function UserModerationPanel({
           <li>{demotable.reason}</li>
         )}
       </ul>
+    </div>
+  );
+}
+
+/** A labelled row of related controls. */
+function ActionGroup({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-muted-foreground text-xs font-medium">{label}</p>
+      <div className="flex flex-wrap items-center gap-2">{children}</div>
     </div>
   );
 }

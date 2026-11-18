@@ -17,27 +17,30 @@ export const metadata: Metadata = {
  */
 export default function MessagesPage() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8 py-12 text-center">
-      <span className="bg-muted flex size-16 items-center justify-center rounded-2xl">
-        <MessagesSquareIcon
-          className="text-muted-foreground size-8"
-          aria-hidden="true"
-        />
+    <div className="bg-background flex flex-1 flex-col items-center justify-center gap-6 px-8 py-12 text-center">
+      {/* The same quiet tile as `EmptyState`, so the empty pane and the empty list match. */}
+      <span
+        className="bg-card text-foreground ring-muted/60 flex size-14 items-center justify-center rounded-xl border ring-4"
+        aria-hidden="true"
+      >
+        <MessagesSquareIcon className="size-6" strokeWidth={1.75} />
       </span>
       <div className="flex max-w-sm flex-col gap-2">
-        <h2 className="font-heading text-lg font-semibold">Your messages</h2>
+        <h2 className="font-heading text-xl font-semibold tracking-tight">
+          Your messages
+        </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
           Choose a conversation to read it. Ask about an item, arrange pickup,
           get help during a rental, or sort out the return.
         </p>
       </div>
-      <ul className="text-muted-foreground flex max-w-sm flex-col gap-3 text-left text-sm">
+      <ul className="bg-card flex max-w-sm flex-col gap-3 rounded-xl border p-4 text-left text-sm">
         <li className="flex gap-3">
           <HandshakeIcon
-            className="mt-0.5 size-4 shrink-0"
+            className="text-muted-foreground mt-0.5 size-4 shrink-0"
             aria-hidden="true"
           />
-          <span>
+          <span className="text-muted-foreground">
             Agree a price with{" "}
             <span className="text-foreground font-medium">Make an offer</span>.
             Only accepted offers change what a rental costs.
@@ -45,10 +48,10 @@ export default function MessagesPage() {
         </li>
         <li className="flex gap-3">
           <ShieldCheckIcon
-            className="mt-0.5 size-4 shrink-0"
+            className="text-muted-foreground mt-0.5 size-4 shrink-0"
             aria-hidden="true"
           />
-          <span>
+          <span className="text-muted-foreground">
             Keep payments on SamaanShare, and never share your CNIC or passwords
             in chat.
           </span>

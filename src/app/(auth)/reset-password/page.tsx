@@ -1,13 +1,8 @@
 import Link from "next/link";
 
+import { AuthCardHeader } from "@/components/auth/auth-card-header";
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 import type { Metadata } from "next";
@@ -44,19 +39,28 @@ export default async function ResetPasswordPage({
   if (!token) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>That link is incomplete</CardTitle>
-          <CardDescription>
-            The reset link is missing its token. Some email clients break long
-            links across lines — try copying the whole thing, or request a new
-            one.
-          </CardDescription>
-        </CardHeader>
+        <AuthCardHeader
+          title="That link is incomplete"
+          description="The reset link is missing its token. Some email clients break long links across lines - try copying the whole thing, or request a new one."
+        />
 
-        <CardContent>
-          <Button className="w-full" render={<Link href="/forgot-password" />}>
+        <CardContent className="flex flex-col gap-5">
+          <Button
+            size="lg"
+            className="w-full"
+            render={<Link href="/forgot-password" />}
+          >
             Request a new link
           </Button>
+
+          <p className="text-muted-foreground text-center text-sm">
+            <Link
+              href="/login"
+              className="text-foreground font-medium underline underline-offset-4"
+            >
+              Back to sign in
+            </Link>
+          </p>
         </CardContent>
       </Card>
     );
@@ -64,13 +68,10 @@ export default async function ResetPasswordPage({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Choose a new password</CardTitle>
-        <CardDescription>
-          Pick something you have not used elsewhere. You will be signed in once
-          it is saved.
-        </CardDescription>
-      </CardHeader>
+      <AuthCardHeader
+        title="Choose a new password"
+        description="Pick something you have not used elsewhere. You will be signed in once it is saved."
+      />
 
       <CardContent>
         <ResetPasswordForm token={token} />

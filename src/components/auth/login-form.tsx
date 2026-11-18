@@ -1,12 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2Icon } from "lucide-react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { FormAlert } from "@/components/ui/form-alert";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -93,10 +95,7 @@ function LoginForm({ callbackUrl, showForgotPassword }: LoginFormProps) {
     <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <FieldGroup>
         {formError && (
-          <div
-            role="alert"
-            className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
-          >
+          <FormAlert tone="error">
             {formError}
             {/*
               The moment someone most needs the reset link is right after a wrong password, and the
@@ -113,7 +112,7 @@ function LoginForm({ callbackUrl, showForgotPassword }: LoginFormProps) {
                 </Link>
               </>
             )}
-          </div>
+          </FormAlert>
         )}
 
         <Field data-invalid={Boolean(errors.email)}>
@@ -138,7 +137,7 @@ function LoginForm({ callbackUrl, showForgotPassword }: LoginFormProps) {
             {showForgotPassword && (
               <Link
                 href="/forgot-password"
-                className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-4"
+                className="text-muted-foreground hover:text-foreground rounded-sm text-xs font-medium underline underline-offset-4"
               >
                 Forgot password?
               </Link>
@@ -155,7 +154,13 @@ function LoginForm({ callbackUrl, showForgotPassword }: LoginFormProps) {
           <FieldError errors={[errors.password]} />
         </Field>
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          size="lg"
+          className="mt-1 w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting && <Loader2Icon className="animate-spin" />}
           {isSubmitting ? "Signing in…" : "Sign in"}
         </Button>
       </FieldGroup>

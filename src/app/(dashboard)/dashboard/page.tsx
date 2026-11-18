@@ -1,20 +1,24 @@
 import {
+  ArrowRightIcon,
   BellIcon,
   CalendarCheckIcon,
   HeartIcon,
+  ImageIcon,
   InboxIcon,
   PackageIcon,
   PlusIcon,
+  TriangleAlertIcon,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 
 import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { Badge } from "@/components/ui/badge";
+import { ListingStatusBadge } from "@/components/listings/listing-status-badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardFooter } from "@/components/ui/card";
 import { ListingStatus } from "@/generated/prisma/enums";
 import { requireUser } from "@/lib/auth/session";
 import { notificationHref } from "@/lib/notifications/messages";
@@ -27,6 +31,7 @@ import { getDisplayName } from "@/lib/utils/user";
 
 import type { OwnerListingSummary } from "@/lib/queries/owner-listings";
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -66,7 +71,9 @@ export default async function DashboardPage() {
     // then flushes the shell with a 200 as soon as the fallback is ready, so those routes'
     // `notFound()` could no longer set a 404 - an owner opening someone else's listing got
     // 200 with the 404 page, which tells a crawler a dead URL is live. Measured both ways.
-    <Suspense fallback={<DashboardPageSkeleton withStats cards={2} />}>
+    <Suspense
+      fallback={<DashboardPageSkeleton withStats cards={2} variant="split" />}
+    >
       <DashboardOverview />
     </Suspense>
   );
@@ -86,6 +93,7 @@ async function DashboardOverview() {
   const now = new Date();
 
   const isOwner = overview.totalListings > 0;
+  const hasRequests = overview.requestsToAnswer > 0;
 
   return (
     <>
@@ -104,11 +112,44 @@ async function DashboardOverview() {
         }
       />
 
+      {/*
+        The one task on this page, said first and in words. The tile below carries the same count,
+        but a number in a grid of four is something you notice; a sentence with a button is
+        something you do. Amber, not red: nothing has gone wrong, somebody is waiting on you.
+      */}
+      {hasRequests && (
+        <div className="border-warning/40 bg-warning-soft text-warning-soft-foreground flex flex-col gap-3 rounded-xl border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-start gap-2.5 text-sm">
+            <TriangleAlertIcon
+              className="text-warning mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <span>
+              <span className="font-semibold">
+                {overview.requestsToAnswer === 1
+                  ? "1 booking request is waiting for your answer."
+                  : `${overview.requestsToAnswer.toLocaleString()} booking requests are waiting for your answer.`}
+              </span>{" "}
+              Requests expire 48 hours after they are made.
+            </span>
+          </p>
+          <Button
+            size="sm"
+            className="w-full sm:w-auto"
+            render={<Link href="/dashboard/requests" />}
+          >
+            Review requests
+            <ArrowRightIcon aria-hidden="true" />
+          </Button>
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Live listings"
           value={overview.liveListings.toLocaleString()}
           icon={PackageIcon}
+          href="/dashboard/listings"
           /*
             The hint names the gap rather than leaving it. `liveListings` runs through
             VISIBLE_LISTING_WHERE, which also requires the owner to be active - so a paused listing,
@@ -125,10 +166,12 @@ async function DashboardOverview() {
           label="Requests to answer"
           value={overview.requestsToAnswer.toLocaleString()}
           icon={InboxIcon}
+          href="/dashboard/requests"
+          tone={hasRequests ? "attention" : "default"}
           hint={
-            overview.requestsToAnswer === 0
-              ? "Nothing waiting on you"
-              : "Renters are waiting — requests expire in 48 hours"
+            hasRequests
+              ? "Renters are waiting — requests expire in 48 hours"
+              : "Nothing waiting on you"
           }
         />
         <StatCard
@@ -141,135 +184,171 @@ async function DashboardOverview() {
           label="Saved listings"
           value={overview.savedListings.toLocaleString()}
           icon={HeartIcon}
+          href="/saved"
           hint="Items still available on your wishlist"
         />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <div className="flex flex-col gap-3 px-(--card-spacing)">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-heading text-lg font-semibold tracking-tight">
-                Your listings
-              </h2>
-              {isOwner && (
-                <Link
-                  href="/dashboard/listings"
-                  className="text-foreground decoration-foreground/30 hover:decoration-foreground text-sm font-medium underline underline-offset-4"
-                >
-                  Manage all {overview.totalListings}
-                </Link>
-              )}
-            </div>
-
-            {listings.items.length > 0 ? (
-              <ul className="flex flex-col gap-2">
-                {listings.items.map((listing) => (
-                  <ListingRow key={listing.id} listing={listing} />
-                ))}
-              </ul>
-            ) : (
-              /*
-                An empty state, not a placeholder. The distinction matters: a placeholder says the
-                feature is coming, an empty state says it works and there is nothing here yet - and
-                offers the way out. This card used to be the former, months after the feature landed.
-              */
-              <div className="flex flex-col items-start gap-2">
-                <p className="text-muted-foreground text-sm">
-                  You have not published anything yet. A listing takes a few
-                  minutes and one photo.
-                </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  render={<Link href="/listings/new" />}
-                >
-                  <PlusIcon aria-hidden="true" />
-                  Create your first listing
-                </Button>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex flex-col gap-3 px-(--card-spacing)">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-heading text-lg font-semibold tracking-tight">
-                Recent activity
-              </h2>
-              <Link
-                href="/dashboard/notifications"
-                className="text-foreground decoration-foreground/30 hover:decoration-foreground text-sm font-medium underline underline-offset-4"
-              >
-                All notifications
-              </Link>
-            </div>
-
-            {/*
-              The notification feed IS the activity record for a member - every booking transition,
-              handover, claim and review writes one, in the same transaction as the change it
-              describes. This card promised "booking requests, approvals and messages as they happen"
-              while that feed already existed one click away.
-            */}
-            {notifications.length > 0 ? (
-              <ul className="flex flex-col gap-2">
-                {notifications.map((item) => {
-                  const href = notificationHref(item.entityType, item.entityId);
-                  const content = (
-                    <>
-                      <span className="flex-1 truncate">{item.title}</span>
-                      {!item.readAt && (
-                        <Badge variant="secondary" className="shrink-0">
-                          new
-                        </Badge>
-                      )}
-                      <span className="text-muted-foreground shrink-0 text-xs">
-                        {formatRelativeTime(item.createdAt, now)}
-                      </span>
-                    </>
-                  );
-
-                  return (
-                    <li
-                      key={item.id}
-                      className="flex items-baseline gap-2 text-sm"
-                    >
-                      <BellIcon
-                        className="text-muted-foreground size-3.5 shrink-0 translate-y-0.5"
-                        aria-hidden="true"
-                      />
-                      {/*
-                        `notificationHref` returns null for events with no page to open - a resolved
-                        report, for instance, since there is no screen listing the reports you filed.
-                        Rendered as plain text rather than a dead link.
-                      */}
-                      {href ? (
-                        <Link
-                          href={href}
-                          className="flex min-w-0 flex-1 items-baseline gap-2 underline-offset-4 hover:underline"
-                        >
-                          {content}
-                        </Link>
-                      ) : (
-                        <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                          {content}
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="text-muted-foreground text-sm">
-                Nothing yet. Booking requests, approvals and payment
-                confirmations will appear here as they happen.
+        <SummaryCard
+          title="Your listings"
+          footer={
+            isOwner ? (
+              <FooterLink href="/dashboard/listings">
+                Manage all {overview.totalListings}
+              </FooterLink>
+            ) : null
+          }
+        >
+          {listings.items.length > 0 ? (
+            <ul className="-my-1 flex flex-col divide-y">
+              {listings.items.map((listing) => (
+                <ListingRow key={listing.id} listing={listing} />
+              ))}
+            </ul>
+          ) : (
+            /*
+              An empty state, not a placeholder. The distinction matters: a placeholder says the
+              feature is coming, an empty state says it works and there is nothing here yet - and
+              offers the way out. This card used to be the former, months after the feature landed.
+            */
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                You have not published anything yet. A listing takes a few
+                minutes and one photo.
               </p>
-            )}
-          </div>
-        </Card>
+              <Button
+                size="sm"
+                variant="outline"
+                render={<Link href="/listings/new" />}
+              >
+                <PlusIcon aria-hidden="true" />
+                Create your first listing
+              </Button>
+            </div>
+          )}
+        </SummaryCard>
+
+        <SummaryCard
+          title="Recent activity"
+          footer={
+            <FooterLink href="/dashboard/notifications">
+              All notifications
+            </FooterLink>
+          }
+        >
+          {/*
+            The notification feed IS the activity record for a member - every booking transition,
+            handover, claim and review writes one, in the same transaction as the change it
+            describes. This card promised "booking requests, approvals and messages as they happen"
+            while that feed already existed one click away.
+          */}
+          {notifications.length > 0 ? (
+            <ul className="-my-1 flex flex-col divide-y">
+              {notifications.map((item) => {
+                const href = notificationHref(item.entityType, item.entityId);
+                const unread = !item.readAt;
+                const content = (
+                  <>
+                    <span
+                      className={
+                        unread
+                          ? "min-w-0 flex-1 truncate font-medium"
+                          : "min-w-0 flex-1 truncate"
+                      }
+                    >
+                      {item.title}
+                    </span>
+                    {unread && <span className="sr-only">(new)</span>}
+                    <span className="text-muted-foreground shrink-0 text-xs">
+                      {formatRelativeTime(item.createdAt, now)}
+                    </span>
+                  </>
+                );
+
+                return (
+                  <li
+                    key={item.id}
+                    className="flex items-center gap-3 py-2.5 text-sm"
+                  >
+                    {/*
+                      A filled navy dot for unread, the bell for read: shape and weight carry the
+                      state alongside the sr-only "(new)", so it never rests on colour alone.
+                    */}
+                    <span
+                      className="bg-muted flex size-7 shrink-0 items-center justify-center rounded-full"
+                      aria-hidden="true"
+                    >
+                      {unread ? (
+                        <span className="bg-primary size-2 rounded-full" />
+                      ) : (
+                        <BellIcon className="text-muted-foreground size-3.5" />
+                      )}
+                    </span>
+                    {/*
+                      `notificationHref` returns null for events with no page to open - a resolved
+                      report, for instance, since there is no screen listing the reports you filed.
+                      Rendered as plain text rather than a dead link.
+                    */}
+                    {href ? (
+                      <Link
+                        href={href}
+                        className="flex min-w-0 flex-1 items-baseline gap-3 underline-offset-4 hover:underline"
+                      >
+                        {content}
+                      </Link>
+                    ) : (
+                      <span className="flex min-w-0 flex-1 items-baseline gap-3">
+                        {content}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Nothing yet. Booking requests, approvals and payment confirmations
+              will appear here as they happen.
+            </p>
+          )}
+        </SummaryCard>
       </div>
     </>
+  );
+}
+
+interface SummaryCardProps {
+  title: string;
+  /** A link to the full screen, in the card's footer strip. `null` hides the strip. */
+  footer: ReactNode;
+  children: ReactNode;
+}
+
+/** One of the two summary panels: a titled card whose footer leads to the full screen. */
+function SummaryCard({ title, footer, children }: SummaryCardProps) {
+  return (
+    <Card>
+      <div className="flex flex-1 flex-col gap-4 px-(--card-spacing)">
+        <h2 className="font-heading text-lg font-semibold tracking-tight">
+          {title}
+        </h2>
+        {children}
+      </div>
+      {footer && <CardFooter className="mt-auto">{footer}</CardFooter>}
+    </Card>
+  );
+}
+
+function FooterLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="text-foreground focus-visible:ring-ring inline-flex items-center gap-1.5 rounded-sm text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2"
+    >
+      {children}
+      <ArrowRightIcon className="size-3.5" aria-hidden="true" />
+    </Link>
   );
 }
 
@@ -279,27 +358,54 @@ async function DashboardOverview() {
  * Deliberately not `OwnerListingCard`, which carries pause, resume and delete. Those belong on the
  * management screen: an overview is for noticing something, and a destructive control beside a
  * glanceable row is a control pressed by accident.
+ *
+ * Linked to the public page only while live - a paused or draft listing 404s there, so those rows
+ * go to the edit screen instead, which is where the owner would deal with them anyway.
  */
 function ListingRow({ listing }: { listing: OwnerListingSummary }) {
+  const isLive = listing.status === ListingStatus.ACTIVE;
+
   return (
-    <li className="flex items-baseline gap-2 text-sm">
-      <Link
-        href={`/listings/${listing.id}`}
-        className="min-w-0 flex-1 truncate underline-offset-4 hover:underline"
-      >
-        {listing.title}
-      </Link>
-      {listing.status !== ListingStatus.ACTIVE && (
-        <Badge variant="outline" className="shrink-0">
-          {listing.status.toLowerCase()}
-        </Badge>
-      )}
-      <span className="text-muted-foreground shrink-0 text-xs">
-        {formatPKRPerDay(listing.pricePerDay)}
+    <li className="flex items-center gap-3 py-2.5 text-sm">
+      <span className="bg-muted relative aspect-4/3 w-14 shrink-0 overflow-hidden rounded-md">
+        {listing.imageUrl ? (
+          <Image
+            src={listing.imageUrl}
+            alt=""
+            fill
+            sizes="3.5rem"
+            className="object-cover"
+          />
+        ) : (
+          <span
+            className="text-muted-foreground flex h-full items-center justify-center"
+            aria-hidden="true"
+          >
+            <ImageIcon className="size-4" />
+          </span>
+        )}
       </span>
-      <span className="text-muted-foreground shrink-0 text-xs">
-        {listing.viewCount} views
-      </span>
+
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <Link
+          href={
+            isLive
+              ? `/listings/${listing.id}`
+              : `/dashboard/listings/${listing.id}/edit`
+          }
+          className="truncate font-medium underline-offset-4 hover:underline"
+        >
+          {listing.title}
+        </Link>
+        <span className="text-muted-foreground truncate text-xs">
+          <span className="font-heading text-foreground font-semibold tabular-nums">
+            {formatPKRPerDay(listing.pricePerDay)}
+          </span>{" "}
+          · {listing.viewCount.toLocaleString()} views
+        </span>
+      </div>
+
+      {!isLive && <ListingStatusBadge status={listing.status} />}
     </li>
   );
 }

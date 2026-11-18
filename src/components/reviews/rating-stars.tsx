@@ -53,7 +53,11 @@ function RatingStars({
         ))}
       </span>
 
-      <span className="text-muted-foreground text-xs tabular-nums">
+      {/* Hidden from assistive tech: the sr-only sentence below already says it in full. */}
+      <span
+        className="text-muted-foreground text-xs tabular-nums"
+        aria-hidden="true"
+      >
         {rating}
         {count !== undefined && ` (${count})`}
       </span>

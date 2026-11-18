@@ -1,16 +1,21 @@
 import {
   BadgeCheckIcon,
   CalendarSearchIcon,
+  ExternalLinkIcon,
   MailCheckIcon,
   PackageSearchIcon,
   ScaleIcon,
+  ShieldIcon,
+  TriangleAlertIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AdminActionLog } from "@/components/admin/admin-action-log";
+import { Fact, FactGrid } from "@/components/admin/fact-grid";
 import { UserModerationPanel } from "@/components/admin/user-moderation-panel";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,6 +25,7 @@ import {
   getActiveAdminCount,
   getAdminUserDetail,
 } from "@/lib/queries/admin-users";
+import { cn } from "@/lib/utils/cn";
 import { formatDate } from "@/lib/utils/date";
 import { formatCity } from "@/lib/utils/listing";
 
@@ -77,25 +83,27 @@ export default async function AdminUserPage({ params }: AdminUserPageProps) {
       />
 
       <Card>
-        <div className="flex flex-col gap-3 px-(--card-spacing)">
+        <div className="flex flex-col gap-5 px-(--card-spacing)">
           <div className="flex flex-wrap items-center gap-2">
-            {user.role === UserRole.ADMIN && (
-              <Badge variant="secondary">Administrator</Badge>
-            )}
-            <Badge
+            <StatusLabel
               variant={
-                user.status === UserStatus.ACTIVE ? "outline" : "destructive"
+                user.status === UserStatus.ACTIVE ? "default" : "destructive"
               }
-            >
-              {user.status.toLowerCase()}
-            </Badge>
-            {user.isVerified && (
+              label={USER_STATUS_LABELS[user.status]}
+            />
+            {user.role === UserRole.ADMIN && (
               <Badge variant="secondary">
-                <BadgeCheckIcon className="size-3" aria-hidden="true" />
-                Verified
+                <ShieldIcon aria-hidden="true" />
+                Administrator
               </Badge>
             )}
-            {user.isDeleted && <Badge variant="outline">deleted</Badge>}
+            {user.isVerified && (
+              <Badge variant="success">
+                <BadgeCheckIcon aria-hidden="true" />
+                Identity verified
+              </Badge>
+            )}
+            {user.isDeleted && <Badge variant="outline">Deleted</Badge>}
           </div>
 
           {/*
@@ -103,80 +111,74 @@ export default async function AdminUserPage({ params }: AdminUserPageProps) {
             and a plausible address; the phone number is often what settles which account a report is
             actually about.
           */}
-          <dl className="text-muted-foreground grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
-            <div>
-              <dt className="inline font-medium">Email: </dt>
-              <dd className="inline break-all">{user.email}</dd>
-            </div>
-            {user.phone && (
-              <div>
-                <dt className="inline font-medium">Phone: </dt>
-                <dd className="inline">{user.phone}</dd>
-              </div>
-            )}
-            {user.city && (
-              <div>
-                <dt className="inline font-medium">City: </dt>
-                <dd className="inline">{formatCity(user.city)}</dd>
-              </div>
-            )}
-            <div>
-              <dt className="inline font-medium">Joined: </dt>
-              <dd className="inline">{formatDate(user.createdAt)}</dd>
-            </div>
-          </dl>
-
-          <ul className="text-muted-foreground flex flex-col gap-1 text-xs">
-            <li className="flex items-center gap-2">
-              <MailCheckIcon
-                className={
-                  user.emailVerified
-                    ? "text-foreground size-3.5 shrink-0"
-                    : "size-3.5 shrink-0"
-                }
-                aria-hidden="true"
-              />
-              {user.emailVerified
-                ? `Email confirmed ${formatDate(user.emailVerified)}`
-                : "Email not confirmed"}
-              <span className="italic">— not proof of identity</span>
-            </li>
-            <li>
+          <FactGrid columns={3}>
+            <Fact label="Email">
+              <span className="break-all">{user.email}</span>
+            </Fact>
+            <Fact label="Phone">{user.phone ?? "Not given"}</Fact>
+            <Fact label="City">
+              {user.city ? formatCity(user.city) : "Not set"}
+            </Fact>
+            <Fact label="Joined">{formatDate(user.createdAt)}</Fact>
+            <Fact label="Email confirmation">
+              <span className="flex flex-wrap items-center gap-x-1.5">
+                <MailCheckIcon
+                  className={
+                    user.emailVerified
+                      ? "text-foreground size-3.5 shrink-0"
+                      : "text-muted-foreground size-3.5 shrink-0"
+                  }
+                  aria-hidden="true"
+                />
+                {user.emailVerified
+                  ? `Confirmed ${formatDate(user.emailVerified)}`
+                  : "Not confirmed"}
+                <span className="text-muted-foreground text-xs italic">
+                  — not proof of identity
+                </span>
+              </span>
+            </Fact>
+            <Fact label="Identity">
               {user.isVerified
-                ? `Identity verified${user.verifiedAt ? ` ${formatDate(user.verifiedAt)}` : ""}${
+                ? `Verified${user.verifiedAt ? ` ${formatDate(user.verifiedAt)}` : ""}${
                     user.verifiedBy?.name ? ` by ${user.verifiedBy.name}` : ""
                   }`
-                : "Identity not verified"}
-            </li>
-          </ul>
+                : "Not verified"}
+            </Fact>
+          </FactGrid>
 
           {user.bio && (
             // A string, never HTML - it is user input.
-            <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
+            <p className="text-muted-foreground max-w-[65ch] border-l-2 pl-3 text-sm leading-relaxed whitespace-pre-line">
               {user.bio}
             </p>
           )}
 
-          <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
-            <span>{user.listingCount} listings</span>
-            <span>{user.bookingsAsRenter} rentals as renter</span>
-            <span>{user.bookingsAsOwner} as owner</span>
-            <span>{user.reportsFiled} reports filed</span>
-            <span
-              className={
-                user.reportsAgainst > 0 ? "text-destructive font-medium" : ""
-              }
-            >
-              {user.reportsAgainst} reports against them
-            </span>
-          </div>
+          {/*
+            The account's footprint, as five counts read at a glance. Reports against them are amber
+            when there are any - the one count here that is a reason to look closer.
+          */}
+          <dl className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-lg border sm:grid-cols-5">
+            <Count label="Listings" value={user.listingCount} />
+            <Count label="Rentals as renter" value={user.bookingsAsRenter} />
+            <Count label="Rentals as owner" value={user.bookingsAsOwner} />
+            <Count label="Reports filed" value={user.reportsFiled} />
+            <Count
+              label="Reports against them"
+              value={user.reportsAgainst}
+              attention={user.reportsAgainst > 0}
+              // Spans the row on a phone, so the odd fifth cell does not leave a hole in the grid.
+              className="col-span-2 sm:col-span-1"
+            />
+          </dl>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 border-t pt-4">
             <Button
               variant="outline"
               size="sm"
               render={<Link href={`/users/${user.id}`} />}
             >
+              <ExternalLinkIcon aria-hidden="true" />
               View public profile
             </Button>
             {/*
@@ -216,25 +218,86 @@ export default async function AdminUserPage({ params }: AdminUserPageProps) {
         </div>
       </Card>
 
-      <Card>
-        <div className="flex flex-col gap-3 px-(--card-spacing)">
-          <h2 className="font-heading text-base font-medium">Moderation</h2>
-          <UserModerationPanel
-            user={user}
-            adminId={admin.id}
-            activeAdminCount={activeAdminCount}
-          />
-        </div>
-      </Card>
+      {/*
+        The controls beside the record of their use, on a wide screen. Deciding about an account is
+        reading what has already been done to it, and stacked, the history sat a screen below the
+        buttons it should inform.
+      */}
+      <div className="grid gap-4 lg:grid-cols-5 lg:items-start">
+        <Card className="lg:col-span-2">
+          <div className="flex flex-col gap-4 px-(--card-spacing)">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="font-heading text-base font-semibold tracking-tight">
+                Moderation
+              </h2>
+              <p className="text-muted-foreground text-xs">
+                Every action is recorded against your name with the reason you
+                give.
+              </p>
+            </div>
+            <UserModerationPanel
+              user={user}
+              adminId={admin.id}
+              activeAdminCount={activeAdminCount}
+            />
+          </div>
+        </Card>
 
-      <Card>
-        <div className="flex flex-col gap-3 px-(--card-spacing)">
-          <h2 className="font-heading text-base font-medium">
-            Administrator history
-          </h2>
-          <AdminActionLog history={user.history} />
-        </div>
-      </Card>
+        <Card className="lg:col-span-3">
+          <div className="flex flex-col gap-4 px-(--card-spacing)">
+            <h2 className="font-heading text-base font-semibold tracking-tight">
+              Administrator history
+            </h2>
+            <AdminActionLog history={user.history} />
+          </div>
+        </Card>
+      </div>
     </>
+  );
+}
+
+/** The account status in sentence case, for the badge. */
+const USER_STATUS_LABELS: Readonly<Record<UserStatus, string>> = {
+  [UserStatus.ACTIVE]: "Active",
+  [UserStatus.SUSPENDED]: "Suspended",
+  [UserStatus.BANNED]: "Banned",
+};
+
+/** One count in the account's footprint strip. */
+function Count({
+  label,
+  value,
+  attention = false,
+  className,
+}: {
+  label: string;
+  value: number;
+  attention?: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-0.5 px-3 py-2.5",
+        attention ? "bg-warning-soft text-warning-soft-foreground" : "bg-card",
+        className
+      )}
+    >
+      <dt
+        className={
+          attention
+            ? "flex items-center gap-1 text-xs font-medium"
+            : "text-muted-foreground text-xs"
+        }
+      >
+        {attention && (
+          <TriangleAlertIcon className="size-3 shrink-0" aria-hidden="true" />
+        )}
+        {label}
+      </dt>
+      <dd className="font-heading text-xl font-bold tabular-nums">
+        {value.toLocaleString()}
+      </dd>
+    </div>
   );
 }

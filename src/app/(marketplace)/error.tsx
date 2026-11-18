@@ -46,11 +46,11 @@ export default function MarketplaceError({
         description="We could not load this page. It is usually temporary - trying again often works."
         action={
           <>
-            <Button size="sm" onClick={reset}>
+            <Button onClick={reset}>
               <RefreshCwIcon />
               Try again
             </Button>
-            <Button variant="outline" size="sm" render={<Link href="/" />}>
+            <Button variant="outline" render={<Link href="/" />}>
               Back to home
             </Button>
           </>

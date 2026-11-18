@@ -25,7 +25,11 @@ function MessagesShell({ list, children }: MessagesShellProps) {
   const threadOpen = useSelectedLayoutSegment() !== null;
 
   return (
-    <div className="bg-card -mx-4 -my-6 flex h-[calc(100svh-3.5rem)] min-h-[30rem] overflow-hidden lg:mx-0 lg:my-0 lg:h-[calc(100svh-6.5rem)] lg:rounded-xl lg:border lg:shadow-xs">
+    // The negative margins cancel the dashboard layout's padding (`px-4 py-8`, `lg:py-10`) and the
+    // heights subtract its `h-16` header, so the frame fills the viewport exactly: on a phone it is
+    // edge to edge under the header, on a desktop it keeps 1.5rem of page above and below. If those
+    // layout values change, these must follow or the composer slides below the fold.
+    <div className="bg-card -mx-4 -my-8 flex h-[calc(100svh-4rem)] min-h-[30rem] overflow-hidden lg:mx-0 lg:-my-4 lg:h-[calc(100svh-7rem)] lg:rounded-xl lg:border">
       <aside
         className={cn(
           "min-h-0 w-full flex-col lg:flex lg:w-80 lg:shrink-0 lg:border-r xl:w-96",

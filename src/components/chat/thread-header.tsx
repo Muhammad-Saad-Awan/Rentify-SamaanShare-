@@ -26,12 +26,12 @@ function ThreadHeader({ detail }: { detail: ConversationDetail }) {
   }).format(detail.counterparty.memberSince);
 
   return (
-    <header className="bg-background flex items-center gap-3 border-b px-3 py-3 sm:px-4">
+    <header className="bg-card flex min-h-16 items-center gap-3 border-b px-3 py-2.5 sm:px-4">
       {/* The list is beside the thread on a desktop; on a phone this is the only way back to it. */}
       <Button
         variant="ghost"
-        size="icon-sm"
-        className="lg:hidden"
+        size="icon"
+        className="-ml-1 lg:hidden"
         render={<Link href={MESSAGES_ROUTE} />}
         aria-label="Back to messages"
       >
@@ -46,10 +46,10 @@ function ThreadHeader({ detail }: { detail: ConversationDetail }) {
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <h2 className="font-heading truncate text-base font-semibold">
+        <h2 className="font-heading truncate text-base font-semibold tracking-tight">
           <Link
             href={`/users/${detail.counterparty.id}`}
-            className="hover:underline"
+            className="focus-visible:ring-ring rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2"
           >
             {name}
           </Link>
@@ -63,7 +63,7 @@ function ThreadHeader({ detail }: { detail: ConversationDetail }) {
 
       <Link
         href={`/listings/${detail.listing.id}`}
-        className="hover:bg-muted focus-visible:ring-ring hidden max-w-72 items-center gap-2.5 rounded-xl border p-1.5 pr-3 outline-none focus-visible:ring-2 sm:flex"
+        className="hover:border-foreground/20 hover:bg-muted/60 focus-visible:ring-ring hidden max-w-72 shrink-0 items-center gap-2.5 rounded-xl border p-1.5 pr-3 transition-colors outline-none focus-visible:ring-2 sm:flex"
       >
         <span className="bg-muted relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg">
           {detail.listing.imageUrl ? (
@@ -82,12 +82,14 @@ function ThreadHeader({ detail }: { detail: ConversationDetail }) {
           )}
         </span>
         <span className="flex min-w-0 flex-col">
-          <span className="truncate text-xs font-medium">
+          <span className="truncate text-sm font-medium">
             {detail.listing.title}
           </span>
-          <span className="text-muted-foreground truncate text-[11px]">
-            {formatPKRPerDay(detail.listing.pricePerDay)} ·{" "}
-            {detail.listing.area ? `${detail.listing.area}, ` : ""}
+          <span className="text-muted-foreground truncate text-xs">
+            <span className="text-foreground font-heading font-semibold">
+              {formatPKRPerDay(detail.listing.pricePerDay)}
+            </span>{" "}
+            · {detail.listing.area ? `${detail.listing.area}, ` : ""}
             {formatCity(detail.listing.city)}
           </span>
         </span>

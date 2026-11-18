@@ -34,14 +34,21 @@ interface ListingsSortProps {
  *
  * Scrolls horizontally rather than wrapping on a narrow viewport: a wrapped
  * segmented control breaks its shared border and reads as two separate controls.
+ * It is allowed to shrink (no `shrink-0`) so that it is the nav that scrolls - at
+ * 360px a rigid group pushed the whole page into a sideways scroll instead.
+ *
+ * Each option is 32px tall inside a 4px track, so the control clears the 36px touch
+ * target as a whole. The active option is a white chip on the muted track - the same
+ * selected-surface language the filter chips use - rather than a navy fill, which would
+ * compete with the one primary button in the toolbar.
  */
 function ListingsSort({ filters, hrefFor, className }: ListingsSortProps) {
   return (
     <nav
       aria-label="Sort listings"
-      className={cn("min-w-0 shrink-0 overflow-x-auto", className)}
+      className={cn("min-w-0 overflow-x-auto", className)}
     >
-      <ul className="bg-muted/60 flex w-fit items-center gap-0.5 rounded-lg p-0.5">
+      <ul className="bg-muted flex w-fit items-center gap-0.5 rounded-lg border p-0.5">
         {SORT_OPTIONS.map((option) => {
           const isActive = filters.sort === option.value;
 
@@ -56,10 +63,10 @@ function ListingsSort({ filters, hrefFor, className }: ListingsSortProps) {
                 aria-current={isActive ? "true" : undefined}
                 aria-label={option.description}
                 className={cn(
-                  "focus-visible:ring-ring block rounded-md px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2",
+                  "focus-visible:ring-ring flex h-8 items-center rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset sm:px-3 sm:text-sm",
                   isActive
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
               >
                 {option.label}

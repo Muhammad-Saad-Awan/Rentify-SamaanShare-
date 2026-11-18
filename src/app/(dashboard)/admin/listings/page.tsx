@@ -3,6 +3,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { AdminListingCard } from "@/components/admin/admin-listing-card";
+import {
+  FilterChip,
+  FilterGroup,
+  FilterNav,
+} from "@/components/admin/filter-chips";
 import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -125,7 +130,7 @@ async function ListingQueue({ params }: ListingQueueProps) {
     return qs ? `/admin/listings?${qs}` : "/admin/listings";
   };
 
-  const unfiltered = !status && !city && !reportedOnly;
+  const anyFilter = Boolean(status || city || reportedOnly);
 
   return (
     <>
@@ -134,93 +139,129 @@ async function ListingQueue({ params }: ListingQueueProps) {
         description="Every listing on the platform, newest first, including removed ones and those hidden by their owner's suspension."
       />
 
-      {/*
-        A plain GET form, not a client-side filter. The query lands in the URL, so a search is
-        shareable and survives the back button - the same reasoning as the browse sort control.
-      */}
-      <form action="/admin/listings" className="flex flex-wrap gap-2">
-        <Input
-          type="search"
-          name="q"
-          defaultValue={query}
-          placeholder="Search by title"
-          aria-label="Search listings by title"
-          className="max-w-xs"
-        />
+      <div className="bg-card flex flex-col gap-4 rounded-xl border p-4">
         {/*
-          The active owner filter is carried through the search as a hidden field. Without it,
-          searching from a member's inventory would silently widen to every listing on the platform.
+          A plain GET form, not a client-side filter. The query lands in the URL, so a search is
+          shareable and survives the back button - the same reasoning as the browse sort control.
         */}
-        {owner && <input type="hidden" name="owner" value={owner} />}
-        <Button type="submit" size="sm">
-          <SearchIcon aria-hidden="true" />
-          Search
-        </Button>
-      </form>
+        <form
+          action="/admin/listings"
+          className="flex flex-col gap-2 sm:flex-row sm:items-center"
+        >
+          <Input
+            type="search"
+            name="q"
+            defaultValue={query}
+            placeholder="Search by title"
+            aria-label="Search listings by title"
+            className="sm:max-w-sm"
+          />
+          {/*
+            The active owner filter is carried through the search as a hidden field. Without it,
+            searching from a member's inventory would silently widen to every listing on the platform.
+          */}
+          {owner && <input type="hidden" name="owner" value={owner} />}
+          <Button type="submit">
+            <SearchIcon aria-hidden="true" />
+            Search
+          </Button>
+        </form>
 
-      <nav aria-label="Filter listings" className="flex flex-wrap gap-2">
-        <FilterLink
-          href={hrefFor({
-            status: undefined,
-            city: undefined,
-            reported: undefined,
-          })}
-          active={unfiltered}
-        >
-          All
-        </FilterLink>
-        <FilterLink href={hrefFor({ reported: "true" })} active={reportedOnly}>
-          Reported
-        </FilterLink>
-        <FilterLink
-          href={hrefFor({ status: "active" })}
-          active={status === ListingStatus.ACTIVE}
-        >
-          Active
-        </FilterLink>
-        <FilterLink
-          href={hrefFor({ status: "paused" })}
-          active={status === ListingStatus.PAUSED}
-        >
-          Paused
-        </FilterLink>
-        <FilterLink
-          href={hrefFor({ status: "draft" })}
-          active={status === ListingStatus.DRAFT}
-        >
-          Draft
-        </FilterLink>
-        <FilterLink
-          href={hrefFor({ status: "deleted" })}
-          active={status === ListingStatus.DELETED}
-        >
-          Removed
-        </FilterLink>
-        {PAKISTANI_CITIES.map((entry) => (
-          <FilterLink
-            key={entry.value}
-            href={hrefFor({ city: entry.value })}
-            active={city === entry.value}
-          >
-            {entry.label}
-          </FilterLink>
-        ))}
-      </nav>
+        {/*
+          One group per dimension, each with its own "Any": status, city and reports combine, and a
+          single row of chips made "Removed" and "Lahore" look like alternatives to each other.
+        */}
+        <FilterNav label="Filter listings" className="border-t pt-4">
+          <FilterGroup legend="Reports">
+            <FilterChip
+              href={hrefFor({ reported: undefined })}
+              active={!reportedOnly}
+            >
+              Any
+            </FilterChip>
+            <FilterChip
+              href={hrefFor({ reported: "true" })}
+              active={reportedOnly}
+            >
+              Reported
+            </FilterChip>
+          </FilterGroup>
+          <FilterGroup legend="Status">
+            <FilterChip href={hrefFor({ status: undefined })} active={!status}>
+              Any
+            </FilterChip>
+            <FilterChip
+              href={hrefFor({ status: "active" })}
+              active={status === ListingStatus.ACTIVE}
+            >
+              Active
+            </FilterChip>
+            <FilterChip
+              href={hrefFor({ status: "paused" })}
+              active={status === ListingStatus.PAUSED}
+            >
+              Paused
+            </FilterChip>
+            <FilterChip
+              href={hrefFor({ status: "draft" })}
+              active={status === ListingStatus.DRAFT}
+            >
+              Draft
+            </FilterChip>
+            <FilterChip
+              href={hrefFor({ status: "deleted" })}
+              active={status === ListingStatus.DELETED}
+            >
+              Removed
+            </FilterChip>
+          </FilterGroup>
+          <FilterGroup legend="City">
+            <FilterChip href={hrefFor({ city: undefined })} active={!city}>
+              Any
+            </FilterChip>
+            {PAKISTANI_CITIES.map((entry) => (
+              <FilterChip
+                key={entry.value}
+                href={hrefFor({ city: entry.value })}
+                active={city === entry.value}
+              >
+                {entry.label}
+              </FilterChip>
+            ))}
+          </FilterGroup>
+        </FilterNav>
 
-      {owner && (
-        <p className="text-muted-foreground text-xs">
-          Showing one member&apos;s listings.{" "}
-          <Link
-            href={hrefFor({ owner: undefined })}
-            className="underline underline-offset-4"
-          >
-            Show all listings
-          </Link>
-        </p>
-      )}
+        {(anyFilter || owner) && (
+          <p className="text-muted-foreground text-xs">
+            {total === 1 ? "1 listing matches" : `${total} listings match`}
+            {owner ? ", from one member's inventory" : ""}.{" "}
+            {anyFilter && (
+              <Link
+                href={hrefFor({
+                  status: undefined,
+                  city: undefined,
+                  reported: undefined,
+                })}
+                className="text-foreground underline underline-offset-4"
+              >
+                Clear filters
+              </Link>
+            )}
+            {anyFilter && owner && " · "}
+            {owner && (
+              <Link
+                href={hrefFor({ owner: undefined })}
+                className="text-foreground underline underline-offset-4"
+              >
+                Show all listings
+              </Link>
+            )}
+          </p>
+        )}
+      </div>
 
       {items.length > 0 && (
-        <ul className="flex flex-col gap-4">
+        <ul className="flex flex-col gap-3">
           {items.map((listing) => (
             <li key={listing.id}>
               <AdminListingCard listing={listing} />
@@ -262,28 +303,6 @@ async function ListingQueue({ params }: ListingQueueProps) {
         hrefFor={(target) => hrefFor({}, target)}
       />
     </>
-  );
-}
-
-/** One filter as a link, so every view stays shareable and survives the back button. */
-function FilterLink({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Button
-      size="sm"
-      variant={active ? "default" : "outline"}
-      render={<Link href={href} />}
-      {...(active ? { "aria-current": "page" as const } : {})}
-    >
-      {children}
-    </Button>
   );
 }
 

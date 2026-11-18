@@ -5,7 +5,7 @@ import Link from "next/link";
 import { SaveListingButton } from "@/components/marketplace/save-listing-button";
 import { HighlightText } from "@/components/shared/highlight-text";
 import { Badge } from "@/components/ui/badge";
-import { formatPKRPerDay } from "@/lib/utils/currency";
+import { formatPKR } from "@/lib/utils/currency";
 import { CONDITION_LABELS, formatCity } from "@/lib/utils/listing";
 
 import type { ListingCardData } from "@/lib/queries/listings";
@@ -78,7 +78,7 @@ function ListingCard({
 
         <Badge
           variant="secondary"
-          className="bg-background/95 absolute top-2.5 right-2.5 border-transparent"
+          className="bg-card/95 text-foreground absolute top-2.5 right-2.5 border-transparent shadow-xs"
         >
           {CONDITION_LABELS[listing.condition]}
         </Badge>
@@ -115,8 +115,17 @@ function ListingCard({
         )}
 
         <div className="mt-auto flex items-baseline justify-between gap-2 pt-1">
+          {/*
+            The amount carries the weight and the unit steps back, so a row of cards reads as a
+            column of prices. One text node per part, but the accessible text is unchanged:
+            "Rs. 300 / day".
+          */}
           <span className="font-heading text-base font-bold tracking-tight">
-            {formatPKRPerDay(listing.pricePerDay)}
+            {formatPKR(listing.pricePerDay)}
+            <span className="text-muted-foreground font-sans text-xs font-normal tracking-normal">
+              {" "}
+              / day
+            </span>
           </span>
 
           <span className="text-muted-foreground flex min-w-0 items-center gap-1 text-xs">

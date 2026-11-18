@@ -1,10 +1,11 @@
 "use client";
 
-import { CheckCircle2Icon, Loader2Icon, MailCheckIcon } from "lucide-react";
+import { Loader2Icon, MailCheckIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { verifyEmail } from "@/actions/email-verification";
+import { FormAlert } from "@/components/ui/form-alert";
 import { Button } from "@/components/ui/button";
 
 interface VerifyEmailFormProps {
@@ -50,12 +51,12 @@ function VerifyEmailForm({ token }: VerifyEmailFormProps) {
 
   if (!token) {
     return (
-      <div className="flex flex-col gap-3">
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          This link is missing its confirmation code. Open the link from your
-          email again, or request a new one from your profile.
-        </p>
-        <Button size="sm" render={<Link href="/profile" />}>
+      <div className="flex flex-col gap-5">
+        <FormAlert tone="warning" title="This link is incomplete">
+          It is missing its confirmation code. Open the link from your email
+          again, or request a new one from your profile.
+        </FormAlert>
+        <Button size="lg" className="w-full" render={<Link href="/profile" />}>
           Go to my profile
         </Button>
       </div>
@@ -64,23 +65,20 @@ function VerifyEmailForm({ token }: VerifyEmailFormProps) {
 
   if (state === "done") {
     return (
-      <div className="flex flex-col gap-3">
-        <p className="flex items-center gap-2 text-sm font-medium">
-          <CheckCircle2Icon
-            className="text-foreground size-4"
-            aria-hidden="true"
-          />
-          Your email address is confirmed.
-        </p>
+      <div className="flex flex-col gap-5">
         {/*
           Says what this did and no more. Confirming an inbox is not identity verification, and
           copy implying a badge had been earned would be wrong in a way people would act on.
         */}
-        <p className="text-muted-foreground text-sm leading-relaxed">
+        <FormAlert tone="success" title="Your email address is confirmed.">
           We can now reach you about your rentals. Identity verification is a
           separate step and is not part of this.
-        </p>
-        <Button size="sm" render={<Link href="/dashboard" />}>
+        </FormAlert>
+        <Button
+          size="lg"
+          className="w-full"
+          render={<Link href="/dashboard" />}
+        >
           Go to my dashboard
         </Button>
       </div>
@@ -88,32 +86,28 @@ function VerifyEmailForm({ token }: VerifyEmailFormProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5">
       <p className="text-muted-foreground text-sm leading-relaxed">
-        Confirm this address so we know we can reach you about your rentals.
+        Press the button to confirm this address. Nothing else about your
+        account changes.
       </p>
 
-      {error && (
-        <p role="alert" className="text-destructive text-sm">
-          {error}
-        </p>
-      )}
+      {error && <FormAlert tone="error">{error}</FormAlert>}
 
-      <div>
-        <Button
-          size="sm"
-          onClick={submit}
-          disabled={state === "working"}
-          aria-busy={state === "working"}
-        >
-          {state === "working" ? (
-            <Loader2Icon className="animate-spin" />
-          ) : (
-            <MailCheckIcon aria-hidden="true" />
-          )}
-          Confirm my email
-        </Button>
-      </div>
+      <Button
+        size="lg"
+        className="w-full"
+        onClick={submit}
+        disabled={state === "working"}
+        aria-busy={state === "working"}
+      >
+        {state === "working" ? (
+          <Loader2Icon className="animate-spin" />
+        ) : (
+          <MailCheckIcon aria-hidden="true" />
+        )}
+        Confirm my email
+      </Button>
     </div>
   );
 }

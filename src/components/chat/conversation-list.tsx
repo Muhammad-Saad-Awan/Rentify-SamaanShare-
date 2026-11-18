@@ -12,6 +12,7 @@ import { useSelectedLayoutSegment } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { MemberAvatar } from "@/components/chat/member-avatar";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageKind } from "@/generated/prisma/enums";
 import { conversationHref } from "@/lib/chat/routes";
@@ -73,7 +74,9 @@ function ConversationList({ conversations }: ConversationListProps) {
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-col gap-3 border-b px-4 pt-4 pb-3">
         <div className="flex items-baseline justify-between gap-2">
-          <h1 className="font-heading text-lg font-semibold">Messages</h1>
+          <h1 className="font-heading text-xl font-bold tracking-tight">
+            Messages
+          </h1>
           {unreadCount > 0 && (
             <span className="text-muted-foreground text-xs">
               {unreadCount} unread
@@ -99,7 +102,7 @@ function ConversationList({ conversations }: ConversationListProps) {
         <div
           role="group"
           aria-label="Show"
-          className="flex gap-1.5 overflow-x-auto"
+          className="-mx-4 flex gap-1.5 overflow-x-auto px-4"
         >
           {FILTERS.map((item) => (
             <button
@@ -108,10 +111,10 @@ function ConversationList({ conversations }: ConversationListProps) {
               aria-pressed={filter === item.value}
               onClick={() => setFilter(item.value)}
               className={cn(
-                "focus-visible:ring-ring shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors outline-none focus-visible:ring-2",
+                "focus-visible:ring-ring flex h-8 shrink-0 items-center rounded-full border px-3 text-xs font-medium transition-colors outline-none focus-visible:ring-2",
                 filter === item.value
                   ? "bg-primary text-primary-foreground border-primary"
-                  : "text-muted-foreground hover:bg-muted"
+                  : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               {item.label}
@@ -124,29 +127,45 @@ function ConversationList({ conversations }: ConversationListProps) {
       </div>
 
       {conversations.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-12 text-center">
-          <span className="bg-muted flex size-12 items-center justify-center rounded-full">
-            <MessagesSquareIcon
-              className="text-muted-foreground size-6"
-              aria-hidden="true"
-            />
-          </span>
-          <p className="text-sm font-medium">No conversations yet</p>
-          <p className="text-muted-foreground max-w-60 text-xs leading-relaxed">
-            Ask an owner about any item from its listing page. Questions about
-            your own listings land here too.
-          </p>
-          <Link
-            href="/listings"
-            className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+          {/* The same quiet tile as `EmptyState`, without its card: this column is already one. */}
+          <span
+            className="bg-muted text-foreground ring-muted/60 flex size-12 items-center justify-center rounded-xl border ring-4"
+            aria-hidden="true"
           >
+            <MessagesSquareIcon className="size-5" strokeWidth={1.75} />
+          </span>
+          <div className="flex flex-col gap-1.5">
+            <p className="font-heading text-base font-semibold tracking-tight">
+              No conversations yet
+            </p>
+            <p className="text-muted-foreground max-w-64 text-sm leading-relaxed">
+              Ask an owner about any item from its listing page. Questions about
+              your own listings land here too.
+            </p>
+          </div>
+          <Button size="sm" render={<Link href="/listings" />}>
             Browse listings
-          </Link>
+          </Button>
         </div>
       ) : visible.length === 0 ? (
-        <p className="text-muted-foreground px-4 py-8 text-center text-sm">
-          No conversations match.
-        </p>
+        <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+          <p role="status" className="text-muted-foreground text-sm">
+            No conversations match
+            {query.trim() ? ` "${query.trim()}"` : " this filter"}.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setQuery("");
+              setFilter("all");
+            }}
+          >
+            Show all conversations
+          </Button>
+        </div>
       ) : (
         <ul
           className="min-h-0 flex-1 overflow-y-auto"
@@ -205,7 +224,7 @@ function ConversationRow({
       href={conversationHref(conversation.id)}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "focus-visible:ring-ring relative flex items-center gap-3 border-b px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset",
+        "focus-visible:ring-ring relative flex items-center gap-3 border-b px-4 py-3.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset",
         isActive ? "bg-muted" : "hover:bg-muted/60"
       )}
     >
@@ -238,7 +257,7 @@ function ConversationRow({
         <MemberAvatar
           name={conversation.counterparty.name}
           image={conversation.counterparty.image}
-          className="ring-background absolute -right-1.5 -bottom-1.5 size-6 rounded-full ring-2"
+          className="ring-card absolute -right-1.5 -bottom-1.5 size-6 rounded-full ring-2"
         />
       </span>
 
@@ -247,14 +266,14 @@ function ConversationRow({
           <span
             className={cn(
               "truncate text-sm",
-              unread ? "font-semibold" : "font-medium"
+              unread ? "text-foreground font-semibold" : "font-medium"
             )}
           >
             {name}
           </span>
           <span
             className={cn(
-              "shrink-0 text-[11px]",
+              "shrink-0 text-xs",
               unread ? "text-foreground font-medium" : "text-muted-foreground"
             )}
           >

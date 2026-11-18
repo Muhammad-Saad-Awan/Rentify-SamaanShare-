@@ -1,4 +1,4 @@
-import { InfoIcon } from "lucide-react";
+import { ShieldCheckIcon } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { formatPKR } from "@/lib/utils/currency";
@@ -35,7 +35,7 @@ function ListingPricing({
     <Card>
       <div className="flex flex-col gap-4 px-(--card-spacing)">
         {/* The day rate leads: it is the number every other figure on the page is compared to. */}
-        <p className="flex items-baseline gap-1.5">
+        <p className="flex flex-wrap items-baseline gap-x-1.5">
           <span className="font-heading text-3xl font-extrabold tracking-[-0.03em]">
             {formatPKR(pricePerDay)}
           </span>
@@ -62,20 +62,28 @@ function ListingPricing({
           )}
         </div>
 
-        <div className="flex items-start justify-between gap-3 border-t pt-3">
-          <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
-            Security deposit
-            <InfoIcon className="size-3.5 shrink-0" aria-hidden="true" />
+        {/*
+          The shield is emerald because a returned deposit is a protection, the one good-news
+          fact in this card. It used to be an info icon with no tooltip behind it - a control
+          that looked interactive and did nothing.
+        */}
+        <div className="flex items-start justify-between gap-3 border-t pt-4">
+          <span className="flex items-start gap-2">
+            <ShieldCheckIcon
+              className="text-success mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <span className="flex flex-col">
+              <span className="text-sm font-medium">Security deposit</span>
+              <span className="text-muted-foreground text-xs">
+                Refundable on return
+              </span>
+            </span>
           </span>
 
-          <div className="flex flex-col items-end">
-            <span className="font-heading text-base font-semibold">
-              {formatPKR(securityDeposit)}
-            </span>
-            <span className="text-muted-foreground text-xs">
-              Refundable on return
-            </span>
-          </div>
+          <span className="font-heading text-base font-semibold">
+            {formatPKR(securityDeposit)}
+          </span>
         </div>
       </div>
     </Card>

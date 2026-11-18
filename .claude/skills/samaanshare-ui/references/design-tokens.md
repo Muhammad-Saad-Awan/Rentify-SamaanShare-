@@ -52,8 +52,8 @@ anything.
 
 ## 2. Palette status and migration
 
-`globals.css` shipped the monochrome redesign (black on white, `--primary: oklch(0 0 0)`). The
-Navy + Emerald palette is the decided direction but is applied as its own change. Check first:
+`globals.css` shipped the monochrome redesign (black on white, `--primary: oklch(0 0 0)`); the
+Navy + Emerald palette was applied on the `feat/premium-redesign` branch. Check which you have:
 
 ```bash
 grep -n "\-\-primary:" src/app/globals.css

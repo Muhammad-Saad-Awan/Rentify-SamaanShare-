@@ -48,7 +48,7 @@ function ListingReviews({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="font-heading text-base font-medium">
+        <h2 className="font-heading text-xl font-bold tracking-tight">
           {heading ?? `What renters say about ${ownerName}`}
         </h2>
 
@@ -65,10 +65,10 @@ function ListingReviews({
         {reviews.items.map((review) => (
           <li
             key={review.id}
-            className="flex flex-col gap-1.5 rounded-lg border px-3 py-2.5"
+            className="bg-card flex flex-col gap-2 rounded-xl border p-4"
           >
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium">
+              <span className="font-heading text-sm font-semibold">
                 {/* Name only. The query never selects an email, so there is nothing to leak. */}
                 {review.reviewer.name?.trim() || "SamaanShare member"}
               </span>
@@ -80,7 +80,7 @@ function ListingReviews({
 
             {review.comment && (
               // A string, never HTML - it is user input.
-              <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
+              <p className="text-foreground/80 max-w-[65ch] text-sm leading-relaxed break-words whitespace-pre-line">
                 {review.comment}
               </p>
             )}

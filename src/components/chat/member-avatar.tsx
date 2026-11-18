@@ -35,7 +35,7 @@ function MemberAvatar({
       {isVerified && (
         <span className="bg-background absolute -right-0.5 -bottom-0.5 rounded-full">
           <BadgeCheckIcon
-            className="size-4 fill-sky-500 text-white"
+            className="fill-brand text-brand-foreground size-4"
             aria-hidden="true"
           />
           <span className="sr-only">Verified member</span>

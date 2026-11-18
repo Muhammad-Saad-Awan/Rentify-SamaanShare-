@@ -12,23 +12,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function CategoryLoading() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-6">
-      <div className="flex items-start gap-3">
-        <Skeleton className="size-10 shrink-0 rounded-lg" />
+      <div className="flex items-center gap-4">
+        <Skeleton className="size-12 shrink-0 rounded-xl sm:size-14" />
         <div className="flex flex-col gap-2">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-64" />
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-1.5 overflow-hidden">
           {/* Five pills: the widest seeded category has five subcategories. */}
           {Array.from({ length: 5 }, (_, index) => (
-            <Skeleton key={index} className="h-7 w-24 rounded-full" />
+            <Skeleton key={index} className="h-9 w-24 rounded-full" />
           ))}
         </div>
 
-        <Skeleton className="h-8 w-52 shrink-0" />
+        <div className="flex items-center justify-between gap-2">
+          <Skeleton className="h-10 w-72 max-w-[70%]" />
+          <Skeleton className="h-9 w-28" />
+        </div>
       </div>
 
       <ListingsGridSkeleton />

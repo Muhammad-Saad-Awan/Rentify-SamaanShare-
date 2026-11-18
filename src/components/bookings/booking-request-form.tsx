@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { CALLBACK_URL_PARAM, LOGIN_ROUTE } from "@/config/routes";
 import {
   calculateRentalPrice,
@@ -130,7 +131,7 @@ function BookingRequestForm({
     return (
       <Card>
         <div className="flex flex-col gap-3 px-(--card-spacing)">
-          <p className="flex items-center gap-2 text-sm font-medium">
+          <p className="font-heading flex items-center gap-2 text-base font-semibold tracking-tight">
             <ShieldAlertIcon className="size-4 shrink-0" aria-hidden="true" />A
             few things first
           </p>
@@ -211,7 +212,9 @@ function BookingRequestForm({
   return (
     <Card>
       <div className="flex flex-col gap-4 px-(--card-spacing)">
-        <h2 className="font-heading text-base font-medium">Request to book</h2>
+        <h2 className="font-heading text-lg font-semibold tracking-tight">
+          Request to book
+        </h2>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Field>
@@ -250,7 +253,7 @@ function BookingRequestForm({
           <FieldLabel htmlFor={notesId}>
             Note to the owner (optional)
           </FieldLabel>
-          <textarea
+          <Textarea
             id={notesId}
             rows={3}
             maxLength={NOTES_MAX}
@@ -258,12 +261,14 @@ function BookingRequestForm({
             onChange={(event) => setNotes(event.target.value)}
             disabled={isPending}
             placeholder="When you would collect, what you need it for."
-            className="border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 dark:bg-input/30 w-full rounded-lg border bg-transparent px-2.5 py-2 text-sm transition-colors outline-none focus-visible:ring-3"
           />
         </Field>
 
         {tooLong && (
-          <p className="text-destructive text-sm" role="alert">
+          <p
+            className="border-destructive/20 bg-destructive/8 text-destructive rounded-lg border px-3 py-2 text-sm"
+            role="alert"
+          >
             A single booking cannot exceed {MAX_BOOKING_DAYS} days.
           </p>
         )}
@@ -281,8 +286,13 @@ function BookingRequestForm({
               value={formatPKR(securityDeposit)}
               hint="Refunded on return"
             />
+            {/*
+              "Once approved", not "at pickup". The renter pays SamaanShare after the owner
+              approves, and nothing changes hands at the door - the old label described the
+              offline flow this replaced, and contradicted the sentence under the button.
+            */}
             <Row
-              label="Total due at pickup"
+              label="Total to pay once approved"
               value={formatPKR(quote.total + securityDeposit)}
               emphasis
             />
@@ -292,6 +302,7 @@ function BookingRequestForm({
         {isAuthenticated ? (
           <Button
             type="button"
+            size="lg"
             onClick={handleSubmit}
             disabled={isPending || !quote}
           >
@@ -309,6 +320,7 @@ function BookingRequestForm({
           </Button>
         ) : (
           <Button
+            size="lg"
             render={
               <Link
                 href={`${LOGIN_ROUTE}?${CALLBACK_URL_PARAM}=${encodeURIComponent(`/listings/${listingId}`)}`}
@@ -319,9 +331,10 @@ function BookingRequestForm({
           </Button>
         )}
 
-        <p className="text-muted-foreground text-xs">
-          Requesting holds these dates while the owner decides. Payment is
-          arranged directly with them at pickup.
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          Requesting holds these dates while the owner decides. Once they
+          approve, you pay SamaanShare by card or bank transfer - the owner is
+          paid after the item comes back.
         </p>
       </div>
     </Card>
@@ -338,11 +351,21 @@ interface RowProps {
 function Row({ label, value, hint, emphasis = false }: RowProps) {
   return (
     <div className="flex items-start justify-between gap-3 py-2">
-      <dt className="text-muted-foreground">
+      <dt
+        className={
+          emphasis ? "text-foreground font-medium" : "text-muted-foreground"
+        }
+      >
         {label}
         {hint && <span className="block text-xs">{hint}</span>}
       </dt>
-      <dd className={emphasis ? "font-heading font-semibold" : "font-medium"}>
+      <dd
+        className={
+          emphasis
+            ? "font-heading text-base font-bold tabular-nums"
+            : "font-medium tabular-nums"
+        }
+      >
         {value}
       </dd>
     </div>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { SettlementCard } from "@/components/admin/settlement-card";
+import { QueueTabs } from "@/components/admin/queue-tabs";
 import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -113,21 +114,11 @@ async function SettlementQueue({ rawPage, rawView }: SettlementQueueProps) {
         Links rather than a client-side filter, matching the other queues: each view stays
         shareable, which for a queue means work can be handed to a colleague.
       */}
-      <nav aria-label="Settlement view" className="flex flex-wrap gap-2">
-        {VIEW_TABS.map((tab) => (
-          <Button
-            key={tab.view}
-            size="sm"
-            variant={tab.view === active.view ? "default" : "outline"}
-            render={<Link href={tab.href} />}
-            {...(tab.view === active.view
-              ? { "aria-current": "page" as const }
-              : {})}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </nav>
+      <QueueTabs
+        label="Settlement view"
+        tabs={VIEW_TABS.map((tab) => ({ ...tab, key: tab.view }))}
+        activeKey={active.view}
+      />
 
       {items.length > 0 && (
         <ul className="flex flex-col gap-4">
@@ -148,8 +139,23 @@ async function SettlementQueue({ rawPage, rawView }: SettlementQueueProps) {
           description={
             view === "to-settle"
               ? "A rental appears here once the item is back and its payment has been verified."
-              : "Try another view."
+              : view === "to-send"
+                ? "No settlement has money still to send."
+                : "No settlement has been fully paid out yet."
           }
+          {...(view !== "to-settle"
+            ? {
+                action: (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    render={<Link href="/admin/settlements" />}
+                  >
+                    Rentals to settle
+                  </Button>
+                ),
+              }
+            : {})}
         />
       )}
 

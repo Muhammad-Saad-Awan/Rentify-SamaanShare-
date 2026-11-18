@@ -60,6 +60,13 @@ export default async function SavedListingsPage({
             ? "Items you save while browsing will collect here."
             : `${total === 1 ? "1 item" : `${total} items`} saved for later.`
         }
+        actions={
+          total > 0 && (
+            <Button variant="outline" render={<Link href="/listings" />}>
+              Browse more listings
+            </Button>
+          )
+        }
       />
 
       {/*
@@ -82,7 +89,7 @@ export default async function SavedListingsPage({
             title="Nothing saved yet"
             description="Tap the heart on any listing while browsing and it will appear here, ready for when you need it."
             action={
-              <Button size="sm" render={<Link href="/listings" />}>
+              <Button render={<Link href="/listings" />}>
                 Browse listings
               </Button>
             }
@@ -94,11 +101,7 @@ export default async function SavedListingsPage({
             title="No saved listings on this page"
             description={`There ${totalPages === 1 ? "is only 1 page" : `are only ${totalPages} pages`} of saved listings.`}
             action={
-              <Button
-                variant="outline"
-                size="sm"
-                render={<Link href="/saved" />}
-              >
+              <Button variant="outline" render={<Link href="/saved" />}>
                 Back to first page
               </Button>
             }

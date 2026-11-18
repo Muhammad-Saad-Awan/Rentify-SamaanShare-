@@ -1,6 +1,5 @@
 import {
   ChevronDownIcon,
-  CircleDotIcon,
   ImageIcon,
   LockIcon,
   ShieldCheckIcon,
@@ -8,31 +7,30 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
-import { BookingStatus } from "@/generated/prisma/enums";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { bookingBadge } from "@/lib/bookings/status-badge";
 import { BOOKING_STATUS_LABELS } from "@/lib/bookings/timeline";
-import { cn } from "@/lib/utils/cn";
 import { formatPKR, formatPKRPerDay } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 
+import type { BookingStatus } from "@/generated/prisma/enums";
 import type { ConversationDetail } from "@/lib/queries/chat";
 
-/** Monochrome by design: a filled mark means live, a ruled one waiting, a wash finished. */
-const LIVE_TONE = "bg-foreground text-background";
-const WAITING_TONE =
-  "border border-foreground/25 bg-background text-foreground";
-const QUIET_TONE = "bg-muted text-muted-foreground";
-
-function toneFor(status: BookingStatus): string {
-  switch (status) {
-    case BookingStatus.ACTIVE:
-    case BookingStatus.APPROVED:
-    case BookingStatus.PAYMENT_PENDING:
-      return LIVE_TONE;
-    case BookingStatus.PENDING:
-      return WAITING_TONE;
-    default:
-      return QUIET_TONE;
-  }
+/**
+ * A booking's state in the shared `StatusBadge` language - filled for live, ring for waiting, dash
+ * for closed, cross for went wrong - so a rental reads the same here as on the bookings screens.
+ *
+ * Only the VARIANT comes from `bookingBadge`. The thread does not load payment rows, and that
+ * mapper's labels read the payment to tell "paid" from "awaiting payment"; without it they would
+ * guess. The timeline labels below are status-only by design, which is what this view knows.
+ */
+function BookingStatusBadge({ status }: { status: BookingStatus }) {
+  return (
+    <StatusBadge
+      label={BOOKING_STATUS_LABELS[status]}
+      variant={bookingBadge(status, null).variant}
+    />
+  );
 }
 
 /**
@@ -51,19 +49,11 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
     detail.role === "renter" ? "/dashboard/bookings" : "/dashboard/requests";
 
   return (
-    <details className="group bg-background border-b">
-      <summary className="hover:bg-muted/40 focus-visible:ring-ring flex cursor-pointer list-none items-center gap-3 px-4 py-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+    <details className="group bg-card border-b">
+      <summary className="hover:bg-muted/50 focus-visible:ring-ring flex min-h-11 cursor-pointer list-none items-center gap-3 px-4 py-2 text-xs transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
         {latest ? (
           <>
-            <span
-              className={cn(
-                "flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-medium",
-                toneFor(latest.status)
-              )}
-            >
-              <CircleDotIcon className="size-3" aria-hidden="true" />
-              {BOOKING_STATUS_LABELS[latest.status]}
-            </span>
+            <BookingStatusBadge status={latest.status} />
             <span className="text-muted-foreground min-w-0 truncate">
               {formatDate(latest.startDate)} to {formatDate(latest.endDate)} ·{" "}
               <span className="text-foreground font-medium">
@@ -81,7 +71,7 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
             , {formatPKR(detail.listing.securityDeposit)} deposit
           </span>
         )}
-        <span className="text-muted-foreground ml-auto flex shrink-0 items-center gap-1">
+        <span className="text-muted-foreground group-hover:text-foreground ml-auto flex shrink-0 items-center gap-1 font-medium">
           Details
           <ChevronDownIcon
             className="size-4 transition-transform group-open:rotate-180"
@@ -95,7 +85,7 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
           {/* The listing, for the phone layout where the header has no room for it. */}
           <Link
             href={`/listings/${detail.listing.id}`}
-            className="hover:bg-muted flex items-center gap-3 rounded-xl border p-2 sm:hidden"
+            className="hover:bg-muted/60 focus-visible:ring-ring flex items-center gap-3 rounded-xl border p-2 transition-colors outline-none focus-visible:ring-2 sm:hidden"
           >
             <span className="bg-muted relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg">
               {detail.listing.imageUrl ? (
@@ -117,7 +107,7 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
               <span className="truncate font-medium">
                 {detail.listing.title}
               </span>
-              <span className="text-muted-foreground text-xs">
+              <span className="font-heading text-xs font-semibold">
                 {formatPKRPerDay(detail.listing.pricePerDay)}
               </span>
             </span>
@@ -133,7 +123,7 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
               {detail.bookings.map((booking) => (
                 <li
                   key={booking.id}
-                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-xl border px-3 py-2 text-sm"
+                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 rounded-lg border px-3 py-2.5 text-sm"
                 >
                   <span className="flex flex-col">
                     <span className="font-medium">
@@ -155,14 +145,7 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
                         Terms final
                       </span>
                     )}
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-xs font-medium",
-                        toneFor(booking.status)
-                      )}
-                    >
-                      {BOOKING_STATUS_LABELS[booking.status]}
-                    </span>
+                    <BookingStatusBadge status={booking.status} />
                   </span>
                 </li>
               ))}
@@ -172,7 +155,7 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
           {detail.bookings.length > 0 && (
             <Link
               href={bookingsHref}
-              className="text-primary self-start text-xs font-medium underline-offset-4 hover:underline"
+              className="text-primary focus-visible:ring-ring self-start rounded-sm text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2"
             >
               {detail.role === "renter"
                 ? "Go to my bookings"
@@ -181,7 +164,7 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
           )}
         </div>
 
-        <aside className="bg-muted/50 flex flex-col gap-2 rounded-xl p-3 text-xs leading-relaxed">
+        <aside className="bg-muted/60 flex flex-col gap-2 rounded-lg p-3 text-xs leading-relaxed">
           <p className="flex items-center gap-1.5 font-medium">
             <ShieldCheckIcon className="size-4" aria-hidden="true" />
             Rent safely

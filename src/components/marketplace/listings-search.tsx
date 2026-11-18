@@ -60,6 +60,9 @@ function ListingsSearch({
         />
 
         <Input
+          // Explicit, like the header search's: a generated Base UI id can differ between
+          // server and client renders and trip a hydration mismatch.
+          id={`listings-search-${size}`}
           type="search"
           name={FILTER_PARAM.q}
           defaultValue={filters.q ?? ""}

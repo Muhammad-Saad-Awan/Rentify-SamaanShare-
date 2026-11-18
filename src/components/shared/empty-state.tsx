@@ -34,10 +34,12 @@ function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <Card className={cn("bg-card border-dashed", className)}>
+    <Card className={cn("bg-card", className)}>
       <div className="flex flex-col items-center gap-4 px-6 py-14 text-center sm:py-16">
+        {/* A soft ring around the tile gives the empty card one quiet focal point without
+            reaching for colour - emerald is reserved for states that went well. */}
         <span
-          className="bg-background text-foreground flex size-12 items-center justify-center rounded-xl border"
+          className="bg-muted text-foreground ring-muted/60 flex size-12 items-center justify-center rounded-xl border ring-4"
           aria-hidden="true"
         >
           <Icon className="size-5" strokeWidth={1.75} />

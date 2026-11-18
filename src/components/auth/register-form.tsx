@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2Icon } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -8,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { registerUser } from "@/actions/auth";
+import { FormAlert } from "@/components/ui/form-alert";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -17,6 +19,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { PASSWORD_MIN_LENGTH, registerSchema } from "@/lib/validations/auth";
 
 import type { RegisterInput } from "@/lib/validations/auth";
@@ -74,14 +77,7 @@ function RegisterForm({ callbackUrl }: RegisterFormProps) {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <FieldGroup>
-        {formError && (
-          <div
-            role="alert"
-            className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
-          >
-            {formError}
-          </div>
-        )}
+        {formError && <FormAlert tone="error">{formError}</FormAlert>}
 
         <Field data-invalid={Boolean(errors.name)}>
           <FieldLabel htmlFor="name">Full name</FieldLabel>
@@ -112,9 +108,8 @@ function RegisterForm({ callbackUrl }: RegisterFormProps) {
 
         <Field data-invalid={Boolean(errors.password)}>
           <FieldLabel htmlFor="password">Password</FieldLabel>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
             aria-invalid={Boolean(errors.password)}
             disabled={isSubmitting}
@@ -132,9 +127,8 @@ function RegisterForm({ callbackUrl }: RegisterFormProps) {
 
         <Field data-invalid={Boolean(errors.confirmPassword)}>
           <FieldLabel htmlFor="confirmPassword">Confirm password</FieldLabel>
-          <Input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             autoComplete="new-password"
             aria-invalid={Boolean(errors.confirmPassword)}
             disabled={isSubmitting}
@@ -143,7 +137,13 @@ function RegisterForm({ callbackUrl }: RegisterFormProps) {
           <FieldError errors={[errors.confirmPassword]} />
         </Field>
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          size="lg"
+          className="mt-1 w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting && <Loader2Icon className="animate-spin" />}
           {isSubmitting ? "Creating account…" : "Create account"}
         </Button>
       </FieldGroup>

@@ -1,10 +1,11 @@
 "use client";
 
-import { CheckCircle2Icon, Loader2Icon, MailWarningIcon } from "lucide-react";
+import { Loader2Icon, MailIcon, MailWarningIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { sendEmailVerification } from "@/actions/email-verification";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -19,6 +20,8 @@ interface EmailVerificationNoticeProps {
    * button, because offering a resend that cannot be sent is worse than not offering one.
    */
   canSend: boolean;
+  /** The address in question, when the caller has it - shown so the member knows which inbox. */
+  email?: string;
 }
 
 /**
@@ -33,23 +36,42 @@ interface EmailVerificationNoticeProps {
  * `lib/auth/email-gate.ts`), but browsing, messaging and managing existing bookings do not, so the
  * prompt sits where it is relevant rather than blocking the whole app. The copy says what is gated
  * because a requirement discovered only at the moment of refusal reads as a judgement.
+ *
+ * Unconfirmed is drawn on the warning-soft surface - it needs the member's action, and nothing has
+ * failed. Confirmed is a quiet row with the emerald status badge, the palette's one colour for
+ * "this is settled and trusted".
  */
 function EmailVerificationNotice({
   isVerified,
   canSend,
+  email,
 }: EmailVerificationNoticeProps) {
   const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
 
   if (isVerified) {
     return (
-      <p className="text-muted-foreground flex items-center gap-2 text-sm">
-        <CheckCircle2Icon
-          className="text-foreground size-4 shrink-0"
-          aria-hidden="true"
-        />
-        Your email address is confirmed.
-      </p>
+      <Card size="sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-(--card-spacing)">
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg border"
+              aria-hidden="true"
+            >
+              <MailIcon className="size-4" />
+            </span>
+            <div className="flex min-w-0 flex-col">
+              <span className="text-muted-foreground text-xs">
+                Email address
+              </span>
+              <span className="truncate text-sm font-medium">
+                {email ?? "Your email address is confirmed."}
+              </span>
+            </div>
+          </div>
+          <StatusBadge variant="default" label="Confirmed" />
+        </div>
+      </Card>
     );
   }
 
@@ -71,25 +93,46 @@ function EmailVerificationNotice({
   }
 
   return (
-    <Card>
-      <div className="flex flex-col gap-2.5 px-(--card-spacing)">
-        <p className="flex items-center gap-2 text-sm font-medium">
-          <MailWarningIcon className="size-4 shrink-0" aria-hidden="true" />
-          Your email address is not confirmed
-        </p>
+    <section
+      aria-labelledby="email-verification-title"
+      className="border-warning/40 bg-warning-soft flex flex-col gap-4 rounded-xl border p-5 sm:flex-row sm:items-start"
+    >
+      <span
+        className="bg-warning text-warning-foreground flex size-9 shrink-0 items-center justify-center rounded-lg"
+        aria-hidden="true"
+      >
+        <MailWarningIcon className="size-4" />
+      </span>
 
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          You need a confirmed address to rent items or list your own. It also
-          tells other members we can reach you, and counts towards your trust
-          score. It is not the same as identity verification, which SamaanShare
-          grants separately.
-        </p>
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <h2
+            id="email-verification-title"
+            className="font-heading text-base font-semibold tracking-tight"
+          >
+            Confirm your email address
+          </h2>
+          <p className="text-warning-soft-foreground max-w-[65ch] text-sm leading-relaxed">
+            You need a confirmed address to rent items or list your own. It also
+            tells other members we can reach you, and counts towards your trust
+            score. It is not the same as identity verification, which
+            SamaanShare grants separately.
+          </p>
+          {email && (
+            <p className="text-sm break-all">
+              <span className="text-warning-soft-foreground">
+                The link goes to{" "}
+              </span>
+              <span className="font-medium">{email}</span>
+            </p>
+          )}
+        </div>
 
         {canSend ? (
           <div>
             <Button
-              size="sm"
               variant="outline"
+              className="bg-card"
               onClick={resend}
               disabled={pending}
               aria-busy={pending}
@@ -100,13 +143,13 @@ function EmailVerificationNotice({
           </div>
         ) : (
           // Honest about the deployment rather than showing a button that cannot work.
-          <p className="text-muted-foreground text-xs">
+          <p className="text-warning-soft-foreground text-xs">
             Email is not configured on this deployment, so a confirmation link
             cannot be sent yet.
           </p>
         )}
       </div>
-    </Card>
+    </section>
   );
 }
 

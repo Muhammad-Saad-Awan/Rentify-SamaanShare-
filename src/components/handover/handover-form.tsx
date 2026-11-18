@@ -106,21 +106,26 @@ function HandoverForm({
       tabIndex={-1}
       role="group"
       aria-labelledby={promptId}
-      className="bg-muted/50 flex flex-col gap-3 rounded-lg px-3 py-3"
+      className="bg-muted/50 flex flex-col gap-4 rounded-lg border p-3 outline-none sm:p-4"
     >
-      <p id={promptId} className="text-xs font-medium">
+      <p id={promptId} className="text-sm font-medium">
         {HANDOVER_PROMPTS[type]}
       </p>
 
+      {/*
+        Each option is a bordered tile, so the whole row is the target - a 14px radio is a hard
+        thing to hit with a thumb in a doorway - and the chosen one is marked by its edge and fill
+        as well as by the radio itself.
+      */}
       <div
         role="radiogroup"
         aria-label="Item condition"
-        className="flex flex-col gap-1.5"
+        className="flex flex-col gap-2"
       >
         {Object.values(HandoverCondition).map((value) => (
           <label
             key={value}
-            className="flex cursor-pointer items-start gap-2 text-sm"
+            className="bg-card has-checked:border-primary has-focus-visible:ring-ring flex cursor-pointer items-start gap-2.5 rounded-md border px-3 py-2.5 text-sm transition-colors has-focus-visible:ring-2 has-disabled:cursor-not-allowed has-disabled:opacity-60"
           >
             <input
               type="radio"
@@ -129,7 +134,7 @@ function HandoverForm({
               checked={condition === value}
               onChange={() => setCondition(value)}
               disabled={isPending}
-              className="accent-primary mt-1 size-3.5 shrink-0"
+              className="accent-primary mt-0.5 size-4 shrink-0"
             />
             <span>
               <span className="font-medium">
@@ -150,7 +155,7 @@ function HandoverForm({
         which disappears the moment they type.
       */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor={notesId} className="text-xs font-medium">
+        <label htmlFor={notesId} className="text-sm font-medium">
           Notes (optional)
         </label>
         <Textarea
@@ -165,7 +170,7 @@ function HandoverForm({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium">
+        <span className="text-sm font-medium">
           Photos {wantsPhotos ? "(strongly recommended)" : "(optional)"}
         </span>
         {/*
@@ -198,7 +203,7 @@ function HandoverForm({
         other party is asked to confirm it.
       </p>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-2 *:w-full sm:flex-row sm:flex-wrap sm:items-center sm:*:w-auto">
         {/*
           `aria-disabled` with a reason attached, rather than `disabled` on its own. An unusable
           button that does not say why is heard as "unavailable" and nothing else, leaving the

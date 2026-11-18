@@ -75,6 +75,10 @@ function HeaderSearch({ className }: HeaderSearchProps) {
         />
 
         <Input
+          // An explicit id: left to Base UI, the generated one differed between the server
+          // render and hydration (this subtree sits under a Suspense boundary for
+          // `useSearchParams`), and React reported a hydration mismatch on every page.
+          id="site-header-search"
           type="search"
           name={FILTER_PARAM.q}
           // Uncontrolled, so typing needs no re-render. The key remounts the

@@ -1,6 +1,7 @@
 import {
   BadgeCheckIcon,
   CalendarCheckIcon,
+  Clock3Icon,
   ShieldCheckIcon,
   SproutIcon,
 } from "lucide-react";
@@ -43,15 +44,22 @@ function TrustPanel({
 
   return (
     <Card>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
+      <div className="flex flex-col gap-4 px-(--card-spacing)">
+        <h2 className="font-heading text-base font-semibold tracking-tight">
+          Trust record
+        </h2>
+
         {trust.band ? (
-          <div className="flex items-start gap-2.5">
-            <ShieldCheckIcon
-              className="text-primary mt-0.5 size-5 shrink-0"
+          <div className="flex items-start gap-3">
+            {/* Emerald: an earned trust band is good news, and the only commendation shown. */}
+            <span
+              className="bg-success-soft text-success flex size-9 shrink-0 items-center justify-center rounded-lg"
               aria-hidden="true"
-            />
+            >
+              <ShieldCheckIcon className="size-[1.125rem]" strokeWidth={1.75} />
+            </span>
             <div className="flex flex-col gap-0.5">
-              <span className="font-heading text-sm font-medium">
+              <span className="font-heading text-sm font-semibold">
                 {TRUST_BAND_LABELS[trust.band]}
               </span>
               <span className="text-muted-foreground text-xs leading-relaxed">
@@ -60,13 +68,15 @@ function TrustPanel({
             </div>
           </div>
         ) : isNew ? (
-          <div className="flex items-start gap-2.5">
-            <SproutIcon
-              className="text-muted-foreground mt-0.5 size-5 shrink-0"
+          <div className="flex items-start gap-3">
+            <span
+              className="bg-muted text-foreground flex size-9 shrink-0 items-center justify-center rounded-lg border"
               aria-hidden="true"
-            />
+            >
+              <SproutIcon className="size-[1.125rem]" strokeWidth={1.75} />
+            </span>
             <div className="flex flex-col gap-0.5">
-              <span className="font-heading text-sm font-medium">
+              <span className="font-heading text-sm font-semibold">
                 New to SamaanShare
               </span>
               <span className="text-muted-foreground text-xs leading-relaxed">
@@ -76,12 +86,9 @@ function TrustPanel({
           </div>
         ) : null}
 
-        <ul className="text-muted-foreground flex flex-col gap-1.5 text-xs">
+        <ul className="text-muted-foreground flex flex-col gap-2 text-sm">
           <li className="flex items-center gap-2">
-            <CalendarCheckIcon
-              className="size-3.5 shrink-0"
-              aria-hidden="true"
-            />
+            <CalendarCheckIcon className="size-4 shrink-0" aria-hidden="true" />
             {completedRentals === 0
               ? "No completed rentals yet"
               : `${completedRentals} completed rental${completedRentals === 1 ? "" : "s"}`}
@@ -95,9 +102,7 @@ function TrustPanel({
           <li className="flex items-center gap-2">
             <BadgeCheckIcon
               className={
-                isVerified
-                  ? "text-primary size-3.5 shrink-0"
-                  : "size-3.5 shrink-0"
+                isVerified ? "text-success size-4 shrink-0" : "size-4 shrink-0"
               }
               aria-hidden="true"
             />
@@ -105,7 +110,7 @@ function TrustPanel({
           </li>
 
           <li className="flex items-center gap-2">
-            <span className="size-3.5 shrink-0" aria-hidden="true" />
+            <Clock3Icon className="size-4 shrink-0" aria-hidden="true" />
             {yearsOn >= 1
               ? `On SamaanShare for ${yearsOn} year${yearsOn === 1 ? "" : "s"}`
               : "Joined within the last year"}
@@ -118,7 +123,7 @@ function TrustPanel({
           badge - but it still does not vouch for a person or an item, and a trust signal read
           as a guarantee would be a promise nobody can keep.
         */}
-        <p className="text-muted-foreground border-t pt-2.5 text-xs leading-relaxed">
+        <p className="text-muted-foreground border-t pt-3 text-xs leading-relaxed">
           These are signals from past rentals, not a guarantee. Meet in a public
           place and check the item at handover — we hold your deposit until the
           rental is finished, but we cannot vouch for the item itself.

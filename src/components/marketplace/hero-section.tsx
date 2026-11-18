@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { ListingsSearch } from "@/components/marketplace/listings-search";
 import { parseListingFilters } from "@/lib/marketplace/filters";
+import { cn } from "@/lib/utils/cn";
 
 import type { FeaturedCategory } from "@/lib/queries/categories";
 
@@ -28,18 +29,22 @@ const NO_FILTERS = parseListingFilters({});
 const TRUST_POINTS = [
   {
     icon: ShieldCheckIcon,
+    // The two protections get the emerald tile; the city line is information, not a promise.
+    isProtection: true,
     title: "Your money is held, not handed over",
     description:
       "You pay SamaanShare. The owner is paid once the item is back, and your deposit is returned.",
   },
   {
     icon: HandshakeIcon,
+    isProtection: true,
     title: "Condition recorded at handover",
     description:
       "The item's condition is recorded at pickup and at return, so a dispute starts from evidence.",
   },
   {
     icon: MapPinIcon,
+    isProtection: false,
     title: "Karachi, Lahore and Islamabad",
     description: "Filter by city and collect from an owner near you.",
   },
@@ -104,7 +109,7 @@ function HeroSection({ listingCount, categories = [] }: HeroSectionProps) {
                   <Link
                     key={category.slug}
                     href={`/categories/${category.slug}`}
-                    className="hover:border-foreground focus-visible:ring-ring rounded-full border px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-2"
+                    className="bg-card hover:border-foreground/40 focus-visible:ring-ring flex h-9 items-center rounded-full border px-3.5 text-sm transition-colors outline-none focus-visible:ring-2"
                   >
                     {category.name}
                   </Link>
@@ -131,11 +136,17 @@ function HeroSection({ listingCount, categories = [] }: HeroSectionProps) {
               key={point.title}
               className="flex gap-4 border-b py-5 last:border-b-0 lg:pl-8"
             >
-              <point.icon
-                className="mt-0.5 size-5 shrink-0"
-                strokeWidth={1.75}
+              <span
+                className={cn(
+                  "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                  point.isProtection
+                    ? "bg-success-soft text-success"
+                    : "bg-card text-foreground border"
+                )}
                 aria-hidden="true"
-              />
+              >
+                <point.icon className="size-[1.125rem]" strokeWidth={1.75} />
+              </span>
               <div className="flex flex-col gap-1">
                 <p className="font-heading text-[0.9375rem] leading-snug font-semibold">
                   {point.title}

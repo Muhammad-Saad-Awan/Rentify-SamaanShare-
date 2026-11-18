@@ -2,11 +2,13 @@
 
 import {
   ArrowDownIcon,
+  CircleAlertIcon,
   HandshakeIcon,
   Loader2Icon,
   LockIcon,
+  MessageCircleIcon,
+  RotateCwIcon,
   SendHorizontalIcon,
-  SparklesIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -570,157 +572,183 @@ function ChatThread({
   const remaining = MESSAGE_BODY_MAX - draft.length;
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
-      <div
-        ref={logRef}
-        onScroll={onScroll}
-        role="log"
-        aria-label={`Conversation with ${counterparty.name}`}
-        aria-live="polite"
-        aria-relevant="additions"
-        // Focusable so keyboard users can scroll the history.
-        tabIndex={0}
-        className="bg-muted/20 focus-visible:ring-ring min-h-0 flex-1 overflow-y-auto px-3 pt-4 pb-6 outline-none focus-visible:ring-2 focus-visible:ring-inset sm:px-5"
-      >
-        {hasOlder && ordered.length < MAX_LOADED_MESSAGES && (
-          <div className="mb-2 flex justify-center">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-full"
-              onClick={loadOlder}
-              aria-busy={isLoadingOlder}
-            >
-              {isLoadingOlder && <Loader2Icon className="animate-spin" />}
-              Load earlier messages
-            </Button>
-          </div>
-        )}
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* The log and the jump button share a frame, so the button sits just above the composer
+          whatever height the composer has grown to. */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div
+          ref={logRef}
+          onScroll={onScroll}
+          role="log"
+          aria-label={`Conversation with ${counterparty.name}`}
+          aria-live="polite"
+          aria-relevant="additions"
+          // Focusable so keyboard users can scroll the history.
+          tabIndex={0}
+          className="bg-background focus-visible:ring-ring min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pt-4 pb-6 outline-none focus-visible:ring-2 focus-visible:ring-inset sm:px-5"
+        >
+          {hasOlder && ordered.length < MAX_LOADED_MESSAGES && (
+            <div className="mb-2 flex justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="bg-card rounded-full"
+                onClick={loadOlder}
+                aria-busy={isLoadingOlder}
+              >
+                {isLoadingOlder && <Loader2Icon className="animate-spin" />}
+                Load earlier messages
+              </Button>
+            </div>
+          )}
 
-        {ordered.length === 0 && visiblePending.length === 0 && (
-          <div className="mx-auto flex max-w-sm flex-col items-center gap-3 py-10 text-center">
-            <span className="bg-background flex size-12 items-center justify-center rounded-full border shadow-xs">
-              <SparklesIcon
-                className="text-muted-foreground size-5"
+          {ordered.length === 0 && visiblePending.length === 0 && (
+            <div className="mx-auto flex max-w-sm flex-col items-center gap-3 py-12 text-center">
+              <span
+                className="bg-card text-foreground ring-muted/60 flex size-12 items-center justify-center rounded-xl border ring-4"
                 aria-hidden="true"
-              />
-            </span>
-            <p className="text-sm font-medium">Start the conversation</p>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              Ask about the item&apos;s condition, what&apos;s included, or
-              where to pick it up. When you agree on a price, send it as an
-              offer.
-            </p>
-          </div>
-        )}
+              >
+                <MessageCircleIcon className="size-5" strokeWidth={1.75} />
+              </span>
+              <p className="font-heading text-base font-semibold tracking-tight">
+                Start the conversation
+              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Ask about the item&apos;s condition, what&apos;s included, or
+                where to pick it up. When you agree on a price, send it as an
+                offer.
+              </p>
+            </div>
+          )}
 
-        {ordered.map((message, index) => {
-          const previous = ordered[index - 1];
-          const next = ordered[index + 1];
-          const newDay =
-            !previous ||
-            karachiDay(previous.createdAt) !== karachiDay(message.createdAt);
+          {ordered.map((message, index) => {
+            const previous = ordered[index - 1];
+            const next = ordered[index + 1];
+            const newDay =
+              !previous ||
+              karachiDay(previous.createdAt) !== karachiDay(message.createdAt);
 
-          return (
-            <Fragment key={message.id}>
-              {newDay && (
-                <div
-                  className="my-4 flex items-center gap-3"
-                  role="presentation"
-                >
-                  <span className="bg-border h-px flex-1" />
-                  <span className="text-muted-foreground bg-background rounded-full border px-3 py-0.5 text-[11px] font-medium">
-                    {formatDayLabel(message.createdAt)}
-                  </span>
-                  <span className="bg-border h-px flex-1" />
-                </div>
-              )}
-              {message.id === firstUnreadId && (
-                <div
-                  data-unread-divider
-                  className="my-3 flex items-center gap-3"
-                >
-                  <span className="bg-foreground h-px flex-1" />
-                  <span className="bg-foreground text-background rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                    New messages
-                  </span>
-                  <span className="bg-foreground h-px flex-1" />
-                </div>
-              )}
-              <MessageItem
-                message={message}
-                viewerId={viewerId}
-                counterparty={counterparty}
-                offer={
-                  message.offerId
-                    ? (offersById.get(message.offerId) ?? null)
-                    : null
-                }
-                offerContext={offerContext}
-                isFirstInGroup={newDay || !sameRun(previous, message)}
-                isLastInGroup={!sameRun(message, next)}
-                isSeen={isSeen(message)}
-              />
-            </Fragment>
-          );
-        })}
+            return (
+              <Fragment key={message.id}>
+                {newDay && (
+                  <div
+                    className="my-4 flex items-center gap-3"
+                    role="presentation"
+                  >
+                    <span className="bg-border h-px flex-1" />
+                    <span className="text-muted-foreground bg-card rounded-full border px-3 py-0.5 text-xs font-medium">
+                      {formatDayLabel(message.createdAt)}
+                    </span>
+                    <span className="bg-border h-px flex-1" />
+                  </div>
+                )}
+                {message.id === firstUnreadId && (
+                  <div
+                    data-unread-divider
+                    className="my-3 flex items-center gap-3"
+                  >
+                    <span className="bg-foreground h-px flex-1" />
+                    <span className="bg-foreground text-background rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                      New messages
+                    </span>
+                    <span className="bg-foreground h-px flex-1" />
+                  </div>
+                )}
+                <MessageItem
+                  message={message}
+                  viewerId={viewerId}
+                  counterparty={counterparty}
+                  offer={
+                    message.offerId
+                      ? (offersById.get(message.offerId) ?? null)
+                      : null
+                  }
+                  offerContext={offerContext}
+                  isFirstInGroup={newDay || !sameRun(previous, message)}
+                  isLastInGroup={!sameRun(message, next)}
+                  isSeen={isSeen(message)}
+                />
+              </Fragment>
+            );
+          })}
 
-        {visiblePending.map((item) => (
-          <div
-            key={item.clientId}
-            className="mt-3 flex flex-col items-end gap-1"
-          >
-            <p
-              className={cn(
-                "bg-primary text-primary-foreground max-w-[85%] rounded-2xl rounded-br-md px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap sm:max-w-[70%]",
-                item.status === "sending" ? "opacity-70" : "opacity-50"
-              )}
+          {/* The viewer's own unsent messages. The same bubble as a delivered one, so nothing jumps
+            when the server's copy replaces it: a lighter navy while sending (white on it is still
+            7.8:1), and a full-strength bubble with an alert mark and a retry once it has failed -
+            fading a failed message would make the one thing the reader must act on the hardest
+            to read. */}
+          {visiblePending.map((item) => (
+            <div
+              key={item.clientId}
+              className="mt-3 flex flex-col items-end gap-1"
             >
-              {item.body}
-            </p>
-            {item.status === "sending" ? (
-              <span className="text-muted-foreground pr-1 text-[11px]">
-                Sending…
-              </span>
-            ) : (
-              <span className="text-destructive flex items-center gap-2 pr-1 text-xs">
-                Not sent.
-                <Button
-                  type="button"
-                  variant="link"
-                  size="xs"
-                  className="h-auto p-0"
-                  onClick={() => retry(item)}
+              <div className="flex max-w-[85%] items-end gap-1.5 sm:max-w-[70%]">
+                {item.status === "failed" && (
+                  <CircleAlertIcon
+                    className="text-destructive mb-2 size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                )}
+                <p
+                  className={cn(
+                    "text-primary-foreground min-w-0 rounded-[1.125rem] rounded-br-sm px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap",
+                    item.status === "sending" ? "bg-primary/80" : "bg-primary"
+                  )}
                 >
-                  Retry
-                </Button>
-              </span>
-            )}
-          </div>
-        ))}
+                  {item.body}
+                </p>
+              </div>
+              {item.status === "sending" ? (
+                <span className="text-muted-foreground flex items-center gap-1 pr-1 text-xs">
+                  <Loader2Icon
+                    className="size-3 animate-spin"
+                    aria-hidden="true"
+                  />
+                  Sending…
+                </span>
+              ) : (
+                <span className="text-destructive flex items-center gap-2 pr-1 text-xs font-medium">
+                  Not sent.
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    className="bg-card text-foreground"
+                    onClick={() => retry(item)}
+                  >
+                    <RotateCwIcon aria-hidden="true" />
+                    Retry
+                  </Button>
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {!atBottom && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="bg-card absolute right-4 bottom-4 z-10 rounded-full shadow-md"
+            onClick={() => {
+              stickToBottom.current = true;
+              setMissed(0);
+              scrollToBottom("smooth");
+            }}
+          >
+            <ArrowDownIcon />
+            {missed > 0
+              ? `${missed} new message${missed === 1 ? "" : "s"}`
+              : "Latest"}
+          </Button>
+        )}
       </div>
 
-      {!atBottom && (
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          className="absolute right-4 bottom-36 z-10 rounded-full shadow-md"
-          onClick={() => {
-            stickToBottom.current = true;
-            setMissed(0);
-            scrollToBottom("smooth");
-          }}
-        >
-          <ArrowDownIcon />
-          {missed > 0
-            ? `${missed} new message${missed === 1 ? "" : "s"}`
-            : "Latest"}
-        </Button>
-      )}
-
-      <div className="bg-background border-t px-3 pt-2.5 pb-3 sm:px-4">
+      {/* The composer. Outside the scrolling log, so it stays put however long the thread is, and
+          padded clear of the home indicator on phones that have one. */}
+      <div className="bg-card border-t px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
         {canWrite && draft.length === 0 && quickReplies.length > 0 && (
           <div
             className="mb-2.5 flex gap-2 overflow-x-auto pb-0.5"
@@ -732,7 +760,7 @@ function ChatThread({
                 key={text}
                 type="button"
                 onClick={() => applyQuickReply(text)}
-                className="text-foreground hover:bg-muted focus-visible:ring-ring shrink-0 rounded-full border px-3 py-1.5 text-xs transition-colors outline-none focus-visible:ring-2"
+                className="text-foreground bg-card hover:bg-muted hover:border-foreground/20 focus-visible:ring-ring flex h-8 shrink-0 items-center rounded-full border px-3 text-xs transition-colors outline-none focus-visible:ring-2"
               >
                 {text}
               </button>
@@ -760,7 +788,9 @@ function ChatThread({
             </Button>
           )}
 
-          <div className="bg-muted/50 focus-within:ring-ring flex min-h-11 flex-1 items-end rounded-3xl border px-4 py-2.5 focus-within:ring-2">
+          {/* `border-input`, not `border`: this outline is the only edge of the field, and a control
+              boundary needs 3:1 against the surface. The focus treatment matches `Input`. */}
+          <div className="bg-card border-input hover:border-foreground/40 focus-within:border-ring focus-within:ring-ring/20 has-disabled:bg-muted has-disabled:hover:border-input flex min-h-11 flex-1 items-end rounded-3xl border px-4 py-2 transition-colors focus-within:ring-3">
             <label htmlFor={composerId} className="sr-only">
               Message {counterparty.name}
             </label>
@@ -779,7 +809,8 @@ function ChatThread({
               }
               disabled={!canWrite}
               aria-describedby={hintId}
-              className="placeholder:text-muted-foreground max-h-40 w-full resize-none bg-transparent text-sm leading-6 outline-none disabled:cursor-not-allowed"
+              // 16px below `md`, as `Input` does: smaller makes iOS zoom the page on focus.
+              className="placeholder:text-muted-foreground max-h-40 w-full resize-none bg-transparent text-base leading-6 outline-none disabled:cursor-not-allowed md:text-sm"
             />
           </div>
 
@@ -796,14 +827,22 @@ function ChatThread({
 
         <p
           id={hintId}
-          className="text-muted-foreground mt-2 flex items-center gap-1.5 text-[11px]"
+          className="text-muted-foreground mt-2 flex items-center gap-1.5 text-xs"
         >
           {canWrite ? (
             <>
-              <LockIcon className="size-3 shrink-0" aria-hidden="true" />
+              {/* Visual on wider screens only - a phone needs the room for the messages, and
+                  "Rent safely" in the details above says it too. Screen readers still hear it
+                  with the composer, through `aria-describedby`. */}
+              <LockIcon
+                className="size-3 shrink-0 max-sm:hidden"
+                aria-hidden="true"
+              />
               <span>
-                Only an accepted offer changes the price. Keep payments on
-                SamaanShare.
+                <span className="max-sm:sr-only">
+                  Only an accepted offer changes the price. Keep payments on
+                  SamaanShare.
+                </span>
                 {remaining < 200 && ` ${remaining} characters left.`}
               </span>
             </>

@@ -106,14 +106,18 @@ function SiteFooter() {
               </ul>
             </nav>
 
-            <div className="flex flex-col gap-3">
+            {/* `min-w-0` + `break-all`: an email address is one unbreakable word, and at 360px
+                it was wider than its grid column, pushing the page into a sideways scroll. */}
+            <div className="flex min-w-0 flex-col gap-3">
               <h2 className="font-heading text-sm font-semibold">Support</h2>
               <a
                 href={`mailto:${siteConfig.supportEmail}`}
                 className={`${FOOTER_LINK_CLASS} flex items-center gap-1.5`}
               >
                 <MailIcon className="size-3.5 shrink-0" aria-hidden="true" />
-                {siteConfig.supportEmail}
+                <span className="min-w-0 break-all">
+                  {siteConfig.supportEmail}
+                </span>
               </a>
               <p className="text-muted-foreground text-xs leading-relaxed">
                 Questions about a booking, a payment or a deposit.

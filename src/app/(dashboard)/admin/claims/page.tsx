@@ -2,6 +2,7 @@ import { ScaleIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { QueueTabs } from "@/components/admin/queue-tabs";
 import { ClaimCard } from "@/components/admin/claim-card";
 import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -112,21 +113,11 @@ async function ClaimQueue({ rawPage, rawStatus }: ClaimQueueProps) {
         Links rather than a client-side filter, matching the reports queue: each view stays
         shareable, which for a queue means a claim can be handed to a colleague.
       */}
-      <nav aria-label="Claim status" className="flex flex-wrap gap-2">
-        {STATUS_TABS.map((tab) => (
-          <Button
-            key={tab.status}
-            size="sm"
-            variant={tab.status === active.status ? "default" : "outline"}
-            render={<Link href={tab.href} />}
-            {...(tab.status === active.status
-              ? { "aria-current": "page" as const }
-              : {})}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </nav>
+      <QueueTabs
+        label="Claim status"
+        tabs={STATUS_TABS.map((tab) => ({ ...tab, key: tab.status }))}
+        activeKey={active.status}
+      />
 
       {items.length > 0 && (
         <ul className="flex flex-col gap-4">

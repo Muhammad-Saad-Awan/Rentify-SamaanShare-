@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2Icon, ScaleIcon } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 
 import { fileDamageClaim } from "@/actions/claims";
@@ -48,6 +48,7 @@ function FileClaimForm({
   onDone,
   onCancel,
 }: FileClaimFormProps) {
+  const reasonLabelId = useId();
   const [reason, setReason] = useState<ClaimReason | "">("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -97,40 +98,46 @@ function FileClaimForm({
   }
 
   return (
-    <div className="bg-muted/50 flex flex-col gap-3 rounded-lg px-3 py-3">
-      <p className="flex items-center gap-2 text-xs font-medium">
+    <div className="bg-muted/50 flex flex-col gap-4 rounded-lg border p-3 sm:p-4">
+      <p className="flex items-center gap-2 text-sm font-medium">
         <ScaleIcon className="size-4 shrink-0" aria-hidden="true" />
         Claim against the {formatPKR(securityDeposit)} deposit
       </p>
 
-      <div
-        role="radiogroup"
-        aria-label="What went wrong"
-        className="flex flex-col gap-1"
-      >
-        {Object.values(ClaimReason).map((value) => (
-          <label
-            key={value}
-            className="flex cursor-pointer items-center gap-2 text-sm"
-          >
-            <input
-              type="radio"
-              name={`claim-reason-${bookingId}`}
-              value={value}
-              checked={reason === value}
-              onChange={() => setReason(value)}
-              disabled={isPending}
-              className="accent-primary size-3.5 shrink-0"
-            />
-            {CLAIM_REASON_LABELS[value]}
-          </label>
-        ))}
+      <div className="flex flex-col gap-2">
+        <span id={reasonLabelId} className="text-sm font-medium">
+          What went wrong
+        </span>
+        {/* Bordered tiles, as on the handover form: the whole row is the target. */}
+        <div
+          role="radiogroup"
+          aria-labelledby={reasonLabelId}
+          className="flex flex-col gap-2"
+        >
+          {Object.values(ClaimReason).map((value) => (
+            <label
+              key={value}
+              className="bg-card has-checked:border-primary has-focus-visible:ring-ring flex cursor-pointer items-center gap-2.5 rounded-md border px-3 py-2.5 text-sm transition-colors has-focus-visible:ring-2 has-disabled:cursor-not-allowed has-disabled:opacity-60"
+            >
+              <input
+                type="radio"
+                name={`claim-reason-${bookingId}`}
+                value={value}
+                checked={reason === value}
+                onChange={() => setReason(value)}
+                disabled={isPending}
+                className="accent-primary size-4 shrink-0"
+              />
+              {CLAIM_REASON_LABELS[value]}
+            </label>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor={`claim-amount-${bookingId}`}
-          className="text-xs font-medium"
+          className="text-sm font-medium"
         >
           Amount claimed, in rupees
         </label>
@@ -144,7 +151,8 @@ function FileClaimForm({
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
           disabled={isPending}
-          className="max-w-40"
+          aria-invalid={tooMuch}
+          className="sm:max-w-48"
         />
         {tooMuch ? (
           <p className="text-destructive text-xs leading-relaxed">
@@ -159,18 +167,30 @@ function FileClaimForm({
         )}
       </div>
 
-      <Textarea
-        value={description}
-        onChange={(event) => setDescription(event.target.value)}
-        maxLength={CLAIM_DESCRIPTION_MAX}
-        rows={4}
-        placeholder="What is damaged or missing, and how you know it happened during this rental"
-        disabled={isPending}
-        aria-label="What happened"
-      />
+      {/* A visible label, named exactly as the `aria-label` it replaces. */}
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor={`claim-description-${bookingId}`}
+          className="text-sm font-medium"
+        >
+          What happened
+        </label>
+        <Textarea
+          id={`claim-description-${bookingId}`}
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          maxLength={CLAIM_DESCRIPTION_MAX}
+          rows={4}
+          placeholder="What is damaged or missing, and how you know it happened during this rental"
+          disabled={isPending}
+        />
+        <p className="text-muted-foreground text-xs">
+          At least {CLAIM_DESCRIPTION_MIN} characters.
+        </p>
+      </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium">
+        <span className="text-sm font-medium">
           Photos (optional, but they are the strongest thing you can add)
         </span>
         <ImageUploader
@@ -191,7 +211,7 @@ function FileClaimForm({
         booking is settled — and the rest goes back to the renter.
       </p>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-2 *:w-full sm:flex-row sm:flex-wrap sm:items-center sm:*:w-auto">
         <Button
           size="sm"
           onClick={submit}

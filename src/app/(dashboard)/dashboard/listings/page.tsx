@@ -55,7 +55,7 @@ export default async function MyListingsPage({
     // masks the authorization result from anything reading status codes.
     <Suspense
       key={String(rawPage ?? 1)}
-      fallback={<DashboardPageSkeleton cards={3} />}
+      fallback={<DashboardPageSkeleton cards={3} variant="row" />}
     >
       <OwnerListings rawPage={rawPage} />
     </Suspense>

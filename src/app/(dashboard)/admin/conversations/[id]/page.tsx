@@ -108,9 +108,9 @@ export default async function AdminConversationPage({
 
       <Card>
         <div className="flex flex-col gap-4 px-(--card-spacing)">
-          <p className="text-muted-foreground flex items-start gap-2 text-xs leading-relaxed">
+          <p className="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg border px-3 py-2.5 text-xs leading-relaxed">
             <ShieldCheckIcon
-              className="mt-0.5 size-4 shrink-0"
+              className="text-foreground mt-0.5 size-4 shrink-0"
               aria-hidden="true"
             />
             Private messages between two members. Reading them is recorded on

@@ -28,7 +28,11 @@ function CtaSection() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Inverted by hand: this is the one dark band, where the default black button would vanish. */}
+          {/*
+            Inverted by hand: this is the one navy band, where the default navy button would
+            vanish. Not emerald either - emerald on navy is 2.66:1 and the button loses its edge.
+            The outline's border is /50 (4.61:1); /30 fell under the 3:1 a control boundary needs.
+          */}
           <Button
             size="lg"
             className="bg-background text-foreground hover:bg-background/90 focus-visible:ring-background focus-visible:ring-offset-foreground"
@@ -39,7 +43,7 @@ function CtaSection() {
           <Button
             size="lg"
             variant="outline"
-            className="border-background/30 text-background hover:border-background hover:text-background focus-visible:ring-background focus-visible:ring-offset-foreground bg-transparent hover:bg-transparent"
+            className="border-background/50 text-background hover:border-background hover:text-background focus-visible:ring-background focus-visible:ring-offset-foreground bg-transparent hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent"
             render={<Link href="/listings" />}
           >
             Browse all listings

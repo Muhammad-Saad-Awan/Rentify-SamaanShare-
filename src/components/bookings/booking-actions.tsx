@@ -2,6 +2,7 @@
 
 import {
   CheckIcon,
+  CircleCheckIcon,
   CreditCardIcon,
   LandmarkIcon,
   Loader2Icon,
@@ -9,6 +10,7 @@ import {
   PackageCheckIcon,
   PackageOpenIcon,
   ScaleIcon,
+  TriangleAlertIcon,
   XIcon,
 } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -43,6 +45,7 @@ import {
 } from "@/generated/prisma/enums";
 import { useFocusReturn } from "@/hooks/use-focus-return";
 import { ownerPaymentNote, ownerPaymentView } from "@/lib/payments/owner-view";
+import { cn } from "@/lib/utils/cn";
 import { formatPKR } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 import {
@@ -57,6 +60,13 @@ interface BookingActionsProps {
   booking: BookingSummary;
   side: "renter" | "owner";
 }
+
+/**
+ * A row of action buttons: stacked full-width on a phone, where a thumb needs the whole width and
+ * two side-by-side buttons at 360px truncate their labels, and a wrapping row from `sm`.
+ */
+const ACTION_ROW =
+  "flex flex-col gap-2 *:w-full sm:flex-row sm:flex-wrap sm:items-center sm:*:w-auto";
 
 /** Which inline panel is open, if any. */
 type OpenPanel = "approve" | "decline" | "cancel" | "instructions" | null;
@@ -335,7 +345,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
       }
 
       return (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={ACTION_ROW}>
           <Button
             size="sm"
             ref={registerTrigger("approve")}
@@ -415,7 +425,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
 
     if (booking.status === BookingStatus.APPROVED) {
       return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {!booking.pickupInstructions && (
             <Note tone="warning">
               The renter has no way to reach you yet. Add pickup details with
@@ -436,7 +446,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
       // Money not yet acknowledged: the only thing to do is say where it stands.
       if (!isPaymentConfirmed) {
         return (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {/*
               THE OWNER NO LONGER CONFIRMS ANYTHING, and this note replaces the button that used
               to do it. Under the custodial flow the money comes to SamaanShare, so the owner is
@@ -453,8 +463,8 @@ function BookingActions({ booking, side }: BookingActionsProps) {
 
       // Paid and acknowledged: the next physical event is the handover.
       return (
-        <div className="flex flex-col gap-2">
-          <Note>{ownerNote}</Note>
+        <div className="flex flex-col gap-3">
+          <Note tone="success">{ownerNote}</Note>
 
           {/*
             The condition record is not optional, so the button opens the form rather than
@@ -478,7 +488,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
               }
             />
           ) : (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className={ACTION_ROW}>
               <Button
                 size="sm"
                 ref={registerTrigger("handover-pickup")}
@@ -504,7 +514,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
 
     if (booking.status === BookingStatus.ACTIVE) {
       return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <Note>
             Rented out until {formatDate(booking.endDate)}. Mark it returned
             once you have the item back and have checked it.
@@ -531,7 +541,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
               }
             />
           ) : (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className={ACTION_ROW}>
               <Button
                 size="sm"
                 ref={registerTrigger("handover-return")}
@@ -569,11 +579,16 @@ function BookingActions({ booking, side }: BookingActionsProps) {
        */
       if (deposit.kind === "claimed") {
         return (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
+            {/*
+              "SamaanShare returns", not "return the rest". The platform holds the deposit, so the
+              owner has nothing to hand back - telling them to was a false statement about whose
+              money it is, left over from before the flow was custodial.
+            */}
             <Note>
               Your claim is open, so the deposit clock is paused until{" "}
-              {formatDate(deposit.pauseEndsAt)}. Return the rest of the deposit
-              once it is settled.
+              {formatDate(deposit.pauseEndsAt)}. SamaanShare returns the rest of
+              the deposit to the renter once it is settled.
             </Note>
 
             <BookingReviewSection booking={booking} side="owner" />
@@ -583,11 +598,18 @@ function BookingActions({ booking, side }: BookingActionsProps) {
 
       if (deposit.kind === "due" || deposit.kind === "overdue") {
         return (
-          <div className="flex flex-col gap-2">
-            <Note tone={deposit.kind === "overdue" ? "warning" : "default"}>
+          <div className="flex flex-col gap-3">
+            {/*
+              The platform's clock, not the owner's. These lines used to read "Return X to the
+              renter" and "You still owe the renter X" - instructions to move money the owner never
+              received. SamaanShare holds the deposit and an administrator records its return, so
+              the owner is told where it stands and is not asked to act. Not amber when late for the
+              same reason: it is not theirs to fix.
+            */}
+            <Note>
               {deposit.kind === "overdue"
-                ? `You still owe the renter ${formatPKR(deposit.owed)} — ${deposit.hoursLate}h past the 48-hour window.`
-                : `Return ${formatPKR(deposit.owed)} to the renter within ${deposit.hoursRemaining}h.`}
+                ? `SamaanShare is returning ${formatPKR(deposit.owed)} of the deposit to the renter — ${deposit.hoursLate}h past the 48-hour window. Nothing is needed from you.`
+                : `SamaanShare returns ${formatPKR(deposit.owed)} of the deposit to the renter within ${deposit.hoursRemaining}h. Nothing is needed from you.`}
               {deposit.owed < booking.securityDeposit
                 ? ` The claim settled at ${formatPKR(booking.securityDeposit - deposit.owed)} of the ${formatPKR(booking.securityDeposit)} deposit.`
                 : ""}
@@ -639,8 +661,8 @@ function BookingActions({ booking, side }: BookingActionsProps) {
        * money back is not blocked from reviewing.
        */
       return (
-        <div className="flex flex-col gap-2">
-          <Note>
+        <div className="flex flex-col gap-3">
+          <Note tone={deposit.kind === "returned" ? "success" : "default"}>
             {deposit.kind === "returned"
               ? `Deposit recorded as returned on ${formatDate(deposit.returnedAt)}.`
               : "This rental is complete."}
@@ -662,12 +684,12 @@ function BookingActions({ booking, side }: BookingActionsProps) {
     }
 
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <Note>
           Waiting for the owner to respond. Requests expire after 48 hours.
         </Note>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={ACTION_ROW}>
           <Button
             variant="outline"
             size="sm"
@@ -685,8 +707,9 @@ function BookingActions({ booking, side }: BookingActionsProps) {
 
   if (booking.status === BookingStatus.APPROVED) {
     return (
-      <div className="flex flex-col gap-2">
-        <Note>
+      <div className="flex flex-col gap-3">
+        {/* The renter's move, so it reads as one - amber, with the buttons straight under it. */}
+        <Note tone="warning">
           Approved. Pay SamaanShare, and we hold the money until the rental is
           finished — the owner is paid after the item comes back.
         </Note>
@@ -708,7 +731,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
           completed is offered, which is the rule `offlinePaymentMethodSchema` already applied
           to the card values for the same reason.
         */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={ACTION_ROW}>
           <Button
             size="sm"
             variant={eligibility.renterCanPayByCard ? "outline" : "default"}
@@ -754,7 +777,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
 
   if (booking.status === BookingStatus.PAYMENT_PENDING && payment) {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <PaymentInstructions
           amount={booking.totalPrice}
           securityDeposit={booking.securityDeposit}
@@ -763,7 +786,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
         />
 
         {isPaymentConfirmed ? (
-          <Note>
+          <Note tone="success">
             We have confirmed your payment. Arrange collection using the pickup
             details above - the owner has been told they can hand it over.
           </Note>
@@ -791,7 +814,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
                     : "Card payment started. If you finished paying on Stripe, this updates within a minute. If not, continue where you left off."}
                 </Note>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className={ACTION_ROW}>
                   {eligibility.renterCanPayByCard &&
                     cardButton(
                       payment.status === PaymentStatus.FAILED
@@ -829,7 +852,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
                 />
 
                 {eligibility.renterCanPayByCard && (
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className={ACTION_ROW}>
                     {cardButton("Pay by card instead (test mode)", "outline")}
                   </div>
                 )}
@@ -866,8 +889,8 @@ function BookingActions({ booking, side }: BookingActionsProps) {
     return (
       <Note>
         You have the item. Return it to the owner by{" "}
-        {formatDate(booking.endDate)} — they will mark it returned and then
-        return your deposit.
+        {formatDate(booking.endDate)} — once they mark it returned, SamaanShare
+        returns your deposit.
       </Note>
     );
   }
@@ -885,7 +908,7 @@ function BookingActions({ booking, side }: BookingActionsProps) {
      * were four returns.
      */
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         {deposit.kind === "returned" && (
           <>
             {/*
@@ -894,21 +917,20 @@ function BookingActions({ booking, side }: BookingActionsProps) {
               platform holds the money - and it also has to stop short of asserting the money
               arrived, which is the very thing the button below asks this person to tell us.
             */}
-            <Note>
+            <Note tone="success">
               Your {formatPKR(booking.securityDeposit)} deposit was recorded as
               returned on {formatDate(deposit.returnedAt)}.
             </Note>
 
             {deposit.confirmedAt ? (
-              <Note>
+              <Note tone="success">
                 You confirmed you received it on{" "}
                 {formatDate(deposit.confirmedAt)}.
               </Note>
             ) : (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className={ACTION_ROW}>
                 <Button
                   size="sm"
-                  variant="outline"
                   onClick={() =>
                     run(
                       () => confirmDepositReturn({ bookingId: booking.id }),
@@ -1027,14 +1049,18 @@ function EditPanel({
   const Field = multiline ? Textarea : Input;
 
   return (
-    <div className="bg-muted/50 flex flex-col gap-2 rounded-lg px-3 py-2.5">
-      <label className="text-xs font-medium" htmlFor={id}>
-        {label}
-      </label>
+    <div className="bg-muted/50 flex flex-col gap-2.5 rounded-lg border p-3 sm:p-4">
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium" htmlFor={id}>
+          {label}
+        </label>
 
-      {description && (
-        <p className="text-muted-foreground text-xs">{description}</p>
-      )}
+        {description && (
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            {description}
+          </p>
+        )}
+      </div>
 
       {/*
         The panel stands where the trigger was, so focus has to be moved into it or it is left on
@@ -1053,7 +1079,7 @@ function EditPanel({
         {...(multiline ? { rows: 3 } : {})}
       />
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className={ACTION_ROW}>
         <Button
           variant={confirmVariant}
           size="sm"
@@ -1091,21 +1117,53 @@ function EditPanel({
 
 interface NoteProps {
   children: React.ReactNode;
-  tone?: "default" | "warning";
+  /**
+   * - `default`: where things stand, nothing for this person to do.
+   * - `warning`: something needs this person's attention - pay, add details, a claim against
+   *   them, money that is late. Amber wash, never red: nothing has failed.
+   * - `success`: settled in their favour - payment confirmed, deposit back. The one place emerald
+   *   appears in the action area, so it keeps meaning "this went well".
+   */
+  tone?: "default" | "warning" | "success";
 }
 
-/** A short explanatory line under a booking, in place of an action. */
+/**
+ * A short explanatory line under a booking, in place of or above an action.
+ *
+ * WARNING USED TO BE RED TEXT. `text-destructive` said "this failed" about things that had not -
+ * an owner who had not yet added pickup details, a renter whose deposit was a few hours late - and
+ * on a card that also uses red for declined and failed states, it made a to-do look like an error.
+ * Each tone now carries an icon as well as a colour, so none of them rests on colour alone.
+ */
 function Note({ children, tone = "default" }: NoteProps) {
+  if (tone === "default") {
+    return (
+      <p className="text-muted-foreground text-sm leading-relaxed">
+        {children}
+      </p>
+    );
+  }
+
+  const Icon = tone === "warning" ? TriangleAlertIcon : CircleCheckIcon;
+
   return (
-    <p
-      className={
+    <div
+      className={cn(
+        "flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-sm",
         tone === "warning"
-          ? "text-destructive text-xs leading-relaxed"
-          : "text-muted-foreground text-xs leading-relaxed"
-      }
+          ? "border-warning/40 bg-warning-soft text-warning-soft-foreground"
+          : "border-success/20 bg-success-soft text-success-soft-foreground"
+      )}
     >
-      {children}
-    </p>
+      <Icon
+        className={cn(
+          "mt-0.5 size-4 shrink-0",
+          tone === "warning" ? "text-warning" : "text-success"
+        )}
+        aria-hidden="true"
+      />
+      <p className="min-w-0 leading-relaxed">{children}</p>
+    </div>
   );
 }
 

@@ -7,7 +7,7 @@ import {
   TriangleAlertIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 
 import { respondToDamageClaim, withdrawDamageClaim } from "@/actions/claims";
@@ -23,6 +23,7 @@ import {
   CLAIM_STATUS_LABELS,
 } from "@/lib/claims/rules";
 import { formatPKR } from "@/lib/utils/currency";
+import { cn } from "@/lib/utils/cn";
 import { formatDate } from "@/lib/utils/date";
 
 import type { ClaimSnapshot } from "@/lib/queries/bookings";
@@ -41,14 +42,16 @@ interface ClaimPanelProps {
  * people to be shown subtly different accounts of the same disagreement, which is how a settled
  * dispute restarts.
  *
- * THE COPY NEVER IMPLIES CUSTODY. SamaanShare holds nothing and moves nothing; an upheld claim says
- * the owner "may keep" and the rest "is owed back". The same line every payment string draws.
+ * THE COPY STATES AMOUNTS, NOT TRANSFERS. SamaanShare holds the deposit and pays it out when the
+ * booking is settled, so an upheld claim says what the owner "may keep" and what "is owed back" -
+ * the determination - and leaves the movement of money to the settlement screens that record it.
  *
  * NOTHING IS DECIDED UNTIL IT IS. While a claim is open the panel states the amount as claimed, not
  * as owed - the platform does not act on one person's assertion, and rendering it as a settled
  * deduction would do exactly that.
  */
 function ClaimPanel({ claim, securityDeposit }: ClaimPanelProps) {
+  const replyId = useId();
   const [isOpen, setIsOpen] = useState(false);
   const [note, setNote] = useState("");
   const [photos, setPhotos] = useState<ListingImageInput[]>([]);
@@ -104,15 +107,30 @@ function ClaimPanel({ claim, securityDeposit }: ClaimPanelProps) {
   }
 
   return (
-    <div className="border-destructive/30 flex flex-col gap-3 rounded-lg border px-3 py-2.5">
+    /*
+      Amber while it is live, neutral once it is settled. It used to be red throughout, which
+      announced a verdict before there was one - a claim is one person's assertion until it is
+      accepted or decided, and the panel's whole job is to say so.
+    */
+    <div
+      className={cn(
+        "bg-card flex flex-col gap-3 rounded-lg border px-3 py-3 sm:px-4",
+        !settled && "border-warning/60"
+      )}
+    >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <ScaleIcon
-          className="text-destructive size-4 shrink-0"
+          className={cn(
+            "size-4 shrink-0",
+            settled ? "text-muted-foreground" : "text-warning"
+          )}
           aria-hidden="true"
         />
         <span className="text-sm font-medium">
           {claim.isMine ? "Your claim" : "Claim on your deposit"}:{" "}
-          {formatPKR(claim.amountClaimed)}
+          <span className="font-heading font-semibold tabular-nums">
+            {formatPKR(claim.amountClaimed)}
+          </span>
         </span>
         <span className="text-muted-foreground text-xs">
           of {formatPKR(securityDeposit)}
@@ -128,7 +146,7 @@ function ClaimPanel({ claim, securityDeposit }: ClaimPanelProps) {
       </div>
 
       {/* A string, never HTML - it is user input. */}
-      <p className="text-sm leading-relaxed whitespace-pre-line">
+      <p className="text-sm leading-relaxed break-words whitespace-pre-line">
         {claim.description}
       </p>
 
@@ -140,7 +158,7 @@ function ClaimPanel({ claim, securityDeposit }: ClaimPanelProps) {
               href={photo.url}
               target="_blank"
               rel="noreferrer"
-              className="focus-visible:ring-ring relative size-16 overflow-hidden rounded-md outline-none focus-visible:ring-2"
+              className="focus-visible:ring-ring bg-muted relative size-16 overflow-hidden rounded-md border outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             >
               <Image
                 src={photo.url}
@@ -155,7 +173,7 @@ function ClaimPanel({ claim, securityDeposit }: ClaimPanelProps) {
       )}
 
       {claim.responseNote && (
-        <p className="text-muted-foreground border-muted border-l-2 pl-2.5 text-xs leading-relaxed whitespace-pre-line">
+        <p className="text-muted-foreground border-l-2 pl-2.5 text-xs leading-relaxed break-words whitespace-pre-line">
           {claim.isMine ? "The renter replied: " : "You replied: "}
           {claim.responseNote}
         </p>
@@ -166,7 +184,7 @@ function ClaimPanel({ claim, securityDeposit }: ClaimPanelProps) {
         walk away describing a different outcome.
       */}
       {claim.status === ClaimStatus.RESOLVED && (
-        <div className="bg-muted/50 flex flex-col gap-1 rounded-md px-2.5 py-2 text-xs">
+        <div className="bg-muted/60 flex flex-col gap-1 rounded-md px-3 py-2.5 text-xs">
           <p className="flex items-center gap-1.5 font-medium">
             <GavelIcon className="size-3.5 shrink-0" aria-hidden="true" />
             SamaanShare decided on{" "}
@@ -213,27 +231,48 @@ function ClaimPanel({ claim, securityDeposit }: ClaimPanelProps) {
       )}
 
       {claim.canRespond && !isOpen && (
-        <div>
-          <Button size="sm" variant="outline" onClick={() => setIsOpen(true)}>
+        <div className="bg-warning-soft text-warning-soft-foreground flex flex-col gap-2 rounded-md px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-start gap-2 text-xs leading-relaxed font-medium">
+            <TriangleAlertIcon
+              className="text-warning mt-0.5 size-3.5 shrink-0"
+              aria-hidden="true"
+            />
+            Your answer is needed.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full shrink-0 sm:w-auto"
+            onClick={() => setIsOpen(true)}
+          >
             Accept or dispute
           </Button>
         </div>
       )}
 
       {claim.canRespond && isOpen && (
-        <div className="flex flex-col gap-2.5">
-          <Textarea
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            maxLength={CLAIM_RESPONSE_MAX}
-            rows={3}
-            placeholder="Optional — your own account of the item's condition"
-            disabled={pending !== null}
-            aria-label="Your reply"
-          />
+        <div className="flex flex-col gap-3">
+          {/*
+            A visible label rather than only an `aria-label`: the placeholder vanishes as soon as
+            somebody types, and this is the one field whose purpose must stay obvious.
+          */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={replyId} className="text-sm font-medium">
+              Your reply
+            </label>
+            <Textarea
+              id={replyId}
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              maxLength={CLAIM_RESPONSE_MAX}
+              rows={3}
+              placeholder="Optional — your own account of the item's condition"
+              disabled={pending !== null}
+            />
+          </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium">
+            <span className="text-sm font-medium">
               Photos (optional, but they are the strongest thing you can add)
             </span>
             <ImageUploader
@@ -243,7 +282,7 @@ function ClaimPanel({ claim, securityDeposit }: ClaimPanelProps) {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-2 *:w-full sm:flex-row sm:flex-wrap sm:items-center sm:*:w-auto">
             <Button
               size="sm"
               variant="outline"

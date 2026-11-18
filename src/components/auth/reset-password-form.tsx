@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2Icon } from "lucide-react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +9,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { resetPassword } from "@/actions/password-reset";
+import { FormAlert } from "@/components/ui/form-alert";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -15,7 +17,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { DEFAULT_LOGIN_REDIRECT } from "@/config/routes";
 import { resetPasswordSchema } from "@/lib/validations/auth";
 
@@ -82,15 +84,12 @@ function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   if (signInFailed) {
     return (
       <div className="flex flex-col gap-3">
-        <div
-          role="status"
-          className="border-primary/30 bg-accent/40 rounded-lg border px-3 py-3 text-sm leading-relaxed"
-        >
-          Your password has been changed, but we could not sign you in
-          automatically. Please sign in with your new password.
-        </div>
+        <FormAlert tone="success" title="Your password has been changed">
+          We could not sign you in automatically. Please sign in with your new
+          password.
+        </FormAlert>
 
-        <Button className="w-full" render={<Link href="/login" />}>
+        <Button size="lg" className="w-full" render={<Link href="/login" />}>
           Go to sign in
         </Button>
       </div>
@@ -101,10 +100,7 @@ function ResetPasswordForm({ token }: ResetPasswordFormProps) {
     <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <FieldGroup>
         {formError && (
-          <div
-            role="alert"
-            className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
-          >
+          <FormAlert tone="error">
             {formError}{" "}
             <Link
               href="/forgot-password"
@@ -112,16 +108,15 @@ function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             >
               Request a new link
             </Link>
-          </div>
+          </FormAlert>
         )}
 
         <input type="hidden" {...form.register("token")} />
 
         <Field data-invalid={Boolean(errors.password)}>
           <FieldLabel htmlFor="password">New password</FieldLabel>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
             aria-invalid={Boolean(errors.password)}
             disabled={isSubmitting}
@@ -134,9 +129,8 @@ function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           <FieldLabel htmlFor="confirmPassword">
             Confirm new password
           </FieldLabel>
-          <Input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             autoComplete="new-password"
             aria-invalid={Boolean(errors.confirmPassword)}
             disabled={isSubmitting}
@@ -145,7 +139,13 @@ function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           <FieldError errors={[errors.confirmPassword]} />
         </Field>
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          size="lg"
+          className="mt-1 w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting && <Loader2Icon className="animate-spin" />}
           {isSubmitting ? "Saving…" : "Set new password"}
         </Button>
       </FieldGroup>

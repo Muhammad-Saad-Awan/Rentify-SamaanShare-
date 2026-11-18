@@ -44,10 +44,11 @@ function SubcategoryNav({ items, className }: SubcategoryNavProps) {
               // distinct URL, so the active one genuinely is the current page.
               aria-current={item.isActive ? "page" : undefined}
               className={cn(
-                "focus-visible:ring-ring block rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2",
+                // 36px pills: these are the main way to narrow a category on a phone.
+                "focus-visible:ring-ring flex h-9 items-center rounded-full border px-3.5 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2",
                 item.isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "bg-card text-muted-foreground hover:border-foreground/30 hover:text-foreground"
               )}
             >
               {item.label}

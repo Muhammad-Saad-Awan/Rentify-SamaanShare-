@@ -45,7 +45,7 @@ function HowItWorks() {
             Step {index + 1}
           </span>
 
-          <h3 className="font-heading text-xl font-bold tracking-[-0.02em]">
+          <h3 className="font-heading text-xl font-bold tracking-[-0.025em]">
             {step.title}
           </h3>
 

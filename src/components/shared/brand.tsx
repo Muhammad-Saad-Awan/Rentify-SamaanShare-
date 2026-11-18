@@ -28,7 +28,7 @@ function Brand({ href, tone = "default", className }: BrandProps) {
     <Link
       href={href}
       className={cn(
-        "focus-visible:ring-ring font-heading flex items-center gap-2 rounded-lg text-[1.0625rem] font-bold tracking-[-0.02em] transition-opacity outline-none hover:opacity-75 focus-visible:ring-2 focus-visible:ring-offset-2",
+        "focus-visible:ring-ring font-heading flex items-center gap-2 rounded-lg text-[1.0625rem] font-bold tracking-[-0.025em] transition-opacity outline-none hover:opacity-75 focus-visible:ring-2 focus-visible:ring-offset-2",
         className
       )}
     >

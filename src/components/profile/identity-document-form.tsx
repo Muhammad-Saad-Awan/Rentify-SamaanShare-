@@ -2,6 +2,7 @@
 
 import {
   CameraIcon,
+  CheckIcon,
   ImageIcon,
   Loader2Icon,
   LockIcon,
@@ -16,8 +17,13 @@ import {
   submitIdentityDocument,
 } from "@/actions/identity-documents";
 import { Button } from "@/components/ui/button";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils/cn";
 import { compressImage } from "@/lib/utils/image";
 import { normalizeCnic } from "@/lib/validations/identity";
@@ -29,8 +35,8 @@ import {
 type Side = "front" | "back";
 
 const SIDE_LABELS: Record<Side, { title: string; hint: string }> = {
-  front: { title: "Front", hint: "The side with your photo" },
-  back: { title: "Back", hint: "The side with your address" },
+  front: { title: "Front of card", hint: "The side with your photo" },
+  back: { title: "Back of card", hint: "The side with your address" },
 };
 
 /**
@@ -68,11 +74,17 @@ function formatCnicInput(raw: string): string {
  * Two pickers per side. "Take photo" carries `capture="environment"`, which opens the rear camera on a
  * phone; "Choose from gallery" has no `capture`, which opens the photo library. On a desktop both
  * open a file dialog, which is the right fallback.
+ *
+ * THE NUMBER IS MARKED INVALID ONLY AFTER THE FIELD IS LEFT. Flagging it on every keystroke painted
+ * the field red from the first digit until the thirteenth, which reads as a mistake the member has not
+ * made yet. The submit button says what is still missing instead, so a disabled button is never a
+ * puzzle.
  */
 function IdentityDocumentForm() {
   const router = useRouter();
   const numberId = useId();
   const [cnic, setCnic] = useState("");
+  const [cnicTouched, setCnicTouched] = useState(false);
   const [files, setFiles] = useState<Record<Side, File | null>>({
     front: null,
     back: null,
@@ -81,6 +93,13 @@ function IdentityDocumentForm() {
 
   const cnicValid = normalizeCnic(cnic) !== null;
   const ready = cnicValid && files.front !== null && files.back !== null;
+  const showCnicError = cnicTouched && cnic.length > 0 && !cnicValid;
+
+  const missing = [
+    !cnicValid && "your CNIC number",
+    !files.front && "a photo of the front",
+    !files.back && "a photo of the back",
+  ].filter((item): item is string => Boolean(item));
 
   function choose(side: Side, file: File | undefined) {
     if (!file) {
@@ -140,6 +159,8 @@ function IdentityDocumentForm() {
     event.preventDefault();
 
     if (!ready || !files.front || !files.back) {
+      setCnicTouched(true);
+
       return;
     }
 
@@ -179,9 +200,9 @@ function IdentityDocumentForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={numberId}>CNIC number</Label>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+      <Field data-invalid={showCnicError} className="max-w-xs">
+        <FieldLabel htmlFor={numberId}>CNIC number</FieldLabel>
         <Input
           id={numberId}
           inputMode="numeric"
@@ -189,14 +210,19 @@ function IdentityDocumentForm() {
           placeholder="12345-1234567-1"
           value={cnic}
           onChange={(event) => setCnic(formatCnicInput(event.target.value))}
-          aria-invalid={cnic.length > 0 && !cnicValid}
-          className="max-w-xs font-mono tracking-wide"
+          onBlur={() => setCnicTouched(true)}
+          aria-invalid={showCnicError}
+          className="font-mono tracking-wide"
           disabled={busy}
         />
-        <p className="text-muted-foreground text-xs">
-          The 13 digits printed on your card.
-        </p>
-      </div>
+        {showCnicError ? (
+          <FieldError>Enter all 13 digits printed on your card.</FieldError>
+        ) : (
+          <FieldDescription>
+            The 13 digits printed on your card.
+          </FieldDescription>
+        )}
+      </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
         {(["front", "back"] as const).map((side) => (
@@ -210,14 +236,22 @@ function IdentityDocumentForm() {
         ))}
       </div>
 
-      <p className="text-muted-foreground flex items-start gap-2 text-xs leading-relaxed">
-        <LockIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+      <p className="bg-muted/60 text-muted-foreground flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-relaxed">
+        <LockIcon
+          className="text-success mt-0.5 size-3.5 shrink-0"
+          aria-hidden="true"
+        />
         Stored privately and seen only by SamaanShare staff, to confirm who you
         are. It is never shown to other members.
       </p>
 
-      <div>
-        <Button type="submit" size="lg" disabled={!ready || busy}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full sm:w-auto"
+          disabled={!ready || busy}
+        >
           {busy ? (
             <>
               <Loader2Icon className="animate-spin" />
@@ -227,6 +261,18 @@ function IdentityDocumentForm() {
             "Submit CNIC"
           )}
         </Button>
+
+        {/* Polite, so it reads out as the last missing piece is added - not on every keystroke. */}
+        <p
+          className="text-muted-foreground text-xs leading-relaxed"
+          aria-live="polite"
+        >
+          {busy
+            ? "Sending your photos securely. Keep this page open."
+            : missing.length > 0
+              ? `Still needed: ${missing.join(", ")}.`
+              : "Ready to submit."}
+        </p>
       </div>
     </form>
   );
@@ -242,6 +288,7 @@ interface SidePickerProps {
 function SidePicker({ side, file, disabled, onChoose }: SidePickerProps) {
   const cameraId = useId();
   const galleryId = useId();
+  const titleId = useId();
   const [preview, setPreview] = useState<string | null>(null);
   const { title, hint } = SIDE_LABELS[side];
 
@@ -260,16 +307,25 @@ function SidePicker({ side, file, disabled, onChoose }: SidePickerProps) {
   }, [file]);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div role="group" aria-labelledby={titleId} className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm font-medium">{title}</span>
-        <span className="text-muted-foreground text-xs">{hint}</span>
+        <span id={titleId} className="text-sm font-medium">
+          {title}
+        </span>
+        {file ? (
+          <span className="text-success-soft-foreground flex items-center gap-1 text-xs font-medium">
+            <CheckIcon className="size-3.5" aria-hidden="true" />
+            Added
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-xs">{hint}</span>
+        )}
       </div>
 
       <div
         className={cn(
-          "bg-muted/50 relative flex aspect-[1.586] w-full items-center justify-center overflow-hidden rounded-xl border",
-          !preview && "border-dashed"
+          "relative flex aspect-[1.586] w-full items-center justify-center overflow-hidden rounded-xl border",
+          preview ? "bg-muted" : "bg-muted/50 border-input/60 border-dashed"
         )}
       >
         {preview ? (
@@ -281,8 +337,12 @@ function SidePicker({ side, file, disabled, onChoose }: SidePickerProps) {
             className="size-full object-cover"
           />
         ) : (
-          <span className="text-muted-foreground flex flex-col items-center gap-1.5 text-xs">
-            <ImageIcon className="size-5" aria-hidden="true" />
+          <span className="text-muted-foreground flex flex-col items-center gap-1.5 px-4 text-center text-xs">
+            <ImageIcon
+              className="size-5"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
             No photo yet
           </span>
         )}
@@ -291,7 +351,6 @@ function SidePicker({ side, file, disabled, onChoose }: SidePickerProps) {
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          size="sm"
           disabled={disabled}
           render={<label htmlFor={cameraId} className="cursor-pointer" />}
         >
@@ -300,7 +359,6 @@ function SidePicker({ side, file, disabled, onChoose }: SidePickerProps) {
         </Button>
         <Button
           variant="ghost"
-          size="sm"
           disabled={disabled}
           render={<label htmlFor={galleryId} className="cursor-pointer" />}
         >

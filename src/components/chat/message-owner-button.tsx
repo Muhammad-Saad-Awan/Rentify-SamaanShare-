@@ -84,8 +84,10 @@ function MessageOwnerButton({
           Questions? Ask {firstName}
         </p>
         <p className="text-muted-foreground text-xs">
-          Most owners reply within a few hours. You can agree a price in chat
-          with an offer.
+          {/* No reply-time promise: nothing measures how fast owners answer, so the line
+              says only what is true - that a price can be agreed here. */}
+          Ask about dates, pickup or condition - you can also agree a price in
+          chat with an offer.
         </p>
       </div>
 
@@ -101,7 +103,7 @@ function MessageOwnerButton({
               type="button"
               onClick={() => open(question)}
               disabled={isPending}
-              className="hover:bg-muted focus-visible:ring-ring rounded-full border px-3 py-1.5 text-xs transition-colors outline-none focus-visible:ring-2 disabled:opacity-60"
+              className="hover:bg-muted focus-visible:ring-ring inline-flex h-8 items-center rounded-full border px-3 text-xs transition-colors outline-none focus-visible:ring-2 disabled:opacity-60"
             >
               {busyWith === question && (
                 <Loader2Icon
@@ -115,7 +117,7 @@ function MessageOwnerButton({
             <Link
               key={question}
               href={loginHref}
-              className="hover:bg-muted focus-visible:ring-ring rounded-full border px-3 py-1.5 text-xs transition-colors outline-none focus-visible:ring-2"
+              className="hover:bg-muted focus-visible:ring-ring inline-flex h-8 items-center rounded-full border px-3 text-xs transition-colors outline-none focus-visible:ring-2"
             >
               {question}
             </Link>

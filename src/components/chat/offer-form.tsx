@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { proposeOffer } from "@/actions/chat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
   Sheet,
   SheetContent,
@@ -61,8 +63,7 @@ function OfferSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <HandshakeIcon className="size-5" aria-hidden="true" />
+          <SheetTitle className="font-heading text-lg font-semibold tracking-tight">
             Make an offer
           </SheetTitle>
           <SheetDescription>
@@ -154,17 +155,14 @@ function OfferForm({
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-1 flex-col gap-5 px-4 pb-6">
+    <form onSubmit={submit} className="flex flex-1 flex-col gap-6 px-4 pb-6">
       {amendableBookings.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={ids.target} className="text-sm font-medium">
-            Applies to
-          </label>
-          <select
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={ids.target}>Applies to</Label>
+          <NativeSelect
             id={ids.target}
             value={target}
             onChange={(event) => chooseTarget(event.target.value)}
-            className="border-input bg-background focus-visible:ring-ring h-9 rounded-lg border px-2 text-sm outline-none focus-visible:ring-2"
           >
             {amendableBookings.map((item) => (
               <option key={item.id} value={item.id}>
@@ -173,13 +171,13 @@ function OfferForm({
               </option>
             ))}
             <option value={NEW_DATES}>New dates (before booking)</option>
-          </select>
+          </NativeSelect>
         </div>
       )}
 
       <fieldset className="grid grid-cols-2 gap-3">
-        <legend className="mb-1.5 text-sm font-medium">Dates</legend>
-        <div className="flex flex-col gap-1.5">
+        <legend className="mb-2 text-sm font-medium">Dates</legend>
+        <div className="flex min-w-0 flex-col gap-1.5">
           <label htmlFor={ids.start} className="text-muted-foreground text-xs">
             From
           </label>
@@ -193,7 +191,7 @@ function OfferForm({
             required
           />
         </div>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <label htmlFor={ids.end} className="text-muted-foreground text-xs">
             Until
           </label>
@@ -215,11 +213,10 @@ function OfferForm({
         )}
       </fieldset>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={ids.rent} className="text-sm font-medium">
-            Total rent (Rs.)
-          </label>
+      {/* Stacked on the narrowest phones: "Security deposit (Rs.)" does not fit half of 360px. */}
+      <div className="grid gap-4 min-[400px]:grid-cols-2 min-[400px]:gap-3">
+        <div className="flex min-w-0 flex-col gap-2">
+          <Label htmlFor={ids.rent}>Total rent (Rs.)</Label>
           <Input
             id={ids.rent}
             type="number"
@@ -231,10 +228,8 @@ function OfferForm({
             required
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor={ids.deposit} className="text-sm font-medium">
-            Security deposit (Rs.)
-          </label>
+        <div className="flex min-w-0 flex-col gap-2">
+          <Label htmlFor={ids.deposit}>Security deposit (Rs.)</Label>
           <Input
             id={ids.deposit}
             type="number"
@@ -250,7 +245,7 @@ function OfferForm({
 
       {/* A live summary, so the number being proposed is read in context before it is sent. */}
       <div
-        className="bg-muted/60 flex flex-col gap-2 rounded-xl p-4 text-sm"
+        className="bg-muted/60 flex flex-col gap-2.5 rounded-xl border p-4 text-sm"
         aria-live="polite"
       >
         {quote ? (
@@ -263,11 +258,13 @@ function OfferForm({
             </div>
             {rentValue > 0 && (
               <>
-                <div className="flex justify-between gap-2 font-medium">
-                  <span>Your offer</span>
-                  <span className="tabular-nums">{formatPKR(rentValue)}</span>
+                <div className="flex items-baseline justify-between gap-2 border-t pt-2.5">
+                  <span className="font-medium">Your offer</span>
+                  <span className="font-heading text-base font-bold tracking-tight tabular-nums">
+                    {formatPKR(rentValue)}
+                  </span>
                 </div>
-                <div className="text-muted-foreground flex justify-between gap-2 text-xs">
+                <div className="text-muted-foreground flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs">
                   <span>{formatPKR(Math.round(rentValue / days))} per day</span>
                   {difference !== null && difference !== 0 && (
                     <span>
@@ -288,6 +285,7 @@ function OfferForm({
 
       <Button
         type="submit"
+        size="lg"
         className="mt-auto w-full"
         aria-busy={isPending}
         disabled={isPending}

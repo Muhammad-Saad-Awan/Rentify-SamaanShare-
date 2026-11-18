@@ -1,5 +1,3 @@
-import { CircleDotIcon } from "lucide-react";
-
 import { HandoverType } from "@/generated/prisma/enums";
 import { buildBookingTimeline } from "@/lib/bookings/timeline";
 import { CLAIM_REASON_LABELS } from "@/lib/claims/rules";
@@ -46,29 +44,42 @@ function BookingTimeline({ booking }: BookingTimelineProps) {
   });
 
   return (
-    <ol className="flex flex-col gap-2.5">
+    // A rule with a mark per entry, matching the administrator history: both are sequences, and the
+    // line is what makes them read as one.
+    <ol className="flex flex-col">
       {entries.map((entry, index) => (
         <li
           // `kind` is not unique - a booking can carry two handover records - so the index is part
           // of the key. Safe here: the list is server-rendered in a fixed order and never reordered.
           key={`${entry.kind}-${index}`}
-          className="flex gap-2.5 text-sm"
+          className="relative flex gap-3 pb-4 text-sm last:pb-0"
         >
-          <CircleDotIcon
-            className="text-muted-foreground mt-0.5 size-3.5 shrink-0"
+          {index < entries.length - 1 && (
+            <span
+              className="bg-border absolute top-4 bottom-0 left-[5px] w-px"
+              aria-hidden="true"
+            />
+          )}
+          <span
+            className={
+              // Hollow when the time is approximate, so "as last changed" is visible before it is read.
+              entry.approximate
+                ? "bg-card border-muted-foreground relative mt-1 size-2.75 shrink-0 rounded-full border"
+                : "bg-foreground relative mt-1 size-2.75 shrink-0 rounded-full"
+            }
             aria-hidden="true"
           />
           <div className="flex min-w-0 flex-col gap-0.5">
             <div className="flex flex-wrap items-baseline gap-x-2">
               <span className="font-medium">{entry.label}</span>
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground text-xs tabular-nums">
                 {formatDateTime(entry.at)}
                 {entry.approximate && " — as last changed, not a recorded time"}
               </span>
             </div>
             {entry.detail && (
               // A string, never HTML - somebody typed it.
-              <p className="text-muted-foreground text-xs leading-relaxed whitespace-pre-line">
+              <p className="text-muted-foreground text-xs leading-relaxed break-words whitespace-pre-line">
                 {entry.detail}
               </p>
             )}

@@ -47,8 +47,10 @@ function MessageItem({
 
   if (message.kind === MessageKind.SYSTEM) {
     return (
-      <div className="my-2 flex justify-center px-2">
-        <p className="text-muted-foreground flex max-w-md items-start gap-2 rounded-lg border border-dashed px-3 py-2 text-xs leading-relaxed">
+      // The platform speaking: centred, on a muted wash, set apart from both people's bubbles. A solid
+      // wash rather than a dashed outline, which reads as unfinished.
+      <div className="my-3 flex justify-center px-2">
+        <p className="bg-muted text-muted-foreground flex max-w-md items-start gap-2 rounded-lg px-3 py-2 text-xs leading-relaxed">
           <InfoIcon className="mt-px size-3.5 shrink-0" aria-hidden="true" />
           <span>
             {message.body}
@@ -65,7 +67,7 @@ function MessageItem({
   const meta = isLastInGroup && (
     <span
       className={cn(
-        "text-muted-foreground flex items-center gap-1 text-[11px]",
+        "text-muted-foreground flex items-center gap-1 text-xs",
         isOwn ? "justify-end pr-1" : "pl-1"
       )}
     >
@@ -129,7 +131,7 @@ function MessageItem({
               "rounded-[1.125rem] px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap",
               isOwn
                 ? "bg-primary text-primary-foreground"
-                : "bg-background text-foreground border",
+                : "bg-card text-foreground border",
               // The tail: the corner nearest the sender squares off on the last bubble of a run.
               isOwn && isLastInGroup && "rounded-br-sm",
               !isOwn && isLastInGroup && "rounded-bl-sm"

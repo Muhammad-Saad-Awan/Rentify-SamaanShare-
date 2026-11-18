@@ -14,10 +14,12 @@ interface StatusBadgeProps {
 /**
  * A lifecycle state - booking, payment, listing - with a mark that encodes it.
  *
- * The identity is black and white, so state cannot lean on colour. Each variant carries a glyph
- * instead, and the four read the same way on every screen:
+ * Colour reinforces state but never carries it alone. Each variant carries a glyph, and the four
+ * read the same way on every screen:
  *
- * - `default`, filled: settled in the user's favour - paid, live, rented out.
+ * - `default`, filled: settled in the user's favour - paid, live, rented out. Drawn in emerald on
+ *   its soft wash: the one state where colour has a job, because "this went well" is exactly what
+ *   emerald means in this palette.
  * - `secondary`, open ring: waiting on someone - the owner, the renter, a payment check.
  * - `outline`, dash: closed and needs nothing - completed, cancelled, expired.
  * - `destructive`, cross: went wrong - declined, failed, rejected.
@@ -27,7 +29,12 @@ interface StatusBadgeProps {
  */
 function StatusBadge({ label, variant, className }: StatusBadgeProps) {
   return (
-    <Badge variant={variant} className={cn("pl-2", className)}>
+    <Badge
+      // The mapping keeps its four semantic names; only the look of `default` changes here, so
+      // every mapper and its tests stay as they are.
+      variant={variant === "default" ? "success" : variant}
+      className={cn("pl-2", className)}
+    >
       <StatusMark variant={variant} />
       {label}
     </Badge>
@@ -44,7 +51,8 @@ function StatusMark({ variant }: { variant: BadgeVariant }) {
       aria-hidden="true"
       className={cn(
         "inline-block shrink-0",
-        variant === "default" && "bg-primary-foreground size-1.5 rounded-full",
+        // Emerald, not white: a white dot on the success wash is 1.05:1 and disappears.
+        variant === "default" && "bg-success size-1.5 rounded-full",
         variant === "secondary" &&
           "border-foreground size-2 rounded-full border-[1.5px]",
         variant === "outline" && "h-[1.5px] w-2 rounded-full bg-current"

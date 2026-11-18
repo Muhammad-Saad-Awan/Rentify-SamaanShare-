@@ -1,5 +1,6 @@
 import { LandmarkIcon, ShieldCheckIcon } from "lucide-react";
 
+import { StatusBadge } from "@/components/shared/status-badge";
 import {
   isPaymentCollectionConfigured,
   PLATFORM_PAYMENT_ACCOUNTS,
@@ -49,13 +50,22 @@ function PaymentInstructions({
   const total = amount + securityDeposit;
 
   return (
-    <div className="bg-background flex flex-col gap-3 rounded-xl border p-4">
-      <p className="font-heading flex items-center gap-2 text-sm font-semibold">
-        <ShieldCheckIcon className="size-4 shrink-0" aria-hidden="true" />
-        {byCard ? "Paying SamaanShare by card" : "Paying SamaanShare"}
-      </p>
+    <div className="bg-card flex flex-col gap-4 rounded-lg border p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="font-heading flex items-center gap-2 text-sm font-semibold">
+          <ShieldCheckIcon className="size-4 shrink-0" aria-hidden="true" />
+          {byCard ? "Paying SamaanShare by card" : "Paying SamaanShare"}
+        </p>
+        {/*
+          Only from `isConfirmed`, which is an administrator's or Stripe's word that the money
+          arrived - never from the renter having pressed "I have paid".
+        */}
+        {isConfirmed && (
+          <StatusBadge label="Payment confirmed" variant="default" />
+        )}
+      </div>
 
-      <dl className="text-muted-foreground grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-sm">
+      <dl className="text-muted-foreground grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">
         <dt>Rent</dt>
         <dd className="text-foreground text-right font-medium tabular-nums">
           {formatPKR(amount)}
@@ -73,10 +83,14 @@ function PaymentInstructions({
           </>
         )}
 
-        <dt className="text-foreground border-foreground mt-1 border-t pt-2 font-medium">
-          {byCard ? "Total charged" : "Total to send"}
+        <dt className="text-foreground mt-1 border-t pt-2.5 font-medium">
+          {isConfirmed
+            ? "Total paid"
+            : byCard
+              ? "Total charged"
+              : "Total to send"}
         </dt>
-        <dd className="font-heading text-foreground border-foreground mt-1 border-t pt-2 text-right text-base font-bold">
+        <dd className="font-heading text-foreground mt-1 border-t pt-2.5 text-right text-base font-bold tabular-nums">
           {formatPKR(total)}
         </dd>
       </dl>
@@ -95,7 +109,7 @@ function PaymentInstructions({
             {PLATFORM_PAYMENT_ACCOUNTS.map((account) => (
               <li
                 key={`${account.provider}-${account.accountNumber}`}
-                className="bg-muted/60 flex flex-col gap-0.5 rounded-lg px-3 py-2.5"
+                className="bg-muted/60 flex flex-col gap-0.5 rounded-md px-3 py-2.5"
               >
                 <span className="flex items-center gap-1.5 text-xs font-medium">
                   <LandmarkIcon

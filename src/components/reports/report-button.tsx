@@ -120,18 +120,21 @@ function ReportButton({
   }
 
   return (
-    <div className="bg-muted/50 flex flex-col gap-3 rounded-lg px-3 py-3">
-      <p className="text-xs font-medium">What is wrong with {label}?</p>
+    <div className="bg-muted/50 flex flex-col gap-3 rounded-lg border p-4">
+      <p className="font-heading text-sm font-semibold tracking-tight">
+        What is wrong with {label}?
+      </p>
 
       <div
         role="radiogroup"
         aria-label="Reason for reporting"
-        className="flex flex-col gap-1"
+        className="flex flex-col"
       >
         {reasons.map((value) => (
           <label
             key={value}
-            className="flex cursor-pointer items-center gap-2 text-sm"
+            // At least 36px tall, so each reason is a comfortable tap target on a phone.
+            className="flex min-h-9 cursor-pointer items-center gap-2.5 text-sm"
           >
             <input
               type="radio"
@@ -140,7 +143,7 @@ function ReportButton({
               checked={reason === value}
               onChange={() => setReason(value)}
               disabled={isSubmitting}
-              className="accent-primary size-3.5"
+              className="accent-primary size-4 shrink-0"
             />
             {REPORT_REASON_LABELS[value]}
           </label>
