@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: review-planted-ui-issues
+expected_outcome: |
+  A severity-ordered review with file:line references that finds the planted issues: a
+  loading.tsx added above a [id] layout (soft 404), notFound moved into the page, raw palette
+  colours and an arbitrary hex text colour that fails contrast, a button nested in a link, asChild
+  usage, an input without a label, and a fake stat. It does not modify any files.
+context:
+  scaffold_script: place-files.sh
