@@ -163,10 +163,10 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
         {items.length === 0 ? (
           <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
             <span
-              className="bg-muted text-foreground flex size-10 items-center justify-center rounded-xl border"
+              className="bg-brand-soft text-brand flex size-12 items-center justify-center rounded-full"
               aria-hidden="true"
             >
-              <BellIcon className="size-4" strokeWidth={1.75} />
+              <BellIcon className="size-5" strokeWidth={1.75} />
             </span>
             <p className="text-muted-foreground max-w-64 text-sm leading-relaxed">
               No notifications yet. Updates about your bookings, payments and

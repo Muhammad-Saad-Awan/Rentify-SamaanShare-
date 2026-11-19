@@ -78,7 +78,7 @@ function RecordPaymentForm({
   }
 
   return (
-    <div className="bg-card flex flex-col gap-4 rounded-lg border p-4">
+    <div className="bg-card flex flex-col gap-4 rounded-xl border p-4">
       {/*
         Red because something did go wrong - the reference did not match - and it sits above the
         field it is about, so the correction is made with the reason in view.

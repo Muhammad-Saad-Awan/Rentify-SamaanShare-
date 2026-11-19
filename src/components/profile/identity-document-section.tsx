@@ -142,7 +142,7 @@ function IdentityDocumentSection({ document }: IdentityDocumentSectionProps) {
       <CardContent className="flex flex-col gap-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
-            <h2 className="font-heading text-lg font-semibold tracking-tight">
+            <h2 className="font-heading text-lg font-bold tracking-tight">
               Identity verification
             </h2>
             <p className="text-muted-foreground max-w-[60ch] text-sm leading-relaxed">
@@ -180,8 +180,8 @@ function IdentityDocumentSection({ document }: IdentityDocumentSectionProps) {
               key={step.title}
               aria-current={step.state === "current" ? "step" : undefined}
               className={cn(
-                "flex items-start gap-3 rounded-lg border px-3 py-2.5",
-                step.state === "current" && "border-foreground/30 bg-muted/60",
+                "flex items-start gap-3 rounded-xl border px-3 py-2.5",
+                step.state === "current" && "border-brand/40 bg-brand-soft",
                 step.state === "failed" &&
                   "border-destructive/30 bg-destructive/5"
               )}
@@ -212,7 +212,7 @@ function IdentityDocumentSection({ document }: IdentityDocumentSectionProps) {
         </ol>
 
         {document && status !== IdentityDocumentStatus.REJECTED && (
-          <dl className="grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-2">
+          <dl className="grid gap-4 rounded-xl border p-4 text-sm sm:grid-cols-2">
             <div className="flex flex-col gap-0.5">
               <dt className="text-muted-foreground text-xs">CNIC number</dt>
               <dd className="font-mono tracking-wide">

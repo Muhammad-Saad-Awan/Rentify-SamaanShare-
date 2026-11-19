@@ -124,7 +124,7 @@ function PreferencesForm({ defaults }: PreferencesFormProps) {
           </p>
         </div>
 
-        <div className="divide-y rounded-lg border">
+        <div className="divide-y rounded-xl border">
           <SwitchField
             control={form.control}
             name="notifyReviewReminders"

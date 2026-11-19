@@ -238,7 +238,7 @@ function CreateListingForm({ categories }: CreateListingFormProps) {
       */}
       <Card className="gap-0">
         <div className="flex flex-col gap-1 border-b px-(--card-spacing) pb-(--card-spacing)">
-          <h2 className="font-heading text-lg font-semibold tracking-tight">
+          <h2 className="font-heading text-lg font-bold tracking-tight">
             {step.heading}
           </h2>
           <p className="text-muted-foreground text-sm leading-relaxed">
@@ -350,7 +350,7 @@ function StepIndicator({ current }: StepIndicatorProps) {
           aria-hidden="true"
         >
           <div
-            className="bg-primary h-full rounded-full transition-[width] duration-300"
+            className="bg-brand h-full rounded-full transition-[width] duration-300"
             style={{ width: `${((current + 1) / STEPS.length) * 100}%` }}
           />
         </div>
@@ -368,7 +368,7 @@ function StepIndicator({ current }: StepIndicatorProps) {
                 className={cn(
                   "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium",
                   isCurrent &&
-                    "border-primary bg-primary text-primary-foreground",
+                    "border-brand bg-brand-soft text-brand-soft-foreground font-semibold",
                   isDone && "bg-card text-foreground",
                   !isCurrent &&
                     !isDone &&
@@ -457,7 +457,7 @@ function ReviewStep({ values, categories }: ReviewStepProps) {
 
   // The heading and the "goes live immediately" line are the step card's own, above this.
   return (
-    <dl className="divide-border divide-y rounded-lg border text-sm">
+    <dl className="divide-border divide-y rounded-xl border text-sm">
       {rows.map((row) => (
         <div
           key={row.label}

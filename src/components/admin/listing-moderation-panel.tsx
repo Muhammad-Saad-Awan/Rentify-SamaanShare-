@@ -263,7 +263,7 @@ function ListingModerationPanel({ listing }: ListingModerationPanelProps) {
         marketplace, and it sat in the same row as Restore.
       */}
       {removable.allowed && (
-        <div className="border-destructive/30 bg-destructive/5 flex flex-col gap-3 rounded-lg border p-3">
+        <div className="border-destructive/30 bg-destructive/5 flex flex-col gap-3 rounded-xl border p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-destructive text-xs font-medium">
               Remove — takes it off the marketplace; it can be restored

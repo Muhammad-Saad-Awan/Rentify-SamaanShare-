@@ -60,21 +60,23 @@ function ActivityFeed({ activity, now }: ActivityFeedProps) {
           return (
             <li
               key={`${event.kind}-${event.id}`}
-              className="flex items-start gap-3 py-2 text-sm first:pt-0 last:pb-0"
+              className="flex items-start gap-3 py-2.5 text-sm first:pt-0 last:pb-0"
             >
+              {/* Mint, not muted: the icon is how the eye sorts a long feed by kind, and on a
+                  grey tile six small glyphs blurred into one. */}
               <span
-                className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-md border"
+                className="bg-brand-soft text-brand flex size-7 shrink-0 items-center justify-center rounded-lg"
                 aria-hidden="true"
               >
-                <Icon className="size-3.5" />
+                <Icon className="size-3.5" strokeWidth={2} />
               </span>
               <Link
                 href={href}
-                className="min-w-0 flex-1 pt-0.5 break-words underline-offset-4 hover:underline"
+                className="hover:text-brand min-w-0 flex-1 pt-1 break-words underline-offset-4 transition-colors hover:underline"
               >
                 {text}
               </Link>
-              <span className="text-muted-foreground shrink-0 pt-1 text-xs tabular-nums">
+              <span className="text-muted-foreground shrink-0 pt-1.5 text-xs tabular-nums">
                 {formatRelativeTime(event.at, now)}
               </span>
             </li>

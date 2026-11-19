@@ -98,7 +98,7 @@ function FileClaimForm({
   }
 
   return (
-    <div className="bg-muted/50 flex flex-col gap-4 rounded-lg border p-3 sm:p-4">
+    <div className="bg-muted/50 flex flex-col gap-4 rounded-xl border p-3 sm:p-4">
       <p className="flex items-center gap-2 text-sm font-medium">
         <ScaleIcon className="size-4 shrink-0" aria-hidden="true" />
         Claim against the {formatPKR(securityDeposit)} deposit

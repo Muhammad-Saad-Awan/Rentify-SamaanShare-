@@ -108,7 +108,7 @@ export default async function AdminConversationPage({
 
       <Card>
         <div className="flex flex-col gap-4 px-(--card-spacing)">
-          <p className="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg border px-3 py-2.5 text-xs leading-relaxed">
+          <p className="bg-muted/60 text-muted-foreground flex items-start gap-2.5 rounded-xl px-3.5 py-3 text-xs leading-relaxed">
             <ShieldCheckIcon
               className="text-foreground mt-0.5 size-4 shrink-0"
               aria-hidden="true"

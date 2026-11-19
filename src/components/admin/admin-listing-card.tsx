@@ -1,10 +1,10 @@
 import { FlagIcon } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 import { AwaitingBadge } from "@/components/admin/attention";
 import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Card } from "@/components/ui/card";
+import { ListingPhoto } from "@/components/marketplace/listing-photo";
 import { ListingStatus, UserStatus } from "@/generated/prisma/enums";
 import { formatPKRPerDay } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
@@ -45,12 +45,11 @@ function AdminListingCard({ listing }: AdminListingCardProps) {
           throws on an unlisted host rather than degrading. A listing with no photo renders the
           placeholder rather than an empty box, because "no photos" is itself a moderation signal.
         */}
-        <div className="bg-muted relative size-16 shrink-0 overflow-hidden rounded-lg border sm:size-20">
+        <div className="bg-muted relative size-16 shrink-0 overflow-hidden rounded-xl border sm:size-20">
           {listing.imageUrl ? (
-            <Image
+            <ListingPhoto
               src={listing.imageUrl}
               alt=""
-              fill
               sizes="80px"
               className="object-cover"
             />

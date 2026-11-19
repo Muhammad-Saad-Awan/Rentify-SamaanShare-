@@ -24,7 +24,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/85",
+        /*
+         * Emerald, matching the reference design: the action a screen exists for is the one
+         * green thing on it (5.48:1 white on #047857). Navy stays available as `navy` for a
+         * second solid action that must not compete. On a navy band neither works - emerald on
+         * navy is 2.66:1 - so those call sites invert by hand (see `CtaSection`).
+         */
+        default: "bg-brand text-brand-foreground hover:bg-brand-hover",
+        navy: "bg-primary text-primary-foreground hover:bg-primary/85",
+        "brand-outline":
+          "border-brand text-brand bg-card hover:bg-brand-soft hover:text-brand-soft-foreground aria-expanded:bg-brand-soft",
         outline:
           "border-input bg-background hover:border-foreground hover:text-foreground aria-expanded:border-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:

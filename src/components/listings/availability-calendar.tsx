@@ -225,7 +225,7 @@ function DayButton({
         onToggle(date, !isBlocked);
       }}
       className={cn(
-        "focus-visible:ring-ring flex aspect-square w-full items-center justify-center rounded-md border text-sm tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+        "focus-visible:ring-ring flex aspect-square w-full items-center justify-center rounded-lg border text-sm tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         isHeldByBooking &&
           "bg-success-soft text-success-soft-foreground border-success/40 font-medium",
         !isHeldByBooking &&

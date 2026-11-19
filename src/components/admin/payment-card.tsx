@@ -176,7 +176,7 @@ function PaymentCard({ payment }: PaymentCardProps) {
         The reconciliation line. Monospace on the reference because it is read character by
         character against another screen, and a proportional font makes that materially harder.
       */}
-      <div className="bg-muted/60 flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-lg px-4 py-3">
+      <div className="bg-muted/60 flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-xl px-4 py-3">
         <span className="font-heading text-xl font-bold tracking-tight tabular-nums">
           {formatPKR(payment.amount + payment.securityDeposit)}
         </span>

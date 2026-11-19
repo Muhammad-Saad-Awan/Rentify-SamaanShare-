@@ -162,7 +162,7 @@ async function MemberSearch({
         description="Find a member to verify, suspend, ban or change the role of. Open one to act on it."
       />
 
-      <div className="bg-card flex flex-col gap-4 rounded-xl border p-4">
+      <div className="bg-card flex flex-col gap-4 rounded-2xl border p-4 sm:p-5">
         {/*
           A plain GET form, not a client-side filter. The query lands in the URL, so a search is
           shareable and survives the back button - the same reasoning as the listings sort control.

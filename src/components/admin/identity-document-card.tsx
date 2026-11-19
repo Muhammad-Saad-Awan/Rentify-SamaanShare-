@@ -101,7 +101,7 @@ function IdentityDocumentCard({
           )}
         </div>
 
-        <FactGrid columns={4} className="rounded-lg border p-4">
+        <FactGrid columns={4} className="rounded-xl border p-4">
           <Fact label="CNIC number" mono className="col-span-2 sm:col-span-1">
             {document.cnicNumber}
           </Fact>

@@ -183,7 +183,7 @@ async function BookingQueue({ params }: BookingQueueProps) {
         }
       />
 
-      <div className="bg-card flex flex-col gap-4 rounded-xl border p-4">
+      <div className="bg-card flex flex-col gap-4 rounded-2xl border p-4 sm:p-5">
         {/*
           One GET form for the search and the date range, so a lookup lands in the URL and stays
           shareable - the same reasoning as the listings and members screens. The scoping parameters

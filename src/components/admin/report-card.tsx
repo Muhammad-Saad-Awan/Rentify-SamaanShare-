@@ -141,7 +141,7 @@ function ReportCard({ report }: ReportCardProps) {
         )}
 
         {/* The evidence: what was reported, and the reporter's own words. */}
-        <div className="flex flex-col gap-2.5 rounded-lg border px-3.5 py-3">
+        <div className="flex flex-col gap-2.5 rounded-xl border px-3.5 py-3">
           <TargetPreview target={report.target} />
 
           {report.description && (
@@ -172,7 +172,7 @@ function ReportCard({ report }: ReportCardProps) {
         )}
 
         {!isPending && (
-          <div className="bg-muted/50 flex flex-col gap-1 rounded-lg border px-3.5 py-3 text-xs leading-relaxed">
+          <div className="bg-muted/50 flex flex-col gap-1 rounded-xl border px-3.5 py-3 text-xs leading-relaxed">
             <p className="font-medium">
               {report.action && report.action !== ReportAction.NONE
                 ? REPORT_ACTION_LABELS[report.action]

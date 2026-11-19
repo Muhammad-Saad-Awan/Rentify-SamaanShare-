@@ -330,7 +330,7 @@ export default async function AdminListingPage({
                   made. A moderator who has to open another tab to read the complaints decides from
                   the reason label alone - which is the reporter's opinion, not evidence.
                 */}
-                <ul className="flex flex-col divide-y rounded-lg border">
+                <ul className="flex flex-col divide-y rounded-xl border">
                   {listing.reports.map((report) => (
                     <li
                       key={report.id}

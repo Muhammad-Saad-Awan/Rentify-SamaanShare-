@@ -50,7 +50,7 @@ function PaymentInstructions({
   const total = amount + securityDeposit;
 
   return (
-    <div className="bg-card flex flex-col gap-4 rounded-lg border p-4">
+    <div className="bg-card flex flex-col gap-4 rounded-xl border p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-heading flex items-center gap-2 text-sm font-semibold">
           <ShieldCheckIcon className="size-4 shrink-0" aria-hidden="true" />

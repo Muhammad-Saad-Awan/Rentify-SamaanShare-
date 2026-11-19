@@ -21,7 +21,7 @@ interface DashboardPageSkeletonProps {
 /**
  * Shared skeleton for every dashboard Suspense fallback and the few safe `loading.tsx` files.
  *
- * Mirrors the real page's structure - title block with the same bottom rule as `PageHeader`,
+ * Mirrors the real page's structure - title block sized like `PageHeader`'s,
  * optional stat row, cards - so the transition to loaded content does not shift layout. Because the
  * shell (sidebar and header) lives in the layout above the Suspense boundary, it stays interactive
  * while this shows; only the content column swaps.
@@ -40,15 +40,15 @@ function DashboardPageSkeleton({
       role="status"
       aria-label="Loading page content"
     >
-      <div className="flex flex-col gap-2 border-b pb-6">
-        <Skeleton className="h-8 w-56 max-w-full" />
+      <div className="flex flex-col gap-2 pb-2">
+        <Skeleton className="h-9 w-64 max-w-full sm:h-10" />
         <Skeleton className="h-4 w-80 max-w-full" />
       </div>
 
       {withStats && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }, (_, index) => (
-            <Skeleton key={index} className="h-[136px] rounded-xl" />
+            <Skeleton key={index} className="h-[136px] rounded-2xl" />
           ))}
         </div>
       )}
@@ -56,7 +56,7 @@ function DashboardPageSkeleton({
       {variant === "split" ? (
         <div className="grid gap-4 lg:grid-cols-2">
           {Array.from({ length: cards }, (_, index) => (
-            <Skeleton key={index} className="h-56 rounded-xl" />
+            <Skeleton key={index} className="h-56 rounded-2xl" />
           ))}
         </div>
       ) : (
@@ -65,7 +65,7 @@ function DashboardPageSkeleton({
             variant === "row" ? (
               <RowSkeleton key={index} />
             ) : (
-              <Skeleton key={index} className="h-40 rounded-xl" />
+              <Skeleton key={index} className="h-40 rounded-2xl" />
             )
           )}
         </div>
@@ -87,7 +87,7 @@ function RowSkeleton() {
             <Skeleton className="h-4 w-1/2" />
           </div>
         </div>
-        <Skeleton className="h-16 w-full rounded-lg" />
+        <Skeleton className="h-16 w-full rounded-xl" />
         <div className="flex gap-2">
           <Skeleton className="h-8 w-28" />
           <Skeleton className="h-8 w-24" />

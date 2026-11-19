@@ -11,7 +11,6 @@ import {
   PlayIcon,
   Trash2Icon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -23,6 +22,7 @@ import {
 import { ListingStatusBadge } from "@/components/listings/listing-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter } from "@/components/ui/card";
+import { ListingPhoto } from "@/components/marketplace/listing-photo";
 import { ListingStatus } from "@/generated/prisma/enums";
 import { formatPKRPerDay } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
@@ -118,12 +118,11 @@ function OwnerListingCard({ listing }: OwnerListingCardProps) {
           is managing several items - the cover photo is for recognition, not the point.
         */}
         <div className="flex gap-4">
-          <div className="bg-muted relative aspect-4/3 w-24 shrink-0 self-start overflow-hidden rounded-lg sm:w-36">
+          <div className="bg-muted relative aspect-4/3 w-24 shrink-0 self-start overflow-hidden rounded-xl sm:w-36">
             {listing.imageUrl ? (
-              <Image
+              <ListingPhoto
                 src={listing.imageUrl}
                 alt=""
-                fill
                 sizes="(min-width: 640px) 9rem, 6rem"
                 className="object-cover"
               />

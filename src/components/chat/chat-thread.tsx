@@ -34,7 +34,6 @@ import { Button } from "@/components/ui/button";
 import { MessageKind } from "@/generated/prisma/enums";
 import { MESSAGE_BODY_MAX } from "@/lib/chat/rules";
 import { setActiveConversation, subscribeChat } from "@/lib/realtime/chat-bus";
-import { cn } from "@/lib/utils/cn";
 import { formatDayLabel, karachiDay } from "@/lib/utils/date";
 import { UNAUTHENTICATED_ERROR } from "@/types";
 
@@ -604,14 +603,15 @@ function ChatThread({
           )}
 
           {ordered.length === 0 && visiblePending.length === 0 && (
-            <div className="mx-auto flex max-w-sm flex-col items-center gap-3 py-12 text-center">
+            <div className="mx-auto flex max-w-sm flex-col items-center gap-3 py-14 text-center">
+              {/* The mint icon disc shared with the inbox's empty states. */}
               <span
-                className="bg-card text-foreground ring-muted/60 flex size-12 items-center justify-center rounded-xl border ring-4"
+                className="bg-brand-soft text-brand ring-brand-soft/50 mb-1 flex size-14 items-center justify-center rounded-full ring-8"
                 aria-hidden="true"
               >
-                <MessageCircleIcon className="size-5" strokeWidth={1.75} />
+                <MessageCircleIcon className="size-6" strokeWidth={1.75} />
               </span>
-              <p className="font-heading text-base font-semibold tracking-tight">
+              <p className="font-heading text-lg font-bold tracking-tight">
                 Start the conversation
               </p>
               <p className="text-muted-foreground text-sm leading-relaxed">
@@ -632,12 +632,14 @@ function ChatThread({
             return (
               <Fragment key={message.id}>
                 {newDay && (
+                  // A floating pill on hairlines: the day is a landmark, not a heading, so it stays
+                  // quieter than any message.
                   <div
-                    className="my-4 flex items-center gap-3"
+                    className="my-5 flex items-center gap-3"
                     role="presentation"
                   >
                     <span className="bg-border h-px flex-1" />
-                    <span className="text-muted-foreground bg-card rounded-full border px-3 py-0.5 text-xs font-medium">
+                    <span className="text-muted-foreground bg-card rounded-full border px-3 py-1 text-xs font-medium shadow-xs">
                       {formatDayLabel(message.createdAt)}
                     </span>
                     <span className="bg-border h-px flex-1" />
@@ -646,13 +648,15 @@ function ChatThread({
                 {message.id === firstUnreadId && (
                   <div
                     data-unread-divider
-                    className="my-3 flex items-center gap-3"
+                    className="my-4 flex items-center gap-3"
                   >
-                    <span className="bg-foreground h-px flex-1" />
-                    <span className="bg-foreground text-background rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                    {/* Emerald hairlines and a mint pill (brand-soft-foreground on brand-soft, 6.78:1): new is good
+                        news, and the words carry it without the colour. */}
+                    <span className="bg-brand/40 h-px flex-1" />
+                    <span className="bg-brand-soft text-brand-soft-foreground border-brand/30 rounded-full border px-3 py-1 text-xs font-semibold">
                       New messages
                     </span>
-                    <span className="bg-foreground h-px flex-1" />
+                    <span className="bg-brand/40 h-px flex-1" />
                   </div>
                 )}
                 <MessageItem
@@ -674,10 +678,10 @@ function ChatThread({
           })}
 
           {/* The viewer's own unsent messages. The same bubble as a delivered one, so nothing jumps
-            when the server's copy replaces it: a lighter navy while sending (white on it is still
-            7.8:1), and a full-strength bubble with an alert mark and a retry once it has failed -
-            fading a failed message would make the one thing the reader must act on the hardest
-            to read. */}
+            when the server's copy replaces it. Full-strength emerald in both states: a lighter
+            emerald would drop white text to 3.75:1, so "Sending…" below says it instead. A failed
+            one gains an alert mark and a retry - fading it would make the one thing the reader
+            must act on the hardest to read. */}
           {visiblePending.map((item) => (
             <div
               key={item.clientId}
@@ -690,12 +694,7 @@ function ChatThread({
                     aria-hidden="true"
                   />
                 )}
-                <p
-                  className={cn(
-                    "text-primary-foreground min-w-0 rounded-[1.125rem] rounded-br-sm px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap",
-                    item.status === "sending" ? "bg-primary/80" : "bg-primary"
-                  )}
-                >
+                <p className="bg-brand text-brand-foreground min-w-0 rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed break-words whitespace-pre-wrap">
                   {item.body}
                 </p>
               </div>
@@ -731,7 +730,7 @@ function ChatThread({
             type="button"
             size="sm"
             variant="outline"
-            className="bg-card absolute right-4 bottom-4 z-10 rounded-full shadow-md"
+            className="bg-card shadow-soft absolute right-4 bottom-4 z-10 rounded-full"
             onClick={() => {
               stickToBottom.current = true;
               setMissed(0);
@@ -748,7 +747,7 @@ function ChatThread({
 
       {/* The composer. Outside the scrolling log, so it stays put however long the thread is, and
           padded clear of the home indicator on phones that have one. */}
-      <div className="bg-card border-t px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
+      <div className="bg-background px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5">
         {canWrite && draft.length === 0 && quickReplies.length > 0 && (
           <div
             className="mb-2.5 flex gap-2 overflow-x-auto pb-0.5"
@@ -760,7 +759,7 @@ function ChatThread({
                 key={text}
                 type="button"
                 onClick={() => applyQuickReply(text)}
-                className="text-foreground bg-card hover:bg-muted hover:border-foreground/20 focus-visible:ring-ring flex h-8 shrink-0 items-center rounded-full border px-3 text-xs transition-colors outline-none focus-visible:ring-2"
+                className="text-foreground bg-card hover:bg-brand-soft hover:text-brand-soft-foreground hover:border-brand/40 focus-visible:ring-ring flex h-8 shrink-0 items-center rounded-full border px-3 text-xs font-medium transition-colors outline-none focus-visible:ring-2"
               >
                 {text}
               </button>
@@ -768,8 +767,12 @@ function ChatThread({
           </div>
         )}
 
+        {/* One raised bar holding the offer button, the field and the send button, so the composer
+            reads as a single control floating over the log. `border-input`, not `border`: the
+            bar's outline is the field's only edge, and a control boundary needs 3:1 against the
+            page (`--input` on the page, 3.38:1). The focus treatment matches `Input`. */}
         <form
-          className="flex items-end gap-2"
+          className="bg-card border-input shadow-soft hover:border-foreground/40 focus-within:border-ring focus-within:ring-ring/20 has-disabled:bg-muted has-disabled:hover:border-input flex items-end gap-1.5 rounded-2xl border p-1.5 transition-[border-color,box-shadow] focus-within:ring-3"
           onSubmit={(event) => {
             event.preventDefault();
             send();
@@ -778,8 +781,8 @@ function ChatThread({
           {offerForm && canWrite && (
             <Button
               type="button"
-              variant="outline"
-              className="h-11 shrink-0 rounded-full"
+              variant="secondary"
+              className="h-10 shrink-0 rounded-xl max-sm:w-10 max-sm:px-0"
               onClick={() => setOfferOpen(true)}
               aria-label="Make an offer"
             >
@@ -788,36 +791,32 @@ function ChatThread({
             </Button>
           )}
 
-          {/* `border-input`, not `border`: this outline is the only edge of the field, and a control
-              boundary needs 3:1 against the surface. The focus treatment matches `Input`. */}
-          <div className="bg-card border-input hover:border-foreground/40 focus-within:border-ring focus-within:ring-ring/20 has-disabled:bg-muted has-disabled:hover:border-input flex min-h-11 flex-1 items-end rounded-3xl border px-4 py-2 transition-colors focus-within:ring-3">
-            <label htmlFor={composerId} className="sr-only">
-              Message {counterparty.name}
-            </label>
-            <textarea
-              ref={composerRef}
-              id={composerId}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={onKeyDown}
-              maxLength={MESSAGE_BODY_MAX}
-              rows={1}
-              placeholder={
-                canWrite
-                  ? `Message ${counterparty.name}`
-                  : "Conversation closed"
-              }
-              disabled={!canWrite}
-              aria-describedby={hintId}
-              // 16px below `md`, as `Input` does: smaller makes iOS zoom the page on focus.
-              className="placeholder:text-muted-foreground max-h-40 w-full resize-none bg-transparent text-base leading-6 outline-none disabled:cursor-not-allowed md:text-sm"
-            />
-          </div>
+          <label htmlFor={composerId} className="sr-only">
+            Message {counterparty.name}
+          </label>
+          <textarea
+            ref={composerRef}
+            id={composerId}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={onKeyDown}
+            maxLength={MESSAGE_BODY_MAX}
+            rows={1}
+            placeholder={
+              canWrite ? `Message ${counterparty.name}` : "Conversation closed"
+            }
+            disabled={!canWrite}
+            aria-describedby={hintId}
+            // 16px below `md`, as `Input` does: smaller makes iOS zoom the page on focus. The
+            // bar draws the focus ring, so the field itself needs no outline.
+            className="placeholder:text-muted-foreground max-h-40 min-h-10 min-w-0 flex-1 resize-none bg-transparent px-2.5 py-2 text-base leading-6 outline-none disabled:cursor-not-allowed md:text-sm"
+          />
 
+          {/* Emerald, the default button: sending is the action this screen exists for. */}
           <Button
             type="submit"
             size="icon"
-            className="size-11 shrink-0 rounded-full"
+            className="size-10 shrink-0 rounded-xl"
             disabled={!canWrite || draft.trim().length === 0}
             aria-label="Send message"
           >

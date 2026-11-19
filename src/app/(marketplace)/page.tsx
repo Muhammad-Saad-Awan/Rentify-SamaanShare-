@@ -1,3 +1,4 @@
+import { BenefitsStrip } from "@/components/marketplace/benefits-strip";
 import { CategoryGrid } from "@/components/marketplace/category-grid";
 import { CityShortcuts } from "@/components/marketplace/city-shortcuts";
 import { CtaSection } from "@/components/marketplace/cta-section";
@@ -95,15 +96,17 @@ export default async function HomePage() {
       <JsonLd data={websiteJsonLd()} />
       <JsonLd data={organizationJsonLd()} />
 
-      <HeroSection listingCount={featured.total} categories={categories} />
+      <HeroSection />
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 py-16 lg:px-6 lg:py-20">
-        <section className="flex flex-col gap-7">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 pb-16 lg:px-6 lg:pb-20">
+        <BenefitsStrip />
+
+        <section className="-mt-6 flex flex-col gap-7">
           <SectionHeading
-            title="Browse by category"
-            description="Each category shows how many items you can rent right now."
+            title="Popular Categories"
+            description="Find exactly what you need, or list your own items."
             actionHref="/listings"
-            actionLabel="See all listings"
+            actionLabel="Browse All Categories"
           />
 
           <CategoryGrid categories={categories} />
@@ -118,7 +121,7 @@ export default async function HomePage() {
         {featured.items.length > 0 && (
           <section className="flex flex-col gap-7">
             <SectionHeading
-              title="Latest listings"
+              title="Latest Listings"
               description="The most recently published items across every city."
               actionHref="/listings"
               actionLabel="Browse all"
@@ -134,7 +137,7 @@ export default async function HomePage() {
 
         <section className="flex flex-col gap-7">
           <SectionHeading
-            title="Rent in your city"
+            title="Rent in Your City"
             description="SamaanShare is live in three cities to start with."
           />
 
@@ -144,7 +147,7 @@ export default async function HomePage() {
         {/* Anchored so the footer's "How it works" link lands here. */}
         <section id="how-it-works" className="flex scroll-mt-24 flex-col gap-7">
           <SectionHeading
-            title="How it works"
+            title="How It Works"
             description="Three steps from finding an item to handing it back."
           />
 

@@ -1049,7 +1049,7 @@ function EditPanel({
   const Field = multiline ? Textarea : Input;
 
   return (
-    <div className="bg-muted/50 flex flex-col gap-2.5 rounded-lg border p-3 sm:p-4">
+    <div className="bg-muted/50 flex flex-col gap-2.5 rounded-xl border p-3 sm:p-4">
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium" htmlFor={id}>
           {label}
@@ -1149,7 +1149,7 @@ function Note({ children, tone = "default" }: NoteProps) {
   return (
     <div
       className={cn(
-        "flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-sm",
+        "flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-sm",
         tone === "warning"
           ? "border-warning/40 bg-warning-soft text-warning-soft-foreground"
           : "border-success/20 bg-success-soft text-success-soft-foreground"

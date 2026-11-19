@@ -235,7 +235,7 @@ function UserModerationPanel({
       )}
 
       {bannable.allowed && (
-        <div className="border-destructive/30 bg-destructive/5 flex flex-col gap-2 rounded-lg border p-3">
+        <div className="border-destructive/30 bg-destructive/5 flex flex-col gap-2 rounded-xl border p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-destructive text-xs font-medium">
               Ban — not reversible from this screen

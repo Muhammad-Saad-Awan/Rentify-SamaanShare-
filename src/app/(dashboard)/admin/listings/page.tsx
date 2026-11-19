@@ -139,7 +139,7 @@ async function ListingQueue({ params }: ListingQueueProps) {
         description="Every listing on the platform, newest first, including removed ones and those hidden by their owner's suspension."
       />
 
-      <div className="bg-card flex flex-col gap-4 rounded-xl border p-4">
+      <div className="bg-card flex flex-col gap-4 rounded-2xl border p-4 sm:p-5">
         {/*
           A plain GET form, not a client-side filter. The query lands in the URL, so a search is
           shareable and survives the back button - the same reasoning as the browse sort control.

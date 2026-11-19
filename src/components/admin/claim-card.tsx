@@ -143,7 +143,7 @@ function ClaimCard({ claim }: ClaimCardProps) {
           The money in question, before the arguments about it. The deposit is the ceiling of any
           award, so the two figures are always read together.
         */}
-        <div className="bg-muted/60 flex flex-wrap items-baseline gap-x-6 gap-y-1 rounded-lg px-4 py-3">
+        <div className="bg-muted/60 flex flex-wrap items-baseline gap-x-6 gap-y-1 rounded-xl px-4 py-3">
           <div className="flex flex-col">
             <span className="text-muted-foreground text-xs">Claimed</span>
             <span className="font-heading text-xl font-bold tracking-tight tabular-nums">
@@ -182,7 +182,7 @@ function ClaimCard({ claim }: ClaimCardProps) {
           them - stacked, the renter's answer sat below the fold of the owner's claim.
         */}
         <div className="grid gap-3 lg:grid-cols-2">
-          <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border px-3.5 py-3 text-sm">
+          <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border px-3.5 py-3 text-sm">
             <p className="font-medium">The owner says</p>
             {/* A string, never HTML - it is user input. */}
             <p className="text-muted-foreground leading-relaxed break-words whitespace-pre-line">
@@ -199,7 +199,7 @@ function ClaimCard({ claim }: ClaimCardProps) {
             )}
           </div>
 
-          <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border px-3.5 py-3 text-sm">
+          <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border px-3.5 py-3 text-sm">
             <p className="font-medium">The renter says</p>
             {claim.responseNote ? (
               <p className="text-muted-foreground leading-relaxed break-words whitespace-pre-line">
@@ -223,7 +223,7 @@ function ClaimCard({ claim }: ClaimCardProps) {
         </div>
 
         {claim.handover && (
-          <div className="bg-muted/50 flex flex-col gap-1 rounded-lg border px-3.5 py-3 text-xs">
+          <div className="bg-muted/50 flex flex-col gap-1 rounded-xl border px-3.5 py-3 text-xs">
             <p className="font-medium">
               Return record:{" "}
               {HANDOVER_CONDITION_LABELS[claim.handover.condition]}
@@ -245,7 +245,7 @@ function ClaimCard({ claim }: ClaimCardProps) {
         )}
 
         {claim.status === ClaimStatus.RESOLVED && (
-          <div className="bg-muted/50 flex flex-col gap-1 rounded-lg border px-3.5 py-3 text-xs leading-relaxed">
+          <div className="bg-muted/50 flex flex-col gap-1 rounded-xl border px-3.5 py-3 text-xs leading-relaxed">
             <p className="flex items-center gap-1.5 font-medium">
               <GavelIcon className="size-3.5" aria-hidden="true" />
               Upheld {formatPKR(claim.amountUpheld ?? 0)}

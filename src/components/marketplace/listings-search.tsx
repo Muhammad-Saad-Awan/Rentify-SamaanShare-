@@ -44,7 +44,9 @@ function ListingsSearch({
       className={cn(
         "flex min-w-0 items-center gap-2",
         isHero &&
-          "border-foreground bg-background focus-within:ring-foreground/10 gap-1.5 rounded-xl border-2 p-1.5 focus-within:ring-4",
+          // Raised rather than outlined, as in the reference: a white bar floating on the page.
+          // The `border-input` edge is kept so the field still has a 3:1 boundary.
+          "border-input bg-card shadow-soft focus-within:border-brand focus-within:ring-brand/15 gap-1.5 rounded-2xl border p-1.5 focus-within:ring-4",
         className
       )}
     >
@@ -67,7 +69,11 @@ function ListingsSearch({
           name={FILTER_PARAM.q}
           defaultValue={filters.q ?? ""}
           maxLength={MAX_QUERY_LENGTH}
-          placeholder="Search cameras, drills, tents..."
+          placeholder={
+            isHero
+              ? "Search for items (e.g. camera, laptop, dress...)"
+              : "Search cameras, drills, tents..."
+          }
           // The visible label would duplicate the placeholder in this toolbar,
           // so the accessible name is supplied directly.
           aria-label="Search listings"
@@ -82,7 +88,7 @@ function ListingsSearch({
       <Button
         type="submit"
         size={isHero ? "lg" : "default"}
-        className="shrink-0"
+        className={cn("shrink-0", isHero && "h-12 rounded-xl px-7 text-base")}
       >
         Search
       </Button>

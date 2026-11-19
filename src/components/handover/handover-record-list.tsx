@@ -95,7 +95,7 @@ function HandoverRecordCard({ handover }: { handover: HandoverSnapshot }) {
   return (
     <div
       className={cn(
-        "bg-card flex flex-col gap-2 rounded-lg border px-3 py-3 text-sm",
+        "bg-card flex flex-col gap-2 rounded-xl border px-3 py-3 text-sm",
         // An answer is owed by this viewer: the record's edge says so before its button does.
         handover.canConfirm && "border-warning/60"
       )}

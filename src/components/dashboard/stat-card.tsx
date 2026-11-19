@@ -56,14 +56,14 @@ function StatCard({
         </span>
         <span
           className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-lg",
+            "flex size-10 shrink-0 items-center justify-center rounded-xl",
             attention
               ? "bg-warning-soft text-warning-soft-foreground"
-              : "bg-muted text-foreground"
+              : "bg-brand-soft text-brand"
           )}
           aria-hidden="true"
         >
-          <Icon className="size-4" />
+          <Icon className="size-5" strokeWidth={1.75} />
         </span>
       </div>
 
@@ -93,7 +93,7 @@ function StatCard({
         "h-full py-0",
         attention && "border-warning/60",
         href &&
-          "focus-within:ring-ring focus-within:ring-offset-background hover:border-foreground/25 transition-colors focus-within:ring-2 focus-within:ring-offset-2"
+          "hover-lift focus-within:ring-ring focus-within:ring-offset-background hover:border-brand/30 focus-within:ring-2 focus-within:ring-offset-2"
       )}
     >
       {/* The tile's own text is the link's name - label, value and hint, read in order. */}

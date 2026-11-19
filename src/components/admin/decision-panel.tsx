@@ -35,7 +35,7 @@ function DecisionPanel({
   return (
     <div
       className={cn(
-        "bg-muted/50 flex flex-col gap-3 rounded-lg border p-4",
+        "bg-muted/50 flex flex-col gap-3 rounded-xl border p-4",
         className
       )}
     >

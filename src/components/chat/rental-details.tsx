@@ -4,10 +4,10 @@ import {
   LockIcon,
   ShieldCheckIcon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 import { StatusBadge } from "@/components/shared/status-badge";
+import { ListingPhoto } from "@/components/marketplace/listing-photo";
 import { bookingBadge } from "@/lib/bookings/status-badge";
 import { BOOKING_STATUS_LABELS } from "@/lib/bookings/timeline";
 import { formatPKR, formatPKRPerDay } from "@/lib/utils/currency";
@@ -50,7 +50,7 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
 
   return (
     <details className="group bg-card border-b">
-      <summary className="hover:bg-muted/50 focus-visible:ring-ring flex min-h-11 cursor-pointer list-none items-center gap-3 px-4 py-2 text-xs transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+      <summary className="hover:bg-muted/60 focus-visible:ring-ring flex min-h-11 cursor-pointer list-none items-center gap-3 px-4 py-2 text-xs transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset sm:px-5 [&::-webkit-details-marker]:hidden">
         {latest ? (
           <>
             <BookingStatusBadge status={latest.status} />
@@ -80,19 +80,18 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
         </span>
       </summary>
 
-      <div className="grid gap-4 px-4 pt-1 pb-4 md:grid-cols-[1fr_16rem]">
+      <div className="grid gap-4 px-4 pt-1 pb-4 sm:px-5 md:grid-cols-[1fr_16rem]">
         <div className="flex flex-col gap-3">
           {/* The listing, for the phone layout where the header has no room for it. */}
           <Link
             href={`/listings/${detail.listing.id}`}
-            className="hover:bg-muted/60 focus-visible:ring-ring flex items-center gap-3 rounded-xl border p-2 transition-colors outline-none focus-visible:ring-2 sm:hidden"
+            className="hover:bg-muted/60 focus-visible:ring-ring flex items-center gap-3 rounded-2xl border p-2 transition-colors outline-none focus-visible:ring-2 sm:hidden"
           >
-            <span className="bg-muted relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg">
+            <span className="bg-muted relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl">
               {detail.listing.imageUrl ? (
-                <Image
+                <ListingPhoto
                   src={detail.listing.imageUrl}
                   alt=""
-                  fill
                   sizes="48px"
                   className="object-cover"
                 />
@@ -123,7 +122,7 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
               {detail.bookings.map((booking) => (
                 <li
                   key={booking.id}
-                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 rounded-lg border px-3 py-2.5 text-sm"
+                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 rounded-xl border px-3.5 py-2.5 text-sm"
                 >
                   <span className="flex flex-col">
                     <span className="font-medium">
@@ -155,7 +154,7 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
           {detail.bookings.length > 0 && (
             <Link
               href={bookingsHref}
-              className="text-primary focus-visible:ring-ring self-start rounded-sm text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2"
+              className="text-brand focus-visible:ring-ring self-start rounded-sm text-sm font-semibold underline-offset-4 outline-none hover:underline focus-visible:ring-2"
             >
               {detail.role === "renter"
                 ? "Go to my bookings"
@@ -164,8 +163,9 @@ function RentalDetails({ detail }: { detail: ConversationDetail }) {
           )}
         </div>
 
-        <aside className="bg-muted/60 flex flex-col gap-2 rounded-lg p-3 text-xs leading-relaxed">
-          <p className="flex items-center gap-1.5 font-medium">
+        {/* Mint, the theme's trust surface; muted text on it is 5.51:1. */}
+        <aside className="bg-brand-soft flex flex-col gap-2 rounded-xl p-3.5 text-xs leading-relaxed">
+          <p className="text-brand-soft-foreground flex items-center gap-1.5 font-semibold">
             <ShieldCheckIcon className="size-4" aria-hidden="true" />
             Rent safely
           </p>

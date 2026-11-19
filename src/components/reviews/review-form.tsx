@@ -77,7 +77,7 @@ function ReviewForm({ bookingId, side, onDone, onCancel }: ReviewFormProps) {
   }
 
   return (
-    <div className="bg-muted/50 flex flex-col gap-3 rounded-lg px-3 py-3">
+    <div className="bg-muted/50 flex flex-col gap-3 rounded-xl px-3 py-3">
       <p className="text-xs font-medium">{prompt}</p>
 
       <div

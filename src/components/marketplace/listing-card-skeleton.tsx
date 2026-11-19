@@ -10,10 +10,10 @@ import { LISTINGS_PAGE_SIZE } from "@/lib/queries/listings";
  */
 function ListingCardSkeleton() {
   return (
-    <div className="flex h-full flex-col gap-3">
+    <div className="bg-card flex h-full flex-col gap-3 rounded-2xl border p-2.5 pb-4">
       <Skeleton className="aspect-4/3 w-full rounded-xl" />
 
-      <div className="flex flex-col gap-2 px-0.5">
+      <div className="flex flex-col gap-2 px-1.5">
         <Skeleton className="h-3 w-20" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-3/4" />
@@ -47,7 +47,7 @@ function ListingsGridSkeleton({
     <div
       role="status"
       aria-label="Loading listings"
-      className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
     >
       {Array.from({ length: count }, (_, index) => (
         <ListingCardSkeleton key={index} />

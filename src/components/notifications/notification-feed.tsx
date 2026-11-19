@@ -110,7 +110,7 @@ function FeedGroup({
         edge with a dot, a bold title, and "Unread" for screen readers - so none of it rests on
         colour.
       */}
-      <ul className="bg-card divide-y overflow-hidden rounded-xl border">
+      <ul className="bg-card divide-y overflow-hidden rounded-2xl border">
         {items.map((item) => {
           const content = (
             <>

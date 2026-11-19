@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 
 import { ListingsGrid } from "@/components/marketplace/listings-grid";
 import { ListingsSort } from "@/components/marketplace/listings-sort";
+import { PageBanner } from "@/components/marketplace/page-banner";
 import { SubcategoryNav } from "@/components/marketplace/subcategory-nav";
 import { EmptyState } from "@/components/shared/empty-state";
 import { JsonLd } from "@/components/shared/json-ld";
 import { Pagination } from "@/components/shared/pagination";
 import { Button } from "@/components/ui/button";
+import { categoryImage } from "@/config/category-images";
 import {
   buildListingsHref,
   parseListingFilters,
@@ -155,32 +157,14 @@ export default async function CategoryPage({
       />
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            {/* Neutral tile, as on the homepage grid - emerald is kept for trust and good news. */}
-            <span
-              className="bg-card text-foreground flex size-12 shrink-0 items-center justify-center rounded-xl border sm:size-14"
-              aria-hidden="true"
-            >
-              <Icon className="size-6" strokeWidth={1.75} />
-            </span>
-
-            <div className="flex min-w-0 flex-col gap-1">
-              <h1 className="font-heading text-3xl font-bold tracking-[-0.025em] sm:text-4xl">
-                {category.name}
-              </h1>
-              <p className="text-muted-foreground text-sm">
-                {resultSummary(total, activeSubcategory?.name)}
-              </p>
-            </div>
-          </div>
-
-          {category.description && (
-            <p className="text-muted-foreground max-w-[65ch] text-[0.9375rem] leading-relaxed">
-              {category.description}
-            </p>
-          )}
-        </div>
+        <PageBanner
+          eyebrow="Category"
+          eyebrowIcon={Icon}
+          title={category.name}
+          summary={resultSummary(total, activeSubcategory?.name)}
+          description={category.description}
+          image={categoryImage(category.slug)}
+        />
 
         {/*
           Two rows at every width. Side by side, the sort group and the subcategory pills fought

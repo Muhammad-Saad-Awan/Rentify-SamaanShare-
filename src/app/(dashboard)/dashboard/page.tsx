@@ -7,9 +7,9 @@ import {
   InboxIcon,
   PackageIcon,
   PlusIcon,
+  SearchIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -17,8 +17,10 @@ import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-ske
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { ListingStatusBadge } from "@/components/listings/listing-status-badge";
+import { NotificationIcon } from "@/components/notifications/notification-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter } from "@/components/ui/card";
+import { ListingPhoto } from "@/components/marketplace/listing-photo";
 import { ListingStatus } from "@/generated/prisma/enums";
 import { requireUser } from "@/lib/auth/session";
 import { notificationHref } from "@/lib/notifications/messages";
@@ -105,10 +107,16 @@ async function DashboardOverview() {
             : "Rent something you need, or publish something you own."
         }
         actions={
-          <Button size="sm" render={<Link href="/listings/new" />}>
-            <PlusIcon aria-hidden="true" />
-            New listing
-          </Button>
+          <>
+            <Button variant="outline" render={<Link href="/listings" />}>
+              <SearchIcon aria-hidden="true" />
+              Browse items
+            </Button>
+            <Button render={<Link href="/listings/new" />}>
+              <PlusIcon aria-hidden="true" />
+              New listing
+            </Button>
+          </>
         }
       />
 
@@ -118,12 +126,14 @@ async function DashboardOverview() {
         something you do. Amber, not red: nothing has gone wrong, somebody is waiting on you.
       */}
       {hasRequests && (
-        <div className="border-warning/40 bg-warning-soft text-warning-soft-foreground flex flex-col gap-3 rounded-xl border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="flex items-start gap-2.5 text-sm">
-            <TriangleAlertIcon
-              className="text-warning mt-0.5 size-4 shrink-0"
+        <div className="border-warning/40 bg-warning-soft text-warning-soft-foreground animate-fade-up flex flex-col gap-3 rounded-2xl border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <p className="flex items-center gap-3 text-sm">
+            <span
+              className="bg-card text-warning flex size-9 shrink-0 items-center justify-center rounded-xl"
               aria-hidden="true"
-            />
+            >
+              <TriangleAlertIcon className="size-[1.125rem]" strokeWidth={2} />
+            </span>
             <span>
               <span className="font-semibold">
                 {overview.requestsToAnswer === 1
@@ -133,8 +143,11 @@ async function DashboardOverview() {
               Requests expire 48 hours after they are made.
             </span>
           </p>
+          {/* Navy, not the default emerald: emerald means "this went well", and the header's
+              "New listing" is already the one emerald action in view. */}
           <Button
             size="sm"
+            variant="navy"
             className="w-full sm:w-auto"
             render={<Link href="/dashboard/requests" />}
           >
@@ -212,14 +225,20 @@ async function DashboardOverview() {
               feature is coming, an empty state says it works and there is nothing here yet - and
               offers the way out. This card used to be the former, months after the feature landed.
             */
-            <div className="flex flex-col items-start gap-3">
+            <div className="flex flex-1 flex-col items-start gap-3">
+              <span
+                className="bg-brand-soft text-brand flex size-10 items-center justify-center rounded-full"
+                aria-hidden="true"
+              >
+                <PackageIcon className="size-5" strokeWidth={1.75} />
+              </span>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 You have not published anything yet. A listing takes a few
                 minutes and one photo.
               </p>
               <Button
                 size="sm"
-                variant="outline"
+                variant="brand-outline"
                 render={<Link href="/listings/new" />}
               >
                 <PlusIcon aria-hidden="true" />
@@ -272,17 +291,18 @@ async function DashboardOverview() {
                     className="flex items-center gap-3 py-2.5 text-sm"
                   >
                     {/*
-                      A filled navy dot for unread, the bell for read: shape and weight carry the
-                      state alongside the sr-only "(new)", so it never rests on colour alone.
+                      The same tile the inbox and the header panel draw for this event, so one
+                      notification looks alike everywhere. Unread adds a navy dot on its corner and
+                      a heavier title: shape and weight carry the state alongside the sr-only
+                      "(new)", so it never rests on colour alone.
                     */}
-                    <span
-                      className="bg-muted flex size-7 shrink-0 items-center justify-center rounded-full"
-                      aria-hidden="true"
-                    >
-                      {unread ? (
-                        <span className="bg-primary size-2 rounded-full" />
-                      ) : (
-                        <BellIcon className="text-muted-foreground size-3.5" />
+                    <span className="relative shrink-0" aria-hidden="true">
+                      <NotificationIcon
+                        type={item.type}
+                        className="size-8 rounded-lg [&_svg]:size-3.5"
+                      />
+                      {unread && (
+                        <span className="bg-primary ring-card absolute -top-0.5 -right-0.5 size-2.5 rounded-full ring-2" />
                       )}
                     </span>
                     {/*
@@ -307,10 +327,18 @@ async function DashboardOverview() {
               })}
             </ul>
           ) : (
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Nothing yet. Booking requests, approvals and payment confirmations
-              will appear here as they happen.
-            </p>
+            <div className="flex flex-1 flex-col items-start gap-3">
+              <span
+                className="bg-brand-soft text-brand flex size-10 items-center justify-center rounded-full"
+                aria-hidden="true"
+              >
+                <BellIcon className="size-5" strokeWidth={1.75} />
+              </span>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Nothing yet. Booking requests, approvals and payment
+                confirmations will appear here as they happen.
+              </p>
+            </div>
           )}
         </SummaryCard>
       </div>
@@ -330,7 +358,7 @@ function SummaryCard({ title, footer, children }: SummaryCardProps) {
   return (
     <Card>
       <div className="flex flex-1 flex-col gap-4 px-(--card-spacing)">
-        <h2 className="font-heading text-lg font-semibold tracking-tight">
+        <h2 className="font-heading text-lg font-bold tracking-tight">
           {title}
         </h2>
         {children}
@@ -367,12 +395,11 @@ function ListingRow({ listing }: { listing: OwnerListingSummary }) {
 
   return (
     <li className="flex items-center gap-3 py-2.5 text-sm">
-      <span className="bg-muted relative aspect-4/3 w-14 shrink-0 overflow-hidden rounded-md">
+      <span className="bg-muted relative aspect-4/3 w-14 shrink-0 overflow-hidden rounded-lg">
         {listing.imageUrl ? (
-          <Image
+          <ListingPhoto
             src={listing.imageUrl}
             alt=""
-            fill
             sizes="3.5rem"
             className="object-cover"
           />

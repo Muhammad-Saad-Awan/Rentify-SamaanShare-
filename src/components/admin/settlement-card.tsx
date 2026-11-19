@@ -127,7 +127,7 @@ function SettlementCard({ row }: SettlementCardProps) {
         }
       >
         {figures && (
-          <dl className="text-muted-foreground [&_dd]:font-heading grid grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 rounded-lg border px-4 py-3 text-sm [&_dd]:text-right [&_dd]:font-semibold [&_dd]:tabular-nums">
+          <dl className="text-muted-foreground [&_dd]:font-heading grid grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 rounded-xl border px-4 py-3 text-sm [&_dd]:text-right [&_dd]:font-semibold [&_dd]:tabular-nums">
             <dt>Rental</dt>
             <dd className="text-foreground">
               {formatPKR(figures.rentalAmount)}
@@ -201,7 +201,7 @@ function SettlementCard({ row }: SettlementCardProps) {
               {`Settled ${formatDate(settled.settledAt)}${settled.settledByName ? ` by ${settled.settledByName}` : ""}.`}
             </p>
 
-            <ul className="flex flex-col divide-y rounded-lg border">
+            <ul className="flex flex-col divide-y rounded-xl border">
               <TransferRow
                 label="Owner payout"
                 state={settled.ownerPayout}

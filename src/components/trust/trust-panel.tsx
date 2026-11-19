@@ -53,7 +53,7 @@ function TrustPanel({
           <div className="flex items-start gap-3">
             {/* Emerald: an earned trust band is good news, and the only commendation shown. */}
             <span
-              className="bg-success-soft text-success flex size-9 shrink-0 items-center justify-center rounded-lg"
+              className="bg-success-soft text-success flex size-10 shrink-0 items-center justify-center rounded-xl"
               aria-hidden="true"
             >
               <ShieldCheckIcon className="size-[1.125rem]" strokeWidth={1.75} />
@@ -70,7 +70,7 @@ function TrustPanel({
         ) : isNew ? (
           <div className="flex items-start gap-3">
             <span
-              className="bg-muted text-foreground flex size-9 shrink-0 items-center justify-center rounded-lg border"
+              className="bg-brand-soft text-brand flex size-10 shrink-0 items-center justify-center rounded-xl"
               aria-hidden="true"
             >
               <SproutIcon className="size-[1.125rem]" strokeWidth={1.75} />

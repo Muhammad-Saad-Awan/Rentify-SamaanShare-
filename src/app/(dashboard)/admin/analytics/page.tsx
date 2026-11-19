@@ -118,7 +118,7 @@ async function Analytics() {
             Each figure with its definition as a second <dd> - a paragraph is not allowed directly
             inside a <dl> group, and the definition belongs to the term as much as the number does.
           */}
-          <dl className="bg-border grid gap-px overflow-hidden rounded-lg border sm:grid-cols-3">
+          <dl className="bg-border grid gap-px overflow-hidden rounded-xl border sm:grid-cols-3">
             <MoneyFigure
               label="Recorded rent, realised"
               value={formatPKR(money.realisedGmv)}

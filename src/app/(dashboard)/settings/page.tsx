@@ -1,3 +1,5 @@
+import { KeyRoundIcon, Link2Icon, SlidersHorizontalIcon } from "lucide-react";
+
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ConnectedAccounts } from "@/components/settings/connected-accounts";
 import {
@@ -18,7 +20,9 @@ import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 import type { PreferencesFormValues } from "@/lib/validations/preferences";
+import type { LucideIcon } from "lucide-react";
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -94,53 +98,79 @@ export default async function SettingsPage() {
         description="Account security and preferences."
       />
 
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>
-            <h2>{hasPassword ? "Change your password" : "Set a password"}</h2>
-          </CardTitle>
-          <CardDescription>
-            {hasPassword
-              ? "Changing your password signs out every other device. You will stay signed in here."
-              : "Your account signs in with Google. Adding a password lets you sign in with your email address as well, and is required before you can disconnect Google."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {hasPassword ? <ChangePasswordForm /> : <SetPasswordForm />}
-        </CardContent>
-      </Card>
+      <SettingsSection
+        icon={KeyRoundIcon}
+        title={hasPassword ? "Change your password" : "Set a password"}
+        description={
+          hasPassword
+            ? "Changing your password signs out every other device. You will stay signed in here."
+            : "Your account signs in with Google. Adding a password lets you sign in with your email address as well, and is required before you can disconnect Google."
+        }
+      >
+        {hasPassword ? <ChangePasswordForm /> : <SetPasswordForm />}
+      </SettingsSection>
 
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>
-            <h2>Connected accounts</h2>
-          </CardTitle>
-          <CardDescription>
-            Other services you can use to sign in to SamaanShare.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ConnectedAccounts
-            isGoogleConnected={isGoogleConnected}
-            isGoogleAvailable={isGoogleEnabled()}
-            isOnlySignInMethod={isOnlySignInMethod}
-          />
-        </CardContent>
-      </Card>
+      <SettingsSection
+        icon={Link2Icon}
+        title="Connected accounts"
+        description="Other services you can use to sign in to SamaanShare."
+      >
+        <ConnectedAccounts
+          isGoogleConnected={isGoogleConnected}
+          isGoogleAvailable={isGoogleEnabled()}
+          isOnlySignInMethod={isOnlySignInMethod}
+        />
+      </SettingsSection>
 
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>
-            <h2>Preferences</h2>
-          </CardTitle>
-          <CardDescription>
-            Where browsing starts, and which optional notifications you get.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PreferencesForm defaults={preferenceDefaults} />
-        </CardContent>
-      </Card>
+      <SettingsSection
+        icon={SlidersHorizontalIcon}
+        title="Preferences"
+        description="Where browsing starts, and which optional notifications you get."
+      >
+        <PreferencesForm defaults={preferenceDefaults} />
+      </SettingsSection>
     </>
+  );
+}
+
+interface SettingsSectionProps {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  children: ReactNode;
+}
+
+/**
+ * One settings card: a mint icon tile, the section's `h2` and what it controls, then the form.
+ *
+ * The tile is here and not on every dashboard heading because this page is three unrelated forms
+ * stacked in one column - the icon is how the eye finds "the password one" on the way back.
+ */
+function SettingsSection({
+  icon: Icon,
+  title,
+  description,
+  children,
+}: SettingsSectionProps) {
+  return (
+    <Card>
+      <CardHeader className="border-b">
+        <div className="flex items-start gap-3.5">
+          <span
+            className="bg-brand-soft text-brand flex size-10 shrink-0 items-center justify-center rounded-xl"
+            aria-hidden="true"
+          >
+            <Icon className="size-5" strokeWidth={1.75} />
+          </span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <CardTitle>
+              <h2>{title}</h2>
+            </CardTitle>
+            <CardDescription>{description}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   );
 }

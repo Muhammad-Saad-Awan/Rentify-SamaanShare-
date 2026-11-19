@@ -18,15 +18,15 @@ export const metadata: Metadata = {
 export default function MessagesPage() {
   return (
     <div className="bg-background flex flex-1 flex-col items-center justify-center gap-6 px-8 py-12 text-center">
-      {/* The same quiet tile as `EmptyState`, so the empty pane and the empty list match. */}
+      {/* The mint icon disc the empty list and the empty thread use too, so they match. */}
       <span
-        className="bg-card text-foreground ring-muted/60 flex size-14 items-center justify-center rounded-xl border ring-4"
+        className="bg-brand-soft text-brand ring-brand-soft/50 flex size-16 items-center justify-center rounded-full ring-8"
         aria-hidden="true"
       >
-        <MessagesSquareIcon className="size-6" strokeWidth={1.75} />
+        <MessagesSquareIcon className="size-7" strokeWidth={1.75} />
       </span>
       <div className="flex max-w-sm flex-col gap-2">
-        <h2 className="font-heading text-xl font-semibold tracking-tight">
+        <h2 className="font-heading text-xl font-bold tracking-[-0.025em]">
           Your messages
         </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
@@ -34,10 +34,10 @@ export default function MessagesPage() {
           get help during a rental, or sort out the return.
         </p>
       </div>
-      <ul className="bg-card flex max-w-sm flex-col gap-3 rounded-xl border p-4 text-left text-sm">
+      <ul className="bg-card shadow-soft flex max-w-sm flex-col gap-3.5 rounded-2xl border p-4 text-left text-sm">
         <li className="flex gap-3">
           <HandshakeIcon
-            className="text-muted-foreground mt-0.5 size-4 shrink-0"
+            className="text-brand mt-0.5 size-4 shrink-0"
             aria-hidden="true"
           />
           <span className="text-muted-foreground">
@@ -48,7 +48,7 @@ export default function MessagesPage() {
         </li>
         <li className="flex gap-3">
           <ShieldCheckIcon
-            className="text-muted-foreground mt-0.5 size-4 shrink-0"
+            className="text-brand mt-0.5 size-4 shrink-0"
             aria-hidden="true"
           />
           <span className="text-muted-foreground">

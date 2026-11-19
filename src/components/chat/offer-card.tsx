@@ -132,7 +132,7 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
     return (
       <div
         role="status"
-        className="bg-card text-muted-foreground flex w-full max-w-sm items-center gap-2 rounded-2xl border px-4 py-4 text-sm shadow-xs"
+        className="bg-card text-muted-foreground shadow-soft flex w-full max-w-sm items-center gap-2 rounded-2xl border px-4 py-4 text-sm"
       >
         <Loader2Icon className="size-4 animate-spin" aria-hidden="true" />
         Loading offer…
@@ -225,19 +225,21 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
     <article
       aria-label={heading}
       className={cn(
-        "bg-card w-full max-w-sm overflow-hidden rounded-2xl border shadow-xs",
+        "bg-card shadow-soft w-full max-w-sm overflow-hidden rounded-2xl border",
         // Semantic tokens, not raw emerald/amber: the edge says "agreed" or "your move", and
-        // the status pill in the header says it in words.
-        isAccepted && "border-success/40",
-        needsAnswer && "border-warning/60"
+        // the status pill in the header says it in words with an icon - never the colour alone.
+        isAccepted && "border-success",
+        needsAnswer && "border-warning"
       )}
     >
-      <header className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
-        <p className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
-          <HandshakeIcon
-            className="text-muted-foreground size-4 shrink-0"
+      <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
+        <p className="font-heading flex min-w-0 items-center gap-2 text-sm font-semibold tracking-tight">
+          <span
+            className="bg-brand-soft text-brand flex size-7 shrink-0 items-center justify-center rounded-full"
             aria-hidden="true"
-          />
+          >
+            <HandshakeIcon className="size-3.5" />
+          </span>
           <span className="truncate">{heading}</span>
         </p>
         <Badge variant={status.variant} className="shrink-0">
@@ -270,7 +272,7 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
           </p>
         </div>
 
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 border-t pt-3.5 text-sm">
+        <dl className="bg-muted/60 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2.5 rounded-xl px-3.5 py-3 text-sm">
           <dt className="text-muted-foreground">Dates</dt>
           <dd className="text-right">
             {formatDate(current.startDate)} to {formatDate(current.endDate)}
@@ -296,7 +298,7 @@ function OfferCard({ offer, viewerId, proposerName, context }: OfferCardProps) {
         {isOpen && (
           <p
             className={cn(
-              "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium",
+              "flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium",
               needsAnswer
                 ? "bg-warning-soft text-warning-soft-foreground"
                 : "bg-muted text-muted-foreground"

@@ -46,7 +46,7 @@ function PlaceholderCard({
 
         <div className="flex flex-col items-center gap-1.5">
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <h2 className="font-heading text-sm font-medium">{title}</h2>
+            <h2 className="font-heading text-sm font-semibold">{title}</h2>
             {phase && (
               <Badge variant="outline" className="shrink-0">
                 {phase}

@@ -130,7 +130,7 @@ function AdminActionLog({
             {entry.previousValue &&
               entry.newValue &&
               isLongTransition(entry) && (
-                <details className="rounded-lg border text-xs">
+                <details className="rounded-xl border text-xs">
                   <summary className="text-muted-foreground hover:text-foreground cursor-pointer px-3 py-2">
                     What changed
                   </summary>

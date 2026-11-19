@@ -1,6 +1,9 @@
 import { ClipboardCheckIcon, ShieldCheckIcon, WalletIcon } from "lucide-react";
+import Image from "next/image";
 
 import { Brand } from "@/components/shared/brand";
+
+import heroImage from "../../../public/images/hero-camera.jpg";
 
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
@@ -37,40 +40,51 @@ const PROMISES: { icon: LucideIcon; title: string; body: string }[] = [
  * signed-in visitors away from these routes, so doing it again here would only
  * make the pages dynamic for no benefit.
  *
- * From `lg` up the form sits beside a navy panel that says, briefly, why the
+ * From `lg` up the form sits beside a mint panel that says, briefly, why the
  * account is worth making. Below that the panel is dropped entirely: on a phone
  * the form is the task, and anything above it pushes the first field off screen.
  * The one promise that matters most - the money is held, not handed over - comes
  * back as a single line under the card instead.
  *
- * THE PANEL STAYS DARK IN DARK MODE. `bg-primary` inverts to a light surface under
- * `.dark`, which turned the panel into a pale slab beside a dark form; there it
- * becomes a card-coloured column with a border instead, and its text switches to
- * the theme's own foregrounds rather than translucent white.
+ * The panel uses the mint brand surface and the homepage hero photograph, so signing in feels
+ * like the same product as the page the visitor just left. `mix-blend-multiply` lets the
+ * photo's white background take on the mint, so it has no visible rectangle. In dark mode the
+ * surface token turns deep green and the light text tokens follow it.
  */
 export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="grid min-h-svh flex-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-      <aside className="bg-primary text-primary-foreground dark:bg-card dark:text-card-foreground hidden flex-col justify-between gap-12 p-12 lg:flex dark:border-r">
-        <Brand href="/" tone="inverted" className="w-fit" />
+      <aside className="bg-brand-soft hidden flex-col justify-between gap-8 overflow-hidden p-12 lg:flex">
+        <Brand href="/" className="w-fit" />
 
-        <div className="flex max-w-md flex-col gap-10">
-          <p className="font-heading text-4xl leading-[1.05] font-extrabold tracking-[-0.03em] text-balance">
-            Rent from people nearby. Lend what you own.
+        <div className="flex max-w-lg flex-col gap-6">
+          <p className="font-heading text-4xl leading-[1.1] font-extrabold tracking-[-0.03em] text-balance">
+            <span className="text-brand">Rent</span> what you need,{" "}
+            <span className="text-brand">share</span> what you have.
           </p>
 
-          <ul className="flex flex-col gap-6">
+          <Image
+            src={heroImage}
+            alt=""
+            // The largest paint on a wide screen, so it loads eagerly; below `lg` the panel is
+            // not rendered and the browser never requests it.
+            priority
+            sizes="(min-width: 1024px) 40vw, 1px"
+            className="-my-2 h-auto w-full max-w-md mix-blend-multiply dark:hidden"
+          />
+
+          <ul className="flex flex-col gap-5">
             {PROMISES.map(({ icon: Icon, title, body }) => (
               <li key={title} className="flex items-start gap-4">
                 <span
-                  className="border-primary-foreground/15 dark:border-border flex size-10 shrink-0 items-center justify-center rounded-lg border"
+                  className="bg-card text-brand flex size-10 shrink-0 items-center justify-center rounded-xl"
                   aria-hidden="true"
                 >
                   <Icon className="size-5" strokeWidth={1.75} />
                 </span>
                 <div className="flex flex-col gap-0.5 pt-0.5">
                   <p className="text-sm font-semibold">{title}</p>
-                  <p className="text-primary-foreground/75 dark:text-muted-foreground text-sm leading-relaxed">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
                     {body}
                   </p>
                 </div>
@@ -79,7 +93,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           </ul>
         </div>
 
-        <p className="text-primary-foreground/65 dark:text-muted-foreground border-primary-foreground/15 dark:border-border border-t pt-6 text-xs">
+        <p className="text-muted-foreground border-brand/15 border-t pt-6 text-xs">
           Renting and lending in Karachi, Lahore and Islamabad
         </p>
       </aside>

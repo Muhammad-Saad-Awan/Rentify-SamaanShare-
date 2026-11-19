@@ -1,9 +1,9 @@
 import { ArrowLeftIcon, ImageIcon } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 import { MemberAvatar } from "@/components/chat/member-avatar";
 import { Button } from "@/components/ui/button";
+import { ListingPhoto } from "@/components/marketplace/listing-photo";
 import { MESSAGES_ROUTE } from "@/lib/chat/routes";
 import { formatPKRPerDay } from "@/lib/utils/currency";
 import { formatCity } from "@/lib/utils/listing";
@@ -26,7 +26,7 @@ function ThreadHeader({ detail }: { detail: ConversationDetail }) {
   }).format(detail.counterparty.memberSince);
 
   return (
-    <header className="bg-card flex min-h-16 items-center gap-3 border-b px-3 py-2.5 sm:px-4">
+    <header className="bg-card flex min-h-[4.5rem] items-center gap-3 border-b px-3 py-3 sm:px-5">
       {/* The list is beside the thread on a desktop; on a phone this is the only way back to it. */}
       <Button
         variant="ghost"
@@ -42,11 +42,11 @@ function ThreadHeader({ detail }: { detail: ConversationDetail }) {
         name={detail.counterparty.name}
         image={detail.counterparty.image}
         isVerified={detail.counterparty.isVerified}
-        className="size-10 rounded-full"
+        className="size-11 rounded-full"
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <h2 className="font-heading truncate text-base font-semibold tracking-tight">
+        <h2 className="font-heading truncate text-base font-bold tracking-tight">
           <Link
             href={`/users/${detail.counterparty.id}`}
             className="focus-visible:ring-ring rounded-sm underline-offset-4 outline-none hover:underline focus-visible:ring-2"
@@ -63,15 +63,14 @@ function ThreadHeader({ detail }: { detail: ConversationDetail }) {
 
       <Link
         href={`/listings/${detail.listing.id}`}
-        className="hover:border-foreground/20 hover:bg-muted/60 focus-visible:ring-ring hidden max-w-72 shrink-0 items-center gap-2.5 rounded-xl border p-1.5 pr-3 transition-colors outline-none focus-visible:ring-2 sm:flex"
+        className="bg-background hover:bg-card hover-lift focus-visible:ring-ring hidden max-w-72 shrink-0 items-center gap-3 rounded-2xl border p-1.5 pr-3.5 outline-none focus-visible:ring-2 sm:flex"
       >
-        <span className="bg-muted relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg">
+        <span className="bg-muted relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl">
           {detail.listing.imageUrl ? (
-            <Image
+            <ListingPhoto
               src={detail.listing.imageUrl}
               alt=""
-              fill
-              sizes="40px"
+              sizes="44px"
               className="object-cover"
             />
           ) : (
@@ -82,7 +81,7 @@ function ThreadHeader({ detail }: { detail: ConversationDetail }) {
           )}
         </span>
         <span className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-medium">
+          <span className="truncate text-sm font-semibold">
             {detail.listing.title}
           </span>
           <span className="text-muted-foreground truncate text-xs">

@@ -268,7 +268,7 @@ function Section({ title, description, children }: SectionProps) {
         <div className="flex flex-col gap-1 border-b px-(--card-spacing) pb-(--card-spacing)">
           <h2
             id={headingId}
-            className="font-heading text-lg font-semibold tracking-tight"
+            className="font-heading text-lg font-bold tracking-tight"
           >
             {title}
           </h2>

@@ -236,7 +236,7 @@ function IdentityDocumentForm() {
         ))}
       </div>
 
-      <p className="bg-muted/60 text-muted-foreground flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-relaxed">
+      <p className="bg-muted/60 text-muted-foreground flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-xs leading-relaxed">
         <LockIcon
           className="text-success mt-0.5 size-3.5 shrink-0"
           aria-hidden="true"

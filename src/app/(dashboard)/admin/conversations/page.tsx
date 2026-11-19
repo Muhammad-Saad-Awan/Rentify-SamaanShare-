@@ -35,7 +35,7 @@ export default async function AdminConversationsPage() {
         <div className="flex flex-col gap-3 px-(--card-spacing)">
           <h2 className="font-heading flex items-center gap-2 text-base font-semibold tracking-tight">
             <span
-              className="bg-muted flex size-8 shrink-0 items-center justify-center rounded-lg border"
+              className="bg-muted text-foreground flex size-9 shrink-0 items-center justify-center rounded-full"
               aria-hidden="true"
             >
               <LockIcon className="size-4" />

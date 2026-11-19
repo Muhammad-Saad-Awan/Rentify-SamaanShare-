@@ -374,15 +374,15 @@ function ImageUploader({
         className={cn(
           // `border-input`, not `border-border`: this is the control's only edge, and the
           // decorative border colour is 1.23:1 on white - below the 3:1 a boundary needs.
-          "focus-within:ring-ring flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors focus-within:ring-2 focus-within:ring-offset-2",
+          "focus-within:ring-ring flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-8 text-center transition-colors focus-within:ring-2 focus-within:ring-offset-2",
           isDragging
-            ? "border-primary bg-muted"
+            ? "border-brand bg-brand-soft"
             : "border-input bg-card hover:border-foreground/40 hover:bg-muted/40",
           remaining === 0 && "pointer-events-none opacity-50"
         )}
       >
         <span
-          className="bg-muted text-foreground flex size-11 items-center justify-center rounded-xl border"
+          className="bg-brand-soft text-brand flex size-12 items-center justify-center rounded-full"
           aria-hidden="true"
         >
           {isBusy ? (
@@ -501,7 +501,7 @@ function ImageUploader({
           {images.map((image, index) => (
             <li
               key={image.publicId}
-              className="bg-card relative overflow-hidden rounded-lg border"
+              className="bg-card relative overflow-hidden rounded-xl border"
             >
               <div className="bg-muted relative aspect-4/3">
                 <Image

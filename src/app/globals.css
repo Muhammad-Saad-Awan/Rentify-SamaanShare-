@@ -7,14 +7,14 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* Typography — `--font-inter` and `--font-schibsted` are injected on <html> by src/config/fonts.ts.
+  /* Typography — `--font-inter` and `--font-jakarta` are injected on <html> by src/config/fonts.ts.
      Each stack is written out in full rather than referencing another token,
      so a missing webfont degrades to the system UI font instead of nothing. */
   --font-sans:
     var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
     sans-serif;
   --font-heading:
-    var(--font-schibsted), var(--font-inter), ui-sans-serif, system-ui,
+    var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui,
     -apple-system, "Segoe UI", sans-serif;
   /* No webfont is loaded for mono — it appears rarely enough that the extra
      download is not worth it. */
@@ -41,6 +41,14 @@
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-hover: var(--brand-hover);
   --color-brand-bright: var(--brand-bright);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-foreground: var(--brand-soft-foreground);
+  /* One soft, navy-tinted lift for surfaces that float: the hero search, tiles on hover. */
+  /* The resting edge every Card carries: barely there, it just lifts white off the page. */
+  --shadow-hairline: 0 1px 2px oklch(0.278 0.042 240.8 / 4%);
+  --shadow-soft:
+    0 1px 2px oklch(0.278 0.042 240.8 / 4%),
+    0 8px 24px -6px oklch(0.278 0.042 240.8 / 10%);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-success-soft: var(--success-soft);
@@ -115,6 +123,13 @@
   --success-foreground: oklch(1 0 0);
   --success-soft: oklch(0.979 0.021 166.1); /* #ECFDF5 */
   --success-soft-foreground: oklch(0.432 0.086 166.9); /* #065F46 */
+  /*
+   * Mint brand surface - the benefits band, the hero pill, the active sidebar item. Decorative,
+   * unlike success-soft, which means "this went well". Every text pair on it is AA:
+   * navy 12.89, emerald 4.84, #065F46 6.78, muted 5.51.
+   */
+  --brand-soft: oklch(0.955 0.017 168.5); /* #E6F4EE */
+  --brand-soft-foreground: oklch(0.432 0.086 166.9); /* #065F46 */
   --warning: oklch(0.666 0.157 58.3); /* #D97706 */
   --warning-foreground: oklch(0.278 0.042 240.8); /* navy on amber, 4.59:1 */
   --warning-soft: oklch(0.987 0.021 95.3); /* #FFFBEB */
@@ -127,7 +142,8 @@
   --chart-3: oklch(0.49 0.033 251.7); /* slate */
   --chart-4: oklch(0.596 0.127 163.2); /* emerald 600 */
   --chart-5: oklch(0.869 0.02 252.9); /* #CBD5E1 */
-  --radius: 0.5rem;
+  /* 12px: the softer, rounder geometry of the reference design. Cards resolve to ~17px. */
+  --radius: 0.75rem;
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.278 0.042 240.8);
   --sidebar-primary: oklch(0.278 0.042 240.8);
@@ -163,6 +179,8 @@
   --success-foreground: oklch(0.21 0.029 239.3);
   --success-soft: oklch(0.319 0.052 173.1); /* #0F3B30 */
   --success-soft-foreground: oklch(0.845 0.13 165); /* #6EE7B7 */
+  --brand-soft: oklch(0.319 0.052 173.1); /* #0F3B30 */
+  --brand-soft-foreground: oklch(0.845 0.13 165); /* #6EE7B7 */
   --warning: oklch(0.837 0.164 84.4); /* #FBBF24 */
   --warning-foreground: oklch(0.21 0.029 239.3);
   --warning-soft: oklch(0.297 0.05 80.3); /* #3A2A0C */
@@ -215,6 +233,42 @@
   ::selection {
     background: var(--foreground);
     color: var(--background);
+  }
+}
+
+/*
+ * MOTION UTILITIES - the only two the app uses, so hovers and entrances feel like one system.
+ *
+ *   hover-lift   a card that is a link rises 2px and gains the soft shadow on hover/focus.
+ *   animate-fade-up   a section's content settles in once on load (not on scroll, not looping).
+ *
+ * Both collapse to nothing under `prefers-reduced-motion` via the rule below.
+ */
+@utility hover-lift {
+  transition:
+    transform 200ms cubic-bezier(0.2, 0.7, 0.3, 1),
+    box-shadow 200ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease;
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+  }
+}
+
+@theme {
+  --animate-fade-up: fade-up 600ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
 }
 

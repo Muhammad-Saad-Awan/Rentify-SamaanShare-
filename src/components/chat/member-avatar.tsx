@@ -28,7 +28,9 @@ function MemberAvatar({
     <span className={cn("relative inline-flex shrink-0", className)}>
       <Avatar className="size-full">
         {image && <AvatarImage src={image} alt="" />}
-        <AvatarFallback className="text-xs font-medium">
+        {/* Mint initials (brand-soft-foreground on brand-soft, 6.78:1) - the theme's soft surface, so a member
+            without a photo still reads as a person rather than a blank grey disc. */}
+        <AvatarFallback className="bg-brand-soft text-brand-soft-foreground text-xs font-semibold">
           {getInitials({ name })}
         </AvatarFallback>
       </Avatar>

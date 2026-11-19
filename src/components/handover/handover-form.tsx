@@ -106,7 +106,7 @@ function HandoverForm({
       tabIndex={-1}
       role="group"
       aria-labelledby={promptId}
-      className="bg-muted/50 flex flex-col gap-4 rounded-lg border p-3 outline-none sm:p-4"
+      className="bg-muted/50 flex flex-col gap-4 rounded-xl border p-3 outline-none sm:p-4"
     >
       <p id={promptId} className="text-sm font-medium">
         {HANDOVER_PROMPTS[type]}

@@ -212,7 +212,7 @@ function BookingRequestForm({
   return (
     <Card>
       <div className="flex flex-col gap-4 px-(--card-spacing)">
-        <h2 className="font-heading text-lg font-semibold tracking-tight">
+        <h2 className="font-heading text-lg font-bold tracking-tight">
           Request to book
         </h2>
 
@@ -277,7 +277,7 @@ function BookingRequestForm({
           // `aria-live` so the total is announced as the dates change - otherwise a screen
           // reader user changes a date and hears nothing.
           <dl
-            className="divide-border divide-y rounded-lg border px-3 text-sm"
+            className="divide-border divide-y rounded-xl border px-3 text-sm"
             aria-live="polite"
           >
             <Row label={quote.label} value={formatPKR(quote.total)} />

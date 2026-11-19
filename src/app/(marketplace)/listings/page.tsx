@@ -1,4 +1,4 @@
-import { PackageSearchIcon, SearchXIcon } from "lucide-react";
+import { CompassIcon, PackageSearchIcon, SearchXIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -14,6 +14,7 @@ import {
 } from "@/components/marketplace/listings-grid";
 import { ListingsSearch } from "@/components/marketplace/listings-search";
 import { ListingsSort } from "@/components/marketplace/listings-sort";
+import { PageBanner } from "@/components/marketplace/page-banner";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
 import { Button } from "@/components/ui/button";
@@ -173,14 +174,12 @@ async function BrowseResults({ filters }: BrowseResultsProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-3xl font-bold tracking-[-0.025em] sm:text-4xl">
-          Browse listings
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          {resultSummary(total, filtered, filters.q)}
-        </p>
-      </div>
+      <PageBanner
+        eyebrow="Rent from people nearby"
+        eyebrowIcon={CompassIcon}
+        title="Browse listings"
+        summary={resultSummary(total, filtered, filters.q)}
+      />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <ListingsSearch filters={filters} className="sm:flex-1" />
@@ -217,7 +216,7 @@ async function BrowseResults({ filters }: BrowseResultsProps) {
             reach. `top-20` clears the 16-unit sticky site header plus a gap. A card,
             so the filters read as one panel beside the grid rather than loose fields.
           */}
-          <div className="bg-card sticky top-20 rounded-xl border p-5">
+          <div className="bg-card sticky top-24 rounded-2xl border p-5">
             <ListingsFilters
               filters={filters}
               categories={categories}

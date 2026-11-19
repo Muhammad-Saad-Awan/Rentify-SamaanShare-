@@ -75,13 +75,13 @@ function CheckoutReturnNotice({ outcome }: { outcome: string | undefined }) {
   return (
     <div
       role="status"
-      className="bg-card flex items-start gap-3 rounded-xl border px-4 py-3.5 text-sm"
+      className="bg-card animate-fade-up flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-sm"
     >
       <span
-        className="bg-muted flex size-8 shrink-0 items-center justify-center rounded-lg"
+        className="bg-brand-soft text-brand flex size-10 shrink-0 items-center justify-center rounded-xl"
         aria-hidden="true"
       >
-        <CreditCardIcon className="size-4" />
+        <CreditCardIcon className="size-5" strokeWidth={1.75} />
       </span>
       <p className="leading-relaxed">
         {outcome === "success"

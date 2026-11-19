@@ -4,7 +4,6 @@ import {
   ImageIcon,
   MapPinIcon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 import { BookingActions } from "@/components/bookings/booking-actions";
@@ -13,6 +12,7 @@ import { ClaimPanel } from "@/components/claims/claim-panel";
 import { HandoverRecordList } from "@/components/handover/handover-record-list";
 import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Card, CardFooter } from "@/components/ui/card";
+import { ListingPhoto } from "@/components/marketplace/listing-photo";
 import { BookingStatus } from "@/generated/prisma/enums";
 import { PENDING_EXPIRY_HOURS } from "@/lib/bookings/lifecycle";
 import { bookingBadge } from "@/lib/bookings/status-badge";
@@ -58,12 +58,11 @@ function BookingCard({ booking, side }: BookingCardProps) {
           taller than the rest of the header and pushed the next step below the fold on every row.
         */}
         <div className="flex gap-4">
-          <div className="bg-muted relative aspect-4/3 w-20 shrink-0 self-start overflow-hidden rounded-lg sm:w-28">
+          <div className="bg-muted relative aspect-4/3 w-20 shrink-0 self-start overflow-hidden rounded-xl sm:w-28">
             {booking.listing.imageUrl ? (
-              <Image
+              <ListingPhoto
                 src={booking.listing.imageUrl}
                 alt=""
-                fill
                 sizes="(min-width: 640px) 7rem, 5rem"
                 className="object-cover"
               />
@@ -127,7 +126,7 @@ function BookingCard({ booking, side }: BookingCardProps) {
           Two columns on a phone with the counterparty on its own row; three from `sm`. Three at
           360px left each cell about 90px, which a six-figure amount in the heading face overflows.
         */}
-        <dl className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-lg border sm:grid-cols-3">
+        <dl className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-3">
           <MoneyCell label="Rental total">
             {formatPKR(booking.totalPrice)}
           </MoneyCell>
@@ -165,7 +164,7 @@ function BookingCard({ booking, side }: BookingCardProps) {
         )}
 
         {booking.pickupInstructions && (
-          <div className="bg-muted/60 flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-sm">
+          <div className="bg-muted/60 flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-sm">
             <MapPinIcon
               className="text-muted-foreground mt-0.5 size-4 shrink-0"
               aria-hidden="true"

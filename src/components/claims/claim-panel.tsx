@@ -114,7 +114,7 @@ function ClaimPanel({ claim, securityDeposit }: ClaimPanelProps) {
     */
     <div
       className={cn(
-        "bg-card flex flex-col gap-3 rounded-lg border px-3 py-3 sm:px-4",
+        "bg-card flex flex-col gap-3 rounded-xl border px-3 py-3 sm:px-4",
         !settled && "border-warning/60"
       )}
     >

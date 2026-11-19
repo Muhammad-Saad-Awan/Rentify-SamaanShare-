@@ -89,7 +89,7 @@ function ConnectedAccounts({
      * Google is registered only when its credentials exist; see `isGoogleEnabled`.
      */
     return (
-      <p className="text-muted-foreground bg-muted/60 rounded-lg border px-4 py-3 text-sm leading-relaxed">
+      <p className="text-muted-foreground bg-muted/60 rounded-xl border px-4 py-3 text-sm leading-relaxed">
         No sign-in providers are available on this server, so your email address
         and password are the only way in.
       </p>
@@ -99,10 +99,10 @@ function ConnectedAccounts({
   return (
     <div className="flex flex-col gap-3">
       <ul className="flex flex-col">
-        <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-lg border px-4 py-3.5">
+        <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-xl border px-4 py-3.5">
           <div className="flex min-w-0 items-center gap-3">
             <span
-              className="bg-card flex size-10 shrink-0 items-center justify-center rounded-lg border"
+              className="bg-card flex size-10 shrink-0 items-center justify-center rounded-xl border"
               aria-hidden="true"
             >
               <GoogleLogo />

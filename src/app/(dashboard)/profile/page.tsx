@@ -1,4 +1,4 @@
-import { ExternalLinkIcon } from "lucide-react";
+import { ExternalLinkIcon, UserRoundIcon } from "lucide-react";
 import Link from "next/link";
 
 import { EmailVerificationNotice } from "@/components/auth/email-verification-notice";
@@ -117,12 +117,23 @@ export default async function ProfilePage() {
 
       <Card>
         <CardHeader className="border-b">
-          <h2 className="font-heading text-lg font-semibold tracking-tight">
-            Your details
-          </h2>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            Name, bio and city are public. Your phone number never is.
-          </p>
+          {/* The same mint tile as the settings sections, so the two account screens match. */}
+          <div className="flex items-start gap-3.5">
+            <span
+              className="bg-brand-soft text-brand flex size-10 shrink-0 items-center justify-center rounded-xl"
+              aria-hidden="true"
+            >
+              <UserRoundIcon className="size-5" strokeWidth={1.75} />
+            </span>
+            <div className="flex min-w-0 flex-col gap-1">
+              <h2 className="font-heading text-lg font-bold tracking-tight">
+                Your details
+              </h2>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Name, bio and city are public. Your phone number never is.
+              </p>
+            </div>
+          </div>
           {user.role === UserRole.ADMIN && (
             <CardAction>
               <Badge variant="secondary">Admin</Badge>

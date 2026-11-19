@@ -59,9 +59,11 @@ interface FilterChipProps {
 /**
  * One filter as a link, so every view stays shareable and survives the back button.
  *
- * Navy when active, matching the admin section nav above it; a quiet bordered chip otherwise. The
- * border is `--input` rather than `--border` because a chip is a control, and a control's edge has
- * to clear 3:1 against the page (WCAG 1.4.11) - `--border` is 1.23:1 and is for dividers.
+ * Mint with an emerald edge when active - the one "selected" treatment the dashboard uses, from the
+ * sidebar to the admin section nav above this - and a quiet bordered chip otherwise. The border is
+ * `--input` (or emerald, 5.48:1) rather than `--border` because a chip is a control, and a
+ * control's edge has to clear 3:1 against the page (WCAG 1.4.11) - `--border` is 1.23:1 and is for
+ * dividers.
  */
 function FilterChip({ href, active, children }: FilterChipProps) {
   return (
@@ -70,10 +72,10 @@ function FilterChip({ href, active, children }: FilterChipProps) {
         href={href}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "focus-visible:ring-ring flex h-8 items-center rounded-md border px-2.5 text-xs whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+          "focus-visible:ring-ring flex h-8 items-center rounded-full border px-3 text-xs whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
           active
-            ? "bg-primary text-primary-foreground border-primary font-medium"
-            : "bg-card border-input text-foreground/80 hover:bg-muted hover:text-foreground"
+            ? "bg-brand-soft text-brand-soft-foreground border-brand font-semibold"
+            : "bg-card border-input text-foreground/80 hover:border-foreground hover:text-foreground"
         )}
       >
         {children}

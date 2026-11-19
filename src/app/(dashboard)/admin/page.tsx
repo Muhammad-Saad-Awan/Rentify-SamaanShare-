@@ -132,7 +132,7 @@ async function AdminHome() {
         <div className="flex flex-col gap-0.5">
           <h2
             id="waiting-heading"
-            className="font-heading text-lg font-semibold tracking-tight"
+            className="font-heading text-lg font-bold tracking-tight"
           >
             {decisions === 0
               ? "Nothing is waiting on you"
@@ -184,7 +184,7 @@ async function AdminHome() {
       <section aria-labelledby="tools-heading" className="flex flex-col gap-4">
         <h2
           id="tools-heading"
-          className="font-heading text-lg font-semibold tracking-tight"
+          className="font-heading text-lg font-bold tracking-tight"
         >
           Look something up
         </h2>
@@ -245,7 +245,7 @@ interface QueueTileProps {
  * A whole-tile link rather than a `StatCard` beside a separate list of links - the number and the
  * place to act on it were two screens of scroll apart. Amber edge and badge when anything waits, so
  * a row of four reads at a glance; the count is in the accessible name, so it does not depend on
- * the colour.
+ * the colour. It lifts on hover like every whole-card link in the dashboard.
  */
 function QueueTile({
   icon: Icon,
@@ -262,26 +262,40 @@ function QueueTile({
       <Link
         href={href}
         className={cn(
-          "group bg-card focus-visible:ring-ring hover:bg-muted/40 flex h-full flex-col gap-3 rounded-xl border p-4 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-          waiting && "border-l-warning border-l-4"
+          "group bg-card focus-visible:ring-ring hover-lift flex h-full flex-col gap-3 rounded-2xl border p-5 outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+          waiting ? "border-warning/60" : "hover:border-brand/30"
         )}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
-            <Icon className="size-4 shrink-0" aria-hidden="true" />
-            {title}
+          {/* Amber tile when something waits, mint when the queue is clear - the same pairing
+              `StatCard` uses for "attention", so a waiting queue reads alike on both overviews. */}
+          <span
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-xl",
+              waiting
+                ? "bg-warning-soft text-warning-soft-foreground"
+                : "bg-brand-soft text-brand"
+            )}
+            aria-hidden="true"
+          >
+            <Icon className="size-5" strokeWidth={1.75} />
           </span>
           {waiting && <AwaitingBadge label="Waiting" />}
         </div>
 
-        <span className="font-heading text-3xl font-bold tracking-[-0.025em] tabular-nums">
-          {count.toLocaleString()}
+        <span className="flex flex-col gap-0.5">
+          <span className="text-muted-foreground text-sm font-medium">
+            {title}
+          </span>
+          <span className="font-heading text-3xl font-bold tracking-[-0.025em] tabular-nums">
+            {count.toLocaleString()}
+          </span>
         </span>
 
         <span className="text-muted-foreground mt-auto flex items-end justify-between gap-2 text-xs leading-relaxed">
           {waiting ? hint : clearHint}
           <ArrowRightIcon
-            className="text-foreground size-3.5 shrink-0 transition-transform group-hover:translate-x-0.5"
+            className="text-foreground group-hover:text-brand size-3.5 shrink-0 transition-[color,transform] group-hover:translate-x-0.5"
             aria-hidden="true"
           />
         </span>
@@ -317,13 +331,13 @@ function Destination({
     <li>
       <Link
         href={href}
-        className="group hover:bg-muted/50 focus-visible:ring-ring flex items-start gap-3 px-(--card-spacing) py-3.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset"
+        className="group hover:bg-muted/50 focus-visible:ring-ring flex items-center gap-3.5 px-(--card-spacing) py-4 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
         <span
-          className="bg-muted text-foreground flex size-8 shrink-0 items-center justify-center rounded-lg border"
+          className="bg-brand-soft text-brand flex size-9 shrink-0 items-center justify-center rounded-xl"
           aria-hidden="true"
         >
-          <Icon className="size-4" />
+          <Icon className="size-[1.125rem]" strokeWidth={1.75} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex flex-wrap items-center gap-2 text-sm font-medium">
@@ -335,7 +349,7 @@ function Destination({
           </span>
         </div>
         <ChevronRightIcon
-          className="text-muted-foreground group-hover:text-foreground mt-2 size-4 shrink-0 transition-colors"
+          className="text-muted-foreground group-hover:text-foreground size-4 shrink-0 transition-[color,transform] group-hover:translate-x-0.5"
           aria-hidden="true"
         />
       </Link>

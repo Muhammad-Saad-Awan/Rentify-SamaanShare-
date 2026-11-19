@@ -35,14 +35,15 @@ function EmptyState({
 }: EmptyStateProps) {
   return (
     <Card className={cn("bg-card", className)}>
-      <div className="flex flex-col items-center gap-4 px-6 py-14 text-center sm:py-16">
-        {/* A soft ring around the tile gives the empty card one quiet focal point without
-            reaching for colour - emerald is reserved for states that went well. */}
+      <div className="animate-fade-up flex flex-col items-center gap-4 px-6 py-14 text-center sm:py-16">
+        {/* A mint disc inside a fainter halo: one quiet focal point in the brand's decorative
+            surface. `brand-soft` is decoration, not success - it says nothing went well, it just
+            makes an empty card look intended rather than broken. */}
         <span
-          className="bg-muted text-foreground ring-muted/60 flex size-12 items-center justify-center rounded-xl border ring-4"
+          className="bg-brand-soft text-brand ring-brand-soft/50 flex size-14 items-center justify-center rounded-full ring-8"
           aria-hidden="true"
         >
-          <Icon className="size-5" strokeWidth={1.75} />
+          <Icon className="size-6" strokeWidth={1.75} />
         </span>
 
         <div className="flex flex-col items-center gap-1.5">
@@ -50,7 +51,7 @@ function EmptyState({
             `h2` not `h3`: an empty state replaces a page's content region, and
             the page's own `h1` is the only heading above it.
           */}
-          <h2 className="font-heading text-lg font-semibold tracking-tight">
+          <h2 className="font-heading text-lg font-bold tracking-tight">
             {title}
           </h2>
           <p className="text-muted-foreground max-w-[42ch] text-sm leading-relaxed">

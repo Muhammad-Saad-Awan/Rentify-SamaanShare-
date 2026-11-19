@@ -111,10 +111,10 @@ const BY_TYPE: Record<NotificationType, { icon: LucideIcon; tone: Tone }> = {
 };
 
 const TONE_CLASS: Record<Tone, string> = {
-  positive: "bg-success-soft text-success-soft-foreground border-success/20",
-  attention: "bg-warning-soft text-warning-soft-foreground border-warning/30",
-  negative: "bg-destructive/8 text-destructive border-destructive/20",
-  neutral: "bg-muted text-foreground border-border",
+  positive: "bg-success-soft text-success-soft-foreground",
+  attention: "bg-warning-soft text-warning-soft-foreground",
+  negative: "bg-destructive/8 text-destructive",
+  neutral: "bg-muted text-foreground",
 };
 
 interface NotificationIconProps {
@@ -133,7 +133,7 @@ function NotificationIcon({ type, className }: NotificationIconProps) {
     <span
       aria-hidden="true"
       className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-lg border",
+        "flex size-10 shrink-0 items-center justify-center rounded-xl",
         TONE_CLASS[tone],
         className
       )}

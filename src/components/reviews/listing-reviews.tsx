@@ -65,7 +65,7 @@ function ListingReviews({
         {reviews.items.map((review) => (
           <li
             key={review.id}
-            className="bg-card flex flex-col gap-2 rounded-xl border p-4"
+            className="bg-card flex flex-col gap-2 rounded-2xl border p-4"
           >
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-heading text-sm font-semibold">
