@@ -31,6 +31,8 @@ function GoogleButton({ callbackUrl, disabled }: GoogleButtonProps) {
     <Button
       type="button"
       variant="outline"
+      // Same height as the form's submit beside it, so the two read as alternatives.
+      size="lg"
       className="w-full"
       disabled={disabled || isRedirecting}
       onClick={() => {

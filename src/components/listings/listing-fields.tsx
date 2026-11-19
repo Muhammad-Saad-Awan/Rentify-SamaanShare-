@@ -8,9 +8,10 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 import { PAKISTANI_CITIES } from "@/config/cities";
 import { ItemCondition } from "@/generated/prisma/enums";
-import { cn } from "@/lib/utils/cn";
 import { CONDITION_LABELS } from "@/lib/utils/listing";
 import { DESCRIPTION_MAX } from "@/lib/validations/listing";
 
@@ -30,10 +31,6 @@ import type { UseFormReturn } from "react-hook-form";
  * signatures stable as fields are added, and both parents already own a single form
  * instance covering every step.
  */
-
-/** Matches `Input`'s tokens so native selects sit flush beside one. */
-const SELECT_CLASS =
-  "border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 dark:bg-input/30 h-10 w-full rounded-lg border bg-background px-3 py-1 text-sm transition-colors outline-none focus-visible:ring-3";
 
 interface FieldGroupProps {
   form: UseFormReturn<ListingFormValues>;
@@ -80,13 +77,13 @@ function ListingBasicsFields({ form, disabled, categories }: BasicsProps) {
 
       <Field data-invalid={Boolean(errors.description)}>
         <FieldLabel htmlFor="description">Description</FieldLabel>
-        <textarea
+        <Textarea
           id="description"
           rows={6}
           placeholder="Condition, what is included, and anything a renter should know."
           aria-invalid={Boolean(errors.description)}
           disabled={disabled}
-          className="border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 dark:bg-input/30 w-full rounded-lg border bg-transparent px-2.5 py-2 text-sm transition-colors outline-none focus-visible:ring-3"
+          className="min-h-36"
           {...form.register("description")}
         />
         <FieldDescription>
@@ -98,9 +95,8 @@ function ListingBasicsFields({ form, disabled, categories }: BasicsProps) {
 
       <Field data-invalid={Boolean(errors.categorySlug)}>
         <FieldLabel htmlFor="categorySlug">Category</FieldLabel>
-        <select
+        <NativeSelect
           id="categorySlug"
-          className={SELECT_CLASS}
           aria-invalid={Boolean(errors.categorySlug)}
           disabled={disabled}
           {...form.register("categorySlug", {
@@ -116,7 +112,7 @@ function ListingBasicsFields({ form, disabled, categories }: BasicsProps) {
               {category.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <FieldError errors={[errors.categorySlug]} />
       </Field>
 
@@ -124,9 +120,8 @@ function ListingBasicsFields({ form, disabled, categories }: BasicsProps) {
         <FieldLabel htmlFor="subcategorySlug">
           Subcategory (optional)
         </FieldLabel>
-        <select
+        <NativeSelect
           id="subcategorySlug"
-          className={cn(SELECT_CLASS, "disabled:opacity-50")}
           disabled={disabled || !activeCategory}
           {...form.register("subcategorySlug")}
         >
@@ -140,15 +135,14 @@ function ListingBasicsFields({ form, disabled, categories }: BasicsProps) {
               {subcategory.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <FieldError errors={[errors.subcategorySlug]} />
       </Field>
 
       <Field data-invalid={Boolean(errors.condition)}>
         <FieldLabel htmlFor="condition">Condition</FieldLabel>
-        <select
+        <NativeSelect
           id="condition"
-          className={SELECT_CLASS}
           aria-invalid={Boolean(errors.condition)}
           disabled={disabled}
           {...form.register("condition")}
@@ -158,7 +152,7 @@ function ListingBasicsFields({ form, disabled, categories }: BasicsProps) {
               {CONDITION_LABELS[condition]}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <FieldError errors={[errors.condition]} />
       </Field>
     </FieldGroup>
@@ -170,7 +164,9 @@ function ListingPricingFields({ form, disabled }: FieldGroupProps) {
   const { errors } = form.formState;
 
   return (
-    <FieldGroup>
+    // Two columns from `sm`: the four amounts are short numbers, and a single column of them
+    // made the step twice as tall as it needed to be on a laptop.
+    <FieldGroup className="sm:grid sm:grid-cols-2 sm:items-start sm:gap-x-4">
       <PriceField
         name="pricePerDay"
         label="Price per day (PKR)"
@@ -181,7 +177,7 @@ function ListingPricingFields({ form, disabled }: FieldGroupProps) {
       />
       <PriceField
         name="pricePerWeek"
-        label="Price per week (optional)"
+        label="Price per week (PKR, optional)"
         description="Leave blank if you only rent by the day."
         error={errors.pricePerWeek?.message}
         disabled={disabled}
@@ -189,7 +185,7 @@ function ListingPricingFields({ form, disabled }: FieldGroupProps) {
       />
       <PriceField
         name="pricePerMonth"
-        label="Price per month (optional)"
+        label="Price per month (PKR, optional)"
         description="Leave blank if you do not offer monthly rentals."
         error={errors.pricePerMonth?.message}
         disabled={disabled}
@@ -215,9 +211,8 @@ function ListingLocationFields({ form, disabled }: FieldGroupProps) {
     <FieldGroup>
       <Field data-invalid={Boolean(errors.city)}>
         <FieldLabel htmlFor="city">City</FieldLabel>
-        <select
+        <NativeSelect
           id="city"
-          className={SELECT_CLASS}
           aria-invalid={Boolean(errors.city)}
           disabled={disabled}
           {...form.register("city")}
@@ -228,7 +223,7 @@ function ListingLocationFields({ form, disabled }: FieldGroupProps) {
               {city.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <FieldDescription>
           SamaanShare is live in three cities to start with.
         </FieldDescription>

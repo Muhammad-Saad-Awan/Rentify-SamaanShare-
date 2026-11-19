@@ -1,4 +1,4 @@
-import { Inter, Schibsted_Grotesk } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 
 /**
  * Application typography.
@@ -26,18 +26,18 @@ export const fontSans = Inter({
 });
 
 /**
- * Schibsted Grotesk — headings and prices.
+ * Plus Jakarta Sans - headings, prices and stat values.
  *
- * A grotesk drawn for a newspaper: sturdy at heavy weights and compact enough
- * for a price beside a title. In a black-and-white identity the headings carry
- * the personality colour would otherwise carry, so they get their own face
- * while Inter keeps body text and form controls quiet.
+ * A geometric sans with open, rounded bowls: the face of the reference design. It
+ * stays friendly at heavy display weights without turning playful, and its figures
+ * keep a column of prices aligned. Inter keeps body text and form controls quiet
+ * beside it.
  */
-export const fontHeading = Schibsted_Grotesk({
+export const fontHeading = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
   weight: ["500", "600", "700", "800"],
-  variable: "--font-schibsted",
+  variable: "--font-jakarta",
 });
 
 /**

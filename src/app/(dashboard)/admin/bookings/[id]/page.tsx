@@ -8,18 +8,22 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AttentionNote, AwaitingBadge } from "@/components/admin/attention";
 import { BookingTimeline } from "@/components/admin/booking-timeline";
+import { Fact, FactGrid } from "@/components/admin/fact-grid";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  BookingStatus,
+  ClaimStatus,
   HandoverType,
   UserStatus,
 } from "@/generated/prisma/enums";
 import { describeDepositState } from "@/lib/bookings/deposit";
 import { holdsDates } from "@/lib/bookings/lifecycle";
+import { bookingBadge } from "@/lib/bookings/status-badge";
 import { BOOKING_STATUS_LABELS } from "@/lib/bookings/timeline";
 import { requireAdmin } from "@/lib/auth/session";
 import { CLAIM_REASON_LABELS, CLAIM_STATUS_LABELS } from "@/lib/claims/rules";
@@ -91,104 +95,96 @@ export default async function AdminBookingPage({
       />
 
       <Card>
-        <div className="flex flex-col gap-3 px-(--card-spacing)">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge
-              variant={
-                booking.status === BookingStatus.ACTIVE
-                  ? "default"
-                  : booking.status === BookingStatus.PENDING
-                    ? "secondary"
-                    : "outline"
-              }
-            >
-              {BOOKING_STATUS_LABELS[booking.status]}
-            </Badge>
+        <div className="flex flex-col gap-5 px-(--card-spacing)">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {/*
+                The admin-neutral label, with the variant from the shared mapper so the state reads
+                the same here as on the parties' own screens.
+              */}
+              <StatusLabel
+                variant={bookingBadge(booking.status, null).variant}
+                label={BOOKING_STATUS_LABELS[booking.status]}
+              />
 
-            {booking.isPastPendingWindow && (
-              <Badge variant="destructive">
-                <ClockAlertIcon className="size-3" aria-hidden="true" />
-                past the 48h window
-              </Badge>
-            )}
+              {booking.isPastPendingWindow && (
+                <AwaitingBadge
+                  icon={ClockAlertIcon}
+                  label="Past the 48h window"
+                />
+              )}
 
-            {booking.claimStatus && (
-              <Badge variant="destructive">
-                <ScaleIcon className="size-3" aria-hidden="true" />
-                {CLAIM_STATUS_LABELS[booking.claimStatus]}
-              </Badge>
+              {booking.claimStatus &&
+                (booking.claimStatus === ClaimStatus.OPEN ||
+                booking.claimStatus === ClaimStatus.DISPUTED ? (
+                  <AwaitingBadge
+                    icon={ScaleIcon}
+                    label={CLAIM_STATUS_LABELS[booking.claimStatus]}
+                  />
+                ) : (
+                  <Badge variant="outline">
+                    <ScaleIcon aria-hidden="true" />
+                    {CLAIM_STATUS_LABELS[booking.claimStatus]}
+                  </Badge>
+                ))}
+            </div>
+
+            {/*
+              Said out loud, because it is the operational consequence a support question usually
+              turns on: this booking is why those days are unavailable on the listing. `holdsDates`
+              is the single source of truth for which statuses still occupy a calendar.
+            */}
+            {holdsDates(booking.status) && (
+              <p className="text-muted-foreground text-xs">
+                Holding {booking.heldDateCount}{" "}
+                {booking.heldDateCount === 1 ? "day" : "days"} on the
+                listing&apos;s calendar.
+              </p>
             )}
           </div>
 
-          {/*
-            Said out loud, because it is the operational consequence a support question usually turns
-            on: this booking is why those days are unavailable on the listing. `holdsDates` is the
-            single source of truth for which statuses still occupy a calendar.
-          */}
-          {holdsDates(booking.status) && (
-            <p className="text-muted-foreground text-xs">
-              Holding {booking.heldDateCount}{" "}
-              {booking.heldDateCount === 1 ? "day" : "days"} on the
-              listing&apos;s calendar.
-            </p>
-          )}
-
           {booking.isPastPendingWindow && (
-            <p className="text-destructive text-xs">
+            <AttentionNote>
               This request is past the 48-hour window and has not been swept
               yet. It will expire - releasing the dates and notifying both sides
               - the next time either party opens their bookings. Nothing on this
               screen triggers that.
-            </p>
+            </AttentionNote>
           )}
 
-          <dl className="text-muted-foreground grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
-            <div>
-              <dt className="inline font-medium">Rental: </dt>
-              <dd className="inline">
-                {formatDate(booking.startDate)} — {formatDate(booking.endDate)}
-              </dd>
-            </div>
-            <div>
-              <dt className="inline font-medium">City: </dt>
-              <dd className="inline">{formatCity(booking.listing.city)}</dd>
-            </div>
-            <div>
-              <dt className="inline font-medium">Rent: </dt>
-              <dd className="inline">{formatPKR(booking.totalPrice)}</dd>
-            </div>
-            <div>
-              <dt className="inline font-medium">Deposit: </dt>
-              <dd className="inline">{formatPKR(booking.securityDeposit)}</dd>
-            </div>
-            <div>
-              <dt className="inline font-medium">Renter: </dt>
-              <dd className="inline">
-                <Party party={booking.renter} role="renter" />{" "}
-                <span className="break-all">({booking.renterEmail})</span>
-              </dd>
-            </div>
-            <div>
-              <dt className="inline font-medium">Owner: </dt>
-              <dd className="inline">
-                <Party party={booking.owner} role="owner" />{" "}
-                <span className="break-all">({booking.ownerEmail})</span>
-              </dd>
-            </div>
-            <div>
-              <dt className="inline font-medium">Booking id: </dt>
-              {/* In full, because a support ticket quotes it and search matches it exactly. */}
-              <dd className="inline break-all">{booking.id}</dd>
-            </div>
-            <div>
-              <dt className="inline font-medium">Deposit standing: </dt>
-              <dd className="inline">
-                {describeDepositState(booking.deposit)}
-              </dd>
-            </div>
-          </dl>
+          <FactGrid columns={3}>
+            <Fact label="Rental">
+              {formatDate(booking.startDate)} — {formatDate(booking.endDate)}
+            </Fact>
+            <Fact label="Rent" money>
+              {formatPKR(booking.totalPrice)}
+            </Fact>
+            <Fact label="Deposit" money>
+              {formatPKR(booking.securityDeposit)}
+            </Fact>
+            <Fact label="Renter">
+              <Party party={booking.renter} role="renter" />
+              <span className="text-muted-foreground block text-xs break-all">
+                {booking.renterEmail}
+              </span>
+            </Fact>
+            <Fact label="Owner">
+              <Party party={booking.owner} role="owner" />
+              <span className="text-muted-foreground block text-xs break-all">
+                {booking.ownerEmail}
+              </span>
+            </Fact>
+            <Fact label="City">{formatCity(booking.listing.city)}</Fact>
+            <Fact label="Deposit standing" className="sm:col-span-2">
+              {describeDepositState(booking.deposit)}
+            </Fact>
+            {/* In full, because a support ticket quotes it and search matches it exactly. */}
+            <Fact label="Booking id" mono>
+              {booking.id}
+            </Fact>
+          </FactGrid>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 border-t pt-4">
             <Button
               variant="outline"
               size="sm"
@@ -235,78 +231,58 @@ export default async function AdminBookingPage({
       </Card>
 
       <Card>
-        <div className="flex flex-col gap-3 px-(--card-spacing)">
-          <h2 className="font-heading text-base font-medium">Payment</h2>
+        <div className="flex flex-col gap-4 px-(--card-spacing)">
+          <h2 className="font-heading text-base font-semibold tracking-tight">
+            Payment
+          </h2>
 
           {booking.paymentDetail ? (
             <>
-              <dl className="text-muted-foreground grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
-                <div>
-                  <dt className="inline font-medium">Method: </dt>
-                  <dd className="inline">
-                    {booking.paymentDetail.method
-                      .toLowerCase()
-                      .replace("_", " ")}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline font-medium">Status: </dt>
-                  <dd className="inline">
-                    {booking.paymentDetail.status.toLowerCase()}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline font-medium">Amount: </dt>
-                  <dd className="inline">
-                    {formatPKR(booking.paymentDetail.amount)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline font-medium">Deposit: </dt>
-                  <dd className="inline">
-                    {formatPKR(booking.paymentDetail.securityDeposit)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline font-medium">Confirmed: </dt>
-                  <dd className="inline">
-                    {booking.paymentDetail.confirmedAt
-                      ? `${formatDateTime(booking.paymentDetail.confirmedAt)}${
-                          booking.paymentDetail.confirmedByName
-                            ? ` by ${booking.paymentDetail.confirmedByName}`
-                            : ""
-                        }`
-                      : "not yet"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline font-medium">Deposit returned: </dt>
-                  <dd className="inline">
-                    {booking.depositReturnedAt
-                      ? formatDateTime(booking.depositReturnedAt)
-                      : "not recorded"}
-                  </dd>
-                </div>
+              <FactGrid columns={3}>
+                <Fact label="Method">
+                  {booking.paymentDetail.method.toLowerCase().replace("_", " ")}
+                </Fact>
+                <Fact label="Status">
+                  {booking.paymentDetail.status.toLowerCase()}
+                </Fact>
+                <Fact label="Amount" money>
+                  {formatPKR(booking.paymentDetail.amount)}
+                </Fact>
+                <Fact label="Deposit" money>
+                  {formatPKR(booking.paymentDetail.securityDeposit)}
+                </Fact>
+                <Fact label="Confirmed">
+                  {booking.paymentDetail.confirmedAt
+                    ? `${formatDateTime(booking.paymentDetail.confirmedAt)}${
+                        booking.paymentDetail.confirmedByName
+                          ? ` by ${booking.paymentDetail.confirmedByName}`
+                          : ""
+                      }`
+                    : "Not yet"}
+                </Fact>
+                <Fact label="Deposit returned">
+                  {booking.depositReturnedAt
+                    ? formatDateTime(booking.depositReturnedAt)
+                    : "Not recorded"}
+                </Fact>
                 {booking.paymentDetail.transactionRef && (
-                  <div>
-                    <dt className="inline font-medium">Reference: </dt>
-                    <dd className="inline break-all">
-                      {booking.paymentDetail.transactionRef}
-                    </dd>
-                  </div>
+                  <Fact label="Reference" mono>
+                    {booking.paymentDetail.transactionRef}
+                  </Fact>
                 )}
-              </dl>
+              </FactGrid>
 
               {/*
-                The line this screen must not blur. Payment is offline: the money moved between two
-                people and nothing here saw it, so a confirmation is the owner's assertion rather
-                than a fact the platform can stand behind. An administrator quoting "our records show
-                you were paid" would be overstating what the record is.
+                Where the money is, stated once. This used to say payment was offline and that
+                SamaanShare never held it - true before the custodial switchover, wrong since: the
+                renter pays SamaanShare, an administrator (or Stripe, for cards) confirms it, and the
+                deposit return is recorded when the booking is settled. Support quoting the old line
+                would have told a renter their deposit was never with us.
               */}
-              <p className="text-muted-foreground text-xs italic">
-                Offline payment. Both the confirmation and the deposit return
-                are recorded by the owner, not verified by the platform, and
-                SamaanShare never held the money.
+              <p className="text-muted-foreground text-xs">
+                The renter pays SamaanShare. The confirmation above is recorded
+                by an administrator, or by Stripe for card payments; the owner
+                payout and deposit return are recorded under Settlements.
               </p>
             </>
           ) : (
@@ -320,7 +296,7 @@ export default async function AdminBookingPage({
       {(booking.notes || booking.pickupInstructions) && (
         <Card>
           <div className="flex flex-col gap-3 px-(--card-spacing)">
-            <h2 className="font-heading text-base font-medium">
+            <h2 className="font-heading text-base font-semibold tracking-tight">
               What the parties wrote
             </h2>
 
@@ -361,7 +337,7 @@ export default async function AdminBookingPage({
       {booking.handovers.length > 0 && (
         <Card>
           <div className="flex flex-col gap-3 px-(--card-spacing)">
-            <h2 className="font-heading text-base font-medium">
+            <h2 className="font-heading text-base font-semibold tracking-tight">
               Condition records
             </h2>
 
@@ -375,7 +351,7 @@ export default async function AdminBookingPage({
               {booking.handovers.map((handover) => (
                 <li
                   key={handover.id}
-                  className="flex flex-col gap-1.5 rounded-lg border px-3 py-2.5"
+                  className="flex flex-col gap-1.5 rounded-xl border px-3 py-2.5"
                 >
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                     <span className="font-medium">
@@ -418,7 +394,7 @@ export default async function AdminBookingPage({
                             href={photo.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="bg-muted relative block size-20 overflow-hidden rounded-md"
+                            className="bg-muted focus-visible:ring-ring relative block size-20 overflow-hidden rounded-lg border outline-none focus-visible:ring-2"
                           >
                             <Image
                               src={photo.url}
@@ -442,7 +418,7 @@ export default async function AdminBookingPage({
       {booking.claim && (
         <Card>
           <div className="flex flex-col gap-2 px-(--card-spacing)">
-            <h2 className="font-heading text-base font-medium">
+            <h2 className="font-heading text-base font-semibold tracking-tight">
               Deposit claim
             </h2>
 
@@ -453,7 +429,7 @@ export default async function AdminBookingPage({
               <Badge variant="outline">
                 {CLAIM_STATUS_LABELS[booking.claim.status]}
               </Badge>
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground text-xs tabular-nums">
                 {formatPKR(booking.claim.amountClaimed)} claimed
                 {booking.claim.amountUpheld !== null &&
                   `, ${formatPKR(booking.claim.amountUpheld)} upheld`}
@@ -499,7 +475,7 @@ export default async function AdminBookingPage({
 
       <Card>
         <div className="flex flex-col gap-3 px-(--card-spacing)">
-          <h2 className="font-heading text-base font-medium">
+          <h2 className="font-heading text-base font-semibold tracking-tight">
             Recorded history
           </h2>
           <BookingTimeline booking={booking} />
@@ -539,7 +515,7 @@ function Party({
     <>
       <Link
         href={`/admin/users/${party.id}`}
-        className="underline-offset-4 hover:underline"
+        className="decoration-foreground/30 hover:decoration-foreground font-medium underline underline-offset-4"
       >
         {party.name?.trim() || `Unnamed ${role}`}
       </Link>

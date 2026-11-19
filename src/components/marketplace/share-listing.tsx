@@ -38,7 +38,6 @@ function ShareListing({ listingId, title, pricePerDay }: ShareListingProps) {
   return (
     <Button
       variant="outline"
-      size="sm"
       render={
         <a
           href={`https://wa.me/?text=${message}`}

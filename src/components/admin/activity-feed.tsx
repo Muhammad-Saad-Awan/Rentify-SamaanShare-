@@ -53,26 +53,30 @@ function ActivityFeed({ activity, now }: ActivityFeedProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <ul className="flex flex-col gap-1.5">
+      <ul className="flex flex-col divide-y">
         {activity.events.map((event) => {
           const { icon: Icon, href, text } = describe(event);
 
           return (
             <li
               key={`${event.kind}-${event.id}`}
-              className="flex items-baseline gap-2 text-sm"
+              className="flex items-start gap-3 py-2.5 text-sm first:pt-0 last:pb-0"
             >
-              <Icon
-                className="text-muted-foreground size-3.5 shrink-0 translate-y-0.5"
+              {/* Mint, not muted: the icon is how the eye sorts a long feed by kind, and on a
+                  grey tile six small glyphs blurred into one. */}
+              <span
+                className="bg-brand-soft text-brand flex size-7 shrink-0 items-center justify-center rounded-lg"
                 aria-hidden="true"
-              />
+              >
+                <Icon className="size-3.5" strokeWidth={2} />
+              </span>
               <Link
                 href={href}
-                className="min-w-0 flex-1 underline-offset-4 hover:underline"
+                className="hover:text-brand min-w-0 flex-1 pt-1 break-words underline-offset-4 transition-colors hover:underline"
               >
                 {text}
               </Link>
-              <span className="text-muted-foreground shrink-0 text-xs">
+              <span className="text-muted-foreground shrink-0 pt-1.5 text-xs tabular-nums">
                 {formatRelativeTime(event.at, now)}
               </span>
             </li>
@@ -87,7 +91,7 @@ function ActivityFeed({ activity, now }: ActivityFeedProps) {
         that nothing else happened.
       */}
       {activity.truncated && (
-        <p className="text-muted-foreground text-xs italic">
+        <p className="text-muted-foreground border-t pt-2 text-xs italic">
           Showing the newest few of each kind, merged. At least one kind filled
           its window, so older events of other kinds may be missing — the queues
           themselves are the complete lists.

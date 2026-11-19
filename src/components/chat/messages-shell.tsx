@@ -25,10 +25,18 @@ function MessagesShell({ list, children }: MessagesShellProps) {
   const threadOpen = useSelectedLayoutSegment() !== null;
 
   return (
-    <div className="bg-card -mx-4 -my-6 flex h-[calc(100svh-3.5rem)] min-h-[30rem] overflow-hidden lg:mx-0 lg:my-0 lg:h-[calc(100svh-6.5rem)] lg:rounded-xl lg:border lg:shadow-xs">
+    // The negative margins cancel the dashboard layout's padding (`px-4 py-8`, `lg:py-10`) and the
+    // heights subtract its `h-16` header, so the frame fills the viewport exactly: on a phone it is
+    // edge to edge under the header, on a desktop it keeps 1.5rem of page above and below (the
+    // header is `lg:h-[4.5rem]` there, so 4.5 + 1.5 + 1.5 = 7.5rem). If those layout values change,
+    // these must follow or the composer slides below the fold.
+    //
+    // On a desktop the frame is one floating white card, like every other panel in the theme; on a
+    // phone it is the screen itself, so it has neither edge nor shadow.
+    <div className="bg-card lg:shadow-soft -mx-4 -my-8 flex h-[calc(100svh-4rem)] min-h-[30rem] overflow-hidden lg:mx-0 lg:-my-4 lg:h-[calc(100svh-7.5rem)] lg:rounded-2xl lg:border">
       <aside
         className={cn(
-          "min-h-0 w-full flex-col lg:flex lg:w-80 lg:shrink-0 lg:border-r xl:w-96",
+          "bg-card min-h-0 w-full flex-col lg:flex lg:w-80 lg:shrink-0 lg:border-r xl:w-96",
           threadOpen ? "hidden" : "flex"
         )}
         aria-label="Conversations"

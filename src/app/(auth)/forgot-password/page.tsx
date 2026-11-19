@@ -1,14 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AuthCardHeader } from "@/components/auth/auth-card-header";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { isEmailEnabled } from "@/config/env";
 
 import type { Metadata } from "next";
@@ -38,13 +33,10 @@ export default async function ForgotPasswordPage() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Forgot your password?</CardTitle>
-        <CardDescription>
-          Enter the email address on your account and we will send you a link to
-          choose a new password.
-        </CardDescription>
-      </CardHeader>
+      <AuthCardHeader
+        title="Forgot your password?"
+        description="Enter the email address on your account and we will send you a link to choose a new password."
+      />
 
       <CardContent className="flex flex-col gap-5">
         <ForgotPasswordForm />

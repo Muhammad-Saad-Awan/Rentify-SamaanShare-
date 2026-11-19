@@ -11,7 +11,6 @@ import {
   PlayIcon,
   Trash2Icon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -20,9 +19,10 @@ import {
   deleteListing,
   updateListingStatus,
 } from "@/actions/listing-management";
-import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
+import { ListingStatusBadge } from "@/components/listings/listing-status-badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardFooter } from "@/components/ui/card";
+import { ListingPhoto } from "@/components/marketplace/listing-photo";
 import { ListingStatus } from "@/generated/prisma/enums";
 import { formatPKRPerDay } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
@@ -47,6 +47,9 @@ interface OwnerListingCardProps {
  * from the server after `revalidatePath` anyway. A spinner for the round trip is honest;
  * flipping the badge before the server agrees would be a guess about a state that governs
  * public visibility.
+ *
+ * The controls sit in the card's footer strip, the same shell the booking cards use, so the
+ * facts about the item read first and the things you can do to it read as a separate row.
  */
 function OwnerListingCard({ listing }: OwnerListingCardProps) {
   const [isPending, startTransition] = useTransition();
@@ -108,163 +111,141 @@ function OwnerListingCard({ listing }: OwnerListingCardProps) {
 
   return (
     <Card>
-      <div className="flex flex-col gap-4 px-(--card-spacing) sm:flex-row">
-        <div className="bg-muted relative aspect-4/3 w-full shrink-0 overflow-hidden rounded-lg sm:w-40">
-          {listing.imageUrl ? (
-            <Image
-              src={listing.imageUrl}
-              alt=""
-              fill
-              sizes="(min-width: 640px) 10rem, 100vw"
-              className="object-cover"
-            />
-          ) : (
-            <div
-              className="text-muted-foreground flex h-full items-center justify-center"
-              aria-hidden="true"
-            >
-              <ImageIcon className="size-6" />
-            </div>
-          )}
-        </div>
+      <div className="flex flex-col gap-4 px-(--card-spacing)">
+        {/*
+          Thumbnail beside the text at every width. A full-width photo on a phone pushed the
+          title, the numbers and every control below the fold for each row, on a screen whose job
+          is managing several items - the cover photo is for recognition, not the point.
+        */}
+        <div className="flex gap-4">
+          <div className="bg-muted relative aspect-4/3 w-24 shrink-0 self-start overflow-hidden rounded-xl sm:w-36">
+            {listing.imageUrl ? (
+              <ListingPhoto
+                src={listing.imageUrl}
+                alt=""
+                sizes="(min-width: 640px) 9rem, 6rem"
+                className="object-cover"
+              />
+            ) : (
+              <div
+                className="text-muted-foreground flex h-full items-center justify-center"
+                aria-hidden="true"
+              >
+                <ImageIcon className="size-5" />
+              </div>
+            )}
+          </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status={listing.status} />
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <ListingStatusBadge status={listing.status} />
               <span className="text-muted-foreground text-xs">
                 Listed {formatDate(listing.createdAt)}
               </span>
             </div>
 
-            <h3 className="font-heading text-sm leading-snug font-medium">
+            <h3 className="font-heading line-clamp-2 text-base leading-snug font-semibold tracking-tight break-words">
               {listing.title}
             </h3>
 
-            <p className="text-muted-foreground text-xs">
-              {formatPKRPerDay(listing.pricePerDay)} ·{" "}
-              {formatCity(listing.city)}
+            <p className="text-sm">
+              <span className="font-heading font-semibold tabular-nums">
+                {formatPKRPerDay(listing.pricePerDay)}
+              </span>
+              <span className="text-muted-foreground">
+                {" "}
+                · {formatCity(listing.city)}
+              </span>
             </p>
           </div>
-
-          {/*
-            Stats as a definition list: each is a labelled value, and the icons alone would
-            leave a screen reader reading four bare numbers.
-          */}
-          <dl className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-            <Stat icon={EyeIcon} label="views" value={listing.viewCount} />
-            <Stat icon={HeartIcon} label="saves" value={listing.saveCount} />
-            <Stat icon={ImageIcon} label="photos" value={listing.imageCount} />
-            <Stat
-              icon={CalendarDaysIcon}
-              label="days blocked"
-              value={listing.blockedDateCount}
-            />
-          </dl>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isPending}
-              render={<Link href={`/dashboard/listings/${listing.id}/edit`} />}
-            >
-              <PencilIcon />
-              Edit
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isPending}
-              render={
-                <Link href={`/dashboard/listings/${listing.id}/availability`} />
-              }
-            >
-              <CalendarDaysIcon />
-              Availability
-            </Button>
-
-            {canToggle && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleStatusChange}
-                disabled={isPending}
-                aria-busy={isPending}
-              >
-                {isPending ? (
-                  <Loader2Icon className="animate-spin" />
-                ) : isActive ? (
-                  <PauseIcon />
-                ) : (
-                  <PlayIcon />
-                )}
-                {isActive ? "Pause" : "Resume"}
-              </Button>
-            )}
-
-            {/*
-              Only linked when public. A paused or draft listing 404s on its detail page -
-              the public query filters on ACTIVE - so a "View" link would be broken.
-            */}
-            {isActive && (
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isPending}
-                render={<Link href={`/listings/${listing.id}`} />}
-              >
-                View
-              </Button>
-            )}
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              disabled={isPending}
-              className="text-destructive hover:text-destructive ml-auto"
-            >
-              <Trash2Icon />
-              Delete
-            </Button>
-          </div>
         </div>
+
+        {/*
+          Stats as a definition list: each is a labelled value, and the icons alone would
+          leave a screen reader reading four bare numbers.
+        */}
+        <dl className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+          <Stat icon={EyeIcon} label="views" value={listing.viewCount} />
+          <Stat icon={HeartIcon} label="saves" value={listing.saveCount} />
+          <Stat icon={ImageIcon} label="photos" value={listing.imageCount} />
+          <Stat
+            icon={CalendarDaysIcon}
+            label="days blocked"
+            value={listing.blockedDateCount}
+          />
+        </dl>
       </div>
+
+      <CardFooter className="flex-wrap gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          render={<Link href={`/dashboard/listings/${listing.id}/edit`} />}
+        >
+          <PencilIcon />
+          Edit
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isPending}
+          render={
+            <Link href={`/dashboard/listings/${listing.id}/availability`} />
+          }
+        >
+          <CalendarDaysIcon />
+          Availability
+        </Button>
+
+        {canToggle && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleStatusChange}
+            disabled={isPending}
+            aria-busy={isPending}
+          >
+            {isPending ? (
+              <Loader2Icon className="animate-spin" />
+            ) : isActive ? (
+              <PauseIcon />
+            ) : (
+              <PlayIcon />
+            )}
+            {isActive ? "Pause" : "Resume"}
+          </Button>
+        )}
+
+        {/*
+          Only linked when public. A paused or draft listing 404s on its detail page -
+          the public query filters on ACTIVE - so a "View" link would be broken.
+        */}
+        {isActive && (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={isPending}
+            render={<Link href={`/listings/${listing.id}`} />}
+          >
+            View
+          </Button>
+        )}
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleDelete}
+          disabled={isPending}
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive ml-auto"
+        >
+          <Trash2Icon />
+          Delete
+        </Button>
+      </CardFooter>
     </Card>
   );
-}
-
-interface StatusBadgeProps {
-  status: ListingStatus;
-}
-
-/**
- * Status, in the owner's language.
- *
- * `DELETED` is included for completeness but never reaches here - the management query
- * filters soft-deleted rows out. A total map means adding an enum variant fails at the type
- * level rather than rendering a raw `REJECTED` to someone.
- */
-function StatusBadge({ status }: StatusBadgeProps) {
-  const presentation: Record<
-    ListingStatus,
-    {
-      label: string;
-      variant: "default" | "secondary" | "outline" | "destructive";
-    }
-  > = {
-    [ListingStatus.ACTIVE]: { label: "Live", variant: "default" },
-    [ListingStatus.PAUSED]: { label: "Paused", variant: "secondary" },
-    [ListingStatus.DRAFT]: { label: "Draft", variant: "outline" },
-    [ListingStatus.REJECTED]: { label: "Rejected", variant: "destructive" },
-    [ListingStatus.DELETED]: { label: "Deleted", variant: "outline" },
-  };
-
-  const { label, variant } = presentation[status];
-
-  return <StatusLabel label={label} variant={variant} />;
 }
 
 interface StatProps {
@@ -279,7 +260,10 @@ function Stat({ icon: Icon, label, value }: StatProps) {
       <Icon className="size-3.5 shrink-0" aria-hidden="true" />
       <dt className="sr-only">{label}</dt>
       <dd>
-        {value} {label}
+        <span className="text-foreground font-medium tabular-nums">
+          {value}
+        </span>{" "}
+        {label}
       </dd>
     </div>
   );

@@ -34,22 +34,32 @@ function AdminHeader() {
   const items = adminNavItems();
 
   return (
-    <div className="flex flex-col gap-3 border-b pb-4">
-      <div className="flex flex-wrap items-center gap-2">
+    /*
+      A card band rather than a rule under the page title: the boundary between "my account" and
+      "everybody's" should read as a different surface, not one more line. The shield tile stays
+      navy - the one solid navy mark on these screens - because this is where authority, not
+      brand, is the message.
+    */
+    <div className="bg-card flex flex-col gap-3 rounded-2xl border p-3 sm:p-4">
+      <div className="flex items-start gap-3">
         <span
-          className="bg-primary text-primary-foreground flex size-6 shrink-0 items-center justify-center rounded-md"
+          className="bg-primary text-primary-foreground flex size-9 shrink-0 items-center justify-center rounded-xl"
           aria-hidden="true"
         >
-          <ShieldIcon className="size-3.5" />
+          <ShieldIcon className="size-[1.125rem]" strokeWidth={1.75} />
         </span>
-        <span className="font-heading text-sm font-semibold">
-          Administration
-        </span>
-        <Badge variant="secondary">Restricted</Badge>
-        <p className="text-muted-foreground text-xs">
-          Actions here affect other people&apos;s accounts, listings and money,
-          and are recorded against your name.
-        </p>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="font-heading text-sm font-bold tracking-tight">
+              Administration
+            </span>
+            <Badge variant="secondary">Restricted</Badge>
+          </span>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            Actions here affect other people&apos;s accounts, listings and
+            money, and are recorded against your name.
+          </p>
+        </div>
       </div>
 
       {/*
@@ -59,7 +69,7 @@ function AdminHeader() {
       */}
       <nav
         aria-label="Administration"
-        className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-0.5"
+        className="-mx-1 flex gap-1 overflow-x-auto border-t px-1 pt-3 pb-0.5"
       >
         {items.map((item) => {
           const isActive = isNavItemActive(pathname, item);
@@ -74,9 +84,12 @@ function AdminHeader() {
               aria-current={isActive ? "page" : undefined}
               className={cn(
                 "focus-visible:ring-ring flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors outline-none focus-visible:ring-2",
+                // Selected is mint everywhere in the dashboard - the sidebar, these tabs, the
+                // filter chips and the queue tabs - with an emerald edge and a heavier weight so
+                // the state never rests on the fill alone.
                 isActive
-                  ? "bg-primary text-primary-foreground border-primary font-medium"
-                  : "text-muted-foreground hover:border-foreground hover:text-foreground border-border"
+                  ? "bg-brand-soft text-brand-soft-foreground border-brand font-semibold"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground border-transparent"
               )}
             >
               <Icon className="size-3.5 shrink-0" aria-hidden="true" />

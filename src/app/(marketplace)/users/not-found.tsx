@@ -30,10 +30,10 @@ export default function ProfileNotFound() {
         description="The member may no longer be on SamaanShare, or the link may be out of date."
         action={
           <>
-            <Button size="sm" render={<Link href="/listings" />}>
+            <Button render={<Link href="/listings" />}>
               Browse all listings
             </Button>
-            <Button variant="outline" size="sm" render={<Link href="/" />}>
+            <Button variant="outline" render={<Link href="/" />}>
               Back to home
             </Button>
           </>

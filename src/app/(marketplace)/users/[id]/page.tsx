@@ -1,4 +1,4 @@
-import { MapPinIcon, PackageIcon } from "lucide-react";
+import { BadgeCheckIcon, MapPinIcon, PackageIcon } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -6,12 +6,15 @@ import { ListingsGrid } from "@/components/marketplace/listings-grid";
 import { SectionHeading } from "@/components/marketplace/section-heading";
 import { ReportButton } from "@/components/reports/report-button";
 import { ListingReviews } from "@/components/reviews/listing-reviews";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrustPanel } from "@/components/trust/trust-panel";
 import { ReportType, ReviewType } from "@/generated/prisma/enums";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getReceivedReviews } from "@/lib/queries/reviews";
+import { getSavedListingIds } from "@/lib/queries/saved-listings";
 import {
   getProfileListings,
   getPublicProfile,
@@ -84,25 +87,44 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     }),
   ]);
 
+  // The same scoped read every other grid uses. Without it a signed-in visitor saw each card's
+  // heart as a "sign in to save" link, on a page they were already signed in to.
+  const savedListingIds = await getSavedListingIds(
+    viewer?.id,
+    listings.map((listing) => listing.id)
+  );
+
   const name = profile.name?.trim() || "SamaanShare member";
   const avatarSrc = profile.avatarUrl ?? profile.image;
   const isSelf = viewer?.id === profile.id;
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 lg:px-6">
-      <header className="flex flex-wrap items-start gap-4">
-        <Avatar className="size-16 shrink-0">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-8 lg:px-6 lg:py-12">
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
+        <Avatar className="size-20 shrink-0 text-xl sm:size-24">
           {avatarSrc && <AvatarImage src={avatarSrc} alt="" />}
           <AvatarFallback>{initialsFor(name)}</AvatarFallback>
         </Avatar>
 
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <h1 className="font-heading text-xl font-medium">{name}</h1>
+        <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="font-heading text-3xl font-bold tracking-[-0.025em] break-words sm:text-4xl">
+              {name}
+            </h1>
 
-          <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            {/* Emerald: a verified identity is one of the facts the colour is reserved for. */}
+            {profile.isVerified && (
+              <Badge variant="success" title="Identity verified by SamaanShare">
+                <BadgeCheckIcon aria-hidden="true" />
+                Verified
+              </Badge>
+            )}
+          </div>
+
+          <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
             {profile.city && (
-              <span className="flex items-center gap-1">
-                <MapPinIcon className="size-3.5" aria-hidden="true" />
+              <span className="flex items-center gap-1.5">
+                <MapPinIcon className="size-4 shrink-0" aria-hidden="true" />
                 {formatCity(profile.city)}
               </span>
             )}
@@ -111,17 +133,17 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
           {profile.bio && (
             // A string, never HTML - it is user input.
-            <p className="text-muted-foreground mt-1 max-w-prose text-sm leading-relaxed whitespace-pre-line">
+            <p className="text-foreground/80 mt-1 max-w-[65ch] text-[0.9375rem] leading-relaxed break-words whitespace-pre-line">
               {profile.bio}
             </p>
           )}
         </div>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
-        <div className="flex min-w-0 flex-col gap-8">
-          {listings.length > 0 && (
-            <section className="flex flex-col gap-5">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-12">
+        <div className="flex min-w-0 flex-col gap-12">
+          {listings.length > 0 ? (
+            <section className="flex flex-col gap-6">
               <SectionHeading
                 title={
                   profile.activeListings === 1
@@ -135,8 +157,27 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     }
                   : {})}
               />
-              <ListingsGrid listings={listings} />
+              {/* Three across at most: the trust panel takes a column beside it. */}
+              <ListingsGrid
+                listings={listings}
+                savedListingIds={savedListingIds}
+                isAuthenticated={viewer !== null}
+                className="xl:grid-cols-3"
+              />
             </section>
+          ) : (
+            // In the content column rather than as a footnote under the trust panel, where it
+            // was easy to read as part of the trust record.
+            <EmptyState
+              icon={PackageIcon}
+              title="No items listed right now"
+              description={`${name} has nothing available to rent at the moment. Browse everything listed by other members instead.`}
+              action={
+                <Button variant="outline" render={<Link href="/listings" />}>
+                  Browse all listings
+                </Button>
+              }
+            />
           )}
 
           {/*
@@ -158,27 +199,34 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           />
 
           {asOwner.items.length === 0 && asRenter.items.length === 0 && (
-            <p className="text-muted-foreground text-sm">
-              No reviews yet. Reviews appear once both sides of a rental have
-              written one, or after fourteen days.
-            </p>
+            <section
+              aria-labelledby="profile-reviews"
+              className="flex flex-col gap-2 border-t pt-8"
+            >
+              <h2
+                id="profile-reviews"
+                className="font-heading text-xl font-bold tracking-tight"
+              >
+                Reviews
+              </h2>
+              <p className="text-muted-foreground max-w-[65ch] text-sm leading-relaxed">
+                No reviews yet. Reviews appear once both sides of a rental have
+                written one, or after fourteen days.
+              </p>
+            </section>
           )}
         </div>
 
-        <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
+        <aside
+          aria-label="Trust record"
+          className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start"
+        >
           <TrustPanel
             trust={profile.trust}
             isVerified={profile.isVerified}
             completedRentals={profile.completedRentals}
             memberSince={profile.memberSince}
           />
-
-          {listings.length === 0 && (
-            <p className="text-muted-foreground flex items-center gap-2 text-xs">
-              <PackageIcon className="size-3.5 shrink-0" aria-hidden="true" />
-              No items listed right now.
-            </p>
-          )}
 
           {/* Offered to a signed-in visitor who is not looking at themselves. */}
           {viewer && !isSelf && (

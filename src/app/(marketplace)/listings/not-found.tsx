@@ -31,10 +31,10 @@ export default function ListingNotFound() {
         description="It may have been removed by its owner, or the link may be out of date. Plenty of other items are still available to rent."
         action={
           <>
-            <Button size="sm" render={<Link href="/listings" />}>
+            <Button render={<Link href="/listings" />}>
               Browse all listings
             </Button>
-            <Button variant="outline" size="sm" render={<Link href="/" />}>
+            <Button variant="outline" render={<Link href="/" />}>
               Back to home
             </Button>
           </>

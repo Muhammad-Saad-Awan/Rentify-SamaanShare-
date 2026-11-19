@@ -1,11 +1,11 @@
 import { IdCardIcon } from "lucide-react";
 import Link from "next/link";
 
-import { EmptyState } from "@/components/shared/empty-state";
 import { EmailVerificationNotice } from "@/components/auth/email-verification-notice";
 import { CreateListingForm } from "@/components/listings/create-listing-form";
-import { needsEmailConfirmation } from "@/lib/auth/email-gate";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
+import { needsEmailConfirmation } from "@/lib/auth/email-gate";
 import { requireUser } from "@/lib/auth/session";
 import { needsIdentityDocument } from "@/lib/identity/gate";
 import { getCategoryOptions } from "@/lib/queries/categories";
@@ -43,16 +43,8 @@ export default async function NewListingPage() {
 
   if (await needsEmailConfirmation(user.id)) {
     return (
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 lg:px-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-heading text-3xl font-bold tracking-[-0.025em] sm:text-4xl">
-            List an item
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Confirm your email address first - SamaanShare asks every member to
-            before they list or rent.
-          </p>
-        </div>
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8 lg:px-6 lg:py-12">
+        <NewListingHeader description="Confirm your email address first - SamaanShare asks every member to before they list or rent." />
 
         {/* Only reached when mail is configured, so the resend button always works here. */}
         <EmailVerificationNotice isVerified={false} canSend />
@@ -66,15 +58,8 @@ export default async function NewListingPage() {
    */
   if (await needsIdentityDocument(user.id)) {
     return (
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 lg:px-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-heading text-3xl font-bold tracking-[-0.025em] sm:text-4xl">
-            List an item
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            One step before you start.
-          </p>
-        </div>
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8 lg:px-6 lg:py-12">
+        <NewListingHeader description="One step before you start." />
 
         <EmptyState
           icon={IdCardIcon}
@@ -93,17 +78,28 @@ export default async function NewListingPage() {
   const categories = await getCategoryOptions();
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 lg:px-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-3xl font-bold tracking-[-0.025em] sm:text-4xl">
-          List an item
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Five short steps. Nothing is published until you review it at the end.
-        </p>
-      </div>
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8 lg:px-6 lg:py-12">
+      <NewListingHeader description="Five short steps. Nothing is published until you review it at the end." />
 
       <CreateListingForm categories={categories} />
+    </div>
+  );
+}
+
+/**
+ * The page's title block, the same for all three states - confirm email, upload CNIC, the form -
+ * so moving between them never shifts the heading. Mirrors `PageHeader`'s rule beneath, though this
+ * page sits in the marketplace shell rather than the dashboard.
+ */
+function NewListingHeader({ description }: { description: string }) {
+  return (
+    <div className="flex flex-col gap-1.5 border-b pb-6">
+      <h1 className="font-heading text-3xl font-bold tracking-[-0.025em] sm:text-4xl">
+        List an item
+      </h1>
+      <p className="text-muted-foreground max-w-[65ch] text-sm leading-relaxed">
+        {description}
+      </p>
     </div>
   );
 }

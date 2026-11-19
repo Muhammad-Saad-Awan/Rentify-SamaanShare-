@@ -144,13 +144,23 @@ function AvatarUploader({ url, initials, canRemove }: AvatarUploaderProps) {
   }
 
   return (
-    <div className="flex items-center gap-4">
-      <Avatar size="lg" className="size-16">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+      <Avatar size="lg" className="size-20">
         {url && <AvatarImage src={url} alt="" />}
-        <AvatarFallback className="text-base">{initials}</AvatarFallback>
+        <AvatarFallback className="font-heading text-xl font-semibold">
+          {initials}
+        </AvatarFallback>
       </Avatar>
 
-      <div className="flex min-w-0 flex-col gap-2">
+      <div className="flex min-w-0 flex-col gap-2.5">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium">Profile photo</span>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            JPEG, PNG or WebP up to 15MB. Shown on your public profile and
+            beside your listings.
+          </p>
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
           {/*
             A label wrapping a real file input, as in `ImageUploader`: click, tap and
@@ -160,7 +170,6 @@ function AvatarUploader({ url, initials, canRemove }: AvatarUploaderProps) {
           */}
           <Button
             variant="outline"
-            size="sm"
             disabled={busy !== null}
             render={<label htmlFor={inputId} className="cursor-pointer" />}
           >
@@ -181,19 +190,14 @@ function AvatarUploader({ url, initials, canRemove }: AvatarUploaderProps) {
             <Button
               type="button"
               variant="ghost"
-              size="sm"
               disabled={busy !== null}
               onClick={() => void handleRemove()}
             >
+              {busy === "removing" && <Loader2Icon className="animate-spin" />}
               {busy === "removing" ? "Removing..." : "Remove"}
             </Button>
           )}
         </div>
-
-        <p className="text-muted-foreground text-xs">
-          JPEG, PNG or WebP up to 15MB. Shown on your public profile and beside
-          your listings.
-        </p>
       </div>
 
       <input

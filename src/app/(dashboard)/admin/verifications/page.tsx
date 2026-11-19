@@ -2,6 +2,7 @@ import { IdCardIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { QueueTabs } from "@/components/admin/queue-tabs";
 import { IdentityDocumentCard } from "@/components/admin/identity-document-card";
 import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -97,21 +98,11 @@ async function VerificationQueue({
         }
       />
 
-      <nav aria-label="Verification status" className="flex flex-wrap gap-2">
-        {STATUS_TABS.map((tab) => (
-          <Button
-            key={tab.status}
-            size="sm"
-            variant={tab.status === active.status ? "default" : "outline"}
-            render={<Link href={tab.href} />}
-            {...(tab.status === active.status
-              ? { "aria-current": "page" as const }
-              : {})}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </nav>
+      <QueueTabs
+        label="Verification status"
+        tabs={STATUS_TABS.map((tab) => ({ ...tab, key: tab.status }))}
+        activeKey={active.status}
+      />
 
       {items.length > 0 && (
         <ul className="flex flex-col gap-4">

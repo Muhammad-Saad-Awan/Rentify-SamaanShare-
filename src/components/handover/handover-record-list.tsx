@@ -11,6 +11,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { confirmHandover } from "@/actions/handover";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { HandoverConfirmation, HandoverType } from "@/generated/prisma/enums";
@@ -92,39 +93,48 @@ function HandoverRecordCard({ handover }: { handover: HandoverSnapshot }) {
   }
 
   return (
-    <div className="rounded-lg border px-3 py-2.5 text-sm">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+    <div
+      className={cn(
+        "bg-card flex flex-col gap-2 rounded-xl border px-3 py-3 text-sm",
+        // An answer is owed by this viewer: the record's edge says so before its button does.
+        handover.canConfirm && "border-warning/60"
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <span className="font-medium">{moment}</span>
-        <span
-          className={cn(
-            "text-xs",
-            flagged ? "text-destructive font-medium" : "text-muted-foreground"
-          )}
-        >
-          {HANDOVER_CONDITION_LABELS[handover.condition]}
-        </span>
         <span className="text-muted-foreground text-xs">
           {formatDate(handover.recordedAt)}
         </span>
-        <Standing confirmation={handover.confirmation} />
+        <span className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
+          {/*
+            The grade as a pill, amber when it reports a problem. Not red: "damaged" is what
+            somebody recorded, not something the platform has found - and a record can be
+            disputed, which is the standing beside it.
+          */}
+          <Badge variant={flagged ? "warning" : "outline"}>
+            {flagged && <TriangleAlertIcon aria-hidden="true" />}
+            {HANDOVER_CONDITION_LABELS[handover.condition]}
+          </Badge>
+          <Standing confirmation={handover.confirmation} />
+        </span>
       </div>
 
       {handover.notes && (
         // A string, never HTML - it is user input.
-        <p className="text-muted-foreground mt-1.5 leading-relaxed whitespace-pre-line">
+        <p className="text-muted-foreground leading-relaxed break-words whitespace-pre-line">
           {handover.notes}
         </p>
       )}
 
       {handover.photos.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {handover.photos.map((photo) => (
             <a
               key={photo.id}
               href={photo.url}
               target="_blank"
               rel="noreferrer"
-              className="focus-visible:ring-ring relative size-16 overflow-hidden rounded-md outline-none focus-visible:ring-2"
+              className="focus-visible:ring-ring bg-muted relative size-16 overflow-hidden rounded-md border outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             >
               <Image
                 src={photo.url}
@@ -139,21 +149,29 @@ function HandoverRecordCard({ handover }: { handover: HandoverSnapshot }) {
       )}
 
       {handover.confirmationNote && (
-        <p className="text-muted-foreground border-muted mt-2 border-l-2 pl-2.5 text-xs leading-relaxed whitespace-pre-line">
+        <p className="text-muted-foreground border-l-2 pl-2.5 text-xs leading-relaxed break-words whitespace-pre-line">
           {handover.confirmationNote}
         </p>
       )}
 
       {handover.canConfirm && !isOpen && (
-        <div className="mt-2">
-          <Button size="sm" variant="outline" onClick={() => setIsOpen(true)}>
+        <div className="bg-warning-soft text-warning-soft-foreground flex flex-col gap-2 rounded-md px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs leading-relaxed font-medium">
+            The other party recorded this. Check it matches what you saw.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full shrink-0 sm:w-auto"
+            onClick={() => setIsOpen(true)}
+          >
             Confirm or dispute
           </Button>
         </div>
       )}
 
       {handover.canConfirm && isOpen && (
-        <div className="mt-2 flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <Textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
@@ -164,7 +182,7 @@ function HandoverRecordCard({ handover }: { handover: HandoverSnapshot }) {
             aria-label="Your reply"
           />
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-2 *:w-full sm:flex-row sm:flex-wrap sm:items-center sm:*:w-auto">
             <Button
               size="sm"
               onClick={() => answer(true)}
@@ -211,31 +229,36 @@ function HandoverRecordCard({ handover }: { handover: HandoverSnapshot }) {
   );
 }
 
-/** The three standings, each said in its own words rather than as a shade of one scale. */
+/**
+ * The three standings, each said in its own words rather than as a shade of one scale.
+ *
+ * Agreement is the one settled-in-everyone's-favour state, so it alone is emerald; a dispute is a
+ * live disagreement that needs attention, not a failure, so it is amber rather than red.
+ */
 function Standing({ confirmation }: { confirmation: HandoverConfirmation }) {
   if (confirmation === HandoverConfirmation.AGREED) {
     return (
-      <span className="text-foreground flex items-center gap-1 text-xs font-medium">
-        <CheckCircle2Icon className="size-3.5" aria-hidden="true" />
+      <Badge variant="success">
+        <CheckCircle2Icon aria-hidden="true" />
         Both parties agreed
-      </span>
+      </Badge>
     );
   }
 
   if (confirmation === HandoverConfirmation.DISPUTED) {
     return (
-      <span className="text-destructive flex items-center gap-1 text-xs font-medium">
-        <TriangleAlertIcon className="size-3.5" aria-hidden="true" />
+      <Badge variant="warning">
+        <TriangleAlertIcon aria-hidden="true" />
         Disputed
-      </span>
+      </Badge>
     );
   }
 
   return (
-    <span className="text-muted-foreground flex items-center gap-1 text-xs">
-      <ClockIcon className="size-3.5" aria-hidden="true" />
+    <Badge variant="secondary">
+      <ClockIcon aria-hidden="true" />
       Awaiting the other party
-    </span>
+    </Badge>
   );
 }
 

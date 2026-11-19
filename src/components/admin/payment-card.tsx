@@ -18,6 +18,8 @@ import {
   verifyPayment,
 } from "@/actions/payment-verification";
 import { recordRefund } from "@/actions/refund";
+import { AttentionNote, AwaitingBadge } from "@/components/admin/attention";
+import { DecisionPanel } from "@/components/admin/decision-panel";
 import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +51,7 @@ interface PaymentCardProps {
  */
 const PANEL_COPY = {
   reject: {
+    title: "Reject this payment",
     reasonLabel: "Why the payment could not be verified",
     placeholder: "No transfer matching this reference in the account.",
     hint: "The renter is shown this, so tell them what to check.",
@@ -56,6 +59,7 @@ const PANEL_COPY = {
     success: "Payment rejected. The renter can record it again.",
   },
   reverse: {
+    title: "Reverse this verification",
     reasonLabel: "Why the verification is being reversed",
     placeholder: "Verified against the wrong booking.",
     hint: "Recorded in the audit trail and sent to the renter.",
@@ -63,6 +67,7 @@ const PANEL_COPY = {
     success: "Verification reversed. The payment is back in the queue.",
   },
   refund: {
+    title: "Refund this booking",
     reasonLabel: "Why this booking is being refunded",
     placeholder: "Listing was removed after the payment cleared.",
     hint: "Everything collected goes back - the rental and the deposit. The booking can never be settled afterwards.",
@@ -148,8 +153,8 @@ function PaymentCard({ payment }: PaymentCardProps) {
 
   return (
     <Card className="flex flex-col gap-4 px-(--card-spacing)">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex flex-col gap-0.5">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="flex min-w-0 flex-col gap-0.5">
           <Link
             href={`/admin/bookings/${payment.bookingId}`}
             className="font-heading decoration-foreground/30 text-base leading-snug font-semibold underline-offset-4 hover:underline"
@@ -171,8 +176,8 @@ function PaymentCard({ payment }: PaymentCardProps) {
         The reconciliation line. Monospace on the reference because it is read character by
         character against another screen, and a proportional font makes that materially harder.
       */}
-      <div className="bg-muted/60 flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-lg px-4 py-3">
-        <span className="font-heading text-xl font-bold tracking-tight">
+      <div className="bg-muted/60 flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-xl px-4 py-3">
+        <span className="font-heading text-xl font-bold tracking-tight tabular-nums">
           {formatPKR(payment.amount + payment.securityDeposit)}
         </span>
         <span className="text-muted-foreground text-xs">
@@ -185,13 +190,13 @@ function PaymentCard({ payment }: PaymentCardProps) {
             : paymentMethodLabel(payment.method)}
         </span>
         {payment.transactionRef && (
-          <span className="bg-background rounded border px-1.5 py-0.5 font-mono text-xs break-all">
+          <span className="bg-card rounded-md border px-1.5 py-0.5 font-mono text-xs break-all">
             {payment.transactionRef}
           </span>
         )}
       </div>
 
-      <dl className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
+      <dl className="[&_dt]:text-muted-foreground flex flex-wrap gap-x-5 gap-y-1 text-xs">
         {payment.submittedAt && (
           <div>
             <dt className="inline font-medium">Recorded: </dt>
@@ -224,11 +229,11 @@ function PaymentCard({ payment }: PaymentCardProps) {
         each line is a refund somebody owes and nothing else in the app will raise it.
       */}
       {payment.unappliedCardPayments.length > 0 && (
-        <div className="border-destructive/40 text-destructive flex flex-col gap-1 rounded-lg border px-3 py-2 text-xs">
+        <AttentionNote tone="destructive">
           <p className="font-medium">
             Card payment not applied - refund it in the Stripe Dashboard
           </p>
-          <ul className="flex flex-col gap-0.5">
+          <ul className="mt-0.5 flex flex-col gap-0.5">
             {payment.unappliedCardPayments.map((entry) => (
               <li key={entry.checkoutSessionId}>
                 <span className="font-mono break-all">
@@ -238,11 +243,11 @@ function PaymentCard({ payment }: PaymentCardProps) {
               </li>
             ))}
           </ul>
-        </div>
+        </AttentionNote>
       )}
 
       {payment.rejectionReason && (
-        <p className="text-muted-foreground text-xs leading-relaxed">
+        <p className="text-muted-foreground border-l-2 pl-3 text-xs leading-relaxed">
           {payment.rejectionReason}
         </p>
       )}
@@ -279,7 +284,7 @@ function PaymentCard({ payment }: PaymentCardProps) {
             width={120}
             height={120}
             unoptimized
-            className="h-24 w-24 rounded-lg border object-cover"
+            className="bg-muted h-24 w-24 rounded-lg border object-cover"
           />
         </a>
       )}
@@ -292,101 +297,124 @@ function PaymentCard({ payment }: PaymentCardProps) {
       )}
 
       {panel === null ? (
-        <div className="flex flex-wrap items-center gap-2">
-          {awaitingDecision && (
-            <>
-              <Button
-                size="sm"
-                disabled={isPending}
-                aria-busy={isPending}
-                onClick={() =>
-                  void run(
-                    () => verifyPayment({ bookingId: payment.bookingId }),
-                    "Payment verified. Both parties have been told."
-                  )
-                }
-              >
-                {isPending ? (
-                  <Loader2Icon className="animate-spin" />
-                ) : (
-                  <CheckIcon />
-                )}
-                The money arrived
-              </Button>
+        (awaitingDecision || reversible || refundable) && (
+          <div className="flex flex-wrap items-center gap-2 border-t pt-4">
+            {awaitingDecision && (
+              <>
+                <Button
+                  size="sm"
+                  disabled={isPending}
+                  aria-busy={isPending}
+                  onClick={() =>
+                    void run(
+                      () => verifyPayment({ bookingId: payment.bookingId }),
+                      "Payment verified. Both parties have been told."
+                    )
+                  }
+                >
+                  {isPending ? (
+                    <Loader2Icon className="animate-spin" />
+                  ) : (
+                    <CheckIcon />
+                  )}
+                  The money arrived
+                </Button>
 
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isPending}
+                  onClick={() => setPanel("reject")}
+                >
+                  <XIcon />I cannot find it
+                </Button>
+              </>
+            )}
+
+            {reversible && (
               <Button
                 size="sm"
                 variant="outline"
                 disabled={isPending}
-                onClick={() => setPanel("reject")}
+                onClick={() => setPanel("reverse")}
               >
-                <XIcon />I cannot find it
+                <RotateCcwIcon />
+                Reverse this verification
               </Button>
-            </>
-          )}
+            )}
 
-          {reversible && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isPending}
-              onClick={() => setPanel("reverse")}
-            >
-              <RotateCcwIcon />
-              Reverse this verification
-            </Button>
-          )}
-
-          {/*
-            Refund lives HERE rather than on the settlement queue, because this is where the
-            verified payments are and giving money back is a decision about a payment, not about
-            a settlement - a booking that refunds never reaches a settlement at all.
-          */}
-          {refundable && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isPending}
-              onClick={() => setPanel("refund")}
-            >
-              <Undo2Icon />
-              Refund everything
-            </Button>
-          )}
-        </div>
+            {/*
+              Refund lives HERE rather than on the settlement queue, because this is where the
+              verified payments are and giving money back is a decision about a payment, not about
+              a settlement - a booking that refunds never reaches a settlement at all. Red, and at
+              the far edge on a wide screen: it is the one control here that sends money back. It
+              only opens the panel - nothing happens without a reason and a transfer reference.
+            */}
+            {refundable && (
+              <Button
+                size="sm"
+                variant="destructive"
+                className="sm:ml-auto"
+                disabled={isPending}
+                onClick={() => setPanel("refund")}
+              >
+                <Undo2Icon />
+                Refund everything
+              </Button>
+            )}
+          </div>
+        )
       ) : (
-        <div className="flex flex-col gap-2">
-          <Textarea
-            aria-label={PANEL_COPY[panel].reasonLabel}
-            placeholder={PANEL_COPY[panel].placeholder}
-            maxLength={PAYMENT_REASON_MAX}
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            disabled={isPending}
-          />
+        <DecisionPanel
+          title={PANEL_COPY[panel].title}
+          consequence={PANEL_COPY[panel].hint}
+        >
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor={`payment-reason-${payment.paymentId}`}
+              className="text-xs font-medium"
+            >
+              {PANEL_COPY[panel].reasonLabel}
+            </label>
+            <Textarea
+              id={`payment-reason-${payment.paymentId}`}
+              placeholder={PANEL_COPY[panel].placeholder}
+              maxLength={PAYMENT_REASON_MAX}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              disabled={isPending}
+            />
+          </div>
 
           {/*
             A refund also needs the reference for the transfer BACK. The rejection and the
             reversal move no money and so have nothing to reference.
           */}
           {panel === "refund" && (
-            <Input
-              aria-label="Refund transfer reference"
-              placeholder="Reference for the transfer back"
-              maxLength={TRANSACTION_REF_MAX}
-              value={refundRef}
-              disabled={isPending}
-              onChange={(event) => setRefundRef(event.target.value)}
-            />
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor={`refund-ref-${payment.paymentId}`}
+                className="text-xs font-medium"
+              >
+                Refund transfer reference
+              </label>
+              <Input
+                id={`refund-ref-${payment.paymentId}`}
+                placeholder="Reference for the transfer back"
+                maxLength={TRANSACTION_REF_MAX}
+                value={refundRef}
+                disabled={isPending}
+                onChange={(event) => setRefundRef(event.target.value)}
+                className="max-w-xs font-mono"
+              />
+            </div>
           )}
 
           {/*
-            The reason reaches the renter verbatim on a rejection, which is worth saying here -
-            an administrator writing a note to themselves would word it differently.
+            The hint is the panel's consequence line, under the buttons. The reason reaches the renter
+            verbatim on a rejection, which is worth saying there - an administrator writing a note to
+            themselves would word it differently.
           */}
-          <p className="text-muted-foreground text-xs">
-            {PANEL_COPY[panel].hint}
-          </p>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -439,7 +467,7 @@ function PaymentCard({ payment }: PaymentCardProps) {
               Cancel
             </Button>
           </div>
-        </div>
+        </DecisionPanel>
       )}
     </Card>
   );
@@ -449,7 +477,7 @@ function PaymentCard({ payment }: PaymentCardProps) {
 function StatusBadge({ status }: { status: PaymentStatus }) {
   switch (status) {
     case PaymentStatus.PENDING_VERIFICATION:
-      return <StatusLabel variant="secondary" label="Awaiting check" />;
+      return <AwaitingBadge label="Awaiting check" />;
     case PaymentStatus.COMPLETED:
       return <StatusLabel variant="default" label="Verified" />;
     case PaymentStatus.REJECTED:

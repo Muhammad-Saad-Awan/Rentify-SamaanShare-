@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 
 import { ListingsGrid } from "@/components/marketplace/listings-grid";
 import { ListingsSort } from "@/components/marketplace/listings-sort";
+import { PageBanner } from "@/components/marketplace/page-banner";
 import { SubcategoryNav } from "@/components/marketplace/subcategory-nav";
 import { EmptyState } from "@/components/shared/empty-state";
 import { JsonLd } from "@/components/shared/json-ld";
 import { Pagination } from "@/components/shared/pagination";
 import { Button } from "@/components/ui/button";
+import { categoryImage } from "@/config/category-images";
 import {
   buildListingsHref,
   parseListingFilters,
@@ -155,33 +157,20 @@ export default async function CategoryPage({
       />
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-3">
-            <span
-              className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg"
-              aria-hidden="true"
-            >
-              <Icon className="size-5" />
-            </span>
+        <PageBanner
+          eyebrow="Category"
+          eyebrowIcon={Icon}
+          title={category.name}
+          summary={resultSummary(total, activeSubcategory?.name)}
+          description={category.description}
+          image={categoryImage(category.slug)}
+        />
 
-            <div className="flex min-w-0 flex-col gap-1">
-              <h1 className="font-heading text-3xl font-bold tracking-[-0.025em] sm:text-4xl">
-                {category.name}
-              </h1>
-              <p className="text-muted-foreground text-sm">
-                {resultSummary(total, activeSubcategory?.name)}
-              </p>
-            </div>
-          </div>
-
-          {category.description && (
-            <p className="text-muted-foreground max-w-2xl text-sm">
-              {category.description}
-            </p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        {/*
+          Two rows at every width. Side by side, the sort group and the subcategory pills fought
+          for one line and the pills were clipped mid-word even on a 1280px screen.
+        */}
+        <div className="flex flex-col gap-3">
           <SubcategoryNav
             items={[
               {
@@ -195,10 +184,14 @@ export default async function CategoryPage({
                 isActive: filters.subcategory === subcategory.slug,
               })),
             ]}
-            className="min-w-0 lg:flex-1"
+            className="min-w-0"
           />
 
-          <div className="flex shrink-0 items-center gap-2">
+          {/*
+            `min-w-0` so the sort group scrolls inside itself at 360px instead of pushing the
+            page sideways.
+          */}
+          <div className="flex min-w-0 items-center justify-between gap-2">
             <ListingsSort
               filters={filters}
               hrefFor={(sort) => hrefFor({ sort, page: 1 })}
@@ -212,7 +205,7 @@ export default async function CategoryPage({
             */}
             <Button
               variant="outline"
-              size="sm"
+              className="shrink-0"
               render={<Link href={buildListingsHref(filters, { page: 1 })} />}
             >
               <SlidersHorizontalIcon />
@@ -279,11 +272,7 @@ function CategoryEmptyState({
         title={`Nothing in ${subcategoryName} yet`}
         description={`No one has listed anything under ${subcategoryName}. Other ${categoryName.toLowerCase()} may still be available.`}
         action={
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href={allInCategoryHref} />}
-          >
+          <Button variant="outline" render={<Link href={allInCategoryHref} />}>
             View all {categoryName}
           </Button>
         }
@@ -298,11 +287,7 @@ function CategoryEmptyState({
         title={`Nothing in ${categoryName} yet`}
         description="No items are listed in this category so far. Try another category, or browse everything that is available."
         action={
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href="/listings" />}
-          >
+          <Button variant="outline" render={<Link href="/listings" />}>
             Browse all listings
           </Button>
         }
@@ -316,11 +301,7 @@ function CategoryEmptyState({
       title="No listings on this page"
       description={`There ${totalPages === 1 ? "is only 1 page" : `are only ${totalPages} pages`} of results.`}
       action={
-        <Button
-          variant="outline"
-          size="sm"
-          render={<Link href={firstPageHref} />}
-        >
+        <Button variant="outline" render={<Link href={firstPageHref} />}>
           Back to first page
         </Button>
       }

@@ -1,5 +1,7 @@
+import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 
 interface SectionHeadingProps {
@@ -15,9 +17,12 @@ interface SectionHeadingProps {
  * Heading block for a homepage section.
  *
  * Renders `h2`, which is the correct level under the hero's single `h1`. Sharing
- * one component across the four sections is what keeps that consistent - four
- * hand-written headings would eventually disagree on level or spacing and leave
- * the page with a broken outline for anyone navigating by headings.
+ * one component across the sections is what keeps that consistent - hand-written
+ * headings would eventually disagree on level or spacing and leave the page with a
+ * broken outline for anyone navigating by headings.
+ *
+ * The action is an emerald outline pill with an arrow, after the reference design's
+ * "Browse All Categories".
  */
 function SectionHeading({
   title,
@@ -29,29 +34,31 @@ function SectionHeading({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-end justify-between gap-x-6 gap-y-2",
+        "flex flex-wrap items-end justify-between gap-x-6 gap-y-3",
         className
       )}
     >
-      <div className="flex min-w-0 flex-col gap-1">
-        <h2 className="font-heading text-2xl font-bold tracking-[-0.025em] sm:text-3xl">
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <h2 className="font-heading text-[1.75rem] font-extrabold tracking-[-0.03em] sm:text-4xl">
           {title}
         </h2>
 
         {description && (
-          <p className="text-muted-foreground max-w-[60ch] text-sm leading-relaxed sm:text-[0.9375rem]">
+          <p className="text-muted-foreground max-w-[60ch] text-[0.9375rem] leading-relaxed sm:text-base">
             {description}
           </p>
         )}
       </div>
 
       {actionHref && actionLabel && (
-        <Link
-          href={actionHref}
-          className="text-foreground decoration-foreground/30 hover:decoration-foreground focus-visible:ring-ring shrink-0 rounded text-sm font-medium underline underline-offset-4 transition-colors outline-none focus-visible:ring-2"
+        <Button
+          variant="brand-outline"
+          className="h-10 rounded-xl px-4"
+          render={<Link href={actionHref} />}
         >
           {actionLabel}
-        </Link>
+          <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+        </Button>
       )}
     </div>
   );

@@ -43,14 +43,16 @@ interface CityBarChartProps {
  *    difference between none and a little stays visible, with the true figure in the label.
  *
  * 6. THE TRACK IS RECESSIVE. `bg-muted` behind each bar shows the scale each is measured against
- *    without competing with the data, and the 2px gap between rows keeps adjacent fills from reading
+ *    without competing with the data, and the 6px gap between rows keeps adjacent fills from reading
  *    as one block.
  */
 function CityBarChart({ title, caption, rows }: CityBarChartProps) {
   if (rows.length === 0) {
     return (
       <div className="flex flex-col gap-1">
-        <h3 className="font-heading text-base font-semibold">{title}</h3>
+        <h3 className="font-heading text-base font-bold tracking-tight">
+          {title}
+        </h3>
         <p className="text-muted-foreground text-xs">Nothing recorded yet.</p>
       </div>
     );
@@ -62,17 +64,19 @@ function CityBarChart({ title, caption, rows }: CityBarChartProps) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-col gap-0.5">
-        <h3 className="font-heading text-base font-semibold">{title}</h3>
+        <h3 className="font-heading text-base font-bold tracking-tight">
+          {title}
+        </h3>
         <p className="text-muted-foreground text-xs">{caption}</p>
       </div>
 
-      <ul className="flex flex-col gap-0.5">
+      <ul className="flex flex-col gap-1.5">
         {rows.map((row) => {
           const share =
             row.value <= 0 ? 0 : Math.max(2, (row.value / max) * 100);
 
           return (
-            <li key={row.city} className="flex items-center gap-2 text-xs">
+            <li key={row.city} className="flex items-center gap-3 text-xs">
               <span
                 className="w-20 shrink-0 truncate"
                 title={formatCity(row.city)}
@@ -85,11 +89,11 @@ function CityBarChart({ title, caption, rows }: CityBarChartProps) {
                 reader gets the full row from the text and nothing is encoded in the fill alone.
               */}
               <span
-                className="bg-muted relative h-2.5 min-w-0 flex-1 overflow-hidden rounded-sm"
+                className="bg-muted relative h-2.5 min-w-0 flex-1 overflow-hidden rounded-full"
                 aria-hidden="true"
               >
                 <span
-                  className="bg-primary absolute inset-y-0 left-0 rounded-sm"
+                  className="bg-primary absolute inset-y-0 left-0 rounded-full"
                   style={{ width: `${share}%` }}
                 />
               </span>

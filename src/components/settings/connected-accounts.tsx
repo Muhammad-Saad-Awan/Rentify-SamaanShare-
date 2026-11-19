@@ -1,12 +1,13 @@
 "use client";
 
-import { CheckCircle2Icon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { disconnectAccount } from "@/actions/security";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 
 interface ConnectedAccountsProps {
@@ -37,6 +38,10 @@ interface ConnectedAccountsProps {
  *
  * Google is the only provider today. The list is written as a list anyway, because the
  * shape of a second one is the thing that would otherwise have to be invented later.
+ *
+ * "Connected" is the emerald status badge - a sign-in method that works is a settled, good state -
+ * while "Not connected" is plain text: it is a choice, not a problem, and an amber or red mark there
+ * would nag members who simply prefer a password.
  */
 function ConnectedAccounts({
   isGoogleConnected,
@@ -84,7 +89,7 @@ function ConnectedAccounts({
      * Google is registered only when its credentials exist; see `isGoogleEnabled`.
      */
     return (
-      <p className="text-muted-foreground text-sm">
+      <p className="text-muted-foreground bg-muted/60 rounded-xl border px-4 py-3 text-sm leading-relaxed">
         No sign-in providers are available on this server, so your email address
         and password are the only way in.
       </p>
@@ -92,65 +97,71 @@ function ConnectedAccounts({
   }
 
   return (
-    <ul className="flex flex-col gap-3">
-      <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-3 py-2.5">
-        <div className="flex min-w-0 items-center gap-3">
-          <GoogleLogo />
-
-          <div className="flex min-w-0 flex-col">
-            <span className="text-sm font-medium">Google</span>
-            <span className="text-muted-foreground text-xs">
-              {isGoogleConnected
-                ? "Connected - you can sign in with this Google account."
-                : "Not connected."}
-            </span>
-          </div>
-        </div>
-
-        {isGoogleConnected ? (
-          <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-3">
+      <ul className="flex flex-col">
+        <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-xl border px-4 py-3.5">
+          <div className="flex min-w-0 items-center gap-3">
             <span
-              className="text-muted-foreground flex items-center gap-1 text-xs"
-              // The word "Connected" is already in the description above, so the icon is
-              // decoration rather than the only carrier of that fact.
+              className="bg-card flex size-10 shrink-0 items-center justify-center rounded-xl border"
               aria-hidden="true"
             >
-              <CheckCircle2Icon className="size-3.5" />
+              <GoogleLogo />
             </span>
 
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                Google
+                {isGoogleConnected && (
+                  <StatusBadge variant="default" label="Connected" />
+                )}
+              </span>
+              <span className="text-muted-foreground text-xs leading-relaxed">
+                {isGoogleConnected
+                  ? "You can sign in with this Google account."
+                  : "Not connected. Sign in with one click using your Google account."}
+              </span>
+            </div>
+          </div>
+
+          {isGoogleConnected ? (
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              className="w-full sm:w-auto"
               disabled={busy || isOnlySignInMethod}
               onClick={() => void handleDisconnect()}
             >
+              {busy && <Loader2Icon className="animate-spin" />}
               {busy ? "Disconnecting..." : "Disconnect"}
             </Button>
-          </div>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={busy || !isGoogleAvailable}
-            onClick={() => {
-              setBusy(true);
-              void signIn("google", { redirectTo: "/settings" });
-            }}
-          >
-            Connect
-          </Button>
-        )}
-      </li>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto"
+              disabled={busy || !isGoogleAvailable}
+              onClick={() => {
+                setBusy(true);
+                void signIn("google", { redirectTo: "/settings" });
+              }}
+            >
+              {busy && <Loader2Icon className="animate-spin" />}
+              {busy ? "Redirecting..." : "Connect"}
+            </Button>
+          )}
+        </li>
+      </ul>
 
+      {/*
+        Outside the list: a `<p>` is not a valid child of `<ul>`, and it used to sit there.
+      */}
       {isGoogleConnected && isOnlySignInMethod && (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-xs leading-relaxed">
           This is currently the only way you can sign in, so it cannot be
           disconnected. Set a password above first.
         </p>
       )}
-    </ul>
+    </div>
   );
 }
 

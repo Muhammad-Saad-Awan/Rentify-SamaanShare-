@@ -126,21 +126,21 @@ function ThreadSkeleton() {
       aria-busy="true"
       aria-label="Loading conversation"
     >
-      <div className="flex items-center gap-3 border-b px-4 py-3">
-        <Skeleton className="size-10 rounded-full" />
+      <div className="flex min-h-[4.5rem] items-center gap-3 border-b px-3 py-3 sm:px-5">
+        <Skeleton className="size-11 rounded-full" />
         <div className="flex flex-col gap-1.5">
           <Skeleton className="h-4 w-32" />
           <Skeleton className="h-3 w-48" />
         </div>
       </div>
-      <div className="flex flex-1 flex-col justify-end gap-3 p-5">
+      <div className="bg-background flex flex-1 flex-col justify-end gap-3 p-5">
         <Skeleton className="h-9 w-2/5 rounded-2xl" />
         <Skeleton className="h-9 w-1/3 self-end rounded-2xl" />
         <Skeleton className="h-28 w-72 rounded-2xl" />
         <Skeleton className="h-9 w-1/2 self-end rounded-2xl" />
       </div>
-      <div className="border-t p-3">
-        <Skeleton className="h-11 w-full rounded-3xl" />
+      <div className="bg-background px-3 pt-2 pb-3 sm:px-5">
+        <Skeleton className="h-[3.25rem] w-full rounded-2xl" />
       </div>
     </div>
   );

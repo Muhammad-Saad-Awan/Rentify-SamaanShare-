@@ -33,11 +33,16 @@ export default async function AdminConversationsPage() {
 
       <Card>
         <div className="flex flex-col gap-3 px-(--card-spacing)">
-          <p className="flex items-center gap-2 text-sm font-medium">
-            <LockIcon className="size-4" aria-hidden="true" />
+          <h2 className="font-heading flex items-center gap-2 text-base font-semibold tracking-tight">
+            <span
+              className="bg-muted text-foreground flex size-9 shrink-0 items-center justify-center rounded-full"
+              aria-hidden="true"
+            >
+              <LockIcon className="size-4" />
+            </span>
             There is no conversation list, by design.
-          </p>
-          <p className="text-muted-foreground text-sm leading-relaxed">
+          </h2>
+          <p className="text-muted-foreground max-w-[65ch] text-sm leading-relaxed">
             Open a conversation from the booking or the member report it
             concerns. You can read it only when there is a deposit claim, a
             disputed handover, or an open or resolved report between the two

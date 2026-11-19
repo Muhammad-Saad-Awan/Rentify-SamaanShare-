@@ -42,7 +42,7 @@ function CityShortcuts({ counts }: CityShortcutsProps) {
           <li key={city.value}>
             <Link
               href={buildListingsHref(NO_FILTERS, { city: city.value })}
-              className="bg-card hover:border-foreground focus-visible:ring-ring group flex items-end justify-between gap-3 rounded-xl border p-5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              className="bg-card hover:border-brand/40 hover:shadow-soft focus-visible:ring-ring group flex items-end justify-between gap-3 rounded-2xl border p-6 transition-[border-color,box-shadow] duration-200 outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             >
               <span className="flex min-w-0 flex-col gap-1">
                 <span className="text-muted-foreground text-sm">
@@ -59,10 +59,12 @@ function CityShortcuts({ counts }: CityShortcutsProps) {
                 </span>
               </span>
 
-              <ArrowRightIcon
-                className="text-muted-foreground group-hover:text-foreground size-5 shrink-0 transition-[color,transform] group-hover:translate-x-0.5"
+              <span
+                className="bg-brand-soft text-brand group-hover:bg-brand group-hover:text-brand-foreground flex size-10 shrink-0 items-center justify-center rounded-full transition-colors"
                 aria-hidden="true"
-              />
+              >
+                <ArrowRightIcon className="size-5 transition-transform group-hover:translate-x-0.5" />
+              </span>
             </Link>
           </li>
         );

@@ -1,11 +1,14 @@
 "use client";
 
-import { CheckIcon, Loader2Icon, XIcon } from "lucide-react";
+import { CheckIcon, InfoIcon, Loader2Icon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { reviewIdentityDocument } from "@/actions/identity-documents";
+import { AttentionNote, AwaitingBadge } from "@/components/admin/attention";
+import { DecisionPanel } from "@/components/admin/decision-panel";
+import { Fact, FactGrid } from "@/components/admin/fact-grid";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -74,21 +77,21 @@ function IdentityDocumentCard({
   return (
     <Card>
       <div className="flex flex-col gap-5 px-(--card-spacing)">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex flex-col gap-0.5">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <Link
               href={`/admin/users/${document.user.id}`}
               className="font-heading decoration-foreground/30 text-base leading-snug font-semibold underline-offset-4 hover:underline"
             >
               {document.user.name ?? document.user.email}
             </Link>
-            <span className="text-muted-foreground text-sm">
+            <span className="text-muted-foreground text-sm break-all">
               {document.user.email}
             </span>
           </div>
 
           {document.status === IdentityDocumentStatus.PENDING && (
-            <StatusBadge variant="secondary" label="Awaiting review" />
+            <AwaitingBadge label="Awaiting review" />
           )}
           {document.status === IdentityDocumentStatus.APPROVED && (
             <StatusBadge variant="default" label="Approved" />
@@ -98,28 +101,18 @@ function IdentityDocumentCard({
           )}
         </div>
 
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border p-4 text-sm sm:grid-cols-4">
-          <div className="col-span-2 flex flex-col gap-0.5 sm:col-span-1">
-            <dt className="text-muted-foreground text-xs">CNIC number</dt>
-            <dd className="font-mono font-medium tracking-wide">
-              {document.cnicNumber}
-            </dd>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-muted-foreground text-xs">Submitted</dt>
-            <dd>{formatDateTime(document.submittedAt)}</dd>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-muted-foreground text-xs">Member since</dt>
-            <dd>{formatDate(document.user.createdAt)}</dd>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-muted-foreground text-xs">City</dt>
-            <dd>
-              {document.user.city ? formatCity(document.user.city) : "Not set"}
-            </dd>
-          </div>
-        </dl>
+        <FactGrid columns={4} className="rounded-xl border p-4">
+          <Fact label="CNIC number" mono className="col-span-2 sm:col-span-1">
+            {document.cnicNumber}
+          </Fact>
+          <Fact label="Submitted">{formatDateTime(document.submittedAt)}</Fact>
+          <Fact label="Member since">
+            {formatDate(document.user.createdAt)}
+          </Fact>
+          <Fact label="City">
+            {document.user.city ? formatCity(document.user.city) : "Not set"}
+          </Fact>
+        </FactGrid>
 
         <div className="grid gap-4 sm:grid-cols-2">
           {(["front", "back"] as const).map((side) => {
@@ -127,7 +120,7 @@ function IdentityDocumentCard({
 
             return (
               <figure key={side} className="flex flex-col gap-2">
-                <figcaption className="text-sm font-medium capitalize">
+                <figcaption className="text-muted-foreground text-xs font-medium capitalize">
                   {side}
                 </figcaption>
                 <a
@@ -167,13 +160,13 @@ function IdentityDocumentCard({
         )}
 
         {isPending && isSelf && (
-          <p className="text-muted-foreground text-sm">
+          <AttentionNote icon={InfoIcon}>
             This is your own CNIC. Another administrator has to review it.
-          </p>
+          </AttentionNote>
         )}
 
         {isPending && !isSelf && !rejecting && (
-          <div className="flex flex-wrap gap-2 border-t pt-4">
+          <div className="flex flex-wrap items-center gap-2 border-t pt-4">
             <Button
               disabled={pending !== null}
               aria-busy={pending === "approve"}
@@ -198,25 +191,28 @@ function IdentityDocumentCard({
         )}
 
         {isPending && !isSelf && rejecting && (
-          <div className="flex flex-col gap-3 border-t pt-4">
-            <label
-              htmlFor={`reason-${document.id}`}
-              className="text-sm font-medium"
-            >
-              What should the member fix?
-            </label>
-            <Textarea
-              id={`reason-${document.id}`}
-              value={reason}
-              maxLength={REJECTION_REASON_MAX_LENGTH}
-              onChange={(event) => setReason(event.target.value)}
-              placeholder="For example: the back of the card is blurred and the address cannot be read."
-            />
-            <p className="text-muted-foreground text-xs">
-              The member sees this exactly as written.
-            </p>
+          <DecisionPanel
+            title="Reject this CNIC"
+            consequence="The member sees your reason exactly as written and is asked to upload the card again."
+          >
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor={`reason-${document.id}`}
+                className="text-xs font-medium"
+              >
+                What should the member fix?
+              </label>
+              <Textarea
+                id={`reason-${document.id}`}
+                value={reason}
+                maxLength={REJECTION_REASON_MAX_LENGTH}
+                onChange={(event) => setReason(event.target.value)}
+                placeholder="For example: the back of the card is blurred and the address cannot be read."
+              />
+            </div>
             <div className="flex flex-wrap gap-2">
               <Button
+                size="sm"
                 variant="destructive"
                 disabled={
                   pending !== null ||
@@ -231,6 +227,7 @@ function IdentityDocumentCard({
                 Reject and ask again
               </Button>
               <Button
+                size="sm"
                 variant="ghost"
                 disabled={pending !== null}
                 onClick={() => {
@@ -241,7 +238,7 @@ function IdentityDocumentCard({
                 Cancel
               </Button>
             </div>
-          </div>
+          </DecisionPanel>
         )}
       </div>
     </Card>

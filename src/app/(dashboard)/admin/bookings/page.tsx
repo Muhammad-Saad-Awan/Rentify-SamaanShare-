@@ -3,6 +3,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { AdminBookingCard } from "@/components/admin/admin-booking-card";
+import {
+  FilterChip,
+  FilterGroup,
+  FilterNav,
+} from "@/components/admin/filter-chips";
 import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -170,119 +175,138 @@ async function BookingQueue({ params }: BookingQueueProps) {
         title="Bookings"
         description="Every booking on the platform, newest request first. Read-only: each step belongs to the renter or the owner, and this screen exists to say what happened."
         actions={
+          // Context, not a task - nobody here can move these along - so the neutral ring rather than
+          // the warning badge the decision queues use.
           <Badge variant={awaitingCount > 0 ? "secondary" : "outline"}>
             {awaitingCount} awaiting a party
           </Badge>
         }
       />
 
-      {/*
-        One GET form for the search and the date range, so a lookup lands in the URL and stays
-        shareable - the same reasoning as the listings and members screens. The scoping parameters
-        ride along as hidden fields, or searching from a listing's bookings would silently widen to
-        the whole platform.
-      */}
-      <form action="/admin/bookings" className="flex flex-wrap items-end gap-2">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="q" className="text-xs font-medium">
-            Booking id, listing, or either party
-          </label>
-          <Input
-            id="q"
-            type="search"
-            name="q"
-            defaultValue={query}
-            placeholder="Email, name, title, or booking id"
-            className="max-w-xs"
-          />
-        </div>
-
+      <div className="bg-card flex flex-col gap-4 rounded-2xl border p-4 sm:p-5">
         {/*
-          The dates match the RENTAL PERIOD, not when the booking was made - see the note in
-          `searchAdminBookings`. Somebody on the phone is asking about the week they had the item.
+          One GET form for the search and the date range, so a lookup lands in the URL and stays
+          shareable - the same reasoning as the listings and members screens. The scoping parameters
+          ride along as hidden fields, or searching from a listing's bookings would silently widen to
+          the whole platform.
         */}
-        <div className="flex flex-col gap-1">
-          <label htmlFor="from" className="text-xs font-medium">
-            Rental on or after
-          </label>
-          <Input
-            id="from"
-            type="date"
-            name="from"
-            defaultValue={fromRaw ?? ""}
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="to" className="text-xs font-medium">
-            and on or before
-          </label>
-          <Input id="to" type="date" name="to" defaultValue={toRaw ?? ""} />
-        </div>
+        <form
+          action="/admin/bookings"
+          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto] lg:items-end"
+        >
+          <div className="flex min-w-0 flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
+            <label htmlFor="q" className="text-xs font-medium">
+              Booking id, listing, or either party
+            </label>
+            <Input
+              id="q"
+              type="search"
+              name="q"
+              defaultValue={query}
+              placeholder="Email, name, title, or booking id"
+            />
+          </div>
 
-        {status && (
-          <input type="hidden" name="status" value={status.toLowerCase()} />
+          {/*
+            The dates match the RENTAL PERIOD, not when the booking was made - see the note in
+            `searchAdminBookings`. Somebody on the phone is asking about the week they had the item.
+          */}
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <label htmlFor="from" className="text-xs font-medium">
+              Rental on or after
+            </label>
+            <Input
+              id="from"
+              type="date"
+              name="from"
+              defaultValue={fromRaw ?? ""}
+            />
+          </div>
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <label htmlFor="to" className="text-xs font-medium">
+              and on or before
+            </label>
+            <Input id="to" type="date" name="to" defaultValue={toRaw ?? ""} />
+          </div>
+
+          {status && (
+            <input type="hidden" name="status" value={status.toLowerCase()} />
+          )}
+          {awaitingOnly && <input type="hidden" name="awaiting" value="true" />}
+          {listingId && (
+            <input type="hidden" name="listing" value={listingId} />
+          )}
+          {userId && <input type="hidden" name="user" value={userId} />}
+
+          <Button type="submit" className="sm:col-span-2 lg:col-span-1">
+            <SearchIcon aria-hidden="true" />
+            Search
+          </Button>
+        </form>
+
+        <FilterNav label="Filter bookings" className="border-t pt-4">
+          <FilterGroup legend="Status">
+            <FilterChip
+              href={hrefFor({
+                status: undefined,
+                awaiting: undefined,
+                from: undefined,
+                to: undefined,
+              })}
+              active={unfiltered}
+            >
+              All
+            </FilterChip>
+            {/*
+              "Awaiting a party" rather than one status: PENDING, APPROVED and PAYMENT_PENDING are all
+              a booking waiting on a person, and asking "what is stuck" one status at a time misses two
+              thirds of it. ACTIVE is deliberately not included - an item out on rent is the system
+              working. See `AWAITING_ACTION_STATUSES`.
+            */}
+            <FilterChip
+              href={hrefFor({ awaiting: "true", status: undefined })}
+              active={awaitingOnly}
+            >
+              Awaiting a party
+            </FilterChip>
+            {STATUS_FILTERS.map((value) => (
+              <FilterChip
+                key={value}
+                href={hrefFor({
+                  status: value.toLowerCase(),
+                  awaiting: undefined,
+                })}
+                active={status === value}
+              >
+                {BOOKING_STATUS_LABELS[value]}
+              </FilterChip>
+            ))}
+          </FilterGroup>
+        </FilterNav>
+
+        {(scoped || !unfiltered) && (
+          <p className="text-muted-foreground text-xs">
+            {total === 1 ? "1 booking matches" : `${total} bookings match`}
+            {listingId
+              ? ", on one listing"
+              : userId
+                ? ", for one member on both sides"
+                : ""}
+            .{" "}
+            {scoped && (
+              <Link
+                href={hrefFor({ listing: undefined, user: undefined })}
+                className="text-foreground underline underline-offset-4"
+              >
+                Show all bookings
+              </Link>
+            )}
+          </p>
         )}
-        {awaitingOnly && <input type="hidden" name="awaiting" value="true" />}
-        {listingId && <input type="hidden" name="listing" value={listingId} />}
-        {userId && <input type="hidden" name="user" value={userId} />}
-
-        <Button type="submit" size="sm">
-          <SearchIcon aria-hidden="true" />
-          Search
-        </Button>
-      </form>
-
-      <nav aria-label="Filter bookings" className="flex flex-wrap gap-2">
-        <FilterLink
-          href={hrefFor({
-            status: undefined,
-            awaiting: undefined,
-            from: undefined,
-            to: undefined,
-          })}
-          active={unfiltered}
-        >
-          All
-        </FilterLink>
-        {/*
-          "Awaiting a party" rather than one status: PENDING, APPROVED and PAYMENT_PENDING are all a
-          booking waiting on a person, and asking "what is stuck" one status at a time misses two
-          thirds of it. ACTIVE is deliberately not included - an item out on rent is the system
-          working. See `AWAITING_ACTION_STATUSES`.
-        */}
-        <FilterLink
-          href={hrefFor({ awaiting: "true", status: undefined })}
-          active={awaitingOnly}
-        >
-          Awaiting a party
-        </FilterLink>
-        {STATUS_FILTERS.map((value) => (
-          <FilterLink
-            key={value}
-            href={hrefFor({ status: value.toLowerCase(), awaiting: undefined })}
-            active={status === value}
-          >
-            {BOOKING_STATUS_LABELS[value]}
-          </FilterLink>
-        ))}
-      </nav>
-
-      {scoped && (
-        <p className="text-muted-foreground text-xs">
-          {listingId
-            ? "Showing the bookings on one listing."
-            : "Showing one member's bookings, on both sides."}{" "}
-          <Link
-            href={hrefFor({ listing: undefined, user: undefined })}
-            className="underline underline-offset-4"
-          >
-            Show all bookings
-          </Link>
-        </p>
-      )}
+      </div>
 
       {items.length > 0 && (
-        <ul className="flex flex-col gap-4">
+        <ul className="flex flex-col gap-3">
           {items.map((booking) => (
             <li key={booking.id}>
               <AdminBookingCard booking={booking} />
@@ -324,28 +348,6 @@ async function BookingQueue({ params }: BookingQueueProps) {
         hrefFor={(target) => hrefFor({}, target)}
       />
     </>
-  );
-}
-
-/** One filter as a link, so every view stays shareable and survives the back button. */
-function FilterLink({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Button
-      size="sm"
-      variant={active ? "default" : "outline"}
-      render={<Link href={href} />}
-      {...(active ? { "aria-current": "page" as const } : {})}
-    >
-      {children}
-    </Button>
   );
 }
 

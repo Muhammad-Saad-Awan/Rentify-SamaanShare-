@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2Icon, Trash2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -16,6 +16,7 @@ import {
   ListingPricingFields,
 } from "@/components/listings/listing-fields";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   listingFormSchema,
   toCreateListingInput,
@@ -139,7 +140,7 @@ function EditListingForm({ listing, categories }: EditListingFormProps) {
   return (
     <form
       onSubmit={form.handleSubmit(onSubmit)}
-      className="flex flex-col gap-8"
+      className="flex flex-col gap-6"
       noValidate
     >
       {formError && (
@@ -151,7 +152,10 @@ function EditListingForm({ listing, categories }: EditListingFormProps) {
         </div>
       )}
 
-      <Section title="Basics">
+      <Section
+        title="Basics"
+        description="What the item is and the condition it is in."
+      >
         <ListingBasicsFields
           form={form}
           disabled={busy}
@@ -159,15 +163,24 @@ function EditListingForm({ listing, categories }: EditListingFormProps) {
         />
       </Section>
 
-      <Section title="Pricing">
+      <Section
+        title="Pricing"
+        description="What renting it costs, and the refundable deposit a renter pays up front."
+      >
         <ListingPricingFields form={form} disabled={busy} />
       </Section>
 
-      <Section title="Location">
+      <Section
+        title="Location"
+        description="Roughly where the item is, so renters can judge the distance."
+      >
         <ListingLocationFields form={form} disabled={busy} />
       </Section>
 
-      <Section title="Photos">
+      <Section
+        title="Photos"
+        description="The first photo is the cover shown in search results."
+      >
         <ImageUploader
           images={images}
           onChange={(next) =>
@@ -182,10 +195,16 @@ function EditListingForm({ listing, categories }: EditListingFormProps) {
         />
       </Section>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+      {/*
+        Save first on a phone - stacked in reverse so the primary action is under the thumb and
+        Delete is the furthest from it. From `sm` the row reads left to right as usual, with the
+        destructive action set apart on its own side.
+      */}
+      <div className="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
         <Button
           type="button"
           variant="destructive"
+          className="w-full sm:w-auto"
           onClick={() => void handleDelete()}
           disabled={busy}
         >
@@ -202,17 +221,18 @@ function EditListingForm({ listing, categories }: EditListingFormProps) {
           )}
         </Button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
           <Button
             type="button"
             variant="outline"
+            className="w-full sm:w-auto"
             disabled={busy}
             render={<Link href="/dashboard/listings" />}
           >
             Cancel
           </Button>
 
-          <Button type="submit" disabled={busy}>
+          <Button type="submit" className="w-full sm:w-auto" disabled={busy}>
             {isSubmitting ? (
               <>
                 <Loader2Icon className="animate-spin" />
@@ -230,17 +250,34 @@ function EditListingForm({ listing, categories }: EditListingFormProps) {
 
 interface SectionProps {
   title: string;
+  description: string;
   children: React.ReactNode;
 }
 
-/** A labelled block. `h2` under the page's `h1`, so the outline stays correct. */
-function Section({ title, children }: SectionProps) {
+/**
+ * A labelled block, as a white card on the page canvas - the same shell each step of the create
+ * wizard uses. `h2` under the page's `h1`, so the outline stays correct; `aria-labelledby` makes
+ * each one a named region a screen reader can jump between.
+ */
+function Section({ title, description, children }: SectionProps) {
+  const headingId = useId();
+
   return (
-    <section className="flex flex-col gap-4">
-      <h2 className="font-heading border-b pb-2 text-base font-medium">
-        {title}
-      </h2>
-      {children}
+    <section aria-labelledby={headingId}>
+      <Card className="gap-0">
+        <div className="flex flex-col gap-1 border-b px-(--card-spacing) pb-(--card-spacing)">
+          <h2
+            id={headingId}
+            className="font-heading text-lg font-bold tracking-tight"
+          >
+            {title}
+          </h2>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {description}
+          </p>
+        </div>
+        <div className="px-(--card-spacing) pt-6">{children}</div>
+      </Card>
     </section>
   );
 }

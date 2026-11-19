@@ -62,85 +62,99 @@ function UserVerificationCard({ user, adminId }: UserVerificationCardProps) {
   }
 
   return (
-    <Card>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <div className="flex flex-wrap items-center gap-2">
+    <Card size="sm">
+      <div className="flex flex-col gap-3 px-(--card-spacing) sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/*
+              Links to the ADMIN detail screen, not the public profile.
+              A suspended or deleted account has no public profile at all - `getPublicProfile` filters
+              them out and the route 404s - so from a moderation list the public link is exactly the
+              one that breaks for the accounts most likely to be clicked.
+            */}
+            <Link
+              href={`/admin/users/${user.id}`}
+              className="font-heading decoration-foreground/30 text-base leading-snug font-semibold underline-offset-4 hover:underline"
+            >
+              {user.name?.trim() || "Unnamed member"}
+            </Link>
+
+            {user.isVerified && (
+              <Badge variant="success">
+                <BadgeCheckIcon aria-hidden="true" />
+                Verified
+              </Badge>
+            )}
+
+            {user.status !== UserStatus.ACTIVE && (
+              <StatusLabel
+                variant="destructive"
+                label={user.status.toLowerCase()}
+              />
+            )}
+
+            {user.isDeleted && <Badge variant="outline">deleted</Badge>}
+          </div>
+
           {/*
-            Links to the ADMIN detail screen, not the public profile.
-            A suspended or deleted account has no public profile at all - `getPublicProfile` filters
-            them out and the route 404s - so from a moderation list the public link is exactly the
-            one that breaks for the accounts most likely to be clicked.
+            The email address. The only reliable way to tell two members with the same display name
+            apart, which is the judgement this screen exists to support. Admin area only.
           */}
-          <Link
-            href={`/admin/users/${user.id}`}
-            className="font-heading decoration-foreground/30 text-base leading-snug font-semibold underline-offset-4 hover:underline"
-          >
-            {user.name?.trim() || "Unnamed member"}
-          </Link>
+          <p className="text-sm break-all">{user.email}</p>
 
-          {user.isVerified && (
-            <Badge variant="secondary">
-              <BadgeCheckIcon className="size-3" aria-hidden="true" />
-              Verified
-            </Badge>
-          )}
+          <ul className="text-muted-foreground flex flex-col gap-1 text-xs">
+            <li className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <MailCheckIcon
+                className={
+                  user.emailVerified
+                    ? "text-foreground size-3.5 shrink-0"
+                    : "size-3.5 shrink-0"
+                }
+                aria-hidden="true"
+              />
+              {user.emailVerified
+                ? `Email confirmed ${formatDate(user.emailVerified)}`
+                : "Email not confirmed"}
+              {/*
+                Stated as context and labelled as insufficient. An administrator reading "email
+                confirmed" as grounds to verify an identity is the exact error the separation of these
+                two columns exists to prevent.
+              */}
+              <span className="italic">— not proof of identity</span>
+            </li>
 
-          {user.status !== UserStatus.ACTIVE && (
-            <StatusLabel variant="outline" label={user.status.toLowerCase()} />
-          )}
+            <li>
+              {user.isVerified
+                ? `Identity verified${user.verifiedAt ? ` ${formatDate(user.verifiedAt)}` : ""}${
+                    user.verifiedBy?.name ? ` by ${user.verifiedBy.name}` : ""
+                  }`
+                : "Identity not verified"}
+            </li>
 
-          {user.isDeleted && <Badge variant="outline">deleted</Badge>}
+            <li>Joined {formatDate(user.createdAt)}</li>
+          </ul>
         </div>
 
-        {/*
-          The email address. The only reliable way to tell two members with the same display name
-          apart, which is the judgement this screen exists to support. Admin area only.
-        */}
-        <p className="text-muted-foreground text-xs break-all">{user.email}</p>
-
-        <ul className="text-muted-foreground flex flex-col gap-1 text-xs">
-          <li className="flex items-center gap-2">
-            <MailCheckIcon
-              className={
-                user.emailVerified
-                  ? "text-foreground size-3.5 shrink-0"
-                  : "size-3.5 shrink-0"
-              }
-              aria-hidden="true"
-            />
-            {user.emailVerified
-              ? `Email confirmed ${formatDate(user.emailVerified)}`
-              : "Email not confirmed"}
-            {/*
-              Stated as context and labelled as insufficient. An administrator reading "email
-              confirmed" as grounds to verify an identity is the exact error the separation of these
-              two columns exists to prevent.
-            */}
-            <span className="italic">— not proof of identity</span>
-          </li>
-
-          <li>
-            {user.isVerified
-              ? `Identity verified${user.verifiedAt ? ` ${formatDate(user.verifiedAt)}` : ""}${
-                  user.verifiedBy?.name ? ` by ${user.verifiedBy.name}` : ""
-                }`
-              : "Identity not verified"}
-          </li>
-
-          <li>Joined {formatDate(user.createdAt)}</li>
-        </ul>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            variant={user.isVerified ? "outline" : "default"}
-            onClick={toggle}
-            disabled={pending || isSelf || (!canGrant && !user.isVerified)}
-            aria-busy={pending}
-          >
-            {pending && <Loader2Icon className="animate-spin" />}
-            {user.isVerified ? "Withdraw verification" : "Verify identity"}
-          </Button>
+        <div className="flex shrink-0 flex-col gap-1.5 border-t pt-3 sm:items-end sm:border-t-0 sm:pt-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              render={<Link href={`/admin/users/${user.id}`} />}
+            >
+              Open
+            </Button>
+            <Button
+              size="sm"
+              variant={user.isVerified ? "outline" : "default"}
+              onClick={toggle}
+              disabled={pending || isSelf || (!canGrant && !user.isVerified)}
+              aria-busy={pending}
+            >
+              {pending && <Loader2Icon className="animate-spin" />}
+              {user.isVerified ? "Withdraw verification" : "Verify identity"}
+            </Button>
+          </div>
 
           {/*
             Explained rather than left as a disabled control with no reason. The self-grant rule is

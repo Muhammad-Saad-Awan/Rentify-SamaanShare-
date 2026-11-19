@@ -1,10 +1,19 @@
+import { ExternalLinkIcon, UserRoundIcon } from "lucide-react";
+import Link from "next/link";
+
 import { EmailVerificationNotice } from "@/components/auth/email-verification-notice";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { IdentityDocumentSection } from "@/components/profile/identity-document-section";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+} from "@/components/ui/card";
 import { isEmailEnabled } from "@/config/env";
 import { UserRole } from "@/generated/prisma/enums";
 import { requireUser } from "@/lib/auth/session";
@@ -23,6 +32,11 @@ export const metadata: Metadata = {
 
 /**
  * The member's own profile: photo, the four editable fields, and email confirmation.
+ *
+ * ORDER FOLLOWS URGENCY. An unconfirmed address blocks renting and listing, so its banner comes
+ * first; the details card is the page's main job; the confirmed-email row and the CNIC section sit
+ * together below it as the member's standing. Once everything is confirmed nothing shouts, and the
+ * form is the first thing on the page.
  *
  * EVERY VALUE COMES FROM THE DATABASE, not the session, and the reason is the one
  * `emailVerified` already had before the form existed: the JWT is minted at sign-in, so
@@ -72,51 +86,88 @@ export default async function ProfilePage() {
     phone: current.phone === null ? "" : formatPhone(current.phone),
   };
 
+  const isEmailConfirmed = current.emailVerified !== null;
+  // Spread rather than passed as `email={user.email}`: under `exactOptionalPropertyTypes` an
+  // explicit `undefined` is not assignable to the optional prop.
+  const emailProp = user.email ? { email: user.email } : {};
+
   return (
     <>
       <PageHeader
         title="Profile"
         description="How you appear to other members of SamaanShare."
+        actions={
+          <Button
+            variant="outline"
+            render={<Link href={`/users/${user.id}`} />}
+          >
+            <ExternalLinkIcon aria-hidden="true" />
+            View public profile
+          </Button>
+        }
       />
 
-      <Card>
-        <CardContent className="flex flex-col gap-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <AvatarUploader
-              url={current.avatarUrl ?? current.image}
-              initials={getInitials({
-                name: current.name,
-                // `?? null` rather than passing it through: `Session["user"].email` is
-                // optional, and under `exactOptionalPropertyTypes` an explicit
-                // `undefined` is not assignable to an optional `string | null`.
-                email: user.email ?? null,
-              })}
-              // Only our own upload is ours to delete. Clearing `avatarUrl` would not
-              // remove a Google picture, so offering "Remove" beside one would be a
-              // button that appears to do nothing.
-              canRemove={current.avatarUrl !== null}
-            />
+      {!isEmailConfirmed && (
+        <EmailVerificationNotice
+          isVerified={false}
+          canSend={isEmailEnabled()}
+          {...emailProp}
+        />
+      )}
 
-            <div className="flex flex-col items-end gap-1">
-              {user.role === UserRole.ADMIN && (
-                <Badge variant="secondary">Admin</Badge>
-              )}
-              {user.email && (
-                <span className="text-muted-foreground truncate text-sm">
-                  {user.email}
-                </span>
-              )}
+      <Card>
+        <CardHeader className="border-b">
+          {/* The same mint tile as the settings sections, so the two account screens match. */}
+          <div className="flex items-start gap-3.5">
+            <span
+              className="bg-brand-soft text-brand flex size-10 shrink-0 items-center justify-center rounded-xl"
+              aria-hidden="true"
+            >
+              <UserRoundIcon className="size-5" strokeWidth={1.75} />
+            </span>
+            <div className="flex min-w-0 flex-col gap-1">
+              <h2 className="font-heading text-lg font-bold tracking-tight">
+                Your details
+              </h2>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Name, bio and city are public. Your phone number never is.
+              </p>
             </div>
           </div>
+          {user.role === UserRole.ADMIN && (
+            <CardAction>
+              <Badge variant="secondary">Admin</Badge>
+            </CardAction>
+          )}
+        </CardHeader>
+
+        <CardContent className="flex flex-col gap-8">
+          <AvatarUploader
+            url={current.avatarUrl ?? current.image}
+            initials={getInitials({
+              name: current.name,
+              // `?? null` rather than passing it through: `Session["user"].email` is
+              // optional, and under `exactOptionalPropertyTypes` an explicit
+              // `undefined` is not assignable to an optional `string | null`.
+              email: user.email ?? null,
+            })}
+            // Only our own upload is ours to delete. Clearing `avatarUrl` would not
+            // remove a Google picture, so offering "Remove" beside one would be a
+            // button that appears to do nothing.
+            canRemove={current.avatarUrl !== null}
+          />
 
           <ProfileForm defaults={defaults} />
         </CardContent>
       </Card>
 
-      <EmailVerificationNotice
-        isVerified={current.emailVerified !== null}
-        canSend={isEmailEnabled()}
-      />
+      {isEmailConfirmed && (
+        <EmailVerificationNotice
+          isVerified
+          canSend={isEmailEnabled()}
+          {...emailProp}
+        />
+      )}
 
       {/* Hidden where uploads are not configured - see `isIdentityDocumentRequired`. */}
       {isIdentityDocumentRequired() && (

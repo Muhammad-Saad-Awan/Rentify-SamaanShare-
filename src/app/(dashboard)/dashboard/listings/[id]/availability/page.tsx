@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { AvailabilityCalendar } from "@/components/listings/availability-calendar";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/session";
 import {
   getListingAvailability,
@@ -94,58 +95,64 @@ export default async function AvailabilityPage({
         }
       />
 
-      <div className="flex max-w-xl flex-col gap-4">
-        <div className="flex items-center justify-between gap-2">
-          {/*
+      {/* One card: the month switcher is part of the calendar, not a separate control above it. */}
+      <Card className="max-w-xl">
+        <div className="flex flex-col gap-4 px-(--card-spacing)">
+          <div className="flex items-center justify-between gap-2">
+            {/*
             Links, not buttons: each month is its own URL, so it is shareable and the back
             button steps through months. Same reasoning as the sort and pagination controls.
           */}
-          <Button
-            variant="outline"
-            size="icon-sm"
-            render={
-              <Link
-                href={`?month=${shiftMonth(year, month, -1)}`}
-                aria-label="Previous month"
-              />
-            }
-          >
-            <ChevronLeftIcon />
-          </Button>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              render={
+                <Link
+                  href={`?month=${shiftMonth(year, month, -1)}`}
+                  aria-label="Previous month"
+                />
+              }
+            >
+              <ChevronLeftIcon />
+            </Button>
 
-          {/* `aria-live` so a month change is announced - the grid swaps silently. */}
-          <h2 className="font-heading text-sm font-medium" aria-live="polite">
-            {grid.label}
-          </h2>
+            {/* `aria-live` so a month change is announced - the grid swaps silently. */}
+            <h2
+              className="font-heading text-base font-semibold tracking-tight"
+              aria-live="polite"
+            >
+              {grid.label}
+            </h2>
 
-          <Button
-            variant="outline"
-            size="icon-sm"
-            render={
-              <Link
-                href={`?month=${shiftMonth(year, month, 1)}`}
-                aria-label="Next month"
-              />
-            }
-          >
-            <ChevronRightIcon />
-          </Button>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              render={
+                <Link
+                  href={`?month=${shiftMonth(year, month, 1)}`}
+                  aria-label="Next month"
+                />
+              }
+            >
+              <ChevronRightIcon />
+            </Button>
+          </div>
+
+          <AvailabilityCalendar
+            listingId={listing.id}
+            grid={grid}
+            ownerBlocked={ownerBlocked}
+            bookingHeld={bookingHeld}
+            today={today}
+          />
+
+          <p className="text-muted-foreground border-t pt-4 text-sm leading-relaxed">
+            Select a day to block or release it. Blocked days are hidden from
+            renters searching by date. Days held by a confirmed booking cannot
+            be released here - cancel the booking instead.
+          </p>
         </div>
-
-        <AvailabilityCalendar
-          listingId={listing.id}
-          grid={grid}
-          ownerBlocked={ownerBlocked}
-          bookingHeld={bookingHeld}
-          today={today}
-        />
-
-        <p className="text-muted-foreground text-sm">
-          Blocked days are hidden from renters searching by date. Days held by a
-          confirmed booking cannot be released here - cancel the booking
-          instead.
-        </p>
-      </div>
+      </Card>
     </>
   );
 }

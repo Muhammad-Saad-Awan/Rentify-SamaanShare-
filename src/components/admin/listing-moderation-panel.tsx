@@ -14,6 +14,7 @@ import {
   adminRemoveListing,
   adminRestoreListing,
 } from "@/actions/admin-listings";
+import { AttentionNote } from "@/components/admin/attention";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -124,66 +125,34 @@ function ListingModerationPanel({ listing }: ListingModerationPanelProps) {
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {removable.allowed && (
-          <Button
-            size="sm"
-            variant="destructive"
-            disabled={pending !== null || !reasonReady}
-            aria-busy={pending === "remove"}
-            onClick={() =>
-              run(
-                "remove",
-                () => adminRemoveListing({ listingId: listing.id, reason }),
-                "Listing removed. It can be restored."
-              )
-            }
-          >
-            {pending === "remove" ? (
-              <Loader2Icon className="animate-spin" />
-            ) : (
-              <TrashIcon aria-hidden="true" />
-            )}
-            Remove listing
-          </Button>
-        )}
-
-        {restorable.allowed && (
-          <Button
-            size="sm"
-            disabled={pending !== null || !reasonReady}
-            aria-busy={pending === "restore"}
-            onClick={() =>
-              run(
-                "restore",
-                () => adminRestoreListing({ listingId: listing.id, reason }),
-                `Listing restored, ${RESTORED_LISTING_STATUS.toLowerCase()}. The owner decides when it goes back up.`
-              )
-            }
-          >
-            {pending === "restore" ? (
-              <Loader2Icon className="animate-spin" />
-            ) : (
-              <RotateCcwIcon aria-hidden="true" />
-            )}
-            Restore listing
-          </Button>
-        )}
-      </div>
-
-      {/*
-        A live rental is not a reason to refuse a removal - an unsafe item has to be able to come
-        down while it is out - but it is a reason to say so out loud. Removing the listing does not
-        cancel the booking, release the dates or return the deposit.
-      */}
-      {listing.activeBookingCount > 0 && removable.allowed && (
-        <p className="text-destructive text-xs">
-          {listing.activeBookingCount === 1
-            ? "1 booking is live on this listing."
-            : `${listing.activeBookingCount} bookings are live on this listing.`}{" "}
-          Removing it does not cancel them, release the dates or return the
-          deposit — someone still has to deal with the rental itself.
-        </p>
+      {restorable.allowed && (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-muted-foreground text-xs font-medium">Restore</p>
+          <div>
+            <Button
+              size="sm"
+              disabled={pending !== null || !reasonReady}
+              aria-busy={pending === "restore"}
+              onClick={() =>
+                run(
+                  "restore",
+                  () => adminRestoreListing({ listingId: listing.id, reason }),
+                  `Listing restored, ${RESTORED_LISTING_STATUS.toLowerCase()}. The owner decides when it goes back up.`
+                )
+              }
+            >
+              {pending === "restore" ? (
+                <Loader2Icon className="animate-spin" />
+              ) : (
+                <RotateCcwIcon aria-hidden="true" />
+              )}
+              Restore listing
+            </Button>
+          </div>
+          <p className="text-muted-foreground text-xs">
+            {`It comes back ${RESTORED_LISTING_STATUS.toLowerCase()}, not live - the owner decides when it goes back up.`}
+          </p>
+        </div>
       )}
 
       {editable.allowed && (
@@ -196,7 +165,7 @@ function ListingModerationPanel({ listing }: ListingModerationPanelProps) {
               Says what this cannot do, and why. An administrator looking for the price field should
               find the reasoning rather than conclude the form is incomplete.
             */}
-            <p className="text-muted-foreground text-xs">
+            <p className="text-muted-foreground text-xs leading-relaxed">
               Prices, photos, city and category are the owner&apos;s to set — a
               booking is a contract over the price, and the photos are their
               evidence of the item&apos;s condition at handover. A listing wrong
@@ -206,7 +175,7 @@ function ListingModerationPanel({ listing }: ListingModerationPanelProps) {
 
           <label
             htmlFor={`title-${listing.id}`}
-            className="text-xs font-medium"
+            className="mt-1 text-xs font-medium"
           >
             Title
           </label>
@@ -221,7 +190,7 @@ function ListingModerationPanel({ listing }: ListingModerationPanelProps) {
 
           <label
             htmlFor={`description-${listing.id}`}
-            className="text-xs font-medium"
+            className="mt-1 text-xs font-medium"
           >
             Description
           </label>
@@ -234,6 +203,15 @@ function ListingModerationPanel({ listing }: ListingModerationPanelProps) {
             rows={8}
             disabled={pending !== null}
           />
+
+          {/*
+            The old text is destroyed by this, unlike every other action here - a status is
+            recoverable from the enum, a sentence is not. Said before the button, not after.
+          */}
+          <p className="text-muted-foreground text-xs">
+            The current text is recorded in the audit log before it is
+            overwritten. That row is the only remaining copy.
+          </p>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -277,15 +255,55 @@ function ListingModerationPanel({ listing }: ListingModerationPanelProps) {
               </Button>
             )}
           </div>
+        </div>
+      )}
+
+      {/*
+        Removal apart from everything else, in its own zone: it takes the listing off the
+        marketplace, and it sat in the same row as Restore.
+      */}
+      {removable.allowed && (
+        <div className="border-destructive/30 bg-destructive/5 flex flex-col gap-3 rounded-xl border p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-destructive text-xs font-medium">
+              Remove — takes it off the marketplace; it can be restored
+            </p>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={pending !== null || !reasonReady}
+              aria-busy={pending === "remove"}
+              onClick={() =>
+                run(
+                  "remove",
+                  () => adminRemoveListing({ listingId: listing.id, reason }),
+                  "Listing removed. It can be restored."
+                )
+              }
+            >
+              {pending === "remove" ? (
+                <Loader2Icon className="animate-spin" />
+              ) : (
+                <TrashIcon aria-hidden="true" />
+              )}
+              Remove listing
+            </Button>
+          </div>
 
           {/*
-            The old text is destroyed by this, unlike every other action here - a status is
-            recoverable from the enum, a sentence is not. Said before the button, not after.
+            A live rental is not a reason to refuse a removal - an unsafe item has to be able to come
+            down while it is out - but it is a reason to say so out loud. Removing the listing does not
+            cancel the booking, release the dates or return the deposit.
           */}
-          <p className="text-muted-foreground text-xs">
-            The current text is recorded in the audit log before it is
-            overwritten. That row is the only remaining copy.
-          </p>
+          {listing.activeBookingCount > 0 && (
+            <AttentionNote>
+              {listing.activeBookingCount === 1
+                ? "1 booking is live on this listing."
+                : `${listing.activeBookingCount} bookings are live on this listing.`}{" "}
+              Removing it does not cancel them, release the dates or return the
+              deposit — someone still has to deal with the rental itself.
+            </AttentionNote>
+          )}
         </div>
       )}
 

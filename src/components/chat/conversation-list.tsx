@@ -6,13 +6,14 @@ import {
   SearchIcon,
   MessagesSquareIcon,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useSelectedLayoutSegment } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { MemberAvatar } from "@/components/chat/member-avatar";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ListingPhoto } from "@/components/marketplace/listing-photo";
 import { MessageKind } from "@/generated/prisma/enums";
 import { conversationHref } from "@/lib/chat/routes";
 import { cn } from "@/lib/utils/cn";
@@ -71,11 +72,13 @@ function ConversationList({ conversations }: ConversationListProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-col gap-3 border-b px-4 pt-4 pb-3">
-        <div className="flex items-baseline justify-between gap-2">
-          <h1 className="font-heading text-lg font-semibold">Messages</h1>
+      <div className="flex flex-col gap-3.5 border-b px-4 pt-5 pb-3.5">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="font-heading text-xl font-bold tracking-[-0.025em]">
+            Messages
+          </h1>
           {unreadCount > 0 && (
-            <span className="text-muted-foreground text-xs">
+            <span className="bg-brand-soft text-brand-soft-foreground rounded-full px-2.5 py-0.5 text-xs font-semibold">
               {unreadCount} unread
             </span>
           )}
@@ -92,14 +95,14 @@ function ConversationList({ conversations }: ConversationListProps) {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search people or items"
             aria-label="Search conversations"
-            className="pl-8"
+            className="bg-background h-10 rounded-xl pl-8"
           />
         </div>
 
         <div
           role="group"
           aria-label="Show"
-          className="flex gap-1.5 overflow-x-auto"
+          className="-mx-4 flex gap-1.5 overflow-x-auto px-4"
         >
           {FILTERS.map((item) => (
             <button
@@ -108,10 +111,12 @@ function ConversationList({ conversations }: ConversationListProps) {
               aria-pressed={filter === item.value}
               onClick={() => setFilter(item.value)}
               className={cn(
-                "focus-visible:ring-ring shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors outline-none focus-visible:ring-2",
+                "focus-visible:ring-ring flex h-8 shrink-0 items-center rounded-full border px-3 text-xs font-medium transition-colors outline-none focus-visible:ring-2",
+                // The same mint as the selected row and the sidebar's active item; the brand edge
+                // and heavier weight mark it without relying on the fill alone.
                 filter === item.value
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "text-muted-foreground hover:bg-muted"
+                  ? "bg-brand-soft text-brand-soft-foreground border-brand/40 font-semibold"
+                  : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               {item.label}
@@ -124,32 +129,49 @@ function ConversationList({ conversations }: ConversationListProps) {
       </div>
 
       {conversations.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-12 text-center">
-          <span className="bg-muted flex size-12 items-center justify-center rounded-full">
-            <MessagesSquareIcon
-              className="text-muted-foreground size-6"
-              aria-hidden="true"
-            />
-          </span>
-          <p className="text-sm font-medium">No conversations yet</p>
-          <p className="text-muted-foreground max-w-60 text-xs leading-relaxed">
-            Ask an owner about any item from its listing page. Questions about
-            your own listings land here too.
-          </p>
-          <Link
-            href="/listings"
-            className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+          {/* The mint icon disc the empty thread pane uses too, without a card: this column is
+              already one. */}
+          <span
+            className="bg-brand-soft text-brand ring-brand-soft/50 flex size-14 items-center justify-center rounded-full ring-8"
+            aria-hidden="true"
           >
+            <MessagesSquareIcon className="size-6" strokeWidth={1.75} />
+          </span>
+          <div className="flex flex-col gap-1.5">
+            <p className="font-heading text-base font-semibold tracking-tight">
+              No conversations yet
+            </p>
+            <p className="text-muted-foreground max-w-64 text-sm leading-relaxed">
+              Ask an owner about any item from its listing page. Questions about
+              your own listings land here too.
+            </p>
+          </div>
+          <Button size="sm" render={<Link href="/listings" />}>
             Browse listings
-          </Link>
+          </Button>
         </div>
       ) : visible.length === 0 ? (
-        <p className="text-muted-foreground px-4 py-8 text-center text-sm">
-          No conversations match.
-        </p>
+        <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+          <p role="status" className="text-muted-foreground text-sm">
+            No conversations match
+            {query.trim() ? ` "${query.trim()}"` : " this filter"}.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setQuery("");
+              setFilter("all");
+            }}
+          >
+            Show all conversations
+          </Button>
+        </div>
       ) : (
         <ul
-          className="min-h-0 flex-1 overflow-y-auto"
+          className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2"
           aria-label="Conversations"
         >
           {visible.map((conversation) => (
@@ -205,26 +227,22 @@ function ConversationRow({
       href={conversationHref(conversation.id)}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "focus-visible:ring-ring relative flex items-center gap-3 border-b px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset",
-        isActive ? "bg-muted" : "hover:bg-muted/60"
+        "focus-visible:ring-ring relative flex items-center gap-3 rounded-xl px-3 py-3 transition-colors duration-150 outline-none focus-visible:ring-2",
+        // Mint surface and an emerald bar, the dashboard sidebar's active item: the bar marks the
+        // selection without the fill alone, and `aria-current` tells assistive tech.
+        isActive
+          ? "bg-brand-soft before:bg-brand before:absolute before:inset-y-3 before:left-0 before:w-1 before:rounded-r-full"
+          : "hover:bg-muted"
       )}
     >
-      {isActive && (
-        <span
-          className="bg-primary absolute inset-y-2 left-0 w-1 rounded-r-full"
-          aria-hidden="true"
-        />
-      )}
-
       {/* The item, with the person over its corner: in a marketplace inbox the thing is how people
           remember the thread. */}
       <span className="relative shrink-0">
-        <span className="bg-muted relative flex size-12 items-center justify-center overflow-hidden rounded-lg">
+        <span className="bg-muted relative flex size-12 items-center justify-center overflow-hidden rounded-xl">
           {conversation.listing.imageUrl ? (
-            <Image
+            <ListingPhoto
               src={conversation.listing.imageUrl}
               alt=""
-              fill
               sizes="48px"
               className="object-cover"
             />
@@ -238,7 +256,7 @@ function ConversationRow({
         <MemberAvatar
           name={conversation.counterparty.name}
           image={conversation.counterparty.image}
-          className="ring-background absolute -right-1.5 -bottom-1.5 size-6 rounded-full ring-2"
+          className="ring-card absolute -right-1.5 -bottom-1.5 size-6 rounded-full ring-2"
         />
       </span>
 
@@ -246,16 +264,18 @@ function ConversationRow({
         <span className="flex items-baseline justify-between gap-2">
           <span
             className={cn(
-              "truncate text-sm",
-              unread ? "font-semibold" : "font-medium"
+              "font-heading truncate text-sm tracking-tight",
+              unread || isActive ? "text-foreground font-bold" : "font-semibold"
             )}
           >
             {name}
           </span>
           <span
             className={cn(
-              "shrink-0 text-[11px]",
-              unread ? "text-foreground font-medium" : "text-muted-foreground"
+              "shrink-0 text-xs",
+              unread
+                ? "text-brand-soft-foreground font-semibold"
+                : "text-muted-foreground"
             )}
           >
             {conversation.lastMessage
@@ -280,7 +300,9 @@ function ConversationRow({
             <span className="truncate">{preview(conversation)}</span>
           </span>
           {unread && (
-            <span className="bg-primary text-primary-foreground flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums">
+            // Emerald, the one thing in the row asking to be opened (white on `--brand`, 5.48:1). The
+            // count is the badge's meaning; the colour only draws the eye to it.
+            <span className="bg-brand text-brand-foreground flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums">
               {conversation.unread}
               <span className="sr-only"> unread</span>
             </span>

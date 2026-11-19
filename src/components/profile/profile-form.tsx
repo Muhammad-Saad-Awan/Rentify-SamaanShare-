@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { updateProfile } from "@/actions/profile";
+import { FormAlert } from "@/components/ui/form-alert";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -17,6 +18,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { PAKISTANI_CITIES } from "@/config/cities";
 import {
@@ -26,10 +28,6 @@ import {
 } from "@/lib/validations/profile";
 
 import type { ProfileFormValues } from "@/lib/validations/profile";
-
-/** Matches `Input`'s tokens so the native select sits flush beside one. */
-const SELECT_CLASS =
-  "border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 dark:bg-input/30 h-10 w-full rounded-lg border bg-background px-3 py-1 text-sm transition-colors outline-none focus-visible:ring-3";
 
 interface ProfileFormProps {
   /** Current values, straight from the database rather than the session. */
@@ -98,14 +96,7 @@ function ProfileForm({ defaults }: ProfileFormProps) {
       className="flex flex-col gap-6"
       noValidate
     >
-      {formError && (
-        <div
-          role="alert"
-          className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
-        >
-          {formError}
-        </div>
-      )}
+      {formError && <FormAlert tone="error">{formError}</FormAlert>}
 
       <FieldGroup>
         <Field data-invalid={Boolean(errors.name)}>
@@ -141,9 +132,8 @@ function ProfileForm({ defaults }: ProfileFormProps) {
 
         <Field data-invalid={Boolean(errors.city)}>
           <FieldLabel htmlFor="city">City (optional)</FieldLabel>
-          <select
+          <NativeSelect
             id="city"
-            className={SELECT_CLASS}
             aria-invalid={Boolean(errors.city)}
             disabled={isSubmitting}
             {...form.register("city")}
@@ -154,7 +144,7 @@ function ProfileForm({ defaults }: ProfileFormProps) {
                 {city.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <FieldDescription>
             Public. Where you usually hand items over - a listing sets its own
             city, so this does not change any listing you have already posted.
@@ -182,8 +172,16 @@ function ProfileForm({ defaults }: ProfileFormProps) {
         </Field>
       </FieldGroup>
 
-      <div className="flex justify-end border-t pt-4">
-        <Button type="submit" disabled={isSubmitting || !isDirty}>
+      <div className="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-end">
+        {/* Says why Save is unavailable, rather than leaving a greyed button to explain itself. */}
+        {!isDirty && !isSubmitting && (
+          <p className="text-muted-foreground text-xs">No unsaved changes.</p>
+        )}
+        <Button
+          type="submit"
+          className="w-full sm:w-auto"
+          disabled={isSubmitting || !isDirty}
+        >
           {isSubmitting ? (
             <>
               <Loader2Icon className="animate-spin" />

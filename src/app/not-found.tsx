@@ -1,6 +1,7 @@
 import { CompassIcon } from "lucide-react";
 import Link from "next/link";
 
+import { Brand } from "@/components/shared/brand";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
 
@@ -25,21 +26,22 @@ export const metadata: Metadata = {
  * NO SHELL AROUND IT, deliberately. A root `not-found.tsx` renders inside the root layout only,
  * outside every route group, so it cannot use the marketplace header - that lives in
  * `(marketplace)/layout.tsx` and a URL matching no route belongs to no group. The links below
- * are the way out instead of a nav.
+ * are the way out instead of a nav - with the wordmark above them, so the page is still
+ * recognisably SamaanShare and not a browser error.
  */
 export default function NotFound() {
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-2xl flex-col justify-center gap-6 px-4 py-16 lg:px-6">
+    <div className="mx-auto flex min-h-svh w-full max-w-2xl flex-col justify-center gap-8 px-4 py-16 lg:px-6">
+      <Brand href="/" className="w-fit self-center" />
+
       <EmptyState
         icon={CompassIcon}
         title="This page does not exist"
         description="The link may be out of date, or the address may have a typo in it. Everything available to rent is on the browse page."
         action={
           <>
-            <Button size="sm" render={<Link href="/listings" />}>
-              Browse listings
-            </Button>
-            <Button variant="outline" size="sm" render={<Link href="/" />}>
+            <Button render={<Link href="/listings" />}>Browse listings</Button>
+            <Button variant="outline" render={<Link href="/" />}>
               Back to home
             </Button>
           </>

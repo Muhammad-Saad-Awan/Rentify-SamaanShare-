@@ -6,6 +6,7 @@ import { useId, useTransition } from "react";
 import { toast } from "sonner";
 
 import { markNotificationsRead } from "@/actions/notifications";
+import { NotificationIcon } from "@/components/notifications/notification-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,8 @@ import {
 import { UNREAD_BADGE_CAP } from "@/config/notifications";
 import { cn } from "@/lib/utils/cn";
 
+import type { NotificationType } from "@/generated/prisma/enums";
+
 /**
  * A notification as the panel needs it.
  *
@@ -28,6 +31,8 @@ import { cn } from "@/lib/utils/cn";
  */
 export interface NotificationPanelItem {
   id: string;
+  /** Picks the row's icon tile - the same one the inbox page shows for this event. */
+  type: NotificationType;
   title: string;
   body: string | null;
   timeAgo: string;
@@ -90,11 +95,10 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
         render={<Button variant="ghost" size="icon-sm" className="relative" />}
       >
         <BellIcon />
+        {/* Navy like every other unread count in the app - the sidebar's, the inbox's. Red would
+            say something went wrong, and an unread notification is usually good news. */}
         {unreadCount > 0 && (
-          <Badge
-            variant="destructive"
-            className="pointer-events-none absolute -top-0.5 -right-0.5 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] leading-none tabular-nums"
-          >
+          <Badge className="ring-background pointer-events-none absolute -top-0.5 -right-0.5 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] leading-none tabular-nums ring-2">
             {badge}
           </Badge>
         )}
@@ -105,7 +109,7 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
 
       <DropdownMenuContent
         align="end"
-        className="w-[22rem] max-w-[calc(100vw-2rem)]"
+        className="w-[24rem] max-w-[calc(100vw-2rem)] p-1.5"
         aria-labelledby={headingId}
       >
         <div className="flex items-center justify-between gap-2 pr-1">
@@ -125,9 +129,14 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
           */}
           <p
             id={headingId}
-            className="font-heading px-1.5 py-1.5 text-sm font-semibold"
+            className="font-heading flex items-baseline gap-2 px-1.5 py-1.5 text-sm font-semibold"
           >
             Notifications
+            {unreadCount > 0 && (
+              <span className="text-muted-foreground font-sans text-xs font-normal">
+                {badge} unread
+              </span>
+            )}
           </p>
 
           {unreadCount > 0 && (
@@ -152,17 +161,25 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
         <DropdownMenuSeparator />
 
         {items.length === 0 ? (
-          <p className="text-muted-foreground px-1.5 py-8 text-center text-sm">
-            No notifications yet. Updates about your bookings, payments and
-            messages appear here.
-          </p>
+          <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
+            <span
+              className="bg-brand-soft text-brand flex size-12 items-center justify-center rounded-full"
+              aria-hidden="true"
+            >
+              <BellIcon className="size-5" strokeWidth={1.75} />
+            </span>
+            <p className="text-muted-foreground max-w-64 text-sm leading-relaxed">
+              No notifications yet. Updates about your bookings, payments and
+              messages appear here.
+            </p>
+          </div>
         ) : (
-          <ul>
+          <ul className="flex flex-col gap-0.5">
             {items.map((item) => (
               <li key={item.id}>
                 <DropdownMenuItem
                   className={cn(
-                    "flex-col items-start gap-1 px-2.5 py-2.5 whitespace-normal",
+                    "items-start gap-3 px-2.5 py-2.5 whitespace-normal",
                     item.isUnread && "bg-muted/70"
                   )}
                   onClick={() => markOne(item.id, item.isUnread)}
@@ -174,31 +191,40 @@ function NotificationPanel({ items, unreadCount }: NotificationPanelProps) {
                     )
                   }
                 >
-                  <span className="flex w-full items-start gap-2">
-                    <span
-                      className={cn(
-                        "flex-1 text-[0.8125rem] leading-snug",
-                        item.isUnread ? "font-semibold" : "font-medium"
-                      )}
-                    >
-                      {item.title}
-                    </span>
-                    {item.isUnread && (
+                  <NotificationIcon type={item.type} className="size-8" />
+
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="flex w-full items-start gap-2">
                       <span
-                        className="bg-primary mt-1.5 size-2 shrink-0 rounded-full"
-                        aria-label="Unread"
-                      />
-                    )}
-                  </span>
-
-                  {item.body && (
-                    <span className="text-muted-foreground line-clamp-2 text-xs">
-                      {item.body}
+                        className={cn(
+                          "flex-1 text-[0.8125rem] leading-snug",
+                          item.isUnread ? "font-semibold" : "font-medium"
+                        )}
+                      >
+                        {/* Text, not an `aria-label` on the dot: a label on a plain span is not
+                            reliably announced, and the dot alone would be colour carrying meaning. */}
+                        {item.isUnread && (
+                          <span className="sr-only">Unread: </span>
+                        )}
+                        {item.title}
+                      </span>
+                      {item.isUnread && (
+                        <span
+                          className="bg-primary mt-1.5 size-2 shrink-0 rounded-full"
+                          aria-hidden="true"
+                        />
+                      )}
                     </span>
-                  )}
 
-                  <span className="text-muted-foreground text-[11px]">
-                    {item.timeAgo}
+                    {item.body && (
+                      <span className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
+                        {item.body}
+                      </span>
+                    )}
+
+                    <span className="text-muted-foreground text-xs">
+                      {item.timeAgo}
+                    </span>
                   </span>
                 </DropdownMenuItem>
               </li>

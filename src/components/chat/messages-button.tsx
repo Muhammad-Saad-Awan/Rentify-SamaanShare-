@@ -41,11 +41,9 @@ function MessagesButton({ unread }: UnreadProps) {
       })}
     >
       <MessagesSquareIcon />
+      {/* Navy, matching the sidebar's count and the bell's: unread is news, not an error. */}
       {unread > 0 && (
-        <Badge
-          variant="destructive"
-          className="pointer-events-none absolute -top-0.5 -right-0.5 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] leading-none tabular-nums"
-        >
+        <Badge className="ring-background pointer-events-none absolute -top-0.5 -right-0.5 h-4 min-w-4 justify-center rounded-full px-1 text-[10px] leading-none tabular-nums ring-2">
           {capped(unread)}
         </Badge>
       )}
@@ -66,7 +64,9 @@ function UnreadMessagesBadge({ unread }: UnreadProps) {
   }
 
   return (
-    <span className="bg-primary text-primary-foreground group-aria-[current=page]/nav:bg-background group-aria-[current=page]/nav:text-foreground ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums">
+    // Navy at rest; emerald on the active item's mint surface, where navy would read as heavy
+    // (white on `--brand`, 5.48:1). The number is the meaning either way.
+    <span className="bg-primary text-primary-foreground group-aria-[current=page]/nav:bg-brand group-aria-[current=page]/nav:text-brand-foreground ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums">
       {capped(unread)}
       <span className="sr-only"> unread</span>
     </span>

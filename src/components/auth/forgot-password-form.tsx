@@ -1,10 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { requestPasswordReset } from "@/actions/password-reset";
+import { FormAlert } from "@/components/ui/form-alert";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -54,26 +56,16 @@ function ForgotPasswordForm() {
 
   if (sentMessage) {
     return (
-      <div
-        role="status"
-        className="border-primary/30 bg-accent/40 rounded-lg border px-3 py-3 text-sm leading-relaxed"
-      >
+      <FormAlert tone="success" title="Check your inbox">
         {sentMessage}
-      </div>
+      </FormAlert>
     );
   }
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <FieldGroup>
-        {formError && (
-          <div
-            role="alert"
-            className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
-          >
-            {formError}
-          </div>
-        )}
+        {formError && <FormAlert tone="error">{formError}</FormAlert>}
 
         <Field data-invalid={Boolean(errors.email)}>
           <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -89,7 +81,13 @@ function ForgotPasswordForm() {
           <FieldError errors={[errors.email]} />
         </Field>
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          size="lg"
+          className="mt-1 w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting && <Loader2Icon className="animate-spin" />}
           {isSubmitting ? "Sending…" : "Send reset link"}
         </Button>
       </FieldGroup>

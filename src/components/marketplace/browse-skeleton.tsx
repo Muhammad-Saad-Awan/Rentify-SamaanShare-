@@ -22,19 +22,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 function BrowseSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 lg:px-6">
-      <div className="flex flex-col gap-2">
-        <Skeleton className="h-8 w-56" />
-        <Skeleton className="h-4 w-80 max-w-full" />
+      {/* Mirrors `PageBanner`: same mint panel, same padding, so the banner lands in place. */}
+      <div className="bg-brand-soft flex flex-col gap-3 rounded-3xl px-6 py-8 sm:px-10 sm:py-10">
+        <Skeleton className="bg-card h-6 w-44 rounded-full" />
+        <Skeleton className="bg-card/70 h-9 w-64 sm:h-12" />
+        <Skeleton className="bg-card/70 h-4 w-52 max-w-full" />
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Skeleton className="h-8 sm:flex-1" />
-        <Skeleton className="h-8 w-52 shrink-0" />
+        <Skeleton className="h-10 sm:flex-1" />
+        <Skeleton className="h-10 w-full shrink-0 sm:w-72" />
       </div>
 
       <div className="flex gap-6">
         <aside className="hidden w-64 shrink-0 lg:block">
-          <div className="flex flex-col gap-5">
+          <div className="bg-card flex flex-col gap-5 rounded-2xl border p-5">
             {/*
               Six groups, matching the sidebar's category, subcategory, city,
               price, condition and availability sections.
@@ -42,7 +44,7 @@ function BrowseSkeleton() {
             {Array.from({ length: 6 }, (_, index) => (
               <div key={index} className="flex flex-col gap-2">
                 <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-10 w-full" />
               </div>
             ))}
           </div>

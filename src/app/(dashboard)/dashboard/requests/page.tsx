@@ -40,7 +40,7 @@ export default async function RequestsPage({
     // about a boundary above a route breaking its status code.
     <Suspense
       key={String(rawPage ?? 1)}
-      fallback={<DashboardPageSkeleton cards={3} />}
+      fallback={<DashboardPageSkeleton cards={3} variant="row" />}
     >
       <OwnerRequests rawPage={rawPage} />
     </Suspense>

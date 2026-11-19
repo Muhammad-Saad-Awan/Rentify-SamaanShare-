@@ -3,6 +3,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { UserVerificationCard } from "@/components/admin/user-verification-card";
+import {
+  FilterChip,
+  FilterGroup,
+  FilterNav,
+} from "@/components/admin/filter-chips";
 import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -138,6 +143,18 @@ async function MemberSearch({
   const anyFilter =
     status !== undefined || role !== undefined || verified !== undefined;
 
+  /**
+   * A page of the current view. Through `filterHref`, so paging a filtered list keeps the filter -
+   * a page link built from the query alone used to drop "Suspended" on page two.
+   */
+  const pageHref = (target: number): string => {
+    const base = filterHref({});
+
+    return target > 1
+      ? `${base}${base.includes("?") ? "&" : "?"}page=${target}`
+      : base;
+  };
+
   return (
     <>
       <PageHeader
@@ -145,75 +162,123 @@ async function MemberSearch({
         description="Find a member to verify, suspend, ban or change the role of. Open one to act on it."
       />
 
-      {/*
-        A plain GET form, not a client-side filter. The query lands in the URL, so a search is
-        shareable and survives the back button - the same reasoning as the listings sort control.
-      */}
-      <form action="/admin/users" className="flex flex-wrap gap-2">
-        <Input
-          type="search"
-          name="q"
-          defaultValue={query}
-          placeholder="Search by name or email"
-          aria-label="Search members by name or email"
-          className="max-w-xs"
-        />
-        <Button type="submit" size="sm">
-          <SearchIcon aria-hidden="true" />
-          Search
-        </Button>
-      </form>
+      <div className="bg-card flex flex-col gap-4 rounded-2xl border p-4 sm:p-5">
+        {/*
+          A plain GET form, not a client-side filter. The query lands in the URL, so a search is
+          shareable and survives the back button - the same reasoning as the listings sort control.
+          The active filters ride along as hidden fields, or a new search would silently drop them.
+        */}
+        <form
+          action="/admin/users"
+          className="flex flex-col gap-2 sm:flex-row sm:items-center"
+        >
+          <Input
+            type="search"
+            name="q"
+            defaultValue={query}
+            placeholder="Search by name or email"
+            aria-label="Search members by name or email"
+            className="sm:max-w-sm"
+          />
+          {status && (
+            <input type="hidden" name="status" value={status.toLowerCase()} />
+          )}
+          {role && (
+            <input type="hidden" name="role" value={role.toLowerCase()} />
+          )}
+          {verified !== undefined && (
+            <input type="hidden" name="verified" value={String(verified)} />
+          )}
+          <Button type="submit" className="sm:w-auto">
+            <SearchIcon aria-hidden="true" />
+            Search
+          </Button>
+        </form>
 
-      {/*
-        Filters. A listing is allowed when one is applied even with no search term - see the note in
-        `searchUsers`. "Show me the suspended accounts" is an operational question with a bounded
-        answer; "show me everyone" is a dossier, and that is what the search-first rule refuses.
-      */}
-      <nav aria-label="Filter members" className="flex flex-wrap gap-2">
-        <FilterLink
-          href={filterHref({
-            status: undefined,
-            role: undefined,
-            verified: undefined,
-          })}
-          active={!anyFilter}
-        >
-          All
-        </FilterLink>
-        <FilterLink
-          href={filterHref({ status: "suspended" })}
-          active={status === UserStatus.SUSPENDED}
-        >
-          Suspended
-        </FilterLink>
-        <FilterLink
-          href={filterHref({ status: "banned" })}
-          active={status === UserStatus.BANNED}
-        >
-          Banned
-        </FilterLink>
-        <FilterLink
-          href={filterHref({ role: "admin" })}
-          active={role === UserRole.ADMIN}
-        >
-          Administrators
-        </FilterLink>
-        <FilterLink
-          href={filterHref({ verified: "true" })}
-          active={verified === true}
-        >
-          Verified
-        </FilterLink>
-        <FilterLink
-          href={filterHref({ verified: "false" })}
-          active={verified === false}
-        >
-          Unverified
-        </FilterLink>
-      </nav>
+        {/*
+          Filters. A listing is allowed when one is applied even with no search term - see the note in
+          `searchUsers`. "Show me the suspended accounts" is an operational question with a bounded
+          answer; "show me everyone" is a dossier, and that is what the search-first rule refuses.
+
+          One group per dimension, each with its own "Any", because the dimensions combine: a
+          suspended administrator is a real query, and a single row of chips hid that.
+        */}
+        <FilterNav label="Filter members" className="border-t pt-4">
+          <FilterGroup legend="Status">
+            <FilterChip
+              href={filterHref({ status: undefined })}
+              active={status === undefined}
+            >
+              Any
+            </FilterChip>
+            <FilterChip
+              href={filterHref({ status: "suspended" })}
+              active={status === UserStatus.SUSPENDED}
+            >
+              Suspended
+            </FilterChip>
+            <FilterChip
+              href={filterHref({ status: "banned" })}
+              active={status === UserStatus.BANNED}
+            >
+              Banned
+            </FilterChip>
+          </FilterGroup>
+          <FilterGroup legend="Role">
+            <FilterChip
+              href={filterHref({ role: undefined })}
+              active={role === undefined}
+            >
+              Any
+            </FilterChip>
+            <FilterChip
+              href={filterHref({ role: "admin" })}
+              active={role === UserRole.ADMIN}
+            >
+              Administrators
+            </FilterChip>
+          </FilterGroup>
+          <FilterGroup legend="Identity">
+            <FilterChip
+              href={filterHref({ verified: undefined })}
+              active={verified === undefined}
+            >
+              Any
+            </FilterChip>
+            <FilterChip
+              href={filterHref({ verified: "true" })}
+              active={verified === true}
+            >
+              Verified
+            </FilterChip>
+            <FilterChip
+              href={filterHref({ verified: "false" })}
+              active={verified === false}
+            >
+              Unverified
+            </FilterChip>
+          </FilterGroup>
+        </FilterNav>
+
+        {anyFilter && (
+          <p className="text-muted-foreground text-xs">
+            {total === 1 ? "1 member matches" : `${total} members match`}.{" "}
+            <Link
+              href={filterHref({
+                status: undefined,
+                role: undefined,
+                verified: undefined,
+              })}
+              className="text-foreground underline underline-offset-4"
+            >
+              Clear filters
+            </Link>
+          </p>
+        )}
+      </div>
 
       {items.length > 0 && (
-        <ul className="flex flex-col gap-4">
+        <ul className="flex flex-col gap-3">
           {items.map((user) => (
             <li key={user.id}>
               <UserVerificationCard user={user} adminId={admin.id} />
@@ -226,14 +291,14 @@ async function MemberSearch({
         <EmptyState
           icon={UsersIcon}
           title={
-            query.length === 0
+            query.length === 0 && !anyFilter
               ? "Search for a member"
               : total === 0
                 ? "No members match that"
                 : "No members on this page"
           }
           description={
-            query.length === 0
+            query.length === 0 && !anyFilter
               ? "Enter a name or an email address. Nothing is listed until you search, so this screen is not a directory of everyone on the platform."
               : total === 0
                 ? "Try a fragment of the name as it was given to you, or part of the email domain."
@@ -245,11 +310,7 @@ async function MemberSearch({
                   <Button
                     variant="outline"
                     size="sm"
-                    render={
-                      <Link
-                        href={`/admin/users?q=${encodeURIComponent(query)}`}
-                      />
-                    }
+                    render={<Link href={pageHref(1)} />}
                   >
                     Back to first page
                   </Button>
@@ -259,38 +320,8 @@ async function MemberSearch({
         />
       )}
 
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        hrefFor={(target) =>
-          target > 1
-            ? `/admin/users?q=${encodeURIComponent(query)}&page=${target}`
-            : `/admin/users?q=${encodeURIComponent(query)}`
-        }
-      />
+      <Pagination page={page} totalPages={totalPages} hrefFor={pageHref} />
     </>
-  );
-}
-
-/** One filter as a link, so every view stays shareable and survives the back button. */
-function FilterLink({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Button
-      size="sm"
-      variant={active ? "default" : "outline"}
-      render={<Link href={href} />}
-      {...(active ? { "aria-current": "page" as const } : {})}
-    >
-      {children}
-    </Button>
   );
 }
 

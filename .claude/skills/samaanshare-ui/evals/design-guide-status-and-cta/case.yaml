@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: design-guide-status-and-cta
+expected_outcome: |
+  A design spec (no code changes) that uses the decided palette values (#142B3B navy, #047857
+  emerald, #065F46/#ECFDF5, #D97706 warning) with measured AA contrast for each pairing. Status
+  badges keep the existing StatusBadge glyph system so colour is not the only signal, with Paid in
+  success-soft. The CTA band stays navy with an inverted light primary button rather than an
+  emerald fill on navy. Emerald is not put into --accent, and #059669/#D97706 are not used as small
+  text on light surfaces.

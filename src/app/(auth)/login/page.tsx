@@ -1,14 +1,10 @@
 import Link from "next/link";
 
+import { AuthCardHeader } from "@/components/auth/auth-card-header";
+import { FormAlert } from "@/components/ui/form-alert";
 import { GoogleButton } from "@/components/auth/google-button";
 import { LoginForm } from "@/components/auth/login-form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { FieldSeparator } from "@/components/ui/field";
 import { CALLBACK_URL_PARAM, sanitizeCallbackUrl } from "@/config/routes";
 import { getAuthErrorMessage } from "@/lib/auth/errors";
@@ -55,21 +51,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Sign in</CardTitle>
-        <CardDescription>
-          Welcome back. Enter your details to continue.
-        </CardDescription>
-      </CardHeader>
+      <AuthCardHeader
+        title="Sign in"
+        description="Welcome back. Enter your details to continue."
+      />
 
       <CardContent className="flex flex-col gap-5">
         {errorCode && (
-          <div
-            role="alert"
-            className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
-          >
-            {getAuthErrorMessage(errorCode)}
-          </div>
+          <FormAlert tone="error">{getAuthErrorMessage(errorCode)}</FormAlert>
         )}
 
         <LoginForm

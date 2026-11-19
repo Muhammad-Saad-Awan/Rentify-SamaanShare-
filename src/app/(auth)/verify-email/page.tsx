@@ -1,11 +1,6 @@
+import { AuthCardHeader } from "@/components/auth/auth-card-header";
 import { VerifyEmailForm } from "@/components/auth/verify-email-form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 import type { Metadata } from "next";
 
@@ -47,12 +42,10 @@ export default async function VerifyEmailPage({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Confirm your email</CardTitle>
-        <CardDescription>
-          One step, so we know we can reach you about your rentals.
-        </CardDescription>
-      </CardHeader>
+      <AuthCardHeader
+        title="Confirm your email"
+        description="One step, so we know we can reach you about your rentals."
+      />
 
       <CardContent>
         <VerifyEmailForm token={token && token.length > 0 ? token : null} />

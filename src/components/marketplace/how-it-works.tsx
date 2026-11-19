@@ -1,15 +1,20 @@
+import { CalendarCheckIcon, RepeatIcon, SearchIcon } from "lucide-react";
+
 const STEPS = [
   {
+    icon: SearchIcon,
     title: "Find it nearby",
     description:
       "Search or filter by city, category and price to see what is available around you.",
   },
   {
+    icon: CalendarCheckIcon,
     title: "Request your dates",
     description:
       "Pick the days you need. Once the owner approves, pay SamaanShare by card or bank transfer.",
   },
   {
+    icon: RepeatIcon,
     title: "Collect and return",
     description:
       "Meet the owner, check the item together, and return it on the agreed date. Your deposit comes back after.",
@@ -30,22 +35,29 @@ const STEPS = [
  */
 function HowItWorks() {
   return (
-    <ol className="grid gap-x-8 sm:grid-cols-3">
+    <ol className="grid gap-4 sm:grid-cols-3 sm:gap-5">
       {STEPS.map((step, index) => (
         <li
           key={step.title}
-          className="border-foreground flex flex-col gap-3 border-t-2 pt-5 pb-8 sm:pb-0"
+          className="bg-card relative flex flex-col gap-4 rounded-2xl border p-6"
         >
-          <span
-            className="font-heading text-muted-foreground text-sm font-semibold"
-            // Decorative: the list already conveys order, and announcing "1"
-            // before "1 of 3" is redundant.
-            aria-hidden="true"
-          >
-            Step {index + 1}
-          </span>
+          <div className="flex items-center justify-between">
+            <span
+              className="bg-brand-soft text-brand flex size-12 items-center justify-center rounded-xl"
+              aria-hidden="true"
+            >
+              <step.icon className="size-6" strokeWidth={1.75} />
+            </span>
+            <span
+              className="font-heading text-border text-5xl leading-none font-extrabold"
+              // Decorative: the list already conveys order.
+              aria-hidden="true"
+            >
+              {index + 1}
+            </span>
+          </div>
 
-          <h3 className="font-heading text-xl font-bold tracking-[-0.02em]">
+          <h3 className="font-heading text-xl font-bold tracking-[-0.025em]">
             {step.title}
           </h3>
 

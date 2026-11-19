@@ -1,14 +1,9 @@
 import Link from "next/link";
 
+import { AuthCardHeader } from "@/components/auth/auth-card-header";
 import { GoogleButton } from "@/components/auth/google-button";
 import { RegisterForm } from "@/components/auth/register-form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { FieldSeparator } from "@/components/ui/field";
 import { CALLBACK_URL_PARAM, sanitizeCallbackUrl } from "@/config/routes";
 import { isGoogleEnabled } from "@/lib/auth/providers";
@@ -38,12 +33,10 @@ export default async function RegisterPage({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Create an account</CardTitle>
-        <CardDescription>
-          Rent what you need, lend what you don&apos;t.
-        </CardDescription>
-      </CardHeader>
+      <AuthCardHeader
+        title="Create an account"
+        description="Rent what you need, lend what you don't. It takes a minute."
+      />
 
       <CardContent className="flex flex-col gap-5">
         <RegisterForm callbackUrl={callbackUrl} />

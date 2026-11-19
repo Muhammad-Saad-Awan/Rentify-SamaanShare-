@@ -1,6 +1,12 @@
 "use client";
 
-import { CheckIcon, Loader2Icon, SendIcon } from "lucide-react";
+import {
+  CheckIcon,
+  CircleSlashIcon,
+  Loader2Icon,
+  MinusIcon,
+  SendIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +16,7 @@ import {
   recordOwnerPayout,
   settleBooking,
 } from "@/actions/settlement";
+import { AttentionNote, AwaitingBadge } from "@/components/admin/attention";
 import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -78,8 +85,8 @@ function SettlementCard({ row }: SettlementCardProps) {
 
   return (
     <Card className="flex flex-col gap-4 px-(--card-spacing)">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex flex-col gap-0.5">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="flex min-w-0 flex-col gap-0.5">
           <Link
             href={`/admin/bookings/${row.bookingId}`}
             className="font-heading decoration-foreground/30 text-base leading-snug font-semibold underline-offset-4 hover:underline"
@@ -94,133 +101,154 @@ function SettlementCard({ row }: SettlementCardProps) {
           </span>
         </div>
 
+        {/*
+          Both unfinished states are waiting on an administrator - deciding, then sending - so both
+          are the warning badge. Emerald only once every rupee has gone out.
+        */}
         {settled ? (
           settled.complete ? (
             <StatusLabel variant="default" label="Settled and sent" />
           ) : (
-            <StatusLabel variant="secondary" label="Sending" />
+            <AwaitingBadge label="Money to send" icon={SendIcon} />
           )
         ) : (
-          <StatusLabel variant="secondary" label="To settle" />
+          <AwaitingBadge label="To settle" />
         )}
       </div>
 
       {/*
         Four figures, never their sum. See the note on the component.
       */}
-      {figures && (
-        <dl className="text-muted-foreground grid grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 rounded-lg border px-4 py-3 text-sm [&_dd]:text-right [&_dd]:font-medium [&_dd]:tabular-nums">
-          <dt>Rental</dt>
-          <dd className="text-foreground">{formatPKR(figures.rentalAmount)}</dd>
+      <div
+        className={
+          settled
+            ? "grid gap-4 lg:grid-cols-2 lg:items-start"
+            : "flex flex-col gap-4"
+        }
+      >
+        {figures && (
+          <dl className="text-muted-foreground [&_dd]:font-heading grid grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 rounded-xl border px-4 py-3 text-sm [&_dd]:text-right [&_dd]:font-semibold [&_dd]:tabular-nums">
+            <dt>Rental</dt>
+            <dd className="text-foreground">
+              {formatPKR(figures.rentalAmount)}
+            </dd>
 
-          <dt>Commission ({figures.commissionRateBps}bps)</dt>
-          <dd className="text-foreground">
-            {formatPKR(figures.commissionAmount)}
-          </dd>
+            {/* One string, so the rate and its unit are not split by a React text-node comment. */}
+            <dt>{`Commission (${figures.commissionRateBps}bps)`}</dt>
+            <dd className="text-foreground">
+              {formatPKR(figures.commissionAmount)}
+            </dd>
 
-          <dt>Owner, for the rental</dt>
-          <dd className="text-foreground">
-            {formatPKR(figures.ownerRentalAmount)}
-          </dd>
+            <dt>Owner, for the rental</dt>
+            <dd className="text-foreground">
+              {formatPKR(figures.ownerRentalAmount)}
+            </dd>
 
-          {figures.damageCompensationAmount > 0 && (
-            <>
-              <dt>Owner, damage compensation</dt>
-              <dd className="text-foreground">
-                {formatPKR(figures.damageCompensationAmount)}
-              </dd>
-            </>
-          )}
-
-          <dt>Deposit back to renter</dt>
-          <dd className="text-foreground">
-            {formatPKR(figures.depositReturnedAmount)}
-          </dd>
-        </dl>
-      )}
-
-      {/* ------------------------------------------------------------ not yet settled */}
-      {!settled && row.pending && !row.pending.ready && (
-        <p className="text-muted-foreground text-xs leading-relaxed">
-          {row.pending.reason}
-        </p>
-      )}
-
-      {!settled && row.pending?.ready && (
-        <div>
-          <Button
-            size="sm"
-            disabled={isPending}
-            aria-busy={isPending}
-            onClick={() =>
-              void run(
-                () => settleBooking({ bookingId: row.bookingId }),
-                "Settled. Both parties have been told what they are owed."
-              )
-            }
-          >
-            {isPending ? (
-              <Loader2Icon className="animate-spin" />
-            ) : (
-              <CheckIcon />
+            {figures.damageCompensationAmount > 0 && (
+              <>
+                <dt>Owner, damage compensation</dt>
+                <dd className="text-foreground">
+                  {formatPKR(figures.damageCompensationAmount)}
+                </dd>
+              </>
             )}
-            Settle this booking
-          </Button>
-        </div>
-      )}
 
-      {/* ------------------------------------------------------------ settled, transfers pending */}
-      {settled && (
-        <div className="flex flex-col gap-3">
-          <p className="text-muted-foreground text-xs">
-            {`Settled ${formatDate(settled.settledAt)}${settled.settledByName ? ` by ${settled.settledByName}` : ""}.`}
-          </p>
+            <dt>Deposit back to renter</dt>
+            <dd className="text-foreground">
+              {formatPKR(figures.depositReturnedAmount)}
+            </dd>
+          </dl>
+        )}
 
-          <TransferRow
-            label="Owner payout"
-            state={settled.ownerPayout}
-            reference={settled.ownerPayoutRef}
-            value={payoutRef}
-            onChange={setPayoutRef}
-            isPending={isPending}
-            onSubmit={() =>
-              void run(
-                () =>
-                  recordOwnerPayout({
-                    bookingId: row.bookingId,
-                    payoutRef,
-                  }),
-                "Payout recorded. The owner has been told."
-              )
-            }
-          />
+        {/* ------------------------------------------------------------ not yet settled */}
+        {!settled && row.pending && !row.pending.ready && (
+          <AttentionNote icon={CircleSlashIcon}>
+            {row.pending.reason}
+          </AttentionNote>
+        )}
 
-          <TransferRow
-            label="Deposit return"
-            state={settled.depositReturn}
-            reference={settled.depositReturnRef}
-            value={returnRef}
-            onChange={setReturnRef}
-            isPending={isPending}
-            onSubmit={() =>
-              void run(
-                () =>
-                  recordDepositReturn({
-                    bookingId: row.bookingId,
-                    returnRef,
-                  }),
-                "Deposit return recorded. The renter has been told."
-              )
-            }
-          />
-
-          {settled.notes && (
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              {settled.notes}
+        {!settled && row.pending?.ready && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+            <p className="text-muted-foreground text-xs">
+              Fixes these figures for good and tells both parties what they are
+              owed.
             </p>
-          )}
-        </div>
-      )}
+            <Button
+              size="sm"
+              disabled={isPending}
+              aria-busy={isPending}
+              onClick={() =>
+                void run(
+                  () => settleBooking({ bookingId: row.bookingId }),
+                  "Settled. Both parties have been told what they are owed."
+                )
+              }
+            >
+              {isPending ? (
+                <Loader2Icon className="animate-spin" />
+              ) : (
+                <CheckIcon />
+              )}
+              Settle this booking
+            </Button>
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------ settled, transfers pending */}
+        {settled && (
+          <div className="flex flex-col gap-3">
+            <p className="text-muted-foreground text-xs">
+              {`Settled ${formatDate(settled.settledAt)}${settled.settledByName ? ` by ${settled.settledByName}` : ""}.`}
+            </p>
+
+            <ul className="flex flex-col divide-y rounded-xl border">
+              <TransferRow
+                label="Owner payout"
+                state={settled.ownerPayout}
+                reference={settled.ownerPayoutRef}
+                value={payoutRef}
+                onChange={setPayoutRef}
+                isPending={isPending}
+                onSubmit={() =>
+                  void run(
+                    () =>
+                      recordOwnerPayout({
+                        bookingId: row.bookingId,
+                        payoutRef,
+                      }),
+                    "Payout recorded. The owner has been told."
+                  )
+                }
+              />
+
+              <TransferRow
+                label="Deposit return"
+                state={settled.depositReturn}
+                reference={settled.depositReturnRef}
+                value={returnRef}
+                onChange={setReturnRef}
+                isPending={isPending}
+                onSubmit={() =>
+                  void run(
+                    () =>
+                      recordDepositReturn({
+                        bookingId: row.bookingId,
+                        returnRef,
+                      }),
+                    "Deposit return recorded. The renter has been told."
+                  )
+                }
+              />
+            </ul>
+
+            {settled.notes && (
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                {settled.notes}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </Card>
   );
 }
@@ -254,29 +282,46 @@ function TransferRow({
 }: TransferRowProps) {
   if (state.kind === "nothing-to-send") {
     return (
-      <p className="text-muted-foreground text-xs">{label}: nothing to send.</p>
+      <li className="text-muted-foreground flex items-center gap-2 px-3.5 py-2.5 text-xs">
+        <MinusIcon className="size-3.5 shrink-0" aria-hidden="true" />
+        {`${label}: nothing to send.`}
+      </li>
     );
   }
 
   if (state.kind === "sent") {
     return (
-      <p className="text-muted-foreground text-xs">
-        {`${label}: ${formatPKR(state.amount)} sent on ${formatDate(state.at)}${reference ? `, ref ${reference}` : ""}.`}
-      </p>
+      <li className="flex items-start gap-2 px-3.5 py-2.5 text-xs">
+        <CheckIcon
+          className="text-success mt-0.5 size-3.5 shrink-0"
+          aria-hidden="true"
+        />
+        <span className="text-muted-foreground">
+          {`${label}: ${formatPKR(state.amount)} sent on ${formatDate(state.at)}${reference ? `, ref ${reference}` : ""}.`}
+        </span>
+      </li>
     );
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium">
-        {`${label}: ${formatPKR(state.amount)} to send`}
-      </label>
+    <li className="flex flex-col gap-2 px-3.5 py-3">
+      {/*
+        Not a <label>: the input carries its own accessible name below, which says what the
+        reference is for, and a second competing name would only make it ambiguous.
+      */}
+      <p className="text-sm font-medium">
+        {`${label}: `}
+        <span className="font-heading tabular-nums">
+          {formatPKR(state.amount)}
+        </span>
+        {" to send"}
+      </p>
 
       <div className="flex flex-wrap items-center gap-2">
         <Input
           aria-label={`${label} transfer reference`}
           placeholder="Transfer reference"
-          className="max-w-56"
+          className="max-w-56 font-mono"
           maxLength={TRANSACTION_REF_MAX}
           value={value}
           disabled={isPending}
@@ -294,7 +339,7 @@ function TransferRow({
           Record as sent
         </Button>
       </div>
-    </div>
+    </li>
   );
 }
 

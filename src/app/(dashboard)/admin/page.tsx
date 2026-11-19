@@ -1,7 +1,12 @@
 import {
+  ArrowRightIcon,
+  BanknoteIcon,
   BarChart3Icon,
   CalendarSearchIcon,
+  ChevronRightIcon,
   FlagIcon,
+  HandCoinsIcon,
+  IdCardIcon,
   PackageSearchIcon,
   ScaleIcon,
   UsersIcon,
@@ -9,16 +14,19 @@ import {
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { PageHeader } from "@/components/dashboard/page-header";
+import { AwaitingBadge } from "@/components/admin/attention";
 import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
-import { StatCard } from "@/components/dashboard/stat-card";
+import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth/session";
 import { getAwaitingActionBookingCount } from "@/lib/queries/admin-bookings";
+import { getPendingVerificationCount } from "@/lib/queries/admin-payments";
 import { getOpenClaimCount } from "@/lib/queries/claims";
+import { countPendingIdentityDocuments } from "@/lib/queries/identity-documents";
 import { getPendingReportCount } from "@/lib/queries/reports";
+import { cn } from "@/lib/utils/cn";
 
 import type { LucideIcon } from "lucide-react";
 import type { Metadata } from "next";
@@ -39,10 +47,12 @@ export const metadata: Metadata = {
  * that opens with a growth chart buries the two reports waiting for somebody, and an administrator
  * signing in wants to know whether anything is owed a decision before anything else.
  *
- * ONLY REPORTS AND CLAIMS ARE COUNTED AS DECISIONS. Both are queues where a person is waiting on the
- * platform. Bookings awaiting a party are shown as context rather than as work, because nobody here
- * can act on them - see the note in `queries/admin-bookings.ts` on why booking oversight is
- * read-only.
+ * ONLY QUEUES WHERE A PERSON WAITS ON THE PLATFORM ARE COUNTED AS DECISIONS - reports, disputed
+ * claims, recorded payments and CNIC submissions. Bookings awaiting a party are shown as context
+ * rather than as work, because nobody here can act on them - see the note in
+ * `queries/admin-bookings.ts` on why booking oversight is read-only. Settlements are linked but not
+ * counted: there is no count query for them, and paging the queue to get one would cost a full read
+ * on every visit to this page.
  *
  * THE SKELETON IS IN-PAGE, NOT A ROUTE-LEVEL `loading.tsx`. There used to be one here, and it broke
  * a route several segments below it: a `loading.tsx` covers its own segment *and everything nested
@@ -53,7 +63,7 @@ export const metadata: Metadata = {
  */
 export default function AdminPage() {
   return (
-    <Suspense fallback={<DashboardPageSkeleton withStats cards={2} />}>
+    <Suspense fallback={<DashboardPageSkeleton withStats cards={1} />}>
       <AdminHome />
     </Suspense>
   );
@@ -73,14 +83,26 @@ async function AdminHome() {
    * whose response window has lapsed moves it into *this* queue, and a count taken without it is
    * simply wrong - it would hide claims that nobody is going to decide because nobody was told they
    * were ready.
+   *
+   * The payment and CNIC counts are plain reads with the same predicate as their queues' default
+   * views, so the number on a tile is the number of cards behind it.
    */
-  const [pendingReports, claimsToDecide, bookingsAwaiting] = await Promise.all([
+  const [
+    pendingReports,
+    claimsToDecide,
+    paymentsToCheck,
+    cnicsToReview,
+    bookingsAwaiting,
+  ] = await Promise.all([
     getPendingReportCount(),
     getOpenClaimCount(),
+    getPendingVerificationCount(),
+    countPendingIdentityDocuments(),
     getAwaitingActionBookingCount(),
   ]);
 
-  const decisions = pendingReports + claimsToDecide;
+  const decisions =
+    pendingReports + claimsToDecide + paymentsToCheck + cnicsToReview;
 
   return (
     <>
@@ -90,73 +112,90 @@ async function AdminHome() {
       */}
       <PageHeader
         title="Admin"
-        description="Moderation and platform administration."
+        description="What is waiting on you first, then everything else."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href="/admin/analytics" />}
+          >
+            <BarChart3Icon aria-hidden="true" />
+            Analytics
+          </Button>
+        }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard
-          label="Reports to decide"
-          value={pendingReports.toLocaleString()}
-          icon={FlagIcon}
-          hint={
-            pendingReports === 0
-              ? "The queue is clear"
-              : "Someone reported a listing, member or review"
-          }
-        />
-        <StatCard
-          label="Claims to decide"
-          value={claimsToDecide.toLocaleString()}
-          icon={ScaleIcon}
-          hint={
-            claimsToDecide === 0
-              ? "No disputed deposits"
-              : "A deposit is held pending your decision"
-          }
-        />
-        <StatCard
-          label="Bookings awaiting a party"
-          value={bookingsAwaiting.toLocaleString()}
-          icon={CalendarSearchIcon}
-          // Context, not a task. Named as such, so nobody goes looking for the button.
-          hint="Waiting on a renter or owner, not on you"
-        />
-      </div>
+      <section
+        aria-labelledby="waiting-heading"
+        className="flex flex-col gap-4"
+      >
+        <div className="flex flex-col gap-0.5">
+          <h2
+            id="waiting-heading"
+            className="font-heading text-lg font-bold tracking-tight"
+          >
+            {decisions === 0
+              ? "Nothing is waiting on you"
+              : decisions === 1
+                ? "1 thing is waiting on you"
+                : `${decisions} things are waiting on you`}
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Each is a person waiting on the platform. Open a queue to decide.
+          </p>
+        </div>
 
-      <Card>
-        <div className="flex flex-col gap-3 px-(--card-spacing)">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-heading text-lg font-semibold tracking-tight">
-              {decisions === 0
-                ? "Nothing is waiting on you"
-                : decisions === 1
-                  ? "1 thing is waiting on you"
-                  : `${decisions} things are waiting on you`}
-            </h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              render={<Link href="/admin/analytics" />}
-            >
-              <BarChart3Icon aria-hidden="true" />
-              Analytics
-            </Button>
-          </div>
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <QueueTile
+            icon={FlagIcon}
+            href="/admin/reports"
+            title="Reports to decide"
+            count={pendingReports}
+            hint="A complaint about a listing, a member or a review."
+            clearHint="The queue is clear."
+          />
+          <QueueTile
+            icon={ScaleIcon}
+            href="/admin/claims"
+            title="Claims to decide"
+            count={claimsToDecide}
+            hint="A deposit is held pending your decision."
+            clearHint="No disputed deposits."
+          />
+          <QueueTile
+            icon={BanknoteIcon}
+            href="/admin/payments"
+            title="Payments to check"
+            count={paymentsToCheck}
+            hint="A renter recorded a payment to check against the account."
+            clearHint="Nothing to reconcile."
+          />
+          <QueueTile
+            icon={IdCardIcon}
+            href="/admin/verifications"
+            title="CNICs to review"
+            count={cnicsToReview}
+            hint="A member uploaded their CNIC to be checked."
+            clearHint="No submissions waiting."
+          />
+        </ul>
+      </section>
 
-          <ul className="flex flex-col gap-2">
+      <section aria-labelledby="tools-heading" className="flex flex-col gap-4">
+        <h2
+          id="tools-heading"
+          className="font-heading text-lg font-bold tracking-tight"
+        >
+          Look something up
+        </h2>
+
+        <Card className="py-0">
+          <ul className="divide-y">
             <Destination
-              icon={FlagIcon}
-              href="/admin/reports"
-              title="Reports"
-              description="Decide a complaint about a listing, a member or a review. Every decision and its consequence land in one transaction."
-              count={pendingReports}
-            />
-            <Destination
-              icon={ScaleIcon}
-              href="/admin/claims"
-              title="Deposit claims"
-              description="Settle a damage claim against a security deposit, with both sides' photographs and the return condition record."
-              count={claimsToDecide}
+              icon={HandCoinsIcon}
+              href="/admin/settlements"
+              title="Settlements"
+              description="Finished rentals to settle, and the payouts and deposit returns still to send."
             />
             <Destination
               icon={UsersIcon}
@@ -175,13 +214,93 @@ async function AdminHome() {
               href="/admin/bookings"
               title="Bookings"
               description="Look up a rental and read everything recorded about it. Read-only — each step belongs to the renter or the owner."
-              count={bookingsAwaiting}
-              countIsContext
+              // Context, not a task. Named as such, so nobody goes looking for the button.
+              context={
+                bookingsAwaiting > 0
+                  ? `${bookingsAwaiting.toLocaleString()} awaiting a party`
+                  : undefined
+              }
             />
           </ul>
-        </div>
-      </Card>
+        </Card>
+      </section>
     </>
+  );
+}
+
+interface QueueTileProps {
+  icon: LucideIcon;
+  href: string;
+  title: string;
+  count: number;
+  /** What one item in the queue is, shown while anything is waiting. */
+  hint: string;
+  /** Shown instead when the queue is empty. */
+  clearHint: string;
+}
+
+/**
+ * One decision queue: how many are waiting, and the way in.
+ *
+ * A whole-tile link rather than a `StatCard` beside a separate list of links - the number and the
+ * place to act on it were two screens of scroll apart. Amber edge and badge when anything waits, so
+ * a row of four reads at a glance; the count is in the accessible name, so it does not depend on
+ * the colour. It lifts on hover like every whole-card link in the dashboard.
+ */
+function QueueTile({
+  icon: Icon,
+  href,
+  title,
+  count,
+  hint,
+  clearHint,
+}: QueueTileProps) {
+  const waiting = count > 0;
+
+  return (
+    <li className="min-w-0">
+      <Link
+        href={href}
+        className={cn(
+          "group bg-card focus-visible:ring-ring hover-lift flex h-full flex-col gap-3 rounded-2xl border p-5 outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+          waiting ? "border-warning/60" : "hover:border-brand/30"
+        )}
+      >
+        <div className="flex items-center justify-between gap-2">
+          {/* Amber tile when something waits, mint when the queue is clear - the same pairing
+              `StatCard` uses for "attention", so a waiting queue reads alike on both overviews. */}
+          <span
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-xl",
+              waiting
+                ? "bg-warning-soft text-warning-soft-foreground"
+                : "bg-brand-soft text-brand"
+            )}
+            aria-hidden="true"
+          >
+            <Icon className="size-5" strokeWidth={1.75} />
+          </span>
+          {waiting && <AwaitingBadge label="Waiting" />}
+        </div>
+
+        <span className="flex flex-col gap-0.5">
+          <span className="text-muted-foreground text-sm font-medium">
+            {title}
+          </span>
+          <span className="font-heading text-3xl font-bold tracking-[-0.025em] tabular-nums">
+            {count.toLocaleString()}
+          </span>
+        </span>
+
+        <span className="text-muted-foreground mt-auto flex items-end justify-between gap-2 text-xs leading-relaxed">
+          {waiting ? hint : clearHint}
+          <ArrowRightIcon
+            className="text-foreground group-hover:text-brand size-3.5 shrink-0 transition-[color,transform] group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
+        </span>
+      </Link>
+    </li>
   );
 }
 
@@ -190,46 +309,49 @@ interface DestinationProps {
   href: string;
   title: string;
   description: string;
-  count?: number;
   /**
-   * Whether the count is something to know rather than something to do.
+   * Something to know rather than something to do - bookings waiting on their parties.
    *
-   * A badge that looks identical for "two reports await your decision" and "two rentals are between
-   * two other people" trains an administrator to ignore both.
+   * Shown as a neutral outline badge, never the amber of the queues above: a badge that looks
+   * identical for "two reports await your decision" and "two rentals are between two other people"
+   * trains an administrator to ignore both.
    */
-  countIsContext?: boolean;
+  context?: string | undefined;
 }
 
-/** One admin surface, with what it is for and whether anything is waiting there. */
+/** One admin surface, with what it is for. */
 function Destination({
   icon: Icon,
   href,
   title,
   description,
-  count,
-  countIsContext,
+  context,
 }: DestinationProps) {
   return (
     <li>
       <Link
         href={href}
-        className="hover:bg-muted/50 flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors"
+        className="group hover:bg-muted/50 focus-visible:ring-ring flex items-center gap-3.5 px-(--card-spacing) py-4 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset"
       >
-        <Icon
-          className="text-muted-foreground mt-0.5 size-4 shrink-0"
+        <span
+          className="bg-brand-soft text-brand flex size-9 shrink-0 items-center justify-center rounded-xl"
           aria-hidden="true"
-        />
+        >
+          <Icon className="size-[1.125rem]" strokeWidth={1.75} />
+        </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-sm font-medium">{title}</span>
+          <span className="flex flex-wrap items-center gap-2 text-sm font-medium">
+            {title}
+            {context && <Badge variant="outline">{context}</Badge>}
+          </span>
           <span className="text-muted-foreground text-xs leading-relaxed">
             {description}
           </span>
         </div>
-        {count !== undefined && count > 0 && (
-          <Badge variant={countIsContext ? "outline" : "destructive"}>
-            {count}
-          </Badge>
-        )}
+        <ChevronRightIcon
+          className="text-muted-foreground group-hover:text-foreground size-4 shrink-0 transition-[color,transform] group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
       </Link>
     </li>
   );

@@ -1,11 +1,13 @@
 import { ClockAlertIcon, ScaleIcon } from "lucide-react";
 import Link from "next/link";
 
+import { AttentionNote, AwaitingBadge } from "@/components/admin/attention";
 import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { BookingStatus, UserStatus } from "@/generated/prisma/enums";
+import { ClaimStatus, UserStatus } from "@/generated/prisma/enums";
 import { describeDepositState } from "@/lib/bookings/deposit";
+import { bookingBadge } from "@/lib/bookings/status-badge";
 import { BOOKING_STATUS_LABELS } from "@/lib/bookings/timeline";
 import { CLAIM_STATUS_LABELS } from "@/lib/claims/rules";
 import { formatPKR } from "@/lib/utils/currency";
@@ -35,83 +37,102 @@ interface AdminBookingCardProps {
  */
 function AdminBookingCard({ booking }: AdminBookingCardProps) {
   return (
-    <Card>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/admin/bookings/${booking.id}`}
-            className="font-heading decoration-foreground/30 text-base leading-snug font-semibold underline-offset-4 hover:underline"
-          >
-            {booking.listing.title}
-          </Link>
+    <Card size="sm">
+      <div className="flex flex-col gap-2.5 px-(--card-spacing)">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <Link
+              href={`/admin/bookings/${booking.id}`}
+              className="font-heading decoration-foreground/30 text-base leading-snug font-semibold break-words underline-offset-4 hover:underline"
+            >
+              {booking.listing.title}
+            </Link>
+            <p className="text-muted-foreground text-sm">
+              <PartyLink party={booking.renter} role="renter" /> renting from{" "}
+              <PartyLink party={booking.owner} role="owner" />
+            </p>
+          </div>
 
-          <StatusLabel
-            variant={
-              booking.status === BookingStatus.ACTIVE
-                ? "default"
-                : booking.status === BookingStatus.PENDING
-                  ? "secondary"
-                  : "outline"
-            }
-            label={BOOKING_STATUS_LABELS[booking.status]}
-          />
+          <div className="flex flex-wrap items-center gap-1.5">
+            {/*
+              A request the 48-hour window has already passed. Reported rather than swept: expiring it
+              here would notify both parties and release the calendar as a side effect of somebody
+              looking at a support screen. See `isPastPendingWindow`. Overdue is a warning, not a
+              failure - nothing has gone wrong yet.
+            */}
+            {booking.isPastPendingWindow && (
+              <AwaitingBadge
+                icon={ClockAlertIcon}
+                label="Past the 48h window"
+              />
+            )}
 
-          {/*
-            A request the 48-hour window has already passed. Reported rather than swept: expiring it
-            here would notify both parties and release the calendar as a side effect of somebody
-            looking at a support screen. See `isPastPendingWindow`.
-          */}
-          {booking.isPastPendingWindow && (
-            <Badge variant="destructive">
-              <ClockAlertIcon className="size-3" aria-hidden="true" />
-              past the 48h window
-            </Badge>
-          )}
+            {booking.claimStatus &&
+              (claimNeedsAttention(booking.claimStatus) ? (
+                <AwaitingBadge
+                  icon={ScaleIcon}
+                  label={CLAIM_STATUS_LABELS[booking.claimStatus]}
+                />
+              ) : (
+                <Badge variant="outline">
+                  <ScaleIcon aria-hidden="true" />
+                  {CLAIM_STATUS_LABELS[booking.claimStatus]}
+                </Badge>
+              ))}
 
-          {booking.claimStatus && (
-            <Badge variant="destructive">
-              <ScaleIcon className="size-3" aria-hidden="true" />
-              {CLAIM_STATUS_LABELS[booking.claimStatus]}
-            </Badge>
-          )}
+            {/*
+              The admin-neutral label rather than the parties' ("Awaiting owner"), with the variant
+              from the shared mapper so a state reads the same here as on the parties' screens.
+            */}
+            <StatusLabel
+              variant={bookingBadge(booking.status, null).variant}
+              label={BOOKING_STATUS_LABELS[booking.status]}
+            />
+          </div>
         </div>
 
-        <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <div className="text-muted-foreground flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
+          <span className="font-heading text-foreground text-sm font-semibold tabular-nums">
+            {formatPKR(booking.totalPrice)}
+          </span>
+          <span className="tabular-nums">
+            deposit {formatPKR(booking.securityDeposit)}
+          </span>
           <span>
             {formatDate(booking.startDate)} — {formatDate(booking.endDate)}
           </span>
           <span>{formatCity(booking.listing.city)}</span>
-          <span className="text-foreground font-medium">
-            {formatPKR(booking.totalPrice)}
-          </span>
-          <span>deposit {formatPKR(booking.securityDeposit)}</span>
           <span>requested {formatDate(booking.createdAt)}</span>
         </div>
-
-        <p className="text-muted-foreground text-sm">
-          <PartyLink party={booking.renter} role="renter" /> renting from{" "}
-          <PartyLink party={booking.owner} role="owner" />
-        </p>
 
         {/*
           The deposit sentence only where there is something to say. "Not due back yet" on every
           pending request would push the states that matter - overdue, claimed - into the noise.
         */}
         {booking.deposit.kind !== "none" &&
-          booking.deposit.kind !== "not-due" && (
-            <p
-              className={
-                booking.deposit.kind === "overdue"
-                  ? "text-destructive text-xs font-medium"
-                  : "text-muted-foreground text-xs"
-              }
-            >
+          booking.deposit.kind !== "not-due" &&
+          (booking.deposit.kind === "overdue" ? (
+            <AttentionNote>
+              {describeDepositState(booking.deposit)}
+            </AttentionNote>
+          ) : (
+            <p className="text-muted-foreground text-xs">
               {describeDepositState(booking.deposit)}
             </p>
-          )}
+          ))}
       </div>
     </Card>
   );
+}
+
+/**
+ * Whether a claim on this booking is still open - with the renter or with an administrator.
+ *
+ * Those two are amber; a decided, agreed or withdrawn claim is history and stays neutral. Red was
+ * used for all five, which made a claim settled months ago look like an emergency.
+ */
+function claimNeedsAttention(status: ClaimStatus): boolean {
+  return status === ClaimStatus.OPEN || status === ClaimStatus.DISPUTED;
 }
 
 /**

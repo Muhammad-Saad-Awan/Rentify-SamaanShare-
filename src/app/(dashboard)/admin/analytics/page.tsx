@@ -110,57 +110,46 @@ async function Analytics() {
 
       <Card>
         <div className="flex flex-col gap-3 px-(--card-spacing)">
-          <h2 className="font-heading text-base font-medium">Money</h2>
+          <h2 className="font-heading text-base font-semibold tracking-tight">
+            Money
+          </h2>
 
-          <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
-            <div>
-              <dt className="text-muted-foreground text-xs">
-                Recorded rent, realised
-              </dt>
-              <dd className="font-heading text-lg font-semibold">
-                {formatPKR(money.realisedGmv)}
-              </dd>
-              <p className="text-muted-foreground text-xs">
-                Bookings that reached collection or completion.
-              </p>
-            </div>
-            <div>
-              <dt className="text-muted-foreground text-xs">
-                Committed, not started
-              </dt>
-              <dd className="font-heading text-lg font-semibold">
-                {formatPKR(money.pipelineGmv)}
-              </dd>
-              <p className="text-muted-foreground text-xs">
-                Approved or awaiting payment. Never added to the figure above.
-              </p>
-            </div>
-            <div>
-              <dt className="text-muted-foreground text-xs">
-                Deposits at stake
-              </dt>
-              <dd className="font-heading text-lg font-semibold">
-                {formatPKR(money.depositsAtStake)}
-              </dd>
-              <p className="text-muted-foreground text-xs">
-                Renters&apos; money sitting with owners on rentals that started.
-              </p>
-            </div>
+          {/*
+            Each figure with its definition as a second <dd> - a paragraph is not allowed directly
+            inside a <dl> group, and the definition belongs to the term as much as the number does.
+          */}
+          <dl className="bg-border grid gap-px overflow-hidden rounded-xl border sm:grid-cols-3">
+            <MoneyFigure
+              label="Recorded rent, realised"
+              value={formatPKR(money.realisedGmv)}
+              definition="Bookings that reached collection or completion."
+            />
+            <MoneyFigure
+              label="Committed, not started"
+              value={formatPKR(money.pipelineGmv)}
+              definition="Approved or awaiting payment. Never added to the figure above."
+            />
+            <MoneyFigure
+              label="Deposits at stake"
+              value={formatPKR(money.depositsAtStake)}
+              definition="Renters' deposits held by SamaanShare on rentals that started."
+            />
           </dl>
 
           {/*
-            THE PARAGRAPH THAT KEEPS THESE NUMBERS HONEST. Payment is offline: the money moves between
-            two people, the platform charges nothing and has never seen any of it. "GMV" on a
-            dashboard is normally read as revenue, and somebody will quote this to an investor or a
-            renter - so what it is and is not is stated beside it rather than in a comment.
+            THE PARAGRAPH THAT KEEPS THESE NUMBERS HONEST. The renter pays SamaanShare, but the
+            commission is zero (COMMISSION_RATE_BPS): rent is passed on to the owner at settlement and
+            the deposit goes back to the renter. "GMV" on a dashboard is normally read as revenue, and
+            somebody will quote this to an investor or a renter - so what it is and is not is stated
+            beside it rather than in a comment.
           */}
-          <p className="text-muted-foreground text-xs leading-relaxed">
-            None of this is revenue and none of it passed through SamaanShare.
-            Payment is offline — cash or a bank transfer directly between the
-            two parties — so these are amounts <em>recorded on bookings</em>,
-            not money the platform has seen, held or verified. Deposits are
-            excluded from the rent figures because they are returned; requests
-            still awaiting an owner are excluded because they are not yet a
+          <p className="text-muted-foreground max-w-[80ch] text-xs leading-relaxed">
+            None of this is revenue. Renters pay SamaanShare, but no commission
+            is taken today: rent is paid out to owners at settlement and
+            deposits go back to renters, so these are amounts{" "}
+            <em>recorded on bookings</em>, not earnings. Deposits are excluded
+            from the rent figures because they are returned; requests still
+            awaiting an owner are excluded because they are not yet a
             commitment.
           </p>
         </div>
@@ -169,7 +158,7 @@ async function Analytics() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <div className="flex flex-col gap-2 px-(--card-spacing)">
-            <h2 className="font-heading text-sm font-medium">
+            <h2 className="font-heading text-base font-semibold tracking-tight">
               Members by standing
             </h2>
             <Breakdown
@@ -186,7 +175,7 @@ async function Analytics() {
 
         <Card>
           <div className="flex flex-col gap-2 px-(--card-spacing)">
-            <h2 className="font-heading text-sm font-medium">
+            <h2 className="font-heading text-base font-semibold tracking-tight">
               Listings by status
             </h2>
             <Breakdown
@@ -217,7 +206,7 @@ async function Analytics() {
 
         <Card>
           <div className="flex flex-col gap-2 px-(--card-spacing)">
-            <h2 className="font-heading text-sm font-medium">
+            <h2 className="font-heading text-base font-semibold tracking-tight">
               Bookings by state
             </h2>
             <Breakdown
@@ -245,7 +234,9 @@ async function Analytics() {
 
       <Card>
         <div className="flex flex-col gap-4 px-(--card-spacing)">
-          <h2 className="font-heading text-base font-medium">By city</h2>
+          <h2 className="font-heading text-base font-semibold tracking-tight">
+            By city
+          </h2>
 
           {/*
             Two charts rather than two scales on one. Listings and rupees are different measures, and
@@ -288,12 +279,12 @@ async function Analytics() {
       <Card>
         <div className="flex flex-col gap-3 px-(--card-spacing)">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-heading text-base font-medium">
+            <h2 className="font-heading text-base font-semibold tracking-tight">
               Recent activity
             </h2>
             <Link
               href="/admin"
-              className="text-muted-foreground text-xs underline-offset-4 hover:underline"
+              className="text-xs font-medium underline underline-offset-4"
             >
               What needs attention
             </Link>
@@ -315,13 +306,41 @@ async function Analytics() {
  */
 function Breakdown({ rows }: { rows: readonly [string, number][] }) {
   return (
-    <dl className="flex flex-col gap-1 text-xs">
+    <dl className="flex flex-col divide-y text-sm">
       {rows.map(([label, value]) => (
-        <div key={label} className="flex items-baseline justify-between gap-2">
+        <div
+          key={label}
+          className="flex items-baseline justify-between gap-2 py-1.5 first:pt-0 last:pb-0"
+        >
           <dt className="text-muted-foreground">{label}</dt>
-          <dd className="font-medium tabular-nums">{value.toLocaleString()}</dd>
+          <dd className="font-heading font-semibold tabular-nums">
+            {value.toLocaleString()}
+          </dd>
         </div>
       ))}
     </dl>
+  );
+}
+
+/** One money figure: what it is, the amount, and what it does and does not include. */
+function MoneyFigure({
+  label,
+  value,
+  definition,
+}: {
+  label: string;
+  value: string;
+  definition: string;
+}) {
+  return (
+    <div className="bg-card flex flex-col gap-1 px-4 py-3">
+      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dd className="font-heading text-xl font-bold tracking-tight tabular-nums">
+        {value}
+      </dd>
+      <dd className="text-muted-foreground text-xs leading-relaxed">
+        {definition}
+      </dd>
+    </div>
   );
 }

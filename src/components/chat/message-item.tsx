@@ -47,8 +47,10 @@ function MessageItem({
 
   if (message.kind === MessageKind.SYSTEM) {
     return (
-      <div className="my-2 flex justify-center px-2">
-        <p className="text-muted-foreground flex max-w-md items-start gap-2 rounded-lg border border-dashed px-3 py-2 text-xs leading-relaxed">
+      // The platform speaking: centred, on a muted wash, set apart from both people's bubbles. A solid
+      // wash rather than a dashed outline, which reads as unfinished.
+      <div className="my-4 flex justify-center px-2">
+        <p className="bg-card text-muted-foreground flex max-w-md items-start gap-2 rounded-xl border px-3.5 py-2.5 text-xs leading-relaxed">
           <InfoIcon className="mt-px size-3.5 shrink-0" aria-hidden="true" />
           <span>
             {message.body}
@@ -65,7 +67,7 @@ function MessageItem({
   const meta = isLastInGroup && (
     <span
       className={cn(
-        "text-muted-foreground flex items-center gap-1 text-[11px]",
+        "text-muted-foreground flex items-center gap-1 text-xs",
         isOwn ? "justify-end pr-1" : "pl-1"
       )}
     >
@@ -73,9 +75,10 @@ function MessageItem({
       {isOwn &&
         (isSeen ? (
           <>
-            {/* Seen is the darker, doubled tick - legible without colour. */}
+            {/* Seen is the doubled tick - legible without colour; emerald only reinforces it
+                (`--brand` on the page, 5.24:1). */}
             <CheckCheckIcon
-              className="text-foreground size-3.5"
+              className="text-brand size-3.5"
               aria-hidden="true"
             />
             <span className="sr-only">Seen</span>
@@ -126,13 +129,16 @@ function MessageItem({
         ) : (
           <p
             className={cn(
-              "rounded-[1.125rem] px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap",
+              "rounded-2xl px-4 py-2.5 text-sm leading-relaxed break-words whitespace-pre-wrap",
+              // The viewer's own words in emerald (white on `--brand`, 5.48:1), the other person's on
+              // a white card with an edge - the side and the shape say who spoke as much as the
+              // colour does, and the screen-reader prefix says it in words.
               isOwn
-                ? "bg-primary text-primary-foreground"
-                : "bg-background text-foreground border",
+                ? "bg-brand text-brand-foreground"
+                : "bg-card text-foreground border shadow-xs",
               // The tail: the corner nearest the sender squares off on the last bubble of a run.
-              isOwn && isLastInGroup && "rounded-br-sm",
-              !isOwn && isLastInGroup && "rounded-bl-sm"
+              isOwn && isLastInGroup && "rounded-br-md",
+              !isOwn && isLastInGroup && "rounded-bl-md"
             )}
           >
             <span className="sr-only">{sender}: </span>

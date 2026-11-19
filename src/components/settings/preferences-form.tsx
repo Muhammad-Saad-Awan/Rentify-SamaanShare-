@@ -8,6 +8,7 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { updatePreferences } from "@/actions/preferences";
+import { FormAlert } from "@/components/ui/form-alert";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -16,6 +17,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { PAKISTANI_CITIES } from "@/config/cities";
 import {
@@ -25,10 +27,6 @@ import {
 
 import type { PreferencesFormValues } from "@/lib/validations/preferences";
 import type { Control } from "react-hook-form";
-
-/** Matches `Input`'s tokens so the native select sits flush beside one. */
-const SELECT_CLASS =
-  "border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 dark:bg-input/30 h-10 w-full rounded-lg border bg-background px-3 py-1 text-sm transition-colors outline-none focus-visible:ring-3";
 
 interface PreferencesFormProps {
   defaults: PreferencesFormValues;
@@ -83,21 +81,14 @@ function PreferencesForm({ defaults }: PreferencesFormProps) {
       className="flex flex-col gap-6"
       noValidate
     >
-      {formError && (
-        <div
-          role="alert"
-          className="border-destructive/30 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-sm"
-        >
-          {formError}
-        </div>
-      )}
+      {formError && <FormAlert tone="error">{formError}</FormAlert>}
 
       <FieldGroup>
         <Field data-invalid={Boolean(errors.defaultCity)}>
           <FieldLabel htmlFor="defaultCity">Default city</FieldLabel>
-          <select
+          <NativeSelect
             id="defaultCity"
-            className={SELECT_CLASS}
+            className="sm:max-w-sm"
             aria-invalid={Boolean(errors.defaultCity)}
             disabled={isSubmitting}
             {...form.register("defaultCity")}
@@ -108,7 +99,7 @@ function PreferencesForm({ defaults }: PreferencesFormProps) {
                 {city.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <FieldDescription>
             Where browsing starts. Opening Listings takes you to this city, and
             you can still switch to any other city, or to all of them, from the
@@ -118,12 +109,14 @@ function PreferencesForm({ defaults }: PreferencesFormProps) {
         </Field>
       </FieldGroup>
 
-      <fieldset className="flex flex-col gap-4 border-t pt-4">
+      <fieldset className="flex flex-col gap-4 border-t pt-6">
         <legend className="sr-only">Notifications</legend>
 
         <div className="flex flex-col gap-1">
-          <h3 className="font-heading text-sm font-medium">Notifications</h3>
-          <p className="text-muted-foreground text-xs">
+          <h3 className="font-heading text-base font-semibold tracking-tight">
+            Notifications
+          </h3>
+          <p className="text-muted-foreground max-w-[65ch] text-sm leading-relaxed">
             Everything else SamaanShare sends - booking requests, approvals,
             payments, deposit claims - cannot be switched off. Each one is the
             only record you get of something changing about your money or your
@@ -131,25 +124,34 @@ function PreferencesForm({ defaults }: PreferencesFormProps) {
           </p>
         </div>
 
-        <SwitchField
-          control={form.control}
-          name="notifyReviewReminders"
-          label="Review reminders"
-          description="A nudge to review the other person after a rental finishes."
-          disabled={isSubmitting}
-        />
+        <div className="divide-y rounded-xl border">
+          <SwitchField
+            control={form.control}
+            name="notifyReviewReminders"
+            label="Review reminders"
+            description="A nudge to review the other person after a rental finishes."
+            disabled={isSubmitting}
+          />
 
-        <SwitchField
-          control={form.control}
-          name="notifyReviewPublished"
-          label="Review published"
-          description="Tells you when your review and theirs both go public."
-          disabled={isSubmitting}
-        />
+          <SwitchField
+            control={form.control}
+            name="notifyReviewPublished"
+            label="Review published"
+            description="Tells you when your review and theirs both go public."
+            disabled={isSubmitting}
+          />
+        </div>
       </fieldset>
 
-      <div className="flex justify-end border-t pt-4">
-        <Button type="submit" disabled={isSubmitting || !isDirty}>
+      <div className="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-end">
+        {!isDirty && !isSubmitting && (
+          <p className="text-muted-foreground text-xs">No unsaved changes.</p>
+        )}
+        <Button
+          type="submit"
+          className="w-full sm:w-auto"
+          disabled={isSubmitting || !isDirty}
+        >
           {isSubmitting ? (
             <>
               <Loader2Icon className="animate-spin" />
@@ -203,8 +205,8 @@ function SwitchField({
       control={control}
       name={name}
       render={({ field }) => (
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-0.5">
+        <div className="flex items-start justify-between gap-4 px-4 py-3.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <label id={labelId} htmlFor={name} className="text-sm font-medium">
               {label}
             </label>

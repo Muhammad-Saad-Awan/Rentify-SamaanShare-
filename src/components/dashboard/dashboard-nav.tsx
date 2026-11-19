@@ -64,10 +64,12 @@ function DashboardNav({ role, onNavigate, badges }: DashboardNavProps) {
                     // cannot infer it from the background colour alone.
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "group/nav focus-visible:ring-sidebar-ring relative flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm transition-colors outline-none focus-visible:ring-2",
+                      "group/nav focus-visible:ring-sidebar-ring relative flex h-10 items-center gap-3 rounded-xl px-3 text-sm transition-colors outline-none focus-visible:ring-2",
+                      // Mint surface plus an emerald bar and a heavier weight, so the active
+                      // section is not signalled by colour alone (`aria-current` covers AT).
                       isActive
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
-                        : "text-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        ? "bg-brand-soft text-brand-soft-foreground before:bg-brand [&_svg]:text-brand font-semibold before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r-full"
+                        : "text-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     )}
                   >
                     <Icon className="size-4 shrink-0" aria-hidden="true" />

@@ -41,6 +41,7 @@ async function NotificationBell({ userId }: NotificationBellProps) {
 
   const items: NotificationPanelItem[] = recent.map((item) => ({
     id: item.id,
+    type: item.type,
     title: item.title,
     body: item.body,
     timeAgo: formatRelativeTime(item.createdAt, now),

@@ -17,6 +17,8 @@ import type { FormEvent } from "react";
 
 interface HeaderSearchProps {
   className?: string;
+  /** Set when the field is revealed by a click, so typing can start straight away. */
+  autoFocus?: boolean;
 }
 
 /**
@@ -42,7 +44,7 @@ interface HeaderSearchProps {
  * would only make sense with it - a subcategory - is dropped by the serializer, so
  * no orphaned parameter survives the hop to `/listings`.
  */
-function HeaderSearch({ className }: HeaderSearchProps) {
+function HeaderSearch({ className, autoFocus = false }: HeaderSearchProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -75,6 +77,10 @@ function HeaderSearch({ className }: HeaderSearchProps) {
         />
 
         <Input
+          // An explicit id: left to Base UI, the generated one differed between the server
+          // render and hydration (this subtree sits under a Suspense boundary for
+          // `useSearchParams`), and React reported a hydration mismatch on every page.
+          id="site-header-search"
           type="search"
           name={FILTER_PARAM.q}
           // Uncontrolled, so typing needs no re-render. The key remounts the
@@ -84,9 +90,10 @@ function HeaderSearch({ className }: HeaderSearchProps) {
           key={filters.q ?? ""}
           defaultValue={filters.q ?? ""}
           maxLength={MAX_QUERY_LENGTH}
-          placeholder="Search listings..."
+          placeholder="Search for items (e.g. camera, laptop, dress...)"
           aria-label="Search listings"
-          className="bg-muted focus-visible:bg-background h-9 border-transparent pl-9"
+          autoFocus={autoFocus}
+          className="bg-card h-11 rounded-xl pl-9"
         />
       </div>
     </form>

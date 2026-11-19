@@ -2,15 +2,15 @@ import { SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { HeaderSearch } from "@/components/layout/header-search";
+import { HeaderSearchToggle } from "@/components/layout/header-search-toggle";
+import { SiteNav } from "@/components/layout/site-nav";
 import { Brand } from "@/components/shared/brand";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { DEFAULT_LOGIN_REDIRECT, LOGIN_ROUTE } from "@/config/routes";
 import { getCurrentUser } from "@/lib/auth/session";
 
 /**
- * Header for the public marketplace.
+ * Header for the public marketplace: wordmark left, nav centred, search and account right.
  *
  * `getCurrentUser()` rather than `requireUser()`: every page under this shell is
  * public, so a missing session is the normal case and must not redirect. It only
@@ -21,75 +21,45 @@ import { getCurrentUser } from "@/lib/auth/session";
  * cached header. Static marketing content that needs to stay static should not
  * sit under this shell.
  *
- * The search field appears from `sm` up. Below that a 14-unit header cannot hold a
- * wordmark, a text input and two account actions without crushing all three, so
- * small screens get an icon linking to the browse page - which has the same search
- * box, full width, plus the filters.
+ * The centred nav appears from `md` up. Below that the header holds the wordmark,
+ * search and the account actions; Browse is one tap away through the search panel
+ * and the homepage itself.
  */
 async function SiteHeader() {
   const user = await getCurrentUser();
 
   return (
-    <header className="bg-background sticky top-0 z-30 border-b">
-      <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-4 sm:gap-5 lg:px-6">
-        <Brand href="/" />
+    <header className="bg-background/90 supports-[backdrop-filter]:bg-background/75 sticky top-0 z-30 backdrop-blur-md">
+      <div className="relative mx-auto grid h-16 w-full max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-2 px-4 sm:h-[4.5rem] lg:px-6">
+        <Brand href="/" className="text-[1.0625rem] sm:text-[1.25rem]" />
 
-        <nav aria-label="Marketplace" className="hidden shrink-0 sm:flex">
-          <Link
-            href="/listings"
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring rounded-md px-2 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2"
-          >
-            Browse
-          </Link>
-        </nav>
+        <SiteNav className="hidden justify-self-center md:block" />
 
-        {/*
-          `useSearchParams()` inside `HeaderSearch` opts its subtree out of static
-          rendering, and Next requires a Suspense boundary for that. Every page
-          under this shell is already dynamic because of the session read above, so
-          the boundary never actually shows - but without it, any attempt to
-          prerender a route in this group (a not-found, for instance) fails the
-          build.
-
-          The fallback is a disabled copy of the same field rather than a spinner,
-          so nothing moves when the real one takes over.
-        */}
-        <Suspense
-          fallback={
-            <div className="hidden min-w-0 flex-1 sm:block sm:max-w-sm">
-              <div className="relative">
-                <SearchIcon
-                  className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-                  aria-hidden="true"
-                />
-                <Input
-                  type="search"
-                  disabled
-                  placeholder="Search listings..."
-                  aria-label="Search listings"
-                  className="bg-muted h-9 border-transparent pl-9"
-                />
-              </div>
-            </div>
-          }
-        >
-          <HeaderSearch className="hidden flex-1 sm:block sm:max-w-sm" />
-        </Suspense>
-
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="col-start-3 flex shrink-0 items-center gap-1.5 sm:gap-2.5">
           {/*
-            The small-screen stand-in for the search field. A link, not a control
-            that expands one, so it needs no state and works before hydration.
+            `useSearchParams()` inside the toggle opts its subtree out of static rendering, and
+            Next requires a Suspense boundary for that. The fallback is a plain link to browse -
+            the same place the search would go - so nothing is dead before hydration.
           */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="sm:hidden"
-            render={<Link href="/listings" />}
+          <Suspense
+            fallback={
+              <Button
+                variant="ghost"
+                size="icon"
+                render={<Link href="/listings" />}
+              >
+                <SearchIcon className="size-[1.15rem]" />
+                <span className="sr-only">Search listings</span>
+              </Button>
+            }
           >
-            <SearchIcon />
-            <span className="sr-only">Search listings</span>
-          </Button>
+            <HeaderSearchToggle />
+          </Suspense>
+
+          <span
+            className="bg-border hidden h-6 w-px sm:block"
+            aria-hidden="true"
+          />
 
           {user ? (
             <Button render={<Link href={DEFAULT_LOGIN_REDIRECT} />}>
@@ -97,13 +67,18 @@ async function SiteHeader() {
             </Button>
           ) : (
             <>
-              <Button variant="ghost" render={<Link href={LOGIN_ROUTE} />}>
-                Sign in
+              <Button
+                variant="outline"
+                className="px-2.5 sm:h-10 sm:px-5"
+                render={<Link href={LOGIN_ROUTE} />}
+              >
+                Login
               </Button>
-              <Button render={<Link href="/register" />}>
-                {/* Shortened below `sm` - "Create account" wraps the row. */}
-                <span className="hidden sm:inline">Create account</span>
-                <span className="sm:hidden">Sign up</span>
+              <Button
+                className="px-2.5 sm:h-10 sm:px-5"
+                render={<Link href="/register" />}
+              >
+                Sign Up
               </Button>
             </>
           )}

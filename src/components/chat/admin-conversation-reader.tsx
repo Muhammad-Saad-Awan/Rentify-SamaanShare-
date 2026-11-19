@@ -116,17 +116,19 @@ function AdminConversationReader({
           read();
         }}
       >
-        <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1 text-xs font-medium">
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1.5 text-xs font-medium">
             I am looking into
           </legend>
           {grounds.map((item) => {
             const key = `${item.kind}:${item.id}`;
 
             return (
+              // The whole row is the target, and it shows which ground is chosen without relying on
+              // the small native radio alone.
               <label
                 key={key}
-                className="flex cursor-pointer items-start gap-2 text-sm"
+                className="has-checked:border-brand has-checked:bg-brand-soft has-focus-visible:ring-ring hover:bg-muted/60 flex cursor-pointer items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm transition-colors has-focus-visible:ring-2"
               >
                 <input
                   type="radio"
@@ -134,7 +136,7 @@ function AdminConversationReader({
                   value={key}
                   checked={groundKey === key}
                   onChange={() => setGroundKey(key)}
-                  className="accent-primary mt-1 size-3.5 shrink-0"
+                  className="accent-brand mt-0.5 size-4 shrink-0"
                 />
                 {item.label}
               </label>
@@ -159,7 +161,6 @@ function AdminConversationReader({
 
         <Button
           type="submit"
-          size="sm"
           className="self-start"
           disabled={isPending || reason.trim().length < ADMIN_VIEW_REASON_MIN}
           aria-busy={isPending}
@@ -188,7 +189,10 @@ function AdminConversationReader({
         </Button>
       )}
 
-      <ol className="flex flex-col gap-3" aria-label="Conversation, read-only">
+      <ol
+        className="bg-background flex flex-col gap-4 rounded-2xl border p-4"
+        aria-label="Conversation, read-only"
+      >
         {messages.length === 0 && (
           <li className="text-muted-foreground text-sm">No messages.</li>
         )}
@@ -221,7 +225,7 @@ function AdminConversationReader({
                 }}
               />
             ) : (
-              <p className="bg-muted rounded-lg px-3 py-2 text-sm break-words whitespace-pre-wrap">
+              <p className="bg-card max-w-[65ch] self-start rounded-2xl rounded-tl-md border px-4 py-2.5 text-sm leading-relaxed break-words whitespace-pre-wrap shadow-xs">
                 {message.body}
               </p>
             )}

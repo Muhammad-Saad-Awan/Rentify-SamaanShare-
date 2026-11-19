@@ -51,7 +51,7 @@ export default async function MyBookingsPage({
 
       <Suspense
         key={String(rawPage ?? 1)}
-        fallback={<DashboardPageSkeleton cards={3} />}
+        fallback={<DashboardPageSkeleton cards={3} variant="row" />}
       >
         <RenterBookings rawPage={rawPage} />
       </Suspense>
@@ -75,10 +75,15 @@ function CheckoutReturnNotice({ outcome }: { outcome: string | undefined }) {
   return (
     <div
       role="status"
-      className="bg-muted/50 mb-4 flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm"
+      className="bg-card animate-fade-up flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-sm"
     >
-      <CreditCardIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-      <p>
+      <span
+        className="bg-brand-soft text-brand flex size-10 shrink-0 items-center justify-center rounded-xl"
+        aria-hidden="true"
+      >
+        <CreditCardIcon className="size-5" strokeWidth={1.75} />
+      </span>
+      <p className="leading-relaxed">
         {outcome === "success"
           ? "Thanks - Stripe is confirming your card payment. The booking below shows it as confirmed as soon as we hear back, usually within a minute."
           : "Card payment cancelled. Nothing was charged. You can try again or pay by bank transfer below."}

@@ -1,11 +1,14 @@
-import { ImageOffIcon, MapPinIcon } from "lucide-react";
-import Image from "next/image";
+import { MapPinIcon } from "lucide-react";
 import Link from "next/link";
 
+import {
+  ListingPhoto,
+  ListingPhotoFallback,
+} from "@/components/marketplace/listing-photo";
 import { SaveListingButton } from "@/components/marketplace/save-listing-button";
 import { HighlightText } from "@/components/shared/highlight-text";
 import { Badge } from "@/components/ui/badge";
-import { formatPKRPerDay } from "@/lib/utils/currency";
+import { formatPKR } from "@/lib/utils/currency";
 import { CONDITION_LABELS, formatCity } from "@/lib/utils/listing";
 
 import type { ListingCardData } from "@/lib/queries/listings";
@@ -49,42 +52,34 @@ function ListingCard({
   isAuthenticated = false,
 }: ListingCardProps) {
   const body = (
-    <div className="flex h-full flex-col gap-3">
+    <div className="bg-card group-hover/listing:shadow-soft group-hover/listing:border-brand/30 flex h-full flex-col gap-3 rounded-2xl border p-2.5 pb-4 transition-[box-shadow,border-color] duration-200">
       <div className="bg-muted relative aspect-4/3 w-full overflow-hidden rounded-xl">
         {listing.imageUrl ? (
-          <Image
+          <ListingPhoto
             src={listing.imageUrl}
             // The title *is* the description of the image here. An empty alt
             // would hide the only identifying text from a screen reader when
             // the card is read as a link.
             alt={listing.title}
-            fill
             // Mirrors the grid's breakpoints below, so the browser does not
             // download a full-width image for a quarter-width slot.
             sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover transition-transform duration-500 ease-out group-hover/listing:scale-[1.03]"
+            className="transition-transform duration-500 ease-out group-hover/listing:scale-[1.05]"
             priority={priority}
           />
         ) : (
-          <div
-            className="text-muted-foreground flex h-full items-center justify-center"
-            // Decorative: the absence of a photo is not information a screen
-            // reader user needs announced.
-            aria-hidden="true"
-          >
-            <ImageOffIcon className="size-6" />
-          </div>
+          <ListingPhotoFallback />
         )}
 
         <Badge
           variant="secondary"
-          className="bg-background/95 absolute top-2.5 right-2.5 border-transparent"
+          className="bg-card/95 text-foreground absolute top-2.5 right-2.5 border-transparent shadow-xs"
         >
           {CONDITION_LABELS[listing.condition]}
         </Badge>
       </div>
 
-      <div className="flex flex-1 flex-col gap-1.5 px-0.5">
+      <div className="flex flex-1 flex-col gap-1.5 px-1.5">
         <div className="flex flex-col gap-0.5">
           <p className="text-muted-foreground text-xs">
             {listing.categoryName}
@@ -115,8 +110,17 @@ function ListingCard({
         )}
 
         <div className="mt-auto flex items-baseline justify-between gap-2 pt-1">
-          <span className="font-heading text-base font-bold tracking-tight">
-            {formatPKRPerDay(listing.pricePerDay)}
+          {/*
+            The amount carries the weight and the unit steps back, so a row of cards reads as a
+            column of prices. One text node per part, but the accessible text is unchanged:
+            "Rs. 300 / day".
+          */}
+          <span className="font-heading text-brand text-base font-bold tracking-tight">
+            {formatPKR(listing.pricePerDay)}
+            <span className="text-muted-foreground font-sans text-xs font-normal tracking-normal">
+              {" "}
+              / day
+            </span>
           </span>
 
           <span className="text-muted-foreground flex min-w-0 items-center gap-1 text-xs">
@@ -136,7 +140,7 @@ function ListingCard({
     <div className="relative h-full">
       <Link
         href={`/listings/${listing.id}`}
-        className="group/listing focus-visible:ring-ring block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-offset-4"
+        className="group/listing focus-visible:ring-ring block h-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       >
         {body}
       </Link>
@@ -147,7 +151,7 @@ function ListingCard({
         listingTitle={listing.title}
         isSaved={isSaved}
         isAuthenticated={isAuthenticated}
-        className="absolute top-2.5 left-2.5 z-10"
+        className="absolute top-5 left-5 z-10"
       />
     </div>
   );

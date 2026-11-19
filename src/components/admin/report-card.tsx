@@ -1,17 +1,24 @@
 "use client";
 
-import { AlertTriangleIcon, Loader2Icon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { dismissReport, resolveReport } from "@/actions/moderation";
+import { AttentionNote, AwaitingBadge } from "@/components/admin/attention";
+import { DecisionPanel } from "@/components/admin/decision-panel";
 import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { ReportAction, ReportStatus } from "@/generated/prisma/enums";
+import {
+  ReportAction,
+  ReportStatus,
+  ReportType,
+} from "@/generated/prisma/enums";
 import {
   REPORT_ACTIONS_BY_TYPE,
   REPORT_ACTION_LABELS,
@@ -84,14 +91,30 @@ function ReportCard({ report }: ReportCardProps) {
 
   return (
     <Card>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{report.type}</Badge>
-          <span className="font-heading text-base font-semibold">
-            {REPORT_REASON_LABELS[report.reason]}
-          </span>
+      <div className="flex flex-col gap-4 px-(--card-spacing)">
+        {/*
+          What is being decided, then who raised it. The state sits on the trailing edge, where every
+          admin queue card keeps it, so a column of cards can be scanned down one side.
+        */}
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">
+                {REPORT_TYPE_LABELS[report.type]}
+              </Badge>
+              <span className="font-heading text-base leading-snug font-semibold">
+                {REPORT_REASON_LABELS[report.reason]}
+              </span>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Reported by {report.reporter.name?.trim() || "a member"} on{" "}
+              {formatDate(report.createdAt)}
+            </p>
+          </div>
 
-          {!isPending && (
+          {isPending ? (
+            <AwaitingBadge label="Awaiting decision" />
+          ) : (
             <StatusLabel
               variant="outline"
               label={
@@ -101,32 +124,32 @@ function ReportCard({ report }: ReportCardProps) {
               }
             />
           )}
-
-          {/*
-            The pattern signal. One complaint is a disagreement; several from several people is the
-            thing a moderator is actually looking for, and it is easy to miss across pages.
-          */}
-          {report.otherReportsOnTarget > 0 && (
-            <span className="text-destructive flex items-center gap-1 text-xs font-medium">
-              <AlertTriangleIcon className="size-3.5" aria-hidden="true" />
-              {report.otherReportsOnTarget} other report
-              {report.otherReportsOnTarget === 1 ? "" : "s"} on this target
-            </span>
-          )}
         </div>
 
-        <TargetPreview target={report.target} />
-
-        {report.description && (
-          <p className="text-foreground/80 border-foreground border-l-2 pl-3 text-sm leading-relaxed">
-            {report.description}
-          </p>
+        {/*
+          The pattern signal. One complaint is a disagreement; several from several people is the
+          thing a moderator is actually looking for, and it is easy to miss across pages.
+        */}
+        {report.otherReportsOnTarget > 0 && (
+          <AttentionNote>
+            <span className="font-medium">
+              {report.otherReportsOnTarget} other report
+              {report.otherReportsOnTarget === 1 ? "" : "s"} on this target.
+            </span>{" "}
+            One complaint is a disagreement; several are a pattern.
+          </AttentionNote>
         )}
 
-        <p className="text-muted-foreground text-xs">
-          Reported by {report.reporter.name?.trim() || "a member"} on{" "}
-          {formatDate(report.createdAt)}
-        </p>
+        {/* The evidence: what was reported, and the reporter's own words. */}
+        <div className="flex flex-col gap-2.5 rounded-xl border px-3.5 py-3">
+          <TargetPreview target={report.target} />
+
+          {report.description && (
+            <p className="text-foreground/80 border-l-2 pl-3 text-sm leading-relaxed whitespace-pre-line">
+              {report.description}
+            </p>
+          )}
+        </div>
 
         {/*
           Where the two of them talked. A link grants nothing - the conversation screen asks for this
@@ -140,7 +163,7 @@ function ReportCard({ report }: ReportCardProps) {
               <Link
                 key={conversation.id}
                 href={adminConversationHref(conversation.id)}
-                className="text-primary underline-offset-4 hover:underline"
+                className="decoration-foreground/30 hover:decoration-foreground font-medium underline underline-offset-4"
               >
                 {conversation.listingTitle}
               </Link>
@@ -149,34 +172,41 @@ function ReportCard({ report }: ReportCardProps) {
         )}
 
         {!isPending && (
-          <div className="text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 text-xs leading-relaxed">
-            <p>
+          <div className="bg-muted/50 flex flex-col gap-1 rounded-xl border px-3.5 py-3 text-xs leading-relaxed">
+            <p className="font-medium">
               {report.action && report.action !== ReportAction.NONE
                 ? REPORT_ACTION_LABELS[report.action]
                 : "No action taken"}
-              {report.resolver?.name ? ` by ${report.resolver.name}` : ""}
-              {report.resolvedAt ? ` on ${formatDate(report.resolvedAt)}` : ""}
+              <span className="text-muted-foreground font-normal">
+                {report.resolver?.name ? ` by ${report.resolver.name}` : ""}
+                {report.resolvedAt
+                  ? ` on ${formatDate(report.resolvedAt)}`
+                  : ""}
+              </span>
             </p>
             {/*
               An absent note is shown as absent rather than hidden. A suspension with no reasoning
               recorded is exactly the decision someone will need to review later.
             */}
-            <p className="mt-1 italic">
+            <p className="text-muted-foreground italic">
               {report.resolution || "No note was recorded."}
             </p>
           </div>
         )}
 
         {isPending && !isOpen && (
-          <div>
-            <Button size="sm" variant="outline" onClick={() => setIsOpen(true)}>
+          <div className="flex justify-end border-t pt-4">
+            <Button size="sm" onClick={() => setIsOpen(true)}>
               Decide
             </Button>
           </div>
         )}
 
         {isPending && isOpen && (
-          <div className="bg-muted/50 flex flex-col gap-3 rounded-lg px-3 py-3">
+          <DecisionPanel
+            title="Decide this report"
+            consequence="Recorded permanently against your name. Resolving also applies the action you chose; dismissing records that the complaint did not hold."
+          >
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor={`action-${report.id}`}
@@ -184,14 +214,13 @@ function ReportCard({ report }: ReportCardProps) {
               >
                 Action to take
               </label>
-              <select
+              <NativeSelect
                 id={`action-${report.id}`}
                 value={action}
                 onChange={(event) =>
                   setAction(event.target.value as ReportAction | "")
                 }
                 disabled={pending !== null}
-                className="border-input focus-visible:border-foreground focus-visible:ring-foreground/10 hover:border-foreground/40 bg-background h-10 w-full rounded-lg border px-3 py-1 text-sm outline-none focus-visible:ring-3 disabled:opacity-50"
               >
                 <option value="">Choose an action…</option>
                 {permitted.map((value) => (
@@ -199,22 +228,42 @@ function ReportCard({ report }: ReportCardProps) {
                     {REPORT_ACTION_LABELS[value]}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
 
-            <Textarea
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              maxLength={RESOLUTION_NOTE_MAX}
-              rows={2}
-              placeholder="Optional — why this decision?"
-              disabled={pending !== null}
-              aria-label="Resolution note"
-            />
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor={`note-${report.id}`}
+                className="text-xs font-medium"
+              >
+                Resolution note{" "}
+                <span className="text-muted-foreground font-normal">
+                  (optional)
+                </span>
+              </label>
+              <Textarea
+                id={`note-${report.id}`}
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                maxLength={RESOLUTION_NOTE_MAX}
+                rows={2}
+                placeholder="Why this decision?"
+                disabled={pending !== null}
+              />
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              {/*
+                Red once the chosen action takes something away - an account, a listing, a review.
+                "No action taken" stays navy: it is a finding, not a sanction.
+              */}
               <Button
                 size="sm"
+                variant={
+                  action && action !== ReportAction.NONE
+                    ? "destructive"
+                    : "default"
+                }
                 onClick={() => submit("resolve")}
                 disabled={pending !== null || !action}
                 aria-busy={pending === "resolve"}
@@ -251,12 +300,19 @@ function ReportCard({ report }: ReportCardProps) {
                 Cancel
               </Button>
             </div>
-          </div>
+          </DecisionPanel>
         )}
       </div>
     </Card>
   );
 }
+
+/** The report's subject type, as a moderator would name it rather than as the enum value. */
+const REPORT_TYPE_LABELS: Readonly<Record<ReportType, string>> = {
+  [ReportType.LISTING]: "Listing",
+  [ReportType.USER]: "Member",
+  [ReportType.REVIEW]: "Review",
+};
 
 /** What was reported, rendered per kind. Declared at module scope - see the note in `EditPanel`. */
 function TargetPreview({ target }: { target: ReportTarget }) {
@@ -264,9 +320,13 @@ function TargetPreview({ target }: { target: ReportTarget }) {
     case "listing":
       return (
         <div className="text-sm">
+          {/*
+            The admin screen, not the public page: a removed or paused listing 404s publicly, and
+            those are the listings most likely to be reported. The admin screen has the public link.
+          */}
           <Link
-            href={`/listings/${target.id}`}
-            className="font-medium underline-offset-4 hover:underline"
+            href={`/admin/listings/${target.id}`}
+            className="decoration-foreground/30 hover:decoration-foreground font-medium underline underline-offset-4"
           >
             {target.title}
           </Link>
@@ -280,9 +340,13 @@ function TargetPreview({ target }: { target: ReportTarget }) {
     case "user":
       return (
         <div className="text-sm">
-          <span className="font-medium">
+          {/* The admin screen, where the account's history and moderation controls are. */}
+          <Link
+            href={`/admin/users/${target.id}`}
+            className="decoration-foreground/30 hover:decoration-foreground font-medium underline underline-offset-4"
+          >
             {target.name?.trim() || "A member"}
-          </span>
+          </Link>
           <span className="text-muted-foreground">
             {" "}
             — account {target.status.toLowerCase()}

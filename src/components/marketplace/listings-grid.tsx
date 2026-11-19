@@ -1,4 +1,5 @@
 import { ListingCard } from "@/components/marketplace/listing-card";
+import { cn } from "@/lib/utils/cn";
 
 import type { ListingCardData } from "@/lib/queries/listings";
 
@@ -39,6 +40,8 @@ interface ListingsGridProps {
    * caller knows whether its grid is the first thing on screen.
    */
   priorityCount?: number;
+  /** Overrides for the column classes, e.g. a narrower grid beside a sidebar. */
+  className?: string;
 }
 
 /**
@@ -59,13 +62,19 @@ function ListingsGrid({
   savedListingIds,
   isAuthenticated = false,
   priorityCount = 0,
+  className,
 }: ListingsGridProps) {
   if (listings.length === 0) {
     return null;
   }
 
   return (
-    <ul className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <ul
+      className={cn(
+        "grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+        className
+      )}
+    >
       {listings.map((listing, index) => (
         // A list, because that is what a results grid is - it lets a screen
         // reader announce "12 items" and skip the group as a unit.

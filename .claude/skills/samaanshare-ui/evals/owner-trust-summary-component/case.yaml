@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: owner-trust-summary-component
+expected_outcome: |
+  Inspects the existing TrustPanel and OwnerCard first and extends or reuses them instead of
+  building a duplicate. Uses semantic tokens only (no raw emerald/navy classes or hex), checks
+  whether the brand palette tokens exist in globals.css before using them, keeps emerald to
+  verified/positive signals with non-colour cues, uses real data fields only (no invented
+  metrics), stays a Server Component, and is responsive and accessible.

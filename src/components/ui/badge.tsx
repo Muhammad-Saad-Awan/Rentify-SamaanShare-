@@ -12,6 +12,15 @@ const badgeVariants = cva(
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
         secondary:
           "border-border bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
+        /**
+         * Settled in the viewer's favour - paid, live, rented out. Emerald on its soft wash
+         * (7.3:1), so the one place colour means "good" is also the one place it is used.
+         */
+        success:
+          "border-success/20 bg-success-soft text-success-soft-foreground [a]:hover:bg-success-soft/70",
+        /** Needs attention, not failure. Amber is never the text colour - it is under 4.5:1. */
+        warning:
+          "border-warning/30 bg-warning-soft text-warning-soft-foreground [a]:hover:bg-warning-soft/70",
         destructive:
           "border-destructive/20 bg-destructive/8 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
         outline:

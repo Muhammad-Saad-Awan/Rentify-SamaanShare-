@@ -1,7 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckIcon, Loader2Icon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CheckIcon,
+  Loader2Icon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -9,12 +14,13 @@ import { toast } from "sonner";
 
 import { createListing } from "@/actions/listings";
 import { ImageUploader } from "@/components/listings/image-uploader";
-import { Button } from "@/components/ui/button";
 import {
   ListingBasicsFields,
   ListingLocationFields,
   ListingPricingFields,
 } from "@/components/listings/listing-fields";
+import { Button } from "@/components/ui/button";
+import { Card, CardFooter } from "@/components/ui/card";
 import { ItemCondition } from "@/generated/prisma/enums";
 import { cn } from "@/lib/utils/cn";
 import { formatPKR } from "@/lib/utils/currency";
@@ -38,6 +44,8 @@ import type { ListingFormValues } from "@/lib/validations/listing";
 const STEPS = [
   {
     title: "Basics",
+    heading: "The basics",
+    hint: "What the item is and the condition it is in.",
     fields: [
       "title",
       "description",
@@ -48,13 +56,33 @@ const STEPS = [
   },
   {
     title: "Pricing",
+    heading: "Pricing",
+    hint: "What renting it costs, and the refundable deposit a renter pays up front.",
     fields: ["pricePerDay", "pricePerWeek", "pricePerMonth", "securityDeposit"],
   },
-  { title: "Location", fields: ["city", "area"] },
-  { title: "Photos", fields: ["images"] },
-  { title: "Review", fields: [] },
+  {
+    title: "Location",
+    heading: "Location",
+    hint: "Roughly where the item is, so renters can judge the distance.",
+    fields: ["city", "area"],
+  },
+  {
+    title: "Photos",
+    heading: "Photos",
+    hint: "Clear, well-lit photos are what renters decide on. The first one is the cover.",
+    fields: ["images"],
+  },
+  {
+    title: "Review",
+    heading: "Check this over before publishing",
+    hint: "Your listing goes live immediately and appears in browse and search.",
+    fields: [],
+  },
 ] as const satisfies readonly {
   title: string;
+  /** The step card's own `h2` - longer than the chip label where that helps. */
+  heading: string;
+  hint: string;
   fields: readonly (keyof ListingFormValues)[];
 }[];
 
@@ -203,65 +231,85 @@ function CreateListingForm({ categories }: CreateListingFormProps) {
         </div>
       )}
 
-      {stepIndex === 0 && (
-        <ListingBasicsFields
-          form={form}
-          disabled={isSubmitting}
-          categories={categories}
-        />
-      )}
+      {/*
+        Each step in one white card on the page canvas, with its own heading and a line on what it
+        is for - the same card shell as the edit form, so creating and editing look like one
+        feature. The navigation sits in the card's footer strip, under what it advances.
+      */}
+      <Card className="gap-0">
+        <div className="flex flex-col gap-1 border-b px-(--card-spacing) pb-(--card-spacing)">
+          <h2 className="font-heading text-lg font-bold tracking-tight">
+            {step.heading}
+          </h2>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {step.hint}
+          </p>
+        </div>
 
-      {stepIndex === 1 && (
-        <ListingPricingFields form={form} disabled={isSubmitting} />
-      )}
+        <div className="px-(--card-spacing) py-6">
+          {stepIndex === 0 && (
+            <ListingBasicsFields
+              form={form}
+              disabled={isSubmitting}
+              categories={categories}
+            />
+          )}
 
-      {stepIndex === 2 && (
-        <ListingLocationFields form={form} disabled={isSubmitting} />
-      )}
+          {stepIndex === 1 && (
+            <ListingPricingFields form={form} disabled={isSubmitting} />
+          )}
 
-      {stepIndex === 3 && (
-        <ImageUploader
-          images={values.images}
-          onChange={(next) =>
-            // `shouldValidate` so removing the last photo surfaces the "at least one"
-            // error immediately rather than at the next step change.
-            form.setValue("images", next, { shouldValidate: true })
-          }
-          error={errors.images?.message}
-        />
-      )}
+          {stepIndex === 2 && (
+            <ListingLocationFields form={form} disabled={isSubmitting} />
+          )}
 
-      {isLastStep && <ReviewStep values={values} categories={categories} />}
+          {stepIndex === 3 && (
+            <ImageUploader
+              images={values.images}
+              onChange={(next) =>
+                // `shouldValidate` so removing the last photo surfaces the "at least one"
+                // error immediately rather than at the next step change.
+                form.setValue("images", next, { shouldValidate: true })
+              }
+              error={errors.images?.message}
+            />
+          )}
 
-      <div className="flex items-center justify-between gap-3 border-t pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={goBack}
-          disabled={stepIndex === 0 || isSubmitting}
-        >
-          Back
-        </Button>
+          {isLastStep && <ReviewStep values={values} categories={categories} />}
+        </div>
 
-        {isLastStep ? (
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2Icon className="animate-spin" />
-                Publishing...
-              </>
-            ) : (
-              "Publish listing"
-            )}
+        <CardFooter className="justify-between gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={goBack}
+            disabled={stepIndex === 0 || isSubmitting}
+          >
+            <ArrowLeftIcon />
+            Back
           </Button>
-        ) : (
-          // `type="button"`, so Enter in a text field does not submit a half-filled
-          // form from step one.
-          <Button type="button" onClick={() => void goNext()}>
-            Continue
-          </Button>
-        )}
-      </div>
+
+          {isLastStep ? (
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2Icon className="animate-spin" />
+                  Publishing...
+                </>
+              ) : (
+                "Publish listing"
+              )}
+            </Button>
+          ) : (
+            // `type="button"`, so Enter in a text field does not submit a half-filled
+            // form from step one.
+            <Button type="button" onClick={() => void goNext()}>
+              Continue
+              <ArrowRightIcon />
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
     </form>
   );
 }
@@ -278,37 +326,71 @@ interface StepIndicatorProps {
  * screen reader.
  */
 function StepIndicator({ current }: StepIndicatorProps) {
+  const step = STEPS[current] ?? STEPS[0];
+
   return (
     <nav aria-label="Listing steps">
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-        {STEPS.map((step, index) => {
+      {/*
+        A phone gets one line and a bar instead of five chips. The chips wrapped onto two rows at
+        360px and the current one landed wherever the wrap put it; "Step 2 of 5" says the same
+        thing in a fixed place. Only one of the two is ever displayed, so a screen reader hears
+        one of them, not both.
+      */}
+      <div className="flex flex-col gap-2 sm:hidden">
+        <p className="text-sm">
+          <span className="text-muted-foreground">
+            Step {current + 1} of {STEPS.length}:
+          </span>{" "}
+          <span aria-current="step" className="font-medium">
+            {step.title}
+          </span>
+        </p>
+        <div
+          className="bg-muted h-1.5 overflow-hidden rounded-full"
+          aria-hidden="true"
+        >
+          <div
+            className="bg-brand h-full rounded-full transition-[width] duration-300"
+            style={{ width: `${((current + 1) / STEPS.length) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      <ol className="hidden items-center gap-2 text-xs sm:flex">
+        {STEPS.map((item, index) => {
           const isDone = index < current;
           const isCurrent = index === current;
 
           return (
-            <li key={step.title} className="flex items-center gap-2">
+            <li key={item.title} className="flex items-center gap-2">
               <span
                 aria-current={isCurrent ? "step" : undefined}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium",
-                  isCurrent && "bg-primary text-primary-foreground",
-                  isDone && "bg-muted text-foreground",
-                  !isCurrent && !isDone && "text-muted-foreground"
+                  "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium",
+                  isCurrent &&
+                    "border-brand bg-brand-soft text-brand-soft-foreground font-semibold",
+                  isDone && "bg-card text-foreground",
+                  !isCurrent &&
+                    !isDone &&
+                    "text-muted-foreground border-transparent"
                 )}
               >
                 {isDone ? (
                   <CheckIcon className="size-3" aria-hidden="true" />
                 ) : (
-                  <span aria-hidden="true">{index + 1}</span>
+                  <span aria-hidden="true" className="tabular-nums">
+                    {index + 1}
+                  </span>
                 )}
-                {step.title}
+                {item.title}
                 {isDone && <span className="sr-only">(completed)</span>}
               </span>
 
               {index < STEPS.length - 1 && (
-                <span className="text-muted-foreground" aria-hidden="true">
-                  /
-                </span>
+                <span
+                  className="bg-border h-px w-4 lg:w-8"
+                  aria-hidden="true"
+                />
               )}
             </li>
           );
@@ -373,36 +455,29 @@ function ReviewStep({ values, categories }: ReviewStepProps) {
     },
   ];
 
+  // The heading and the "goes live immediately" line are the step card's own, above this.
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h2 className="font-heading text-base font-medium">
-          Check this over before publishing
-        </h2>
-        <p className="text-muted-foreground text-sm">
-          Your listing goes live immediately and appears in browse and search.
-        </p>
-      </div>
+    <dl className="divide-border divide-y rounded-xl border text-sm">
+      {rows.map((row) => (
+        <div
+          key={row.label}
+          className="flex items-start justify-between gap-4 px-3 py-2.5"
+        >
+          <dt className="text-muted-foreground shrink-0">{row.label}</dt>
+          <dd className="min-w-0 text-right font-medium break-words">
+            {row.value}
+          </dd>
+        </div>
+      ))}
 
-      <dl className="divide-border divide-y text-sm">
-        {rows.map((row) => (
-          <div
-            key={row.label}
-            className="flex items-start justify-between gap-4 py-2"
-          >
-            <dt className="text-muted-foreground">{row.label}</dt>
-            <dd className="max-w-[60%] text-right font-medium break-words">
-              {row.value}
-            </dd>
-          </div>
-        ))}
-      </dl>
-
-      <div className="flex flex-col gap-1">
-        <dt className="text-muted-foreground text-sm">Description</dt>
-        <p className="text-sm whitespace-pre-line">{values.description}</p>
+      {/* Inside the list now: it was a `<dt>` with no `<dl>` around it, which is invalid HTML. */}
+      <div className="flex flex-col gap-1 px-3 py-2.5">
+        <dt className="text-muted-foreground">Description</dt>
+        <dd className="leading-relaxed break-words whitespace-pre-line">
+          {values.description}
+        </dd>
       </div>
-    </div>
+    </dl>
   );
 }
 

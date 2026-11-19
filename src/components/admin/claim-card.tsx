@@ -1,17 +1,14 @@
 "use client";
 
-import {
-  ClockIcon,
-  GavelIcon,
-  Loader2Icon,
-  TriangleAlertIcon,
-} from "lucide-react";
+import { ClockIcon, GavelIcon, Loader2Icon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { resolveDamageClaim } from "@/actions/claim-resolution";
+import { AttentionNote, AwaitingBadge } from "@/components/admin/attention";
+import { DecisionPanel } from "@/components/admin/decision-panel";
 import { StatusBadge as StatusLabel } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,89 +88,148 @@ function ClaimCard({ claim }: ClaimCardProps) {
     setIsOpen(false);
   }
 
+  const ownerPhotos = claim.photos.filter((photo) => photo.byClaimant);
+  const renterPhotos = claim.photos.filter((photo) => !photo.byClaimant);
+
   return (
     <Card>
-      <div className="flex flex-col gap-3 px-(--card-spacing)">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">
-            {formatPKR(claim.amountClaimed)} of{" "}
-            {formatPKR(claim.securityDeposit)}
-          </Badge>
-          <span className="font-heading text-base font-semibold">
-            {CLAIM_REASON_LABELS[claim.reason]}
-          </span>
-
-          {claim.status !== ClaimStatus.DISPUTED && (
-            <StatusLabel variant="outline" label={claim.status.toLowerCase()} />
-          )}
-
-          {escalatedBySilence && (
-            <span className="text-muted-foreground flex items-center gap-1 text-xs">
-              <ClockIcon className="size-3.5" aria-hidden="true" />
-              No reply from the renter
+      <div className="flex flex-col gap-4 px-(--card-spacing)">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="font-heading text-base leading-snug font-semibold">
+              {CLAIM_REASON_LABELS[claim.reason]}
             </span>
+            <p className="text-muted-foreground text-xs">
+              <Link
+                href={`/listings/${claim.listing.id}`}
+                className="text-foreground decoration-foreground/30 hover:decoration-foreground underline underline-offset-4"
+              >
+                {claim.listing.title}
+              </Link>{" "}
+              — {claim.claimant.name?.trim() || "the owner"} against{" "}
+              {claim.respondent.name?.trim() || "the renter"}. Rental ended{" "}
+              {claim.bookingCompletedAt
+                ? formatDate(claim.bookingCompletedAt)
+                : "unknown"}
+              , claim filed {formatDate(claim.filedAt)}.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            {/*
+              Silence is shown as silence - see the note on the component. Its own badge, beside the
+              state, so it is read at the same glance as "awaiting decision".
+            */}
+            {escalatedBySilence && (
+              <Badge variant="outline">
+                <ClockIcon aria-hidden="true" />
+                No reply from the renter
+              </Badge>
+            )}
+            {claim.status === ClaimStatus.DISPUTED ? (
+              <AwaitingBadge label="Awaiting decision" />
+            ) : (
+              <StatusLabel
+                variant={
+                  claim.status === ClaimStatus.OPEN ? "secondary" : "outline"
+                }
+                label={CLAIM_STATUS_SHORT[claim.status]}
+              />
+            )}
+          </div>
+        </div>
+
+        {/*
+          The money in question, before the arguments about it. The deposit is the ceiling of any
+          award, so the two figures are always read together.
+        */}
+        <div className="bg-muted/60 flex flex-wrap items-baseline gap-x-6 gap-y-1 rounded-xl px-4 py-3">
+          <div className="flex flex-col">
+            <span className="text-muted-foreground text-xs">Claimed</span>
+            <span className="font-heading text-xl font-bold tracking-tight tabular-nums">
+              {formatPKR(claim.amountClaimed)}
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-muted-foreground text-xs">Deposit held</span>
+            <span className="font-heading text-base font-semibold tabular-nums">
+              {formatPKR(claim.securityDeposit)}
+            </span>
+          </div>
+          {claim.status === ClaimStatus.RESOLVED && (
+            <div className="flex flex-col">
+              <span className="text-muted-foreground text-xs">Upheld</span>
+              <span className="font-heading text-base font-semibold tabular-nums">
+                {formatPKR(claim.amountUpheld ?? 0)}
+              </span>
+            </div>
           )}
         </div>
 
         {/*
-          The owner arguing against their own record. First thing on the card when it applies.
+          The owner arguing against their own record. First evidence on the card when it applies.
         */}
         {!claim.supportedByHandover && (
-          <p className="text-destructive flex items-start gap-1.5 text-xs leading-relaxed">
-            <TriangleAlertIcon
-              className="mt-0.5 size-3.5 shrink-0"
-              aria-hidden="true"
-            />
+          <AttentionNote>
             {claim.handover
               ? `The owner recorded this item as "${HANDOVER_CONDITION_LABELS[claim.handover.condition]}" when it came back, and is now claiming damage.`
               : "There is no return condition record for this rental."}
-          </p>
+          </AttentionNote>
         )}
 
-        <p className="text-muted-foreground text-xs">
-          <Link
-            href={`/listings/${claim.listing.id}`}
-            className="underline-offset-4 hover:underline"
-          >
-            {claim.listing.title}
-          </Link>{" "}
-          — {claim.claimant.name?.trim() || "the owner"} against{" "}
-          {claim.respondent.name?.trim() || "the renter"}. Rental ended{" "}
-          {claim.bookingCompletedAt
-            ? formatDate(claim.bookingCompletedAt)
-            : "unknown"}
-          , claim filed {formatDate(claim.filedAt)}.
-        </p>
+        {/*
+          The two accounts side by side on a wide screen, because the decision is a comparison of
+          them - stacked, the renter's answer sat below the fold of the owner's claim.
+        */}
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border px-3.5 py-3 text-sm">
+            <p className="font-medium">The owner says</p>
+            {/* A string, never HTML - it is user input. */}
+            <p className="text-muted-foreground leading-relaxed break-words whitespace-pre-line">
+              {claim.description}
+            </p>
+            {ownerPhotos.length > 0 && (
+              <PhotoStrip
+                photos={ownerPhotos.map((photo) => ({
+                  id: photo.id,
+                  url: photo.url,
+                  label: "Owner",
+                }))}
+              />
+            )}
+          </div>
 
-        <div className="text-sm">
-          <p className="font-medium">The owner says</p>
-          {/* A string, never HTML - it is user input. */}
-          <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-            {claim.description}
-          </p>
+          <div className="flex min-w-0 flex-col gap-1.5 rounded-xl border px-3.5 py-3 text-sm">
+            <p className="font-medium">The renter says</p>
+            {claim.responseNote ? (
+              <p className="text-muted-foreground leading-relaxed break-words whitespace-pre-line">
+                {claim.responseNote}
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-xs italic">
+                The renter did not leave an account.
+              </p>
+            )}
+            {renterPhotos.length > 0 && (
+              <PhotoStrip
+                photos={renterPhotos.map((photo) => ({
+                  id: photo.id,
+                  url: photo.url,
+                  label: "Renter",
+                }))}
+              />
+            )}
+          </div>
         </div>
 
-        {claim.responseNote ? (
-          <div className="text-sm">
-            <p className="font-medium">The renter says</p>
-            <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-              {claim.responseNote}
-            </p>
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-xs italic">
-            The renter did not leave an account.
-          </p>
-        )}
-
         {claim.handover && (
-          <div className="bg-muted/50 rounded-md px-2.5 py-2 text-xs">
+          <div className="bg-muted/50 flex flex-col gap-1 rounded-xl border px-3.5 py-3 text-xs">
             <p className="font-medium">
               Return record:{" "}
               {HANDOVER_CONDITION_LABELS[claim.handover.condition]}
             </p>
             {claim.handover.notes && (
-              <p className="text-muted-foreground mt-1 leading-relaxed whitespace-pre-line">
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
                 {claim.handover.notes}
               </p>
             )}
@@ -188,40 +244,35 @@ function ClaimCard({ claim }: ClaimCardProps) {
           </div>
         )}
 
-        {claim.photos.length > 0 && (
-          <PhotoStrip
-            photos={claim.photos.map((photo) => ({
-              id: photo.id,
-              url: photo.url,
-              label: photo.byClaimant ? "Owner" : "Renter",
-            }))}
-          />
-        )}
-
         {claim.status === ClaimStatus.RESOLVED && (
-          <div className="text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 text-xs leading-relaxed">
+          <div className="bg-muted/50 flex flex-col gap-1 rounded-xl border px-3.5 py-3 text-xs leading-relaxed">
             <p className="flex items-center gap-1.5 font-medium">
               <GavelIcon className="size-3.5" aria-hidden="true" />
               Upheld {formatPKR(claim.amountUpheld ?? 0)}
-              {claim.resolvedBy?.name ? ` by ${claim.resolvedBy.name}` : ""}
-              {claim.resolvedAt ? ` on ${formatDate(claim.resolvedAt)}` : ""}
+              <span className="text-muted-foreground font-normal">
+                {claim.resolvedBy?.name ? ` by ${claim.resolvedBy.name}` : ""}
+                {claim.resolvedAt ? ` on ${formatDate(claim.resolvedAt)}` : ""}
+              </span>
             </p>
             {claim.resolution && (
-              <p className="mt-1 italic">{claim.resolution}</p>
+              <p className="text-muted-foreground italic">{claim.resolution}</p>
             )}
           </div>
         )}
 
         {claim.status === ClaimStatus.DISPUTED && !isOpen && (
-          <div>
-            <Button size="sm" variant="outline" onClick={() => setIsOpen(true)}>
+          <div className="flex justify-end border-t pt-4">
+            <Button size="sm" onClick={() => setIsOpen(true)}>
               Decide
             </Button>
           </div>
         )}
 
         {claim.status === ClaimStatus.DISPUTED && isOpen && (
-          <div className="bg-muted/50 flex flex-col gap-3 rounded-lg px-3 py-3">
+          <DecisionPanel
+            title="Decide this claim"
+            consequence="This decides how much of the deposit the owner is paid out of it at settlement. The rest goes back to the renter. Both parties are told, and read your reasoning."
+          >
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor={`upheld-${claim.id}`}
@@ -239,23 +290,35 @@ function ClaimCard({ claim }: ClaimCardProps) {
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 disabled={pending}
-                className="max-w-40"
+                aria-describedby={`upheld-hint-${claim.id}`}
+                className="max-w-40 tabular-nums"
               />
-              <p className="text-muted-foreground text-xs">
+              <p
+                id={`upheld-hint-${claim.id}`}
+                className="text-muted-foreground text-xs"
+              >
                 Between {formatPKR(0)} and {formatPKR(claim.amountClaimed)}.
                 Zero decides entirely for the renter.
               </p>
             </div>
 
-            <Textarea
-              value={resolution}
-              onChange={(event) => setResolution(event.target.value)}
-              maxLength={CLAIM_RESOLUTION_MAX}
-              rows={3}
-              placeholder="Why this decision — both parties will read it"
-              disabled={pending}
-              aria-label="Decision"
-            />
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor={`resolution-${claim.id}`}
+                className="text-xs font-medium"
+              >
+                Decision
+              </label>
+              <Textarea
+                id={`resolution-${claim.id}`}
+                value={resolution}
+                onChange={(event) => setResolution(event.target.value)}
+                maxLength={CLAIM_RESOLUTION_MAX}
+                rows={3}
+                placeholder="Why this decision — both parties will read it"
+                disabled={pending}
+              />
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -277,17 +340,27 @@ function ClaimCard({ claim }: ClaimCardProps) {
                 Cancel
               </Button>
             </div>
-
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              This decides how much of the deposit the owner is paid out of it
-              at settlement. The rest goes back to the renter.
-            </p>
-          </div>
+          </DecisionPanel>
         )}
       </div>
     </Card>
   );
 }
+
+/**
+ * The claim's state in one to three words, for the badge.
+ *
+ * `CLAIM_STATUS_LABELS` is written for the parties ("Disputed — with SamaanShare to decide") and is
+ * too long for a badge; these match the queue's own tab names, so the badge and the tab it was found
+ * under say the same thing.
+ */
+const CLAIM_STATUS_SHORT: Readonly<Record<ClaimStatus, string>> = {
+  [ClaimStatus.OPEN]: "With the renter",
+  [ClaimStatus.ACCEPTED]: "Settled between parties",
+  [ClaimStatus.DISPUTED]: "To decide",
+  [ClaimStatus.RESOLVED]: "Decided",
+  [ClaimStatus.WITHDRAWN]: "Withdrawn",
+};
 
 /** Declared at module scope - see the `EditPanel` note in `BookingActions`. */
 function PhotoStrip({
@@ -296,7 +369,7 @@ function PhotoStrip({
   photos: { id: string; url: string; label: string }[];
 }) {
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-1.5 pt-1">
       {photos.map((photo) => (
         <a
           key={photo.id}
@@ -304,7 +377,7 @@ function PhotoStrip({
           target="_blank"
           rel="noreferrer"
           title={photo.label}
-          className="focus-visible:ring-ring relative size-16 overflow-hidden rounded-md outline-none focus-visible:ring-2"
+          className="focus-visible:ring-ring bg-muted relative size-16 overflow-hidden rounded-md border outline-none focus-visible:ring-2"
         >
           <Image
             src={photo.url}

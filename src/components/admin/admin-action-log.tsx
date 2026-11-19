@@ -41,107 +41,119 @@ function AdminActionLog({
   }
 
   return (
-    <ul className="flex flex-col gap-2.5">
-      {history.map((entry) => (
-        <li
-          key={entry.id}
-          className="flex flex-col gap-1 rounded-lg border px-3 py-2.5 text-sm"
-        >
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <HistoryIcon
-              className="text-muted-foreground size-3.5 shrink-0"
+    // A rule down the side with a mark per entry: this is a sequence, newest first, and the line is
+    // what makes it read as one rather than as a stack of unrelated boxes.
+    <ol className="flex flex-col">
+      {history.map((entry, index) => (
+        <li key={entry.id} className="relative flex gap-3 pb-4 last:pb-0">
+          {index < history.length - 1 && (
+            <span
+              className="bg-border absolute top-5 bottom-0 left-[7px] w-px"
               aria-hidden="true"
             />
-            <span className="font-medium">
-              {ADMIN_ACTION_LABELS[entry.type]}
-            </span>
+          )}
+          <span
+            className="bg-card text-muted-foreground relative mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border"
+            aria-hidden="true"
+          >
+            <HistoryIcon className="size-2.5" />
+          </span>
+
+          <div className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="font-medium">
+                {ADMIN_ACTION_LABELS[entry.type]}
+              </span>
+
+              {/*
+                The transition, inline - but only when it is a pair of short values, which is what a
+                status or role change is. An EDIT_LISTING entry carries the whole previous title and
+                description, and rendering that inline turned this row into a wall of somebody else's
+                listing copy. Long values move into the collapsed block below instead.
+              */}
+              {entry.previousValue &&
+                entry.newValue &&
+                !isLongTransition(entry) && (
+                  <span className="bg-muted rounded-md px-1.5 py-0.5 font-mono text-xs">
+                    {entry.previousValue} → {entry.newValue}
+                  </span>
+                )}
+            </div>
+
+            <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+              <span>{formatDate(entry.createdAt)}</span>
+              <span aria-hidden="true">·</span>
+              <span>
+                by {entry.actor?.name?.trim() ?? "the bootstrap script"}
+              </span>
+
+              {/*
+                The report this answered. Links back to the queue, so a suspension and the complaint
+                that caused it can be read together rather than as two unrelated records.
+              */}
+              {entry.reportId && (
+                <Link
+                  href="/admin/reports?status=resolved"
+                  className="text-foreground flex items-center gap-1 underline-offset-4 hover:underline"
+                >
+                  <FlagIcon className="size-3" aria-hidden="true" />
+                  from a report
+                </Link>
+              )}
+
+              {/*
+                The listing this was about. The audit subject is the OWNER, so on an account's history
+                this entry would otherwise read "Listing removed" with no way to find out which one.
+              */}
+              {entry.listingId && (
+                <Link
+                  href={`/admin/listings/${entry.listingId}`}
+                  className="text-foreground flex items-center gap-1 underline-offset-4 hover:underline"
+                >
+                  <PackageIcon className="size-3" aria-hidden="true" />
+                  the listing
+                </Link>
+              )}
+            </div>
+
+            {/* A string, never HTML - an administrator typed it. */}
+            <p className="text-muted-foreground leading-relaxed break-words whitespace-pre-line">
+              {entry.reason}
+            </p>
 
             {/*
-              The transition, inline - but only when it is a pair of short values, which is what a
-              status or role change is. An EDIT_LISTING entry carries the whole previous title and
-              description, and rendering that inline turned this row into a wall of somebody else's
-              listing copy. Long values move into the collapsed block below instead.
+              The before and after in full, collapsed. Only reached for a long transition - in practice
+              an edit to a listing's copy, where this row is the ONLY remaining record of what the owner
+              originally wrote. Collapsed rather than omitted: it has to be readable, and it must not
+              bury the twenty other entries around it.
             */}
             {entry.previousValue &&
               entry.newValue &&
-              !isLongTransition(entry) && (
-                <span className="text-muted-foreground text-xs">
-                  {entry.previousValue} → {entry.newValue}
-                </span>
+              isLongTransition(entry) && (
+                <details className="rounded-xl border text-xs">
+                  <summary className="text-muted-foreground hover:text-foreground cursor-pointer px-3 py-2">
+                    What changed
+                  </summary>
+                  <div className="grid gap-3 border-t px-3 py-2.5 sm:grid-cols-2">
+                    <div className="min-w-0">
+                      <p className="font-medium">Before</p>
+                      <p className="text-muted-foreground break-words whitespace-pre-line">
+                        {entry.previousValue}
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium">After</p>
+                      <p className="text-muted-foreground break-words whitespace-pre-line">
+                        {entry.newValue}
+                      </p>
+                    </div>
+                  </div>
+                </details>
               )}
-
-            <span className="text-muted-foreground text-xs">
-              {formatDate(entry.createdAt)}
-            </span>
-
-            <span className="text-muted-foreground text-xs">
-              by {entry.actor?.name?.trim() ?? "the bootstrap script"}
-            </span>
-
-            {/*
-              The report this answered. Links back to the queue, so a suspension and the complaint
-              that caused it can be read together rather than as two unrelated records.
-            */}
-            {entry.reportId && (
-              <Link
-                href="/admin/reports?status=resolved"
-                className="text-primary flex items-center gap-1 text-xs underline-offset-4 hover:underline"
-              >
-                <FlagIcon className="size-3" aria-hidden="true" />
-                from a report
-              </Link>
-            )}
-
-            {/*
-              The listing this was about. The audit subject is the OWNER, so on an account's history
-              this entry would otherwise read "Listing removed" with no way to find out which one.
-            */}
-            {entry.listingId && (
-              <Link
-                href={`/admin/listings/${entry.listingId}`}
-                className="text-primary flex items-center gap-1 text-xs underline-offset-4 hover:underline"
-              >
-                <PackageIcon className="size-3" aria-hidden="true" />
-                the listing
-              </Link>
-            )}
           </div>
-
-          {/* A string, never HTML - an administrator typed it. */}
-          <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-            {entry.reason}
-          </p>
-
-          {/*
-            The before and after in full, collapsed. Only reached for a long transition - in practice
-            an edit to a listing's copy, where this row is the ONLY remaining record of what the owner
-            originally wrote. Collapsed rather than omitted: it has to be readable, and it must not
-            bury the twenty other entries around it.
-          */}
-          {entry.previousValue && entry.newValue && isLongTransition(entry) && (
-            <details className="text-xs">
-              <summary className="text-muted-foreground cursor-pointer">
-                What changed
-              </summary>
-              <div className="mt-2 flex flex-col gap-2">
-                <div>
-                  <p className="font-medium">Before</p>
-                  <p className="text-muted-foreground whitespace-pre-line">
-                    {entry.previousValue}
-                  </p>
-                </div>
-                <div>
-                  <p className="font-medium">After</p>
-                  <p className="text-muted-foreground whitespace-pre-line">
-                    {entry.newValue}
-                  </p>
-                </div>
-              </div>
-            </details>
-          )}
         </li>
       ))}
-    </ul>
+    </ol>
   );
 }
 

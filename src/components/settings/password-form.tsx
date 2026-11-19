@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { changePassword, setPassword } from "@/actions/security";
+import { FormAlert } from "@/components/ui/form-alert";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -130,14 +131,11 @@ function ChangePasswordForm() {
 
   if (signInFailed) {
     return (
-      <div
-        role="status"
-        className="border-primary/30 bg-accent/40 rounded-lg border px-3 py-3 text-sm leading-relaxed"
-      >
-        Your password has been changed and every session has been signed out,
-        including this one, but we could not sign you back in automatically.
-        Please sign in again with your new password.
-      </div>
+      <FormAlert tone="success" title="Your password has been changed">
+        Every session has been signed out, including this one, but we could not
+        sign you back in automatically. Please sign in again with your new
+        password.
+      </FormAlert>
     );
   }
 
@@ -285,8 +283,12 @@ interface SubmitRowProps {
 
 function SubmitRow({ isSubmitting, label }: SubmitRowProps) {
   return (
-    <div className="flex justify-end">
-      <Button type="submit" disabled={isSubmitting}>
+    <div className="flex justify-end border-t pt-5">
+      <Button
+        type="submit"
+        className="w-full sm:w-auto"
+        disabled={isSubmitting}
+      >
         {isSubmitting ? (
           <>
             <Loader2Icon className="animate-spin" />

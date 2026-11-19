@@ -37,7 +37,7 @@ function DashboardHeader({
   unreadMessages,
 }: DashboardHeaderProps) {
   return (
-    <header className="bg-background sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b px-4 lg:px-8">
+    <header className="bg-background/90 supports-[backdrop-filter]:bg-background/75 sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b px-4 backdrop-blur-md lg:h-[4.5rem] lg:px-8">
       <DashboardMobileNav role={user.role} badges={navBadges} />
 
       <DashboardBreadcrumbs className="min-w-0 flex-1" />

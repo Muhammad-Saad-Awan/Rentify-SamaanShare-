@@ -79,7 +79,7 @@ function BookingReviewSection({ booking, side }: BookingReviewSectionProps) {
 
       {/* Written, still withheld. */}
       {mine && !mine.publishedAt && (
-        <div className="bg-muted/50 flex flex-col gap-1.5 rounded-lg px-3 py-2.5">
+        <div className="bg-muted/50 flex flex-col gap-1.5 rounded-xl px-3 py-2.5">
           <div className="flex items-center gap-2">
             <RatingStars rating={mine.rating} />
             <span className="text-muted-foreground text-xs">
@@ -128,7 +128,7 @@ interface PublishedReviewProps {
 
 function PublishedReview({ label, review, publishedAt }: PublishedReviewProps) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-lg border px-3 py-2.5">
+    <div className="flex flex-col gap-1.5 rounded-xl border px-3 py-2.5">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-medium">{label}</span>
         <RatingStars rating={review.rating} />

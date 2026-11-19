@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: claims-list-and-detail-route
+expected_outcome: |
+  Builds the claims list and detail routes inside the (dashboard) group. The [id] route validates
+  membership and calls notFound() in a layout.tsx, with not-found.tsx one level up and no
+  loading.tsx above it; the list uses keyed in-page Suspense if it needs a skeleton. Pages use
+  requireUser, PageHeader, EmptyState, StatusBadge-style status and Pagination. Data comes from a
+  participant-scoped query (the existing getClaims is admin-only) rather than invented data, and the
+  nav/labels config is updated. Styling uses semantic tokens only.
